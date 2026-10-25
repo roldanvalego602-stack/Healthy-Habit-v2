@@ -1,3 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import '../../servicios/autenticacion_servicio.dart';
 import 'package:flutter/material.dart';
 import 'buscar_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
@@ -65,13 +69,15 @@ class ProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Redirige al login y borra el historial de navegación
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/login',
-                      (route) => false,
-                    );
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/login',
+                        (route) => false,
+                      );
+                    }
                   },
                   icon: const Icon(
                     Icons.logout_rounded,

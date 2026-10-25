@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
 class DesafiosScreen extends StatefulWidget {
   const DesafiosScreen({super.key});
@@ -230,7 +231,7 @@ class _SeasonBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
@@ -560,30 +561,34 @@ class _ChallengeCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Recompensas y Dificultad
-          Row(
+          Column(
             children: [
-              const Text(
-                'Recompensa: ',
-                style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
+              Row(
+                children: [
+                  const Text(
+                    'Recompensa: ',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
+                  ),
+                  _buildMiniReward(
+                    '+ $xpReward XP',
+                    const Color(0xFFE2F7ED),
+                    const Color(0xFF00C88C),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildMiniReward(
+                    '+ $hcReward HC',
+                    const Color(0xFFFDE89D),
+                    Colors.orange,
+                  ),
+                ],
               ),
-              _buildMiniReward(
-                '+ $xpReward XP',
-                const Color(0xFFE2F7ED),
-                const Color(0xFF00C88C),
-              ),
-              const SizedBox(width: 6),
-              _buildMiniReward(
-                '+ $hcReward HC',
-                const Color(0xFFFDE89D),
-                Colors.orange,
-              ),
-              const Spacer(),
               Text(
                 'Dificultad: $difficulty',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF7A869A)),
               ),
             ],
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -695,9 +700,15 @@ class _CompletedRewardCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            height: 48,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AchievementScreen(),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C88C),
                 foregroundColor: Colors.white,
@@ -706,7 +717,7 @@ class _CompletedRewardCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Text(
@@ -715,12 +726,7 @@ class _CompletedRewardCard extends StatelessWidget {
                   ),
                   SizedBox(width: 12),
                   Text(
-                    '+80 XP',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    '+25 HC',
+                    '+80 XP +25 HC',
                     style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
                   ),
                 ],
@@ -951,7 +957,17 @@ class _AvailableChallengeCard extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text("Ora Joto2"),
+                      content: Text("data"),
+                    );
+                  },
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0E1A30),
                 foregroundColor: Colors.white,
