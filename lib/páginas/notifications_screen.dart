@@ -4,7 +4,7 @@ class NotificationItem {
   final String id;
   final String title;
   final String description;
-  final String timeText;
+  String timeText;
   final String actionText;
   final IconData? iconData;
   final String? assetPath;
@@ -46,8 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     NotificationItem(
       id: '1',
       title: 'Tu misión te espera',
-      description:
-          'Un pequeño paso para hoy: dedica un momento a tu rutina.',
+      description: 'Un pequeño paso para hoy: dedica un momento a tu rutina.',
       timeText: 'Hace 5 min · Sin leer',
       actionText: 'Ver misión',
       iconData: Icons.outlined_flag_rounded,
@@ -82,8 +81,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     NotificationItem(
       id: '4',
       title: 'Una recompensa para ti',
-      description:
-          'Recibiste +30 Habit Coins por tu logro Gota constante.',
+      description: 'Recibiste +30 Habit Coins por tu logro Gota constante.',
       timeText: 'Hace 1 h · Sin leer',
       actionText: 'Ver recompensa',
       assetPath: 'assets/monedas/h coin.png',
@@ -122,8 +120,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     NotificationItem(
       id: '7',
       title: 'Un nuevo look disponible',
-      description:
-          'Desbloqueaste el Pañuelo de emo. Pruébalo con Mr. Healthy.',
+      description: 'Desbloqueaste el Pañuelo de emo. Pruébalo con Mr. Healthy.',
       timeText: '16 oct · 10:15 · Leído',
       actionText: 'Abrir armario',
       iconData: Icons.checkroom_outlined,
@@ -229,7 +226,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (todayNotifications.isNotEmpty) ...[
                 _buildSectionHeader('Hoy'),
                 const SizedBox(height: 12),
-                ...todayNotifications.map((item) => _buildNotificationCard(item)),
+                ...todayNotifications.map(
+                  (item) => _buildNotificationCard(item),
+                ),
                 const SizedBox(height: 16),
               ],
 
@@ -237,8 +236,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (thisWeekNotifications.isNotEmpty) ...[
                 _buildSectionHeader('Esta semana'),
                 const SizedBox(height: 12),
-                ...thisWeekNotifications
-                    .map((item) => _buildNotificationCard(item)),
+                ...thisWeekNotifications.map(
+                  (item) => _buildNotificationCard(item),
+                ),
                 const SizedBox(height: 16),
               ],
 
@@ -246,8 +246,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (previousNotifications.isNotEmpty) ...[
                 _buildSectionHeader('Anteriores'),
                 const SizedBox(height: 12),
-                ...previousNotifications
-                    .map((item) => _buildNotificationCard(item)),
+                ...previousNotifications.map(
+                  (item) => _buildNotificationCard(item),
+                ),
                 const SizedBox(height: 24),
               ],
 
@@ -290,10 +291,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: borderCard,
-          width: 1,
-        ),
+        border: Border.all(color: borderCard, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,22 +308,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: item.assetPath != null
-                      ? Image.asset(
-                          item.assetPath!,
-                          width: 22,
-                          height: 22,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.eco_rounded,
+                  child:
+                      item.assetPath != null
+                          ? Image.asset(
+                            item.assetPath!,
+                            width: 22,
+                            height: 22,
+                            errorBuilder:
+                                (context, error, stackTrace) => Icon(
+                                  Icons.eco_rounded,
+                                  color: item.iconColor,
+                                  size: 22,
+                                ),
+                          )
+                          : Icon(
+                            item.iconData,
                             color: item.iconColor,
                             size: 22,
                           ),
-                        )
-                      : Icon(
-                          item.iconData,
-                          color: item.iconColor,
-                          size: 22,
-                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -395,7 +395,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 item.isUnread = false;
                 item.timeText = item.timeText.replaceAll('Sin leer', 'Leído');
               });
-              // Puedes agregar aquí la navegación específica para cada tipo de notificación
             },
             borderRadius: BorderRadius.circular(8),
             child: Row(
@@ -410,11 +409,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Icon(
-                  Icons.north_east_rounded,
-                  size: 15,
-                  color: green,
-                ),
+                const Icon(Icons.north_east_rounded, size: 15, color: green),
               ],
             ),
           ),
