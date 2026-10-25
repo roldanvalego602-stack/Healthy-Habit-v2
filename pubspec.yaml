@@ -12,9 +12,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    firebase_core: ^3.0.0          # Núcleo de Firebase
-    cloud_firestore: ^5.0.0       # Base de datos NoSQL
-    firebase_auth: ^5.0.0
+  firebase_core: ^3.0.0          # Núcleo de Firebase
+  cloud_firestore: ^5.0.0       # Base de datos NoSQL
+  firebase_auth: ^5.0.0         # Autenticación (para los logins y registros)
 
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3

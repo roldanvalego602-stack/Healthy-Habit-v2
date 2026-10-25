@@ -4,6 +4,7 @@ import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
 import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
 import 'package:healthy_habit/p%C3%A1ginas/tienda/store_screen.dart';
+import 'package:healthy_habit/servicios/autenticacion_servicio.dart'; // Asegúrate de importar tu servicio
 
 import 'signup_screen.dart';
 
@@ -34,6 +35,61 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  // Controladores para capturar el correo y la contraseña
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Método para manejar el inicio de sesión con Firebase
+  void _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, completa todos los campos.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signIn(email: email, password: password);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen2()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al iniciar sesión: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,9 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const FieldLabel('Correo electrónico'),
               const SizedBox(height: 8),
-              const AuthTextField(
+              AuthTextField(
                 hint: 'ejemplo@correo.com',
                 icon: Icons.mail_outline_rounded,
+                controller: _emailController,
               ),
               const SizedBox(height: 20),
 
@@ -94,6 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 hint: 'Ingresa tu contraseña',
                 icon: Icons.lock_outline_rounded,
                 obscureText: _obscurePassword,
+                controller: _passwordController,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -140,14 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen2(),
-                      ),
-                    );
-                  },
+                  onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.green,
                     foregroundColor: Colors.white,
@@ -156,10 +207,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
-                  child: const Text(
-                    'Iniciar sesión',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                          : const Text(
+                            'Iniciar sesión',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                 ),
               ),
               const SizedBox(height: 22),
@@ -169,8 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'o',
                       style: TextStyle(color: AppColors.textGrey),
@@ -275,6 +339,7 @@ class AuthTextField extends StatelessWidget {
   final IconData icon;
   final bool obscureText;
   final Widget? suffix;
+  final TextEditingController? controller;
 
   const AuthTextField({
     super.key,
@@ -282,6 +347,7 @@ class AuthTextField extends StatelessWidget {
     required this.icon,
     this.obscureText = false,
     this.suffix,
+    this.controller,
   });
 
   @override
@@ -293,6 +359,7 @@ class AuthTextField extends StatelessWidget {
         border: Border.all(color: AppColors.fieldBorder),
       ),
       child: TextField(
+        controller: controller,
         obscureText: obscureText,
         style: const TextStyle(fontSize: 15, color: AppColors.textDark),
         decoration: InputDecoration(

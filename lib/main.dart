@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'páginas/habitos/habits_screen.dart';
-import 'páginas/desafios/achievement_screen.dart';
 import 'páginas/tienda/store_screen.dart';
 import 'páginas/perfil/profile_screen.dart';
 import 'páginas/splash_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+// Importa tus pantallas...
 
-void main() => runApp(const HabitTrackerApp());
+void main() async {
+  // Asegura que los bindings de Flutter estén inicializados
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa Firebase para la app
+  await Firebase.initializeApp();
+
+  runApp(const HabitTrackerApp());
+}
 
 class HabitTrackerApp extends StatelessWidget {
   const HabitTrackerApp({super.key});
