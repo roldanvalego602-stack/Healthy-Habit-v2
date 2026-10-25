@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
 import '../páginas/habitos/habits_screen.dart';
 import '../páginas/desafios/desafios_screen.dart';
 import '../páginas/tienda/store_screen.dart';
@@ -153,9 +154,19 @@ class _TopBar extends StatelessWidget {
               BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
             ],
           ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: AppColors.textDark,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.textDark,
+            ),
           ),
         ),
         const SizedBox(width: 10),
