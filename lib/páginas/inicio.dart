@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthy_habit/p%C3%A1ginas/habitos/registrar_habito_screen.dart';
 import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
 import '../páginas/habitos/habits_screen.dart';
 import '../páginas/desafios/desafios_screen.dart';
@@ -154,7 +155,7 @@ class _TopBar extends StatelessWidget {
               BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
             ],
           ),
-          child: ElevatedButton(
+          child: TextButton(
             onPressed: () {
               Navigator.push(
                 context,
@@ -552,7 +553,14 @@ class _MissionCard extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegistrarHabitoScreen(),
+                  ),
+                );
+              },
               icon: const Icon(Icons.add, size: 20),
               label: const Text(
                 'Registrar vaso',

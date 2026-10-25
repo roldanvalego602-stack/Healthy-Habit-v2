@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
+import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
 import 'package:healthy_habit/p%C3%A1ginas/tienda/store_screen.dart';
 
 import 'signup_screen.dart';
@@ -111,7 +112,14 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(0, 0),
