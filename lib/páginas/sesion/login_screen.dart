@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
 import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
-import 'package:healthy_habit/p%C3%A1ginas/tienda/store_screen.dart';
-import 'package:healthy_habit/servicios/autenticacion_servicio.dart'; // Asegúrate de importar tu servicio
+import 'package:healthy_habit/servicios/autenticacion_servicio.dart'; // Asegúrate de que la ruta de tu AuthService sea correcta
 
 import 'signup_screen.dart';
 
@@ -37,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  // Controladores para capturar el correo y la contraseña
+  // Controladores y servicio de autenticación
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
@@ -49,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Método para manejar el inicio de sesión con Firebase
+  // Método para iniciar sesión con Correo y Contraseña
   void _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -80,6 +79,35 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al iniciar sesión: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Método para iniciar sesión con Google
+  void _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+
+    try {
+      User? user = await _authService.signInWithGoogle();
+
+      if (user != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen2()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error con Google: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -250,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _handleGoogleLogin,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white,
                     side: const BorderSide(color: AppColors.fieldBorder),

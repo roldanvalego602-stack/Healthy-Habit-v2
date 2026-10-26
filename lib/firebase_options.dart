@@ -54,7 +54,6 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://cloud-firestore-d8c61-default-rtdb.firebaseio.com',
     storageBucket: 'cloud-firestore-d8c61.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyB8y_hvbE0iEWuCtbFmG_oqFvDovrqyDPM',
     appId: '1:1096497487747:ios:730c87ba8b7c0af9ca60b6',

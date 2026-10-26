@@ -158,8 +158,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const FieldLabel('Nombre de usuario'),
               const SizedBox(height: 8),
+
               AuthTextField(
-                hint: '@usuario',
+                hint: 'usuario_hot_69_sixseven_Girls',
                 icon: Icons.alternate_email_rounded,
                 controller: _usernameController,
               ),

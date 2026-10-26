@@ -13,7 +13,20 @@
           "package_name": "com.example.healthy_habit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1096497487747-0efu41i20dbciekfvojrbn3c71savtji.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.healthy_habit",
+            "certificate_hash": "01f02208ec17ac59d18b2e35ba2d7ad3f2ac57cd"
+          }
+        },
+        {
+          "client_id": "1096497487747-tchuiqib9iies2s8rk9174mcrrvrabac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBTwK2mFEywKEYZBvbpDDANujxJQ6dKFDo"
@@ -21,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096497487747-tchuiqib9iies2s8rk9174mcrrvrabac.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1096497487747-ohb9doubuphi3oh6tli7j215546s9ors.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthyHabit"
+              }
+            }
+          ]
         }
       }
     }
