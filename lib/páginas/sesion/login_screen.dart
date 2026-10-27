@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
 import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
-import 'package:healthy_habit/servicios/autenticacion_servicio.dart'; // Asegúrate de que la ruta de tu AuthService sea correcta
+import 'package:healthy_habit/servicios/autenticacion_servicio.dart';
 
 import 'signup_screen.dart';
 
@@ -48,8 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Método para iniciar sesión con Correo y Contraseña
-  void _handleLogin() async {
+  // Método para iniciar sesión con correo y contraseña
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Método para iniciar sesión con Google
-  void _handleGoogleLogin() async {
+  Future<void> _handleGoogleLogin() async {
     setState(() => _isLoading = true);
 
     try {
@@ -116,7 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      debugPrint("ERROR DETALLADO DE GOOGLE: $e");
+      debugPrint('ERROR DETALLADO DE GOOGLE: $e');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -143,23 +144,30 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 12),
-              // Logo
+
+              // Logo real de Healthy Habit
               Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.green,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.eco_rounded,
-                    color: Colors.white,
-                    size: 36,
+                child: SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Image.asset(
+                    'assets/logo/logo.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('Error al cargar el logo: $error');
+
+                      return const Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 40,
+                        color: AppColors.textGrey,
+                      );
+                    },
                   ),
                 ),
               ),
+
               const SizedBox(height: 16),
+
               const Text(
                 'Healthy Habit',
                 textAlign: TextAlign.center,
@@ -169,25 +177,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: AppColors.textDark,
                 ),
               ),
+
               const SizedBox(height: 6),
+
               const Text(
                 'Qué bueno verte de nuevo',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: AppColors.textGrey),
               ),
+
               const SizedBox(height: 32),
 
               const FieldLabel('Correo electrónico'),
               const SizedBox(height: 8),
+
               AuthTextField(
                 hint: 'ejemplo@correo.com',
                 icon: Icons.mail_outline_rounded,
                 controller: _emailController,
               ),
+
               const SizedBox(height: 20),
 
               const FieldLabel('Contraseña'),
               const SizedBox(height: 8),
+
               AuthTextField(
                 hint: 'Ingresa tu contraseña',
                 icon: Icons.lock_outline_rounded,
@@ -202,10 +216,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     size: 20,
                   ),
                   onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
                   },
                 ),
               ),
+
               const SizedBox(height: 10),
 
               Align(
@@ -234,6 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 22),
 
               SizedBox(
@@ -267,11 +285,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                 ),
               ),
+
               const SizedBox(height: 22),
 
               Row(
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
                   const Padding(
@@ -281,11 +300,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(color: AppColors.textGrey),
                     ),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
                 ],
               ),
+
               const SizedBox(height: 22),
 
               SizedBox(
@@ -316,6 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 24),
 
               Center(
@@ -358,8 +379,10 @@ class _LoginScreenState extends State<LoginScreen> {
 // =====================================================================
 // Shared widgets (used by both login_screen.dart and signup_screen.dart)
 // =====================================================================
+
 class FieldLabel extends StatelessWidget {
   final String text;
+
   const FieldLabel(this.text, {super.key});
 
   @override
@@ -419,7 +442,7 @@ class AuthTextField extends StatelessWidget {
   }
 }
 
-/// Simple text-based "G" mark for Google
+/// Marca de texto "Google"
 class GoogleG extends StatelessWidget {
   const GoogleG({super.key});
 
