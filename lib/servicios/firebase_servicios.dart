@@ -1,9 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class FirebaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Conectarse explícitamente a la base de datos con ID "default".
+  // Es diferente de FirebaseFirestore.instance, que utiliza "(default)".
+  final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'default',
+  );
 
-  // 1. Guardar o actualizar los datos del usuario en la colección 'users'
+  // 1. Guardar o actualizar los datos del usuario.
   Future<void> saveUserData({
     required String uid,
     required String name,
@@ -21,23 +27,25 @@ class FirebaseService {
         'habitCoins': 100,
         'currentStreak': 0,
         'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true)); // Merge evita sobrescribir si ya existe
+      }, SetOptions(merge: true));
     } catch (e) {
       print('Error al guardar usuario: $e');
+      rethrow;
     }
   }
 
-  // 2. Obtener los hábitos de un usuario desde su subcolección
-  Stream<QuerySnapshot> getHabitsStream(String userId) {
-    return _db
-        .collection('users')
-        .doc(userId)
-        .collection('habits')
-        .snapshots();
+  // 2. Obtener los hábitos de un usuario.
+  Stream<QuerySnapshot<Map<String, dynamic>>> getHabitsStream(String userId) {
+    return _db.collection('users').doc(userId).collection('habits').snapshots();
   }
 
-  // 3. Agregar un nuevo hábito a la subcolección del usuario
-  Future<void> addHabit(String userId, String title, String category, int targetCount) async {
+  // 3. Agregar un nuevo hábito.
+  Future<void> addHabit(
+    String userId,
+    String title,
+    String category,
+    int targetCount,
+  ) async {
     try {
       await _db.collection('users').doc(userId).collection('habits').add({
         'title': title,
@@ -49,22 +57,26 @@ class FirebaseService {
       });
     } catch (e) {
       print('Error al agregar hábito: $e');
+      rethrow;
     }
   }
 
-  // 4. Actualizar el progreso de un hábito diario
-  Future<void> updateHabitProgress(String userId, String habitId, int newCount) async {
+  // 4. Actualizar el progreso de un hábito.
+  Future<void> updateHabitProgress(
+    String userId,
+    String habitId,
+    int newCount,
+  ) async {
     try {
       await _db
           .collection('users')
           .doc(userId)
           .collection('habits')
           .doc(habitId)
-          .update({
-        'currentCount': newCount,
-      });
+          .update({'currentCount': newCount});
     } catch (e) {
       print('Error al actualizar hábito: $e');
+      rethrow;
     }
   }
 }

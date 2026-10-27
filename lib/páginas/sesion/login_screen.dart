@@ -307,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Continuar con Google',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textDark,
                         ),

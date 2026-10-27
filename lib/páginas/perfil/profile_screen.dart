@@ -1,12 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
-
-import '../../servicios/autenticacion_servicio.dart';
 import 'package:flutter/material.dart';
+
+import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
+import '../../servicios/autenticacion_servicio.dart';
 import 'buscar_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
-import 'profesionales_screen.dart'; // Importación de la página de profesionales
+import 'profesionales_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,95 +18,200 @@ class ProfileScreen extends StatelessWidget {
   static const Color background = Color(0xFFF4F8F5);
   static const Color gold = Color(0xFFD5A33E);
 
+  FirebaseFirestore get _db =>
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(context),
-              const SizedBox(height: 18),
-              _profileCard(context),
-              const SizedBox(height: 22),
-              _levelCard(),
-              const SizedBox(height: 14),
-              _statistics(),
-              const SizedBox(height: 28),
-              _sectionTitle('Mis logros', 'Ver todos', () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Aquí podrás consultar todos tus logros.'),
-                  ),
-                );
-              }),
-              const SizedBox(height: 14),
-              _achievementsCard(),
-              const SizedBox(height: 12),
-              _specialAchievements(),
-              const SizedBox(height: 28),
-              _sectionTitle('Tu mes, paso a paso', null, null),
-              const SizedBox(height: 14),
-              _monthlyProgress(),
-              const SizedBox(height: 28),
-              _sectionTitle('Hecho a tu manera', 'Personalizar', () {
-                _showCustomization(context);
-              }),
-              const SizedBox(height: 14),
-              _customizationCard(),
-              const SizedBox(height: 20),
-              _mascotCard(),
-              const SizedBox(height: 20),
+    final user = FirebaseAuth.instance.currentUser;
 
-              // Tarjeta/Enlace a la página de Profesionales
-              _professionalsCard(context),
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: background,
+        body: Center(child: Text('Inicia sesión para ver tu perfil.')),
+      );
+    }
 
-              const SizedBox(height: 28),
-
-              // Botón de Cerrar Sesión
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: Colors.redAccent,
-                    size: 20,
-                  ),
-                  label: const Text(
-                    'Cerrar sesión',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _db.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: background,
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.cloud_off_outlined,
+                      size: 48,
+                      color: green,
                     ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No se pudo cargar tu perfil.',
+                      style: TextStyle(
+                        color: navy,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Comprueba tu conexión e inténtalo de nuevo.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Scaffold(
+            backgroundColor: background,
+            body: Center(child: CircularProgressIndicator(color: green)),
+          );
+        }
+
+        final data = snapshot.data?.data() ?? <String, dynamic>{};
+
+        final name = _stringValue(
+          data['name'],
+          fallback: user.displayName ?? 'Usuario',
+        );
+
+        final username = _stringValue(data['username']);
+        final email = _stringValue(data['email'], fallback: user.email ?? '');
+
+        final level = _intValue(data['level'], fallback: 1);
+        final xp = _intValue(data['xp']);
+        final coins = _intValue(data['habitCoins']);
+        final streak = _intValue(data['currentStreak']);
+
+        return Scaffold(
+          backgroundColor: background,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(context),
+                  const SizedBox(height: 18),
+                  _profileCard(
+                    context,
+                    name: name,
+                    username: username,
+                    email: email,
+                    coins: coins,
+                  ),
+                  const SizedBox(height: 22),
+                  _levelCard(level: level, xp: xp),
+                  const SizedBox(height: 14),
+                  _statistics(streak: streak, coins: coins),
+                  const SizedBox(height: 28),
+                  _sectionTitle('Mis logros', 'Ver todos', () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Aquí podrás consultar todos tus logros.',
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 14),
+                  _achievementsCard(),
+                  const SizedBox(height: 12),
+                  _specialAchievements(),
+                  const SizedBox(height: 28),
+                  _sectionTitle('Tu mes, paso a paso', null, null),
+                  const SizedBox(height: 14),
+                  _monthlyProgress(),
+                  const SizedBox(height: 28),
+                  _sectionTitle('Hecho a tu manera', 'Personalizar', () {
+                    _showCustomization(context);
+                  }),
+                  const SizedBox(height: 14),
+                  _customizationCard(),
+                  const SizedBox(height: 20),
+                  _mascotCard(streak: streak),
+                  const SizedBox(height: 20),
+                  _professionalsCard(context),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await FirebaseAuth.instance.signOut();
+
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/login',
+                            (route) => false,
+                          );
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        'Cerrar sesión',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.redAccent.withOpacity(0.3),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  static String _stringValue(dynamic value, {String fallback = ''}) {
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+    return fallback;
+  }
+
+  static int _intValue(dynamic value, {int fallback = 0}) {
+    if (value is num) return value.toInt();
+    return fallback;
   }
 
   Widget _header(BuildContext context) {
@@ -121,44 +227,54 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ),
-        // Botón Orientación Profesional en Header
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          child: IconButton(
-            tooltip: 'Profesionales',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfesionalesScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.medical_services_outlined, color: navy),
-          ),
+        _headerButton(
+          tooltip: 'Profesionales',
+          icon: Icons.medical_services_outlined,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfesionalesScreen()),
+            );
+          },
         ),
         const SizedBox(width: 8),
-        // Botón Buscar Amigos
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          child: IconButton(
-            tooltip: 'Buscar Amigos',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HabitsScreen()),
-              );
-            },
-            icon: const Icon(Icons.person_add_alt_1_rounded, color: navy),
-          ),
+        _headerButton(
+          tooltip: 'Buscar amigos',
+          icon: Icons.person_add_alt_1_rounded,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HabitsScreen()),
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _profileCard(BuildContext context) {
+  Widget _headerButton({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon, color: navy),
+      ),
+    );
+  }
+
+  Widget _profileCard(
+    BuildContext context, {
+    required String name,
+    required String username,
+    required String email,
+    required int coins,
+  }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 14),
       decoration: BoxDecoration(
@@ -233,18 +349,23 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Diego',
-                  style: TextStyle(
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
                     color: navy,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '@diego.crece',
-                  style: TextStyle(color: Color(0xFF8496A0), fontSize: 13),
+                Text(
+                  username.isNotEmpty ? '@$username' : email,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF8496A0),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 9),
                 Container(
@@ -283,8 +404,7 @@ class ProfileScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder:
-                                      (context) => const EditarPerfilScreen(),
+                                  builder: (_) => const EditarPerfilScreen(),
                                 ),
                               );
                             },
@@ -305,8 +425,6 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-
-                      // Insignia de Habit Coins con PNG dimensionado a 20px
                       Container(
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 13),
@@ -322,9 +440,9 @@ class ProfileScreen extends StatelessWidget {
                               height: 20,
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              '240',
-                              style: TextStyle(
+                            Text(
+                              '$coins',
+                              style: const TextStyle(
                                 color: gold,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -343,7 +461,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _levelCard() {
+  Widget _levelCard({required int level, required int xp}) {
+    const xpForNextLevel = 1000;
+    final xpInLevel = xp % xpForNextLevel;
+    final progress = xpInLevel / xpForNextLevel;
+    final remainingXp = xpForNextLevel - xpInLevel;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -366,9 +489,9 @@ class ProfileScreen extends StatelessWidget {
                   border: Border.all(color: mint, width: 2),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  '12',
-                  style: TextStyle(
+                child: Text(
+                  '$level',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
@@ -408,39 +531,42 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '750 / 1.000 XP',
-                style: TextStyle(
+                '$xpInLevel / $xpForNextLevel XP',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                 ),
               ),
               Text(
-                '75 %',
-                style: TextStyle(color: mint, fontWeight: FontWeight.w900),
+                '${(progress * 100).round()} %',
+                style: const TextStyle(
+                  color: mint,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 9),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 0.75,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 9,
-              backgroundColor: Color(0xFF42616B),
-              valueColor: AlwaysStoppedAnimation<Color>(mint),
+              backgroundColor: const Color(0xFF42616B),
+              valueColor: const AlwaysStoppedAnimation<Color>(mint),
             ),
           ),
           const SizedBox(height: 9),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Te faltan 250 XP para el nivel 13.',
-              style: TextStyle(color: Colors.white70, fontSize: 11),
+              'Te faltan $remainingXp XP para el siguiente nivel.',
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
           ),
         ],
@@ -448,13 +574,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _statistics() {
+  Widget _statistics({required int streak, required int coins}) {
     return Row(
       children: [
         Expanded(
           child: _statCard(
             icon: Icons.local_fire_department_outlined,
-            value: '14',
+            value: '$streak',
             label: 'Días de racha',
             color: const Color(0xFFFFF0CF),
             iconColor: gold,
@@ -478,7 +604,7 @@ class ProfileScreen extends StatelessWidget {
               width: 22,
               height: 22,
             ),
-            value: '240',
+            value: '$coins',
             label: 'Habit Coins',
             color: const Color(0xFFEDE5FB),
             iconColor: const Color(0xFF8C72C6),
@@ -1022,7 +1148,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _mascotCard() {
+  Widget _mascotCard({required int streak}) {
     return Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
@@ -1044,17 +1170,17 @@ class ProfileScreen extends StatelessWidget {
                 'assets/mascot/healthy.png',
                 fit: BoxFit.contain,
                 errorBuilder:
-                    (context, error, stackTrace) =>
+                    (_, __, ___) =>
                         const Icon(Icons.eco_rounded, color: green, size: 55),
               ),
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'MR. HEALTHY · EL MERO MERO A TU LADO',
                   style: TextStyle(
                     color: green,
@@ -1062,18 +1188,18 @@ class ProfileScreen extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 9),
+                const SizedBox(height: 9),
                 Text(
-                  '¡14 días cultivando tu mejor versión!',
-                  style: TextStyle(
+                  '¡$streak días cultivando tu mejor versión!',
+                  style: const TextStyle(
                     color: navy,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     height: 1.2,
                   ),
                 ),
-                SizedBox(height: 7),
-                Text(
+                const SizedBox(height: 7),
+                const Text(
                   'Hoy no hace falta hacerlo todo. Un pequeño paso también cuenta.',
                   style: TextStyle(
                     color: Color(0xFF6F8C7B),
@@ -1081,8 +1207,8 @@ class ProfileScreen extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(
+                const SizedBox(height: 8),
+                const Text(
                   'Mi compañero →',
                   style: TextStyle(
                     color: green,
@@ -1098,7 +1224,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Tarjeta de acceso a Profesionales
   Widget _professionalsCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1128,11 +1253,11 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'ORIENTACIÓN PROFESIONAL',
                   style: TextStyle(
                     color: Color(0xFF3880A3),
@@ -1141,8 +1266,8 @@ class ProfileScreen extends StatelessWidget {
                     letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: 4),
+                Text(
                   'Consulta con especialistas',
                   style: TextStyle(
                     color: navy,
@@ -1150,8 +1275,8 @@ class ProfileScreen extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
-                const Text(
+                SizedBox(height: 3),
+                Text(
                   'Accede a nutriólogos y psicólogos capacitados.',
                   style: TextStyle(color: Color(0xFF8496A0), fontSize: 11),
                 ),
@@ -1162,9 +1287,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfesionalesScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const ProfesionalesScreen()),
               );
             },
             icon: const Icon(
@@ -1183,7 +1306,7 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       showDragHandle: true,
       builder:
-          (context) => const Padding(
+          (_) => const Padding(
             padding: EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
