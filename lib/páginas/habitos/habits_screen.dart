@@ -1,8 +1,8 @@
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// Importamos la pantalla de registro que creamos anteriormente
 import 'registrar_habito_screen.dart';
 
 /// Pantalla de hábitos. La barra inferior se conserva en main.dart.
@@ -22,11 +22,30 @@ class _HabitsScreenState extends State<HabitsScreen> {
   static const border = Color(0xFFDCE8E3);
 
   final searchController = TextEditingController();
+
   String selectedCategory = 'Todos';
   bool searching = false;
   bool loading = true;
+  bool saving = false;
   int xp = 0;
   List<Habit> active = [];
+
+  FirebaseFirestore get _db =>
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
+
+  User? get _user => FirebaseAuth.instance.currentUser;
+
+  DocumentReference<Map<String, dynamic>>? get _userDoc {
+    final user = _user;
+    if (user == null) return null;
+    return _db.collection('users').doc(user.uid);
+  }
+
+  CollectionReference<Map<String, dynamic>>? get _habitsCollection {
+    final userDoc = _userDoc;
+    if (userDoc == null) return null;
+    return userDoc.collection('user_habits');
+  }
 
   final List<Habit> recommendations = const [
     Habit(
@@ -110,34 +129,131 @@ class _HabitsScreenState extends State<HabitsScreen> {
   ];
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<Habit> items = _defaults();
-    final saved = prefs.getString('healthy_habit_active_habits');
-    if (saved != null) {
-      try {
-        items =
-            (jsonDecode(saved) as List)
-                .map((e) => Habit.fromJson(Map<String, dynamic>.from(e as Map)))
-                .toList();
-      } catch (_) {
-        items = _defaults();
+    try {
+      final userDoc = _userDoc;
+      final habitsCollection = _habitsCollection;
+
+      if (userDoc == null || habitsCollection == null) {
+        if (!mounted) return;
+        setState(() {
+          active = [];
+          xp = 0;
+          loading = false;
+        });
+        return;
       }
+
+      final results = await Future.wait([
+        userDoc.get(),
+        habitsCollection.get(),
+      ]);
+
+      final userSnapshot = results[0] as DocumentSnapshot<Map<String, dynamic>>;
+      final habitsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
+
+      final loadedHabits =
+          habitsSnapshot.docs.map((doc) {
+            return Habit.fromFirestore(doc.id, doc.data());
+          }).toList();
+
+      // Solo crea hábitos predeterminados si la colección está vacía.
+      if (habitsSnapshot.docs.isEmpty) {
+        loadedHabits.addAll(_defaults());
+
+        final batch = _db.batch();
+        for (final habit in loadedHabits) {
+          batch.set(habitsCollection.doc(habit.id), habit.toJson());
+        }
+        await batch.commit();
+      }
+
+      final userData = userSnapshot.data() ?? {};
+
+      if (!mounted) return;
+      setState(() {
+        active = loadedHabits;
+        xp = (userData['xp'] as num?)?.toInt() ?? 0;
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudieron cargar los hábitos. '
+            'Revisa tu conexión y las reglas de Firestore.',
+          ),
+        ),
+      );
     }
-    if (!mounted) return;
-    setState(() {
-      active = items;
-      xp = prefs.getInt('healthy_habit_habits_xp') ?? 0;
-      loading = false;
-    });
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      'healthy_habit_active_habits',
-      jsonEncode(active.map((h) => h.toJson()).toList()),
+  Future<void> _saveXp() async {
+    final userDoc = _userDoc;
+    if (userDoc == null) return;
+
+    await userDoc.set({'uid': _user!.uid, 'xp': xp}, SetOptions(merge: true));
+  }
+
+  Future<void> addHabit(Habit habit) async {
+    final collection = _habitsCollection;
+    if (collection == null) {
+      _showMessage('Inicia sesión para guardar tus hábitos.');
+      return;
+    }
+
+    if (active.any((h) => h.id == habit.id)) return;
+
+    final newHabit = habit.copy();
+
+    setState(() {
+      active.add(newHabit);
+      saving = true;
+    });
+
+    try {
+      await collection.doc(newHabit.id).set(newHabit.toJson());
+
+      if (!mounted) return;
+      _showMessage('“${habit.title}” se añadió a tus hábitos.');
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        active.removeWhere((h) => h.id == newHabit.id);
+      });
+
+      _showMessage('No se pudo guardar el hábito en Firestore.');
+    } finally {
+      if (mounted) {
+        setState(() => saving = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
-    await prefs.setInt('healthy_habit_habits_xp', xp);
+  }
+
+  void _abrirRegistroHabito(Habit habit) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => RegistrarHabitoScreen(
+              habitId: habit.id,
+              habitTitle: habit.title,
+              category: habit.category,
+              currentProgress: habit.progress,
+            ),
+      ),
+    );
   }
 
   Color categoryBg(String category) {
@@ -189,6 +305,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final categoryOk =
         selectedCategory == 'Todos' || h.category == selectedCategory;
     final q = searchController.text.trim().toLowerCase();
+
     return categoryOk &&
         (q.isEmpty ||
             h.title.toLowerCase().contains(q) ||
@@ -196,34 +313,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   List<Habit> get visibleActive => active.where(matches).toList();
+
   List<Habit> get visibleRecommendations =>
       recommendations
           .where((h) => !active.any((a) => a.id == h.id) && matches(h))
           .toList();
-
-  Future<void> addHabit(Habit habit) async {
-    if (active.any((h) => h.id == habit.id)) return;
-    setState(() => active.add(habit.copy()));
-    await _save();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('“${habit.title}” se añadió a tus hábitos.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  // NAVEGACIÓN A LA PANTALLA DE REGISTRO
-  void _abrirRegistroHabito(Habit habit) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        // Al navegar mostramos la pantalla RegistrarHabitoScreen que hicimos
-        builder: (context) => const RegistrarHabitoScreen(),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +454,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       ('Energía', Icons.bolt_rounded),
       ('Bienestar', Icons.favorite_border_rounded),
     ];
+
     return Column(
       children: [
         Row(
@@ -393,11 +488,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Widget _categoryButton(String category, IconData icon) {
     final selected = selectedCategory == category;
+
     return InkWell(
       borderRadius: BorderRadius.circular(17),
       onTap:
-          () =>
-              setState(() => selectedCategory = selected ? 'Todos' : category),
+          () => setState(() {
+            selectedCategory = selected ? 'Todos' : category;
+          }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         height: 55,
@@ -460,6 +557,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final done = h.progress >= h.target;
     final isWater = h.id == 'water';
     final color = categoryInk(h.category);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(17, 17, 17, 16),
       decoration: BoxDecoration(
@@ -505,8 +603,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // AQUÍ ESTÁ EL CAMBIO PRINCIPAL PARA ABRIR LA PANTALLA
               _actionButton(
                 done
                     ? 'Listo'
@@ -554,6 +650,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Widget _recommendationRow(Habit h) {
     final color = categoryInk(h.category);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
       child: Row(
@@ -642,7 +739,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
         SizedBox(width: 12),
         Expanded(
           child: Text(
-            'No necesitas hacerlo todo hoy. Como dicen: “Empieza con un hábito, repítelo y hazlo tuyo.”',
+            'No necesitas hacerlo todo hoy. Como dicen: '
+            '“Empieza con un hábito, repítelo y hazlo tuyo.”',
             style: TextStyle(color: muted, fontSize: 12, height: 1.5),
           ),
         ),
@@ -699,4 +797,15 @@ class Habit {
     target: (json['target'] as num).toInt(),
     progress: (json['progress'] as num).toInt(),
   );
+
+  factory Habit.fromFirestore(String documentId, Map<String, dynamic> data) =>
+      Habit(
+        id: documentId,
+        title: data['title']?.toString() ?? 'Hábito',
+        category: data['category']?.toString() ?? 'Bienestar',
+        subtitle: data['subtitle']?.toString() ?? '',
+        xp: (data['xp'] as num?)?.toInt() ?? 0,
+        target: (data['target'] as num?)?.toInt() ?? 1,
+        progress: (data['progress'] as num?)?.toInt() ?? 0,
+      );
 }

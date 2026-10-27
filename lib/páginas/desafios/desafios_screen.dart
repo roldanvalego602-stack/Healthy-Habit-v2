@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
@@ -9,9 +12,13 @@ class DesafiosScreen extends StatefulWidget {
 }
 
 class _DesafiosScreenState extends State<DesafiosScreen> {
-  String _selectedFilter = 'Todos';
+  late final FirebaseFirestore _db;
 
-  final List<String> _filters = [
+  String _selectedFilter = 'Todos';
+  bool _inicializando = false;
+  bool _procesando = false;
+
+  final List<String> _filters = const [
     'Todos',
     'Diarios',
     'Semanales',
@@ -19,8 +26,262 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     'Temporada',
   ];
 
+  DocumentReference<Map<String, dynamic>> get _userRef {
+    final user = FirebaseAuth.instance.currentUser!;
+    return _db.collection('users').doc(user.uid);
+  }
+
+  CollectionReference<Map<String, dynamic>> get _challengesRef =>
+      _userRef.collection('challenges');
+
+  @override
+  void initState() {
+    super.initState();
+    _db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: 'default',
+    );
+    _inicializarDesafios();
+  }
+
+  int _toInt(dynamic value, [int fallback = 0]) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<void> _inicializarDesafios() async {
+    if (_inicializando || FirebaseAuth.instance.currentUser == null) return;
+
+    _inicializando = true;
+
+    try {
+      final snapshot = await _challengesRef.limit(1).get();
+      if (snapshot.docs.isNotEmpty) return;
+
+      final defaults = [
+        {
+          'title': 'Hidratación constante',
+          'description': 'Completa tu hábito de agua durante 7 días seguidos.',
+          'category': 'Diarios',
+          'status': 'inProgress',
+          'currentProgress': 5,
+          'totalProgress': 7,
+          'xpReward': 80,
+          'hcReward': 25,
+          'difficulty': 'Baja',
+          'difficultyStars': 1,
+          'timeLeft': 'Quedan 2 días',
+          'icon': 'water',
+          'season': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'title': 'Incluye frutas en la comida',
+          'description':
+              'Añade fruta a tus meriendas durante la semana de equilibrio.',
+          'category': 'Especiales',
+          'status': 'inProgress',
+          'currentProgress': 2,
+          'totalProgress': 4,
+          'xpReward': 50,
+          'hcReward': 20,
+          'difficulty': 'Fácil',
+          'difficultyStars': 1,
+          'timeLeft': 'Quedan 4 días',
+          'icon': 'fruit',
+          'season': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'title': 'Racha de 7 días',
+          'description': 'Mantén tus hábitos durante siete días.',
+          'category': 'Semanales',
+          'status': 'completed',
+          'currentProgress': 7,
+          'totalProgress': 7,
+          'xpReward': 80,
+          'hcReward': 25,
+          'difficulty': 'Media',
+          'difficultyStars': 2,
+          'timeLeft': 'Completado',
+          'icon': 'trophy',
+          'season': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'title': 'Semana en equilibrio',
+          'description': 'Completa una misión especial de siete días.',
+          'category': 'Especiales',
+          'status': 'locked',
+          'currentProgress': 0,
+          'totalProgress': 7,
+          'xpReward': 150,
+          'hcReward': 50,
+          'difficulty': 'Alta',
+          'difficultyStars': 3,
+          'timeLeft': 'Requiere nivel 7',
+          'requiredLevel': 7,
+          'icon': 'lock',
+          'season': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'title': 'Añade una fruta al desayuno',
+          'description': 'Completa este hábito durante cinco días.',
+          'category': 'Diarios',
+          'status': 'available',
+          'currentProgress': 0,
+          'totalProgress': 5,
+          'xpReward': 40,
+          'hcReward': 10,
+          'difficulty': 'Fácil',
+          'difficultyStars': 1,
+          'timeLeft': 'Disponible',
+          'icon': 'fruit',
+          'season': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+      ];
+
+      final batch = _db.batch();
+
+      for (final challenge in defaults) {
+        final ref = _challengesRef.doc();
+        batch.set(ref, challenge);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error inicializando desafíos: $e');
+    } finally {
+      _inicializando = false;
+    }
+  }
+
+  Future<void> _aceptarDesafio(String id, Map<String, dynamic> data) async {
+    if (_procesando) return;
+
+    setState(() => _procesando = true);
+
+    try {
+      final ref = _challengesRef.doc(id);
+      final snapshot = await ref.get();
+
+      if (!snapshot.exists) {
+        throw Exception('El desafío ya no existe.');
+      }
+
+      final challenge = snapshot.data()!;
+      if (challenge['status'] != 'available') {
+        throw Exception('Este desafío ya no está disponible.');
+      }
+
+      await ref.update({
+        'status': 'inProgress',
+        'acceptedAt': FieldValue.serverTimestamp(),
+      });
+
+      _mensaje('Desafío aceptado: ${data['title']}');
+    } catch (e) {
+      _mensaje('No se pudo aceptar el desafío: $e');
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  Future<void> _reclamarRecompensa(String id, Map<String, dynamic> data) async {
+    if (_procesando) return;
+
+    setState(() => _procesando = true);
+
+    try {
+      final challengeRef = _challengesRef.doc(id);
+      final userRef = _userRef;
+
+      await _db.runTransaction((transaction) async {
+        final challengeSnapshot = await transaction.get(challengeRef);
+        final userSnapshot = await transaction.get(userRef);
+
+        if (!challengeSnapshot.exists) {
+          throw Exception('El desafío no existe.');
+        }
+
+        final challenge = challengeSnapshot.data()!;
+        final status = challenge['status']?.toString() ?? '';
+
+        if (status != 'completed') {
+          throw Exception('Debes completar el desafío antes de reclamar.');
+        }
+
+        final current = _toInt(challenge['currentProgress']);
+        final total = _toInt(challenge['totalProgress'], 1);
+
+        if (current < total) {
+          throw Exception('El progreso del desafío aún no está completo.');
+        }
+
+        final userData = userSnapshot.data() ?? <String, dynamic>{};
+        final xp = _toInt(userData['xp']);
+        final coins = _toInt(userData['habitCoins']);
+
+        final xpReward = _toInt(challenge['xpReward']);
+        final hcReward = _toInt(challenge['hcReward']);
+
+        transaction.set(userRef, {
+          'xp': xp + xpReward,
+          'habitCoins': coins + hcReward,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        transaction.update(challengeRef, {
+          'status': 'claimed',
+          'claimedAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      _mensaje('¡Recompensa reclamada!');
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AchievementScreen()),
+      );
+    } catch (e) {
+      _mensaje('No se pudo reclamar la recompensa: $e');
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  void _mensaje(String mensaje) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
+  bool _coincideFiltro(Map<String, dynamic> data) {
+    if (_selectedFilter == 'Todos') return true;
+
+    final category = data['category']?.toString() ?? '';
+    final season = data['season'] == true;
+
+    if (_selectedFilter == 'Temporada') return season;
+
+    return category.toLowerCase() == _selectedFilter.toLowerCase();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text('Inicia sesión para ver tus desafíos.')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
@@ -36,187 +297,234 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           ),
         ),
         actions: [
-          // Monedas
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDE89D),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/monedas/h coin.png',
-                  width: 20,
-                  height: 20,
-                  errorBuilder:
-                      (context, error, stackTrace) => const Icon(
-                        Icons.monetization_on,
-                        size: 18,
-                        color: Colors.amber,
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: _userRef.snapshots(),
+            builder: (context, snapshot) {
+              final coins = _toInt(snapshot.data?.data()?['habitCoins']);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDE89D),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/monedas/h coin.png',
+                      width: 20,
+                      height: 20,
+                      errorBuilder:
+                          (_, __, ___) => const Icon(
+                            Icons.monetization_on,
+                            size: 18,
+                            color: Colors.amber,
+                          ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$coins',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: Color(0xFF0E1A30),
                       ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                const Text(
-                  '120',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: Color(0xFF0E1A30),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(
               Icons.notifications_none_rounded,
               color: Color(0xFF0E1A30),
             ),
-            onPressed: () {},
+            onPressed: () => _mensaje('No tienes notificaciones nuevas.'),
           ),
           IconButton(
             icon: const Icon(Icons.tune_rounded, color: Color(0xFF0E1A30)),
-            onPressed: () {},
+            onPressed: () => _mostrarFiltros(),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Banner Temporada Equilibrio
-            const _SeasonBanner(),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _challengesRef.snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text('No se pudieron cargar los desafíos.'),
+            );
+          }
 
-            const SizedBox(height: 20),
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // Filtros de categoría
-            SizedBox(
-              height: 38,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: _filters.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final filter = _filters[index];
-                  final isSelected = filter == _selectedFilter;
-                  return ChoiceChip(
-                    label: Text(
-                      filter,
-                      style: TextStyle(
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF7A869A),
-                        fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w600,
-                        fontSize: 13,
-                      ),
+          final docs = snapshot.data?.docs ?? [];
+          final challenges =
+              docs.where((doc) => _coincideFiltro(doc.data())).toList();
+
+          final totalSeasonXP = docs
+              .where((doc) => doc.data()['season'] == true)
+              .fold<int>(0, (sum, doc) => sum + _toInt(doc.data()['xpReward']));
+
+          final seasonCompleted =
+              docs
+                  .where(
+                    (doc) =>
+                        doc.data()['season'] == true &&
+                        (doc.data()['status'] == 'completed' ||
+                            doc.data()['status'] == 'claimed'),
+                  )
+                  .length;
+
+          return RefreshIndicator(
+            onRefresh: _inicializarDesafios,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              children: [
+                _SeasonBanner(
+                  totalXP: totalSeasonXP,
+                  completed: seasonCompleted,
+                  total:
+                      docs.where((doc) => doc.data()['season'] == true).length,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final filter = _filters[index];
+                      final selected = filter == _selectedFilter;
+
+                      return ChoiceChip(
+                        label: Text(
+                          filter,
+                          style: TextStyle(
+                            color:
+                                selected
+                                    ? Colors.white
+                                    : const Color(0xFF7A869A),
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        selected: selected,
+                        onSelected: (value) {
+                          if (value) {
+                            setState(() => _selectedFilter = filter);
+                          }
+                        },
+                        selectedColor: const Color(0xFF0E1A30),
+                        backgroundColor: Colors.white,
+                        showCheckmark: false,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (challenges.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No hay desafíos en esta categoría.'),
                     ),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedFilter = filter;
-                        });
+                  ),
+                for (final doc in challenges) ...[
+                  _ChallengeCard(
+                    data: doc.data(),
+                    processing: _procesando,
+                    onAccept: () => _aceptarDesafio(doc.id, doc.data()),
+                    onClaim: () => _reclamarRecompensa(doc.id, doc.data()),
+                    onDetails: () => _mostrarDetalles(doc.data()),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _mostrarDetalles(Map<String, dynamic> data) {
+    showDialog<void>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(data['title']?.toString() ?? 'Desafío'),
+            content: Text(
+              '${data['description'] ?? ''}\n\n'
+              'Recompensa: ${data['xpReward'] ?? 0} XP y '
+              '${data['hcReward'] ?? 0} HC.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _mostrarFiltros() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder:
+          (context) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const ListTile(title: Text('Filtrar desafíos')),
+                for (final filter in _filters)
+                  RadioListTile<String>(
+                    title: Text(filter),
+                    value: filter,
+                    groupValue: _selectedFilter,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedFilter = value);
+                        Navigator.pop(context);
                       }
                     },
-                    selectedColor: const Color(0xFF0E1A30),
-                    backgroundColor: Colors.white,
-                    showCheckmark: false,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color:
-                            isSelected
-                                ? Colors.transparent
-                                : Colors.grey.shade200,
-                      ),
-                    ),
-                  );
-                },
-              ),
+                  ),
+              ],
             ),
-
-            const SizedBox(height: 20),
-
-            // 1. Desafío En Curso (Hidratación constante)
-            const _ChallengeCard(
-              statusTag: 'EN CURSO',
-              categoryTag: 'Diario',
-              timeLeft: 'Quedan 2 días',
-              title: 'Hidratación constante',
-              description:
-                  'Completa tu hábito de agua durante 7 días seguidos.',
-              currentProgress: 5,
-              totalProgress: 7,
-              progressPercentage: 0.71,
-              xpReward: 80,
-              hcReward: 25,
-              difficulty: 'Baja',
-              difficultyStars: 1,
-              iconData: Icons.water_drop_outlined,
-              iconBgColor: Color(0xFFE8F6FC),
-              iconColor: Color(0xFF2B7FD1),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 2. Desafío En Curso (Frutas en la comida)
-            const _ChallengeCard(
-              statusTag: 'EN CURSO',
-              categoryTag: 'Especial',
-              timeLeft: 'Quedan 4 días',
-              title: 'Incluye frutas en la comida',
-              description:
-                  'Añade fruta a tus meriendas durante la semana de equilibrio.',
-              currentProgress: 2,
-              totalProgress: 4,
-              progressPercentage: 0.50,
-              xpReward: 50,
-              hcReward: 20,
-              difficulty: 'Fácil',
-              difficultyStars: 1,
-              iconData: Icons.local_fire_department_outlined,
-              iconBgColor: Color(0xFFFDE89D),
-              iconColor: Colors.orange,
-            ),
-
-            const SizedBox(height: 16),
-
-            // 3. Desafío Completado - Reclamar recompensa
-            const _CompletedRewardCard(),
-
-            const SizedBox(height: 16),
-
-            // 4. Desafío Bloqueado por Nivel
-            const _LockedChallengeCard(),
-
-            const SizedBox(height: 16),
-
-            // 5. Desafío Disponible para Aceptar
-            const _AvailableChallengeCard(),
-
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
 
-// ---------- Banner de Temporada ----------
 class _SeasonBanner extends StatelessWidget {
-  const _SeasonBanner();
+  final int totalXP;
+  final int completed;
+  final int total;
+
+  const _SeasonBanner({
+    required this.totalXP,
+    required this.completed,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final progress = total == 0 ? 0.0 : completed / total;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -231,67 +539,34 @@ class _SeasonBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.star_outline_rounded,
-                      color: Colors.amber,
-                      size: 14,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'TEMPORADA EQUILIBRIO',
-                      style: TextStyle(
-                        color: Colors.amber,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
+              const Icon(
+                Icons.star_outline_rounded,
+                color: Colors.amber,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'TEMPORADA EQUILIBRIO',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-              Row(
-                children: const [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    color: Colors.white60,
-                    size: 12,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    '5 días restantes',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
-                  ),
-                ],
+              Text(
+                '$completed / $total completados',
+                style: const TextStyle(color: Colors.white60, fontSize: 11),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
-            'SEMANA 4',
-            style: TextStyle(
-              color: Color(0xFF00C88C),
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const Text(
-            '3 desafíos disponibles',
+            'Desafíos de temporada',
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -300,43 +575,28 @@ class _SeasonBanner extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Mantén el ritmo y desbloquea recompensas de temporada.',
+            'Completa desafíos para conseguir recompensas.',
             style: TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 16),
-          // Chips de Recompensas Acumuladas
-          Row(
+          Wrap(
+            spacing: 8,
             children: [
-              _buildBadgeChip(
-                '+240 XP',
-                const Color(0xFF00C88C).withOpacity(0.2),
-                const Color(0xFF00C88C),
-              ),
-              const SizedBox(width: 8),
-              _buildBadgeChip(
-                '+125 HC',
-                Colors.amber.withOpacity(0.2),
-                Colors.amber,
-              ),
-              const SizedBox(width: 8),
-              _buildBadgeChip(
-                '3 Insignias',
-                Colors.purple.withOpacity(0.2),
-                Colors.purpleAccent,
-              ),
+              _badge('Hasta $totalXP XP', const Color(0xFF00C88C)),
+              _badge('$completed completados', Colors.amber),
             ],
           ),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Progreso de temporada',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
               Text(
-                '320 / 500 pts',
-                style: TextStyle(
+                '${(progress * 100).round()}%',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
@@ -347,11 +607,11 @@ class _SeasonBanner extends StatelessWidget {
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 320 / 500,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 8,
               backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation(Colors.amber),
+              valueColor: const AlwaysStoppedAnimation(Colors.amber),
             ),
           ),
         ],
@@ -359,17 +619,17 @@ class _SeasonBanner extends StatelessWidget {
     );
   }
 
-  Widget _buildBadgeChip(String label, Color bgColor, Color textColor) {
+  Widget _badge(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: textColor,
+          color: color,
           fontWeight: FontWeight.w800,
           fontSize: 12,
         ),
@@ -378,53 +638,81 @@ class _SeasonBanner extends StatelessWidget {
   }
 }
 
-// ---------- Tarjeta de Desafío En Curso ----------
 class _ChallengeCard extends StatelessWidget {
-  final String statusTag;
-  final String categoryTag;
-  final String timeLeft;
-  final String title;
-  final String description;
-  final int currentProgress;
-  final int totalProgress;
-  final double progressPercentage;
-  final int xpReward;
-  final int hcReward;
-  final String difficulty;
-  final int difficultyStars;
-  final IconData iconData;
-  final Color iconBgColor;
-  final Color iconColor;
+  final Map<String, dynamic> data;
+  final bool processing;
+  final VoidCallback onAccept;
+  final VoidCallback onClaim;
+  final VoidCallback onDetails;
 
   const _ChallengeCard({
-    required this.statusTag,
-    required this.categoryTag,
-    required this.timeLeft,
-    required this.title,
-    required this.description,
-    required this.currentProgress,
-    required this.totalProgress,
-    required this.progressPercentage,
-    required this.xpReward,
-    required this.hcReward,
-    required this.difficulty,
-    required this.difficultyStars,
-    required this.iconData,
-    required this.iconBgColor,
-    required this.iconColor,
+    required this.data,
+    required this.processing,
+    required this.onAccept,
+    required this.onClaim,
+    required this.onDetails,
   });
+
+  int _intValue(dynamic value, [int fallback = 0]) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final title = data['title']?.toString() ?? 'Desafío';
+    final description = data['description']?.toString() ?? '';
+    final category = data['category']?.toString() ?? 'Diarios';
+    final status = data['status']?.toString() ?? 'available';
+    final current = _intValue(data['currentProgress']);
+    final total = _intValue(data['totalProgress'], 1).clamp(1, 999999);
+    final xp = _intValue(data['xpReward']);
+    final hc = _intValue(data['hcReward']);
+    final progress = (current / total).clamp(0.0, 1.0).toDouble();
+
+    final isLocked = status == 'locked';
+    final isCompleted = status == 'completed';
+    final isClaimed = status == 'claimed';
+    final isAvailable = status == 'available';
+
+    final icon = switch (data['icon']?.toString()) {
+      'water' => Icons.water_drop_outlined,
+      'fruit' => Icons.local_fire_department_outlined,
+      'trophy' => Icons.emoji_events_outlined,
+      'lock' => Icons.lock_outline_rounded,
+      _ => Icons.flag_outlined,
+    };
+
+    final statusText = switch (status) {
+      'inProgress' => 'EN CURSO',
+      'completed' => 'COMPLETADO',
+      'claimed' => 'RECOMPENSA RECLAMADA',
+      'locked' => 'BLOQUEADO',
+      _ => 'DISPONIBLE',
+    };
+
+    final statusColor = switch (status) {
+      'completed' || 'claimed' => const Color(0xFF00A875),
+      'locked' => Colors.purple,
+      'available' => const Color(0xFF2B7FD1),
+      _ => const Color(0xFF2B7FD1),
+    };
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isLocked ? const Color(0xFFFCFCFC) : Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color:
+              isCompleted
+                  ? const Color(0xFF00C88C).withOpacity(0.35)
+                  : Colors.grey.shade200,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.025),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -433,64 +721,65 @@ class _ChallengeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tags superirores
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F6FC),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  statusTag,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2B7FD1),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDE89D).withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  categoryTag,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.orange,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDE89D).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    category,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.orange,
+                    ),
                   ),
                 ),
               ),
               const Spacer(),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    size: 12,
+              const Icon(Icons.schedule_rounded, size: 12, color: Colors.amber),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  data['timeLeft']?.toString() ?? '',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     color: Colors.amber,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    timeLeft,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.amber,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-
-          // Ícono y Título
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -498,10 +787,17 @@ class _ChallengeCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: iconBgColor,
+                  color:
+                      isLocked
+                          ? Colors.purple.shade50
+                          : const Color(0xFFE8F6FC),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(iconData, color: iconColor, size: 24),
+                child: Icon(
+                  icon,
+                  color: isLocked ? Colors.purple : const Color(0xFF2B7FD1),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -510,10 +806,13 @@ class _ChallengeCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF0E1A30),
+                        color:
+                            isLocked
+                                ? const Color(0xFF7A869A)
+                                : const Color(0xFF0E1A30),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -530,20 +829,18 @@ class _ChallengeCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Progreso
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$currentProgress / $totalProgress días',
+                '$current / $total',
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                 ),
               ),
               Text(
-                '${(progressPercentage * 100).toInt()}%',
+                '${(progress * 100).round()}%',
                 style: const TextStyle(color: Color(0xFF7A869A), fontSize: 12),
               ),
             ],
@@ -552,437 +849,125 @@ class _ChallengeCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: progressPercentage,
+              value: progress,
               minHeight: 8,
               backgroundColor: const Color(0xFFEDEFF3),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF2B7FD1)),
+              valueColor: AlwaysStoppedAnimation(
+                isCompleted || isClaimed
+                    ? const Color(0xFF00C88C)
+                    : const Color(0xFF2B7FD1),
+              ),
             ),
           ),
           const SizedBox(height: 14),
-
-          // Recompensas y Dificultad
-          Column(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              Row(
-                children: [
-                  const Text(
-                    'Recompensa: ',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
-                  ),
-                  _buildMiniReward(
-                    '+ $xpReward XP',
-                    const Color(0xFFE2F7ED),
-                    const Color(0xFF00C88C),
-                  ),
-                  const SizedBox(width: 6),
-                  _buildMiniReward(
-                    '+ $hcReward HC',
-                    const Color(0xFFFDE89D),
-                    Colors.orange,
-                  ),
-                ],
+              const Text(
+                'Recompensa:',
+                style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
               ),
+              _reward(
+                '+$xp XP',
+                const Color(0xFFE2F7ED),
+                const Color(0xFF00A875),
+              ),
+              _reward('+$hc HC', const Color(0xFFFDE89D), Colors.orange),
               Text(
-                'Dificultad: $difficulty',
+                'Dificultad: ${data['difficulty'] ?? 'Normal'}',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF7A869A)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
+          if (isAvailable)
+            _actionButton(
+              label: 'Aceptar desafío',
+              icon: Icons.play_arrow_rounded,
+              onPressed: processing ? null : onAccept,
+              background: const Color(0xFF0E1A30),
+            )
+          else if (isCompleted)
+            _actionButton(
+              label: 'Reclamar recompensa',
+              icon: Icons.card_giftcard_rounded,
+              onPressed: processing ? null : onClaim,
+              background: const Color(0xFF00A875),
+            )
+          else if (isClaimed)
+            const Center(
+              child: Text(
+                'Recompensa obtenida',
+                style: TextStyle(
+                  color: Color(0xFF00A875),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            )
+          else if (isLocked)
+            _actionButton(
+              label: 'Ver detalles',
+              icon: Icons.info_outline,
+              onPressed: onDetails,
+              background: const Color(0xFF7A869A),
+            )
+          else
+            _actionButton(
+              label: 'Ver detalles',
+              icon: Icons.info_outline,
+              onPressed: onDetails,
+              background: const Color(0xFF0E1A30),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniReward(String label, Color bgColor, Color textColor) {
+  Widget _reward(String label, Color background, Color foreground) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: background,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: textColor,
+          color: foreground,
           fontWeight: FontWeight.w800,
           fontSize: 11,
         ),
       ),
     );
   }
-}
 
-// ---------- Tarjeta Recompensa Lista ----------
-class _CompletedRewardCard extends StatelessWidget {
-  const _CompletedRewardCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
+  Widget _actionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required Color background,
+  }) {
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE2F7ED),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF00C88C).withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00C88C),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.check, size: 12, color: Colors.white),
-                    SizedBox(width: 4),
-                    Text(
-                      'COMPLETADO',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      height: 46,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: background.withOpacity(0.5),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/mascot/healthy.png',
-                  errorBuilder:
-                      (context, error, stackTrace) => const Icon(
-                        Icons.emoji_events,
-                        color: Color(0xFF00C88C),
-                      ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      '¡Racha de 7 días completada!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0E1A30),
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Mr. Healthy anda feliz. Reclama tu recompensa.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AchievementScreen(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C88C),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    'Reclamar recompensa',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    '+80 XP +25 HC',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------- Tarjeta Bloqueada ----------
-class _LockedChallengeCard extends StatelessWidget {
-  const _LockedChallengeCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'BLOQUEADO',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.purple,
-                  ),
-                ),
-              ),
-              const Text(
-                'Se abre al nivel 7',
-                style: TextStyle(fontSize: 11, color: Color(0xFF7A869A)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.lock_outline_rounded,
-                  color: Colors.purple,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Misión especial: Semana en equilibrio',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF7A869A),
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Un reto de 7 días para demostrar tu dominio del equilibrio.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              vertical: 12,
-            ), // Corregido EdgeInsets
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9F8),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Quitamos el 'const' que estaba antes de los corchetes
-                const Icon(
-                  Icons.lock_rounded,
-                  size: 16,
-                  color: Color(0xFF7A869A),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Disponible en nivel 7',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF7A869A),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------- Tarjeta Disponible para Aceptar ----------
-class _AvailableChallengeCard extends StatelessWidget {
-  const _AvailableChallengeCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F6FC),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'DISPONIBLE',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2B7FD1),
-                  ),
-                ),
-              ),
-              const Row(
-                children: [
-                  Icon(Icons.schedule_rounded, size: 12, color: Colors.amber),
-                  SizedBox(width: 4),
-                  Text(
-                    'Quedan 3 días',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.amber,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F6FC),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.water_drop_outlined,
-                  color: Color(0xFF2B7FD1),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Añade una fruta al desayuno',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0E1A30),
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Completa este hábito durante 5 días para desbloquear recompensas.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Text("Ora Joto2"),
-                      content: Text("data"),
-                    );
-                  },
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0E1A30),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Aceptar desafío',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
