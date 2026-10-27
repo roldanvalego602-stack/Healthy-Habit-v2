@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/habitos/registrar_habito_screen.dart';
 import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
 import '../páginas/habitos/habits_screen.dart';
 import '../páginas/desafios/desafios_screen.dart';
 import '../páginas/tienda/store_screen.dart';
 import '../páginas/perfil/profile_screen.dart';
-import '../páginas/chatbot/nutrichat.dart'; // Ajusta la ruta a tu estructura
+import '../páginas/chatbot/nutrichat.dart';
 
 void main() => runApp(const HabitTrackerApp());
 
@@ -62,45 +64,125 @@ class _HomeScreen2State extends State<HomeScreen2> {
   }
 
   Widget _buildHomeBody() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _TopBar(),
-          const SizedBox(height: 16),
-          const Text(
-            '¡Hola, Diego!',
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const Text(
-            'Continúa con tus hábitos de hoy.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textGrey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const _LevelCard(),
-          const SizedBox(height: 16),
-          const _StatsRow(),
-          const SizedBox(height: 24),
-          const _SectionHeader(),
-          const SizedBox(height: 14),
-          const _MissionCard(),
-          const SizedBox(height: 16),
-          const _NextAchievementCard(),
-          const SizedBox(height: 16),
-          const _MrHealthyBannerCard(),
-        ],
-      ),
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      return const Center(child: Text("No se encontró sesión de usuario."));
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .snapshots(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryGreen),
+          );
+        }
+
+        final Map<String, dynamic> userData =
+            (userSnapshot.data?.data() as Map<String, dynamic>?) ?? {};
+
+        final String name = userData['name'] ?? 'Usuario';
+        final String? photoUrl = userData['photoUrl'] ?? currentUser.photoURL;
+        final int level = userData['level'] ?? 1;
+        final String levelTitle = userData['title'] ?? 'Cultivador Constante';
+        final int currentXp = userData['currentXp'] ?? 0;
+        final int nextLevelXp = userData['nextLevelXp'] ?? 1000;
+        final int streakDays = userData['streakDays'] ?? 0;
+        final String nextAchievement =
+            userData['nextAchievementTitle'] ?? 'Insignia Ritmo firme';
+        final String nextAchievementSub =
+            userData['nextAchievementSubtitle'] ?? 'A 2 misiones';
+
+        return StreamBuilder<QuerySnapshot>(
+          stream:
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUser.uid)
+                  .collection('user_habits')
+                  .snapshots(),
+          builder: (context, habitsSnapshot) {
+            int totalHabits = 0;
+            int completedHabits = 0;
+            Map<String, dynamic>? activeMission;
+
+            if (habitsSnapshot.hasData &&
+                habitsSnapshot.data!.docs.isNotEmpty) {
+              final docs = habitsSnapshot.data!.docs;
+              totalHabits = docs.length;
+              completedHabits =
+                  docs
+                      .where(
+                        (doc) =>
+                            (doc.data()
+                                as Map<String, dynamic>)['completedToday'] ==
+                            true,
+                      )
+                      .length;
+
+              // Seleccionar el primer hábito para la tarjeta de misión principal
+              activeMission = docs.first.data() as Map<String, dynamic>;
+            }
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TopBar(photoUrl: photoUrl),
+                  const SizedBox(height: 16),
+                  Text(
+                    '¡Hola, $name!',
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textDark,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const Text(
+                    'Continúa con tus hábitos de hoy.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textGrey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _LevelCard(
+                    level: level,
+                    title: levelTitle,
+                    currentXp: currentXp,
+                    nextLevelXp: nextLevelXp,
+                  ),
+                  const SizedBox(height: 16),
+                  _StatsRow(
+                    streakDays: streakDays,
+                    completedHabits: completedHabits,
+                    totalHabits: totalHabits,
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionHeader(onTapViewHabits: () => _onNavTap(1)),
+                  const SizedBox(height: 14),
+                  _MissionCard(missionData: activeMission),
+                  const SizedBox(height: 16),
+                  _NextAchievementCard(
+                    title: nextAchievement,
+                    subtitle: nextAchievementSub,
+                  ),
+                  const SizedBox(height: 16),
+                  const _MrHealthyBannerCard(),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -118,7 +200,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
 // ---------- Top Bar ----------
 class _TopBar extends StatelessWidget {
-  const _TopBar();
+  final String? photoUrl;
+  const _TopBar({this.photoUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -176,24 +259,47 @@ class _TopBar extends StatelessWidget {
           height: 42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: AppColors.mintCard,
             border: Border.all(color: Colors.white, width: 2),
-            image: const DecorationImage(
-              image: NetworkImage('https://i.pravatar.cc/150?img=12'),
-              fit: BoxFit.cover,
-            ),
+            image:
+                photoUrl != null
+                    ? DecorationImage(
+                      image: NetworkImage(photoUrl!),
+                      fit: BoxFit.cover,
+                    )
+                    : null,
           ),
+          child:
+              photoUrl == null
+                  ? const Icon(Icons.person, color: AppColors.primaryGreen)
+                  : null,
         ),
       ],
     );
   }
 }
 
-// ---------- Tarjeta Nivel XP ----------
+// ---------- Tarjeta Nivel XP Dinámica ----------
 class _LevelCard extends StatelessWidget {
-  const _LevelCard();
+  final int level;
+  final String title;
+  final int currentXp;
+  final int nextLevelXp;
+
+  const _LevelCard({
+    required this.level,
+    required this.title,
+    required this.currentXp,
+    required this.nextLevelXp,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final double progress =
+        nextLevelXp > 0 ? (currentXp / nextLevelXp).clamp(0.0, 1.0) : 0.0;
+    final int percentage = (progress * 100).toInt();
+    final int remainingXp = (nextLevelXp - currentXp).clamp(0, nextLevelXp);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -217,10 +323,10 @@ class _LevelCard extends StatelessWidget {
                   color: AppColors.primaryGreen.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    '6',
-                    style: TextStyle(
+                    '$level',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -229,13 +335,13 @@ class _LevelCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'NIVEL 6',
-                      style: TextStyle(
+                      'NIVEL $level',
+                      style: const TextStyle(
                         color: AppColors.primaryGreen,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -243,8 +349,8 @@ class _LevelCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Constructor constante',
-                      style: TextStyle(
+                      title,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -256,21 +362,21 @@ class _LevelCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '1.240 XP',
-                style: TextStyle(
+                '$currentXp XP',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               Text(
-                '78%',
-                style: TextStyle(
+                '$percentage%',
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -281,17 +387,17 @@ class _LevelCard extends StatelessWidget {
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: 0.78,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 8,
               backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            '280 XP para nivel 7',
-            style: TextStyle(color: Colors.white60, fontSize: 11),
+          Text(
+            '$remainingXp XP para nivel ${level + 1}',
+            style: const TextStyle(color: Colors.white60, fontSize: 11),
           ),
         ],
       ),
@@ -301,10 +407,21 @@ class _LevelCard extends StatelessWidget {
 
 // ---------- Fila Racha y Progreso Diario Ajustada ----------
 class _StatsRow extends StatelessWidget {
-  const _StatsRow();
+  final int streakDays;
+  final int completedHabits;
+  final int totalHabits;
+
+  const _StatsRow({
+    required this.streakDays,
+    required this.completedHabits,
+    required this.totalHabits,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final double habitProgress =
+        totalHabits > 0 ? (completedHabits / totalHabits) : 0.0;
+
     return Row(
       children: [
         Expanded(
@@ -318,13 +435,13 @@ class _StatsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Text('🔥', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 4),
+                  children: [
+                    const Text('🔥', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '12 días',
-                        style: TextStyle(
+                        '$streakDays días',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
@@ -358,7 +475,7 @@ class _StatsRow extends StatelessWidget {
                   width: 36,
                   height: 36,
                   child: CircularProgressIndicator(
-                    value: 2 / 3,
+                    value: habitProgress,
                     strokeWidth: 4,
                     backgroundColor: AppColors.primaryGreen.withOpacity(0.15),
                     valueColor: const AlwaysStoppedAnimation(
@@ -367,19 +484,19 @@ class _StatsRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '2 / 3',
-                        style: TextStyle(
+                        '$completedHabits / $totalHabits',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
                         ),
                       ),
-                      Text(
+                      const Text(
                         'Completados',
                         style: TextStyle(
                           fontSize: 11,
@@ -401,14 +518,15 @@ class _StatsRow extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader();
+  final VoidCallback onTapViewHabits;
+  const _SectionHeader({required this.onTapViewHabits});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Text(
+      children: [
+        const Text(
           'Tu misión de hoy',
           style: TextStyle(
             fontSize: 20,
@@ -416,12 +534,15 @@ class _SectionHeader extends StatelessWidget {
             color: AppColors.textDark,
           ),
         ),
-        Text(
-          'Ver hábitos',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: AppColors.primaryGreen,
+        GestureDetector(
+          onTap: onTapViewHabits,
+          child: const Text(
+            'Ver hábitos',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryGreen,
+            ),
           ),
         ),
       ],
@@ -429,12 +550,21 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ---------- Tarjeta Misión Hidratación Adaptable ----------
+// ---------- Tarjeta Misión Adaptable ----------
 class _MissionCard extends StatelessWidget {
-  const _MissionCard();
+  final Map<String, dynamic>? missionData;
+
+  const _MissionCard({this.missionData});
 
   @override
   Widget build(BuildContext context) {
+    final String category =
+        (missionData?['category'] ?? 'HIDRATACIÓN').toString().toUpperCase();
+    final String title = missionData?['title'] ?? 'Toma 6 vasos de agua';
+    final int xpBonus = missionData?['xpBonus'] ?? 10;
+    final int currentVal = missionData?['currentValue'] ?? 4;
+    final int targetVal = missionData?['targetValue'] ?? 6;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -448,17 +578,17 @@ class _MissionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.water_drop_outlined,
                     color: Color(0xFF2B7FD1),
                     size: 18,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
-                    'HIDRATACIÓN',
-                    style: TextStyle(
+                    category,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF2B7FD1),
@@ -475,9 +605,9 @@ class _MissionCard extends StatelessWidget {
                   color: AppColors.yellowCard,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  '+10 XP',
-                  style: TextStyle(
+                child: Text(
+                  '+$xpBonus XP',
+                  style: const TextStyle(
                     color: AppColors.textDark,
                     fontWeight: FontWeight.w800,
                     fontSize: 11,
@@ -487,9 +617,9 @@ class _MissionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Toma 6 vasos de agua',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: AppColors.textDark,
@@ -497,11 +627,11 @@ class _MissionCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Vasos Responsivos con Flexible
+          // Vasos Responsivos
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(6, (index) {
-              final isFilled = index < 4;
+            children: List.generate(targetVal, (index) {
+              final isFilled = index < currentVal;
               return Flexible(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -532,19 +662,19 @@ class _MissionCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 14),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '4 de 6',
-                style: TextStyle(
+                '$currentVal de $targetVal',
+                style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                 ),
               ),
               Text(
-                'Solo faltan 2 vasos',
-                style: TextStyle(color: AppColors.textGrey, fontSize: 12),
+                'Solo faltan ${(targetVal - currentVal).clamp(0, targetVal)} vasos',
+                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
               ),
             ],
           ),
@@ -584,7 +714,10 @@ class _MissionCard extends StatelessWidget {
 
 // ---------- Banner Próximo Logro ----------
 class _NextAchievementCard extends StatelessWidget {
-  const _NextAchievementCard();
+  final String title;
+  final String subtitle;
+
+  const _NextAchievementCard({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -610,11 +743,11 @@ class _NextAchievementCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'PRÓXIMO LOGRO',
                   style: TextStyle(
                     fontSize: 10,
@@ -624,16 +757,19 @@ class _NextAchievementCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Insignia Ritmo firme',
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                   ),
                 ),
                 Text(
-                  'A 2 misiones',
-                  style: TextStyle(fontSize: 11, color: AppColors.textGrey),
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textGrey,
+                  ),
                 ),
               ],
             ),
@@ -645,8 +781,7 @@ class _NextAchievementCard extends StatelessWidget {
   }
 }
 
-// ---------- Banner Mr. Healthy con Mascota ----------
-// ---------- Banner Mr. Healthy con Mascota y Navegación ----------
+// ---------- Banner Mr. Healthy ----------
 class _MrHealthyBannerCard extends StatelessWidget {
   const _MrHealthyBannerCard();
 
@@ -684,8 +819,6 @@ class _MrHealthyBannerCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // Botón de Chatear con enlace a NutriChatPage
                 InkWell(
                   onTap: () {
                     Navigator.push(
@@ -723,8 +856,6 @@ class _MrHealthyBannerCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Ilustración/Mascota Mr. Healthy
           SizedBox(
             width: 72,
             height: 72,

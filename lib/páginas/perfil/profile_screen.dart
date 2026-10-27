@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
 
 import '../../servicios/autenticacion_servicio.dart';
 import 'package:flutter/material.dart';
@@ -147,9 +148,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const BuscarAmigosScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const HabitsScreen()),
               );
             },
             icon: const Icon(Icons.person_add_alt_1_rounded, color: navy),

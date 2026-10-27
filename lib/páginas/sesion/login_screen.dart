@@ -97,13 +97,26 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       User? user = await _authService.signInWithGoogle();
 
-      if (user != null && mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen2()),
-        );
+      if (user != null) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen2()),
+          );
+        }
+      } else {
+        // El usuario canceló el flujo de selección de Google
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Se canceló el inicio de sesión con Google.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
+      debugPrint("ERROR DETALLADO DE GOOGLE: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -406,8 +419,7 @@ class AuthTextField extends StatelessWidget {
   }
 }
 
-/// A simple text-based "G" mark (not the Google logo asset) so the button
-/// reads clearly as a Google option without embedding any brand artwork.
+/// Simple text-based "G" mark for Google
 class GoogleG extends StatelessWidget {
   const GoogleG({super.key});
 

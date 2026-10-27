@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:healthy_habit/páginas/inicio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
 import 'package:healthy_habit/servicios/autenticacion_servicio.dart';
-import 'login_screen.dart'; // Importa para reutilizar AppColors y componentes
 
+import 'login_screen.dart'; // Reutiliza AuthTextField, FieldLabel y GoogleG
+
+// ---------- Palette ----------
 class AppColors {
   static const primaryGreen = Color(0xFF00C88C);
-  static const darkGreenCard = Color(0xFF143834);
+  static const green = Color(0xFF34C77B);
+  static const greenDark = Color(0xFF1FA866);
   static const textDark = Color(0xFF0E1A30);
   static const textGrey = Color(0xFF7A869A);
-  static const yellowCard = Color(0xFFFDE89D);
-  static const blueWaterCard = Color(0xFFE8F6FC);
-  static const purpleCard = Color(0xFFF0EBFC);
-  static const mintCard = Color(0xFFE2F7ED);
-  static const green = Color(0xFF00C88C);
+  static const fieldBorder = Color(0xFFE7E8EC);
 }
 
 class SignUpScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // Método para manejar el registro de usuario
+  // Método para manejar el registro por correo y contraseña
   void _handleSignup() async {
     final name = _nameController.text.trim();
     final username = _usernameController.text.trim();
@@ -91,6 +91,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al registrarse: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Método para manejar el registro/inicio rápido con Google
+  void _handleGoogleSignup() async {
+    setState(() => _isLoading = true);
+
+    try {
+      User? user = await _authService.signInWithGoogle();
+
+      if (user != null) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen2()),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Se canceló el registro con Google.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("ERROR DETALLADO DE GOOGLE EN REGISTRO: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error con Google: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -158,9 +199,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
               const FieldLabel('Nombre de usuario'),
               const SizedBox(height: 8),
-
               AuthTextField(
-                hint: 'usuario_hot_69_sixseven_Girls',
+                hint: '@usuario',
                 icon: Icons.alternate_email_rounded,
                 controller: _usernameController,
               ),
@@ -233,10 +273,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Divider(
-                      color: Color.fromARGB(255, 225, 145, 59),
-                      height: 1,
-                    ),
+                    child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
@@ -246,10 +283,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   Expanded(
-                    child: Divider(
-                      color: Color.fromARGB(255, 225, 145, 59),
-                      height: 1,
-                    ),
+                    child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
                 ],
               ),
@@ -258,12 +292,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               SizedBox(
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _handleGoogleSignup,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    side: const BorderSide(
-                      color: Color.fromARGB(255, 225, 145, 59),
-                    ),
+                    side: const BorderSide(color: AppColors.fieldBorder),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -299,7 +331,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       TextSpan(
                         text: 'Iniciar sesión',
                         style: const TextStyle(
-                          color: Color.fromARGB(255, 5, 80, 58),
+                          color: AppColors.greenDark,
                           fontWeight: FontWeight.w800,
                         ),
                         recognizer:
