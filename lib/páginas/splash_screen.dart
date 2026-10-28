@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import '/páginas/sesion/login_screen.dart'; // Ajusta esta ruta a tu pantalla principal o de login
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
+
+import '/páginas/sesion/login_screen.dart';
+import '/main.dart' show HomeScreen2;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,38 +20,45 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Inicia la animación milisegundos después de renderizar la pantalla
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          _opacidad = 1.0;
-          _escala = 1.0;
-        });
-      }
+    _iniciarSplash();
+  }
+
+  Future<void> _iniciarSplash() async {
+    // Iniciar la animación del logo.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
+    setState(() {
+      _opacidad = 1.0;
+      _escala = 1.0;
     });
 
-    // Navega a la siguiente pantalla después de 3 segundos
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 800),
-            pageBuilder:
-                (context, animation, secondaryAnimation) =>
-                    const LoginScreen(), // Cambia a tu vista inicial
-            transitionsBuilder: (
-              context,
-              animation,
-              secondaryAnimation,
-              child,
-            ) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
-    });
+    // Mantener visible el splash durante tres segundos.
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    // Consultar si Firebase conserva una sesión activa.
+    final User? usuario = FirebaseAuth.instance.currentUser;
+
+    final Widget siguientePantalla =
+        usuario != null ? const HomeScreen2() : const LoginScreen();
+
+    if (!mounted) return;
+
+    // Reemplazar el splash para evitar regresar a él con Atrás.
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 800),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return siguientePantalla;
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
@@ -59,10 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF121B2B), // Azul noche oscuro arriba
-              Color(0xFF0A0F1A), // Azul casi negro abajo
-            ],
+            colors: [Color(0xFF121B2B), Color(0xFF0A0F1A)],
           ),
         ),
         child: Center(
@@ -72,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: AnimatedScale(
               duration: const Duration(milliseconds: 1200),
               scale: _escala,
-              curve: Curves.easeOutBack, // Efecto de rebote sutil
+              curve: Curves.easeOutBack,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -90,10 +98,11 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     'Construye hábitos. Desbloquea tu progreso.',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF94A3B8), // Gris azulado claro
+                      color: Color(0xFF94A3B8),
                     ),
                   ),
                 ],
