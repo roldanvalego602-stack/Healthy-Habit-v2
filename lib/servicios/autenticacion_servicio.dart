@@ -26,6 +26,9 @@ class AuthService {
       User? user = credential.user;
 
       if (user != null) {
+        await user.updateDisplayName(name);
+        await user.reload();
+
         // Guardar su perfil inicial en Firestore
         await _firebaseService.saveUserData(
           uid: user.uid,

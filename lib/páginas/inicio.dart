@@ -86,7 +86,12 @@ class _HomeScreen2State extends State<HomeScreen2> {
         final Map<String, dynamic> userData =
             (userSnapshot.data?.data() as Map<String, dynamic>?) ?? {};
 
-        final String name = userData['name'] ?? 'Usuario';
+        final String name =
+            ((userData['name'] as String?) ?? '').trim().isNotEmpty
+                ? (userData['name'] as String).trim()
+                : ((currentUser.displayName ?? '').trim().isNotEmpty
+                    ? currentUser.displayName!.trim()
+                    : 'Usuario');
         final String? photoUrl = userData['photoUrl'] ?? currentUser.photoURL;
         final int level = userData['level'] ?? 1;
         final String levelTitle = userData['title'] ?? 'Cultivador Constante';

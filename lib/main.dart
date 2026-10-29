@@ -119,7 +119,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final userData = userSnapshot.data?.data() ?? {};
 
-        final String name = userData['name'] as String? ?? 'Usuario';
+        final String name =
+            ((userData['name'] as String?) ?? '').trim().isNotEmpty
+                ? (userData['name'] as String).trim()
+                : ((currentUser.displayName ?? '').trim().isNotEmpty
+                    ? currentUser.displayName!.trim()
+                    : 'Usuario');
         final String? photoUrl =
             userData['photoUrl'] as String? ?? currentUser.photoURL;
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
