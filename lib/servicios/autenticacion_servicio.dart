@@ -1,107 +1,163 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 import 'firebase_servicios.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseService _firebaseService = FirebaseService();
 
-  // Obtener el usuario actual
   User? get currentUser => _auth.currentUser;
 
-  // 1. Método de Registro con correo y contraseña
   Future<User?> signUp({
     required String email,
     required String password,
     required String name,
     required String username,
   }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+
+    final user = credential.user;
+    if (user == null) return null;
+
     try {
-      // Crear usuario en Firebase Auth
-      UserCredential credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      await user.updateDisplayName(name.trim());
+
+      await _firebaseService.saveUserData(
+        uid: user.uid,
+        name: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
       );
 
-      User? user = credential.user;
-
-      if (user != null) {
-        // Guardar su perfil inicial en Firestore
-        await _firebaseService.saveUserData(
-          uid: user.uid,
-          name: name,
-          username: username,
-          email: email,
-        );
-      }
-
-      return user;
-    } catch (e) {
+      await user.sendEmailVerification();
+    } catch (_) {
+      // La cuenta ya se ha creado. No se elimina automáticamente
+      // si falla el envío del correo o el guardado del perfil.
       rethrow;
+    } finally {
+      // El registro no debe dejar una sesión activa sin verificar.
+      await _auth.signOut();
     }
+
+    return user;
   }
 
-  // 2. Método de Inicio de Sesión con correo y contraseña
   Future<User?> signIn({
     required String email,
     required String password,
   }) async {
-    try {
-      UserCredential credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+
+    final user = credential.user;
+    if (user == null) return null;
+
+    await user.reload();
+    final refreshedUser = _auth.currentUser;
+
+    if (refreshedUser == null) return null;
+
+    if (!refreshedUser.emailVerified) {
+      try {
+        await refreshedUser.sendEmailVerification();
+      } finally {
+        await _auth.signOut();
+      }
+
+      throw EmailNotVerifiedException(
+        'Tu correo electrónico todavía no está verificado. '
+        'Te hemos enviado un nuevo enlace. Revisa tu bandeja de entrada '
+        'y la carpeta de spam antes de volver a iniciar sesión.',
       );
-      return credential.user;
-    } catch (e) {
-      rethrow;
+    }
+
+    return refreshedUser;
+  }
+
+  Future<void> resendVerificationEmail({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+
+    final user = credential.user;
+    if (user == null) {
+      throw Exception('No se pudo identificar la cuenta.');
+    }
+
+    try {
+      await user.reload();
+      final refreshedUser = _auth.currentUser;
+
+      if (refreshedUser == null) {
+        throw Exception('No se pudo recuperar la cuenta.');
+      }
+
+      if (refreshedUser.emailVerified) {
+        throw Exception('Tu correo ya está verificado. Puedes iniciar sesión.');
+      }
+
+      await refreshedUser.sendEmailVerification();
+    } finally {
+      await _auth.signOut();
     }
   }
 
-  // 3. Método de Inicio de Sesión con Google
   Future<User?> signInWithGoogle() async {
+    final googleUser = await GoogleSignIn().signIn();
+
+    if (googleUser == null) return null;
+
+    final googleAuth = await googleUser.authentication;
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+    final user = userCredential.user;
+
+    if (user != null) {
+      await _firebaseService.saveUserData(
+        uid: user.uid,
+        name: user.displayName ?? 'Usuario de Google',
+        username: '@${user.email?.split('@')[0] ?? 'user'}',
+        email: user.email ?? '',
+      );
+    }
+
+    return user;
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
+  Future<void> signOut() async {
     try {
-      // Disparar el flujo de selección de cuenta de Google
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      if (googleUser == null) {
-        return null; // El usuario canceló la selección de cuenta
-      }
-
-      // Obtener los detalles de autenticación de la solicitud
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Crear credencial para Firebase
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Iniciar sesión en Firebase con la credencial de Google
-      UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
-      User? user = userCredential.user;
-
-      // Guardar o actualizar datos del usuario en Firestore
-      if (user != null) {
-        await _firebaseService.saveUserData(
-          uid: user.uid,
-          name: user.displayName ?? 'Usuario de Google',
-          username: '@${user.email?.split('@')[0] ?? 'user'}',
-          email: user.email ?? '',
-        );
-      }
-
-      return user;
-    } catch (e) {
-      rethrow;
+      await GoogleSignIn().signOut();
+    } finally {
+      await _auth.signOut();
     }
   }
+}
 
-  // 4. Método para Cerrar Sesión
-  Future<void> signOut() async {
-    await GoogleSignIn().signOut(); // Cierra sesión de Google
-    await _auth.signOut(); // Cierra sesión en Firebase
-  }
+class EmailNotVerifiedException implements Exception {
+  final String message;
+
+  const EmailNotVerifiedException(this.message);
+
+  @override
+  String toString() => message;
 }
