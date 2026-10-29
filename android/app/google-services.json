@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1096497487747",
+    "firebase_url": "https://cloud-firestore-d8c61-default-rtdb.firebaseio.com",
+    "project_id": "cloud-firestore-d8c61",
+    "storage_bucket": "cloud-firestore-d8c61.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096497487747:android:0f8f304a797673b8ca60b6",
+        "android_client_info": {
+          "package_name": "com.example.healthy_habit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096497487747-0efu41i20dbciekfvojrbn3c71savtji.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.healthy_habit",
+            "certificate_hash": "01f02208ec17ac59d18b2e35ba2d7ad3f2ac57cd"
+          }
+        },
+        {
+          "client_id": "1096497487747-tchuiqib9iies2s8rk9174mcrrvrabac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTwK2mFEywKEYZBvbpDDANujxJQ6dKFDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096497487747-tchuiqib9iies2s8rk9174mcrrvrabac.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1096497487747-ohb9doubuphi3oh6tli7j215546s9ors.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.healthyHabit"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
