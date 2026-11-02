@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -10,7 +11,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
 
-  // Paleta de colores oficial
   static const Color green = Color(0xFF10B981);
   static const Color greenLight = Color(0xFFE6F7F0);
   static const Color navy = Color(0xFF172B36);
@@ -18,24 +18,65 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   static const Color textMuted = Color(0xFF6B7280);
   static const Color borderCard = Color(0xFFE5E7EB);
 
-  void _submit() {
+  bool _enviando = false;
+
+  Future<void> _submit() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, ingresa tu correo electrónico.'),
-        ),
-      );
+
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      _mostrarMensaje('Ingresa un correo electrónico válido.');
       return;
     }
 
-    // Lógica para enviar correo de recuperación
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Instrucciones enviadas a $email'),
-        backgroundColor: green,
-      ),
-    );
+    setState(() => _enviando = true);
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      if (!mounted) return;
+
+      _mostrarMensaje(
+        'Si existe una cuenta asociada, recibirás instrucciones para restablecer la contraseña.',
+        color: green,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String mensaje;
+      switch (e.code) {
+        case 'invalid-email':
+          mensaje = 'El formato del correo electrónico no es válido.';
+          break;
+        case 'too-many-requests':
+          mensaje =
+              'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
+          break;
+        case 'network-request-failed':
+          mensaje =
+              'No hay conexión. Comprueba tu internet e inténtalo de nuevo.';
+          break;
+        default:
+          mensaje = 'No se pudo procesar la solicitud. Inténtalo de nuevo.';
+      }
+
+      _mostrarMensaje(mensaje);
+    } catch (_) {
+      if (mounted) {
+        _mostrarMensaje('Ocurrió un error. Inténtalo de nuevo.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
+  void _mostrarMensaje(String mensaje, {Color? color}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(mensaje), backgroundColor: color ?? navy),
+      );
   }
 
   @override
@@ -62,8 +103,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               'assets/mascot/healthy.png',
               width: 24,
               height: 24,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.eco_rounded, color: green, size: 22),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const Icon(Icons.eco_rounded, color: green, size: 22),
             ),
             const SizedBox(width: 8),
             const Text(
@@ -81,15 +123,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Contenido principal
             SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-
-                  // Círculo verde con icono de llave
                   Container(
                     width: 88,
                     height: 88,
@@ -104,8 +143,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
-
-                  // Título principal
                   const Text(
                     '¿Olvidaste tu contraseña?',
                     textAlign: TextAlign.center,
@@ -116,8 +153,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Subtítulo explicativo
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
@@ -131,11 +166,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Campo de Correo Electrónico
-                  Align(
+                  const Align(
                     alignment: Alignment.centerLeft,
-                    child: const Text(
+                    child: Text(
                       'Correo electrónico',
                       style: TextStyle(
                         fontSize: 14,
@@ -154,6 +187,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      enabled: !_enviando,
                       style: const TextStyle(color: navy, fontSize: 14),
                       decoration: const InputDecoration(
                         hintText: 'nombre@correo.com',
@@ -172,36 +207,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           horizontal: 16,
                         ),
                       ),
+                      onSubmitted: (_) => _enviando ? null : _submit(),
                     ),
                   ),
                   const SizedBox(height: 28),
-
-                  // Botón de Enviar instrucciones
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _enviando ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
+                        disabledBackgroundColor: green.withOpacity(0.6),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text(
-                        'Enviar instrucciones',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child:
+                          _enviando
+                              ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Text(
+                                'Enviar instrucciones',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Enlace Volver a iniciar sesión
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
@@ -216,8 +259,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ],
               ),
             ),
-
-            // Elemento decorativo de hoja verde sutil en la esquina inferior derecha
             Positioned(
               bottom: -20,
               right: -20,
