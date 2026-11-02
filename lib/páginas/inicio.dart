@@ -6,7 +6,6 @@ import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
 import '../páginas/habitos/habits_screen.dart';
 import '../páginas/desafios/desafios_screen.dart';
 import '../páginas/tienda/store_screen.dart';
-import '../páginas/perfil/profile_screen.dart';
 import '../páginas/chatbot/nutrichat.dart';
 
 void main() => runApp(const HabitTrackerApp());
@@ -56,7 +55,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
     const HabitsScreen(),
     const StoreScreen(),
     const DesafiosScreen(),
-    const ProfileScreen(),
+    const Center(child: Text('Perfil')),
   ];
 
   void _onNavTap(int index) {

@@ -80,6 +80,56 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Perfil')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppColors.mintCard,
+              backgroundImage: user?.photoURL == null
+                  ? null
+                  : NetworkImage(user!.photoURL!),
+              child: user?.photoURL == null
+                  ? const Icon(
+                      Icons.person,
+                      color: AppColors.primaryGreen,
+                      size: 40,
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              user?.displayName ?? 'Usuario',
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (user?.email != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                user!.email!,
+                style: const TextStyle(color: AppColors.textGrey),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
