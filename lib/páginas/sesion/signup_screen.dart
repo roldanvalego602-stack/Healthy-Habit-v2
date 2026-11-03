@@ -44,27 +44,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   // Método para manejar el registro por correo y contraseña
-  void _handleSignup() async {
-    final name = _nameController.text.trim();
-    final username = _usernameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
-    if (name.isEmpty || username.isEmpty || email.isEmpty || password.isEmpty) {
+  Future<void> _handleSignup() async {
+    if (_nameController.text.trim().isEmpty ||
+        _usernameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, completa todos los campos.'),
-          backgroundColor: Colors.orange,
-        ),
+        const SnackBar(content: Text('Completa todos los campos.')),
       );
       return;
     }
 
-    if (password.length < 6) {
+    if (_passwordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('La contraseña debe tener al menos 6 caracteres.'),
-          backgroundColor: Colors.orange,
         ),
       );
       return;
@@ -73,28 +68,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _authService.signUp(
-        email: email,
-        password: password,
-        name: name,
-        username: username.startsWith('@') ? username : '@$username',
+      final user = await _authService.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
+        username: _usernameController.text.trim(),
       );
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen2()),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al registrarse: ${e.toString()}'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text(
+              'Cuenta creada. Revisa tu correo y verifica la cuenta antes de iniciar sesión.',
+            ),
+            duration: Duration(seconds: 6),
           ),
         );
+
+        Navigator.of(context).pop();
       }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String mensaje;
+      switch (e.code) {
+        case 'email-already-in-use':
+          mensaje = 'Ese correo ya tiene una cuenta registrada.';
+          break;
+        case 'invalid-email':
+          mensaje = 'El correo electrónico no es válido.';
+          break;
+        case 'weak-password':
+          mensaje = 'La contraseña es demasiado débil.';
+          break;
+        case 'network-request-failed':
+          mensaje = 'Error de conexión. Comprueba tu internet.';
+          break;
+        default:
+          mensaje = 'No se pudo crear la cuenta. Inténtalo de nuevo.';
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensaje)));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo completar el registro: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

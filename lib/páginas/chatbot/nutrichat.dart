@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'nutri_calculator_service.dart';
 
@@ -21,16 +23,135 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
+  final List<String> offensiveWords = [
+    //IA
+    'puta',
+    'puta',
+    'puto',
+    'culo',
+    'mierda',
+    'imbecil',
+    'idiota',
+    'cabron',
+    'cabrona',
+    'estupido',
+    'gilipollas',
+    'pendejo',
+    'pendeja',
+    'hijo de puta',
+    'maldito',
+    'zorra',
+    'pedo',
+    //IA
+    //Mijo
+    'perro malnacido',
+    'perra malnacida',
+    'buey',
+    'vete a la verga',
+    'vrg',
+    'verga',
+    'estupida',
+    'estupido',
+    'perra',
+    'perra madre',
+    'chingada madre'
+    'vete a la chingada',
+    'chingada',
+    'perro infeliz',
+    'perro',
+    'hijo de la chingada',
+    'tonto',
+    'tonta',
+    'tu puta madre',
+    'tonto chatbot',
+    'vete a la vrg',
+    
+  ];
   bool isTyping = false;
 
-  final List<ChatMessage> messages = [
-    ChatMessage(
-      text:
-          '¡Hola, Diego! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
-      isUser: false,
-      time: '9:40',
-    ),
-  ];
+  List<ChatMessage> messages = [];
+
+  String _getCurrentUserNameSync() {
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName;
+    if (displayName != null && displayName.trim().isNotEmpty) {
+      return displayName.trim();
+    }
+
+    final email = user?.email;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first.trim();
+    }
+
+    return 'Usuario';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final initialName = _getCurrentUserNameSync();
+    messages = [
+      ChatMessage(
+        text:
+            '¡Hola, $initialName! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
+        isUser: false,
+        time: _getFormattedTime(),
+      ),
+    ];
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await _getCurrentUserName();
+    if (!mounted) return;
+
+    setState(() {
+      if (messages.isNotEmpty) {
+        messages[0] = ChatMessage(
+          text:
+              '¡Hola, $name! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
+          isUser: false,
+          time: messages[0].time,
+        );
+      }
+    });
+  }
+
+  Future<String> _getCurrentUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'Usuario';
+
+    try {
+      await user.reload();
+    } catch (_) {}
+
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+    if (refreshedUser == null) return 'Usuario';
+
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(refreshedUser.uid)
+              .get();
+      final firestoreName = snapshot.data()?['name'];
+      if (firestoreName is String && firestoreName.trim().isNotEmpty) {
+        return firestoreName.trim();
+      }
+    } catch (_) {}
+
+    final displayName = refreshedUser.displayName;
+    if (displayName != null && displayName.trim().isNotEmpty) {
+      return displayName.trim();
+    }
+
+    final email = refreshedUser.email;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first.trim();
+    }
+
+    return 'Usuario';
+  }
 
   final List<String> quickOptions = [
     '¿Cómo mejorar mi racha?',
@@ -61,6 +182,29 @@ class _NutriChatPageState extends State<NutriChatPage> {
     });
 
     scrollToBottom();
+
+    if (_containsProfanity(text)) {
+      final response =
+          'No acepto mensajes con groserías ni lenguaje ofensivo. Si necesitas ayuda con hábitos, hidratación o tus metas, estoy aquí para ayudarte.';
+
+      Future.delayed(const Duration(milliseconds: 450), () {
+        if (!mounted) return;
+
+        setState(() {
+          messages.add(
+            ChatMessage(
+              text: response,
+              isUser: false,
+              time: _getFormattedTime(),
+            ),
+          );
+          isTyping = false;
+        });
+
+        scrollToBottom();
+      });
+      return;
+    }
 
     final normalizedText = _normalizeText(text);
     final isActiveCalculatorFlow =
@@ -107,6 +251,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
   String getNutriResponse(String input) {
     final text = _normalizeText(input);
 
+    if (_containsProfanity(text)) {
+      return 'No acepto mensajes con groserías ni lenguaje ofensivo. Si necesitas ayuda con hábitos, hidratación o tus metas, estoy aquí para ayudarte.';
+    }
+
     if (_containsAny(text, ['racha', 'como mejorar mi racha'])) {
       return 'Para mantener tu racha activa, asegúrate de completar y registrar al menos un hábito o misión principal al día antes de que termine la jornada.';
     }
@@ -139,7 +287,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
       return 'Aquí tienes una sugerencia práctica:\n\n$consejo';
     }
 
-    return 'Puedo ayudarte con información sobre hábitos, misiones diarias, hidratación o cálculo de tu IMC/GET. ¿Sobre cuál te gustaría profundizar?';
+    return 'Puedo ayudarte con información sobre hábitos, misiones diarias, hidratación o cálculo de tu IMC. ¿Sobre cuál te gustaría profundizar?';
+  }
+
+  bool _containsProfanity(String text) {
+    final normalized = _normalizeText(text);
+    if (normalized.isEmpty) return false;
+
+    return offensiveWords.any(
+      (word) => normalized.contains(_normalizeText(word)),
+    );
   }
 
   bool _containsAny(String text, List<String> keywords) {
