@@ -160,13 +160,21 @@ class ProfileScreen extends StatelessWidget {
                     height: 52,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        await FirebaseAuth.instance.signOut();
+                        try {
+                          await AuthService().signOut();
 
-                        if (context.mounted) {
-                          Navigator.pushNamedAndRemoveUntil(
+                          if (!context.mounted) return;
+
+                          Navigator.of(
                             context,
-                            '/login',
-                            (route) => false,
+                          ).pushNamedAndRemoveUntil('/login', (route) => false);
+                        } catch (e) {
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No se pudo cerrar la sesión: $e'),
+                            ),
                           );
                         }
                       },
@@ -244,7 +252,7 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const HabitsScreen()),
+              MaterialPageRoute(builder: (_) => const BuscarAmigosScreen()),
             );
           },
         ),

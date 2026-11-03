@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 
 /// Pantalla de hábitos. La barra inferior se conserva en main.dart.
@@ -13,6 +14,13 @@ class HabitsScreen extends StatefulWidget {
   State<HabitsScreen> createState() => _HabitsScreenState();
 }
 
+class _ActiveHabitEntry {
+  final Habit habit;
+  final UserHabit attempt;
+
+  const _ActiveHabitEntry({required this.habit, required this.attempt});
+}
+
 class _HabitsScreenState extends State<HabitsScreen> {
   static const navy = Color(0xFF193344);
   static const green = Color(0xFF08B889);
@@ -21,14 +29,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
   static const muted = Color(0xFF71879A);
   static const border = Color(0xFFDCE8E3);
 
+  static const int initialHabitSlots = 3;
+
   final searchController = TextEditingController();
 
   String selectedCategory = 'Todos';
   bool searching = false;
   bool loading = true;
   bool saving = false;
+
   int xp = 0;
-  List<Habit> active = [];
+  int coins = 0;
+  int level = 1;
+  int habitSlots = initialHabitSlots;
+
+  List<_ActiveHabitEntry> active = [];
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -52,46 +67,67 @@ class _HabitsScreenState extends State<HabitsScreen> {
       id: 'vegetable_lunch',
       title: 'Añade una verdura al almuerzo',
       category: 'Alimentación',
+      difficulty: 'Sencillo',
       subtitle: '1 porción al día',
       xp: 10,
       target: 1,
-      progress: 0,
+      unlockType: 'none',
+      coinCost: 0,
+      repeatable: true,
+      cooldownDays: 0,
     ),
     Habit(
       id: 'breakfast_9',
       title: 'Desayuna antes de las 9:00',
       category: 'Energía',
+      difficulty: 'Moderado',
       subtitle: '5 días por semana',
       xp: 10,
       target: 5,
-      progress: 0,
+      unlockType: 'none',
+      coinCost: 0,
+      repeatable: true,
+      cooldownDays: 0,
     ),
     Habit(
       id: 'sleep_9',
       title: 'Duerme 9 horas al día',
       category: 'Bienestar',
+      difficulty: 'Difícil',
       subtitle: 'Todos los días',
       xp: 15,
       target: 1,
-      progress: 0,
+      unlockType: 'level',
+      requiredLevel: 2,
+      coinCost: 0,
+      repeatable: true,
+      cooldownDays: 0,
     ),
     Habit(
       id: 'fruit',
       title: 'Comer una fruta',
       category: 'Alimentación',
+      difficulty: 'Sencillo',
       subtitle: '1 fruta al día',
       xp: 10,
       target: 1,
-      progress: 0,
+      unlockType: 'none',
+      coinCost: 0,
+      repeatable: true,
+      cooldownDays: 0,
     ),
     Habit(
       id: 'water',
-      title: '6 vasos de agua',
+      title: 'Toma 6 vasos de agua',
       category: 'Hidratación',
+      difficulty: 'Moderado',
       subtitle: '6 vasos al día',
       xp: 10,
       target: 6,
-      progress: 0,
+      unlockType: 'none',
+      coinCost: 0,
+      repeatable: true,
+      cooldownDays: 0,
     ),
   ];
 
@@ -107,34 +143,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
     super.dispose();
   }
 
-  List<Habit> _defaults() => [
-    const Habit(
-      id: 'water',
-      title: '6 vasos de agua',
-      category: 'Hidratación',
-      subtitle: '6 vasos al día',
-      xp: 10,
-      target: 6,
-      progress: 4,
-    ),
-    const Habit(
-      id: 'fruit',
-      title: 'Comer una fruta',
-      category: 'Alimentación',
-      subtitle: '1 fruta al día',
-      xp: 10,
-      target: 1,
-      progress: 0,
-    ),
-  ];
-
   Future<void> _load() async {
     try {
       final userDoc = _userDoc;
-      final habitsCollection = _habitsCollection;
+      final collection = _habitsCollection;
 
-      if (userDoc == null || habitsCollection == null) {
+      if (userDoc == null || collection == null) {
         if (!mounted) return;
+
         setState(() {
           active = [];
           xp = 0;
@@ -143,40 +159,56 @@ class _HabitsScreenState extends State<HabitsScreen> {
         return;
       }
 
-      final results = await Future.wait([
-        userDoc.get(),
-        habitsCollection.get(),
-      ]);
+      final results = await Future.wait([userDoc.get(), collection.get()]);
 
       final userSnapshot = results[0] as DocumentSnapshot<Map<String, dynamic>>;
+
       final habitsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
-
-      final loadedHabits =
-          habitsSnapshot.docs.map((doc) {
-            return Habit.fromFirestore(doc.id, doc.data());
-          }).toList();
-
-      // Solo crea hábitos predeterminados si la colección está vacía.
-      if (habitsSnapshot.docs.isEmpty) {
-        loadedHabits.addAll(_defaults());
-
-        final batch = _db.batch();
-        for (final habit in loadedHabits) {
-          batch.set(habitsCollection.doc(habit.id), habit.toJson());
-        }
-        await batch.commit();
-      }
 
       final userData = userSnapshot.data() ?? {};
 
+      final loadedXp = (userData['xp'] as num?)?.toInt() ?? 0;
+      final loadedCoins = (userData['coins'] as num?)?.toInt() ?? 0;
+      final loadedLevel = (userData['level'] as num?)?.toInt() ?? 1;
+      final loadedSlots =
+          (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
+
+      final List<_ActiveHabitEntry> loadedActive = [];
+
+      for (final habitDoc in habitsSnapshot.docs) {
+        final habitData = habitDoc.data();
+        final habit = Habit.fromMap(habitData, habitDoc.id);
+
+        final attemptsSnapshot =
+            await habitDoc.reference
+                .collection('attempts')
+                .where('status', isEqualTo: 'inProgress')
+                .get();
+
+        for (final attemptDoc in attemptsSnapshot.docs) {
+          final attempt = UserHabit.fromMap(attemptDoc.data(), attemptDoc.id);
+
+          if (attempt.isInProgress) {
+            loadedActive.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
+          }
+        }
+      }
+
       if (!mounted) return;
+
       setState(() {
-        active = loadedHabits;
-        xp = (userData['xp'] as num?)?.toInt() ?? 0;
+        active = loadedActive;
+        xp = loadedXp;
+        coins = loadedCoins;
+        level = loadedLevel;
+        habitSlots = loadedSlots;
         loading = false;
       });
     } catch (e) {
+      debugPrint('Error cargando hábitos: $e');
+
       if (!mounted) return;
+
       setState(() {
         loading = false;
       });
@@ -192,46 +224,134 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
-  Future<void> _saveXp() async {
-    final userDoc = _userDoc;
-    if (userDoc == null) return;
-
-    await userDoc.set({'uid': _user!.uid, 'xp': xp}, SetOptions(merge: true));
-  }
-
   Future<void> addHabit(Habit habit) async {
     final collection = _habitsCollection;
+
     if (collection == null) {
       _showMessage('Inicia sesión para guardar tus hábitos.');
       return;
     }
 
-    if (active.any((h) => h.id == habit.id)) return;
+    if (saving) return;
 
-    final newHabit = habit.copy();
+    if (active.any((entry) => entry.habit.id == habit.id)) {
+      _showMessage('Este hábito ya está en progreso.');
+      return;
+    }
 
-    setState(() {
-      active.add(newHabit);
-      saving = true;
-    });
+    if (active.length >= habitSlots) {
+      _showMessage(
+        'Ya ocupaste tus $habitSlots espacios disponibles. '
+        'Completa o cancela un hábito para liberar uno.',
+      );
+      return;
+    }
+
+    if (!_isUnlocked(habit)) {
+      _showMessage('Todavía no cumples los requisitos para desbloquearlo.');
+      return;
+    }
+
+    if (habit.coinCost > 0 && coins < habit.coinCost) {
+      _showMessage('No tienes suficientes monedas para adquirirlo.');
+      return;
+    }
+
+    setState(() => saving = true);
 
     try {
-      await collection.doc(newHabit.id).set(newHabit.toJson());
+      final habitRef = collection.doc(habit.id);
+      final attemptsRef = habitRef.collection('attempts');
 
-      if (!mounted) return;
-      _showMessage('“${habit.title}” se añadió a tus hábitos.');
-    } catch (_) {
+      final previousAttempts = await attemptsRef.get();
+      final attemptNumber = previousAttempts.docs.length + 1;
+      final attemptRef = attemptsRef.doc();
+
+      final now = DateTime.now();
+
+      final attempt = UserHabit(
+        id: attemptRef.id,
+        habitId: habit.id,
+        status: UserHabitStatus.inProgress,
+        progress: 0,
+        target: habit.target,
+        attemptNumber: attemptNumber,
+        xpEarned: 0,
+        acquiredAt: now,
+        completedAt: null,
+        cancelledAt: null,
+        availableAgainAt: null,
+      );
+
+      final batch = _db.batch();
+
+      batch.set(habitRef, {
+        ...habit.toMap(),
+        'acquiredAt': FieldValue.serverTimestamp(),
+        'lastAttemptId': attemptRef.id,
+      }, SetOptions(merge: true));
+
+      batch.set(attemptRef, attempt.toMap());
+
+      batch.set(_userDoc!, {
+        'uid': _user!.uid,
+        'habitSlots': habitSlots,
+      }, SetOptions(merge: true));
+
+      await batch.commit();
+
       if (!mounted) return;
 
       setState(() {
-        active.removeWhere((h) => h.id == newHabit.id);
+        active.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
       });
 
-      _showMessage('No se pudo guardar el hábito en Firestore.');
+      _showMessage('“${habit.title}” se añadió a tus hábitos.');
+    } catch (e, stackTrace) {
+      debugPrint('ERROR AL GUARDAR HÁBITO: $e');
+      debugPrint('DETALLES: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: $e'),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => saving = false);
       }
+    }
+  }
+
+  bool _isUnlocked(Habit habit) {
+    switch (habit.unlockType) {
+      case 'none':
+        return true;
+
+      case 'level':
+        return level >= (habit.requiredLevel ?? 1);
+
+      case 'coins':
+        return coins >= habit.coinCost;
+
+      case 'habit':
+        return active.any((entry) => entry.habit.id == habit.requiredHabitId);
+
+      case 'combined':
+        final levelOk = level >= (habit.requiredLevel ?? 1);
+        final coinsOk = coins >= habit.coinCost;
+
+        final habitOk =
+            habit.requiredHabitId == null ||
+            active.any((entry) => entry.habit.id == habit.requiredHabitId);
+
+        return levelOk && coinsOk && habitOk;
+
+      default:
+        return false;
     }
   }
 
@@ -241,31 +361,40 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  void _abrirRegistroHabito(Habit habit) {
-    Navigator.push(
+  Future<void> _abrirRegistroHabito(_ActiveHabitEntry entry) async {
+    final habit = entry.habit;
+    final attempt = entry.attempt;
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (_) => RegistrarHabitoScreen(
               habitId: habit.id,
+              attemptId: attempt.id,
               habitTitle: habit.title,
               category: habit.category,
-              currentProgress: habit.progress,
+              currentProgress: attempt.progress,
+              goal: attempt.target,
             ),
       ),
     );
+
+    if (mounted) {
+      await _load();
+    }
   }
 
   Color categoryBg(String category) {
     switch (category) {
       case 'Alimentación':
-        return const Color(0xFFFBE9E7);
+        return const Color(0xFFFFEFEC);
       case 'Hidratación':
-        return const Color(0xFFDFF3FA);
+        return const Color(0xFFE4F5FB);
       case 'Energía':
-        return const Color(0xFFFFF3CC);
+        return const Color(0xFFFFF5D9);
       case 'Bienestar':
-        return const Color(0xFFF0E7FA);
+        return const Color(0xFFF2ECFC);
       default:
         return Colors.white;
     }
@@ -274,13 +403,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Color categoryInk(String category) {
     switch (category) {
       case 'Alimentación':
-        return const Color(0xFFEF5B62);
+        return const Color(0xFFE66C65);
       case 'Hidratación':
-        return const Color(0xFF2BA8DB);
+        return const Color(0xFF299FCB);
       case 'Energía':
         return const Color(0xFFB88713);
       case 'Bienestar':
-        return const Color(0xFF9A78D6);
+        return const Color(0xFF9473C9);
       default:
         return greenDark;
     }
@@ -289,34 +418,40 @@ class _HabitsScreenState extends State<HabitsScreen> {
   IconData categoryIcon(String category) {
     switch (category) {
       case 'Alimentación':
-        return Icons.apple_rounded;
+        return Icons.restaurant_rounded;
       case 'Hidratación':
-        return Icons.water_drop_outlined;
+        return Icons.water_drop_rounded;
       case 'Energía':
         return Icons.bolt_rounded;
       case 'Bienestar':
-        return Icons.favorite_border_rounded;
+        return Icons.favorite_rounded;
       default:
         return Icons.track_changes_rounded;
     }
   }
 
-  bool matches(Habit h) {
+  bool matches(Habit habit) {
     final categoryOk =
-        selectedCategory == 'Todos' || h.category == selectedCategory;
-    final q = searchController.text.trim().toLowerCase();
+        selectedCategory == 'Todos' || habit.category == selectedCategory;
+
+    final query = searchController.text.trim().toLowerCase();
 
     return categoryOk &&
-        (q.isEmpty ||
-            h.title.toLowerCase().contains(q) ||
-            h.category.toLowerCase().contains(q));
+        (query.isEmpty ||
+            habit.title.toLowerCase().contains(query) ||
+            habit.category.toLowerCase().contains(query));
   }
 
-  List<Habit> get visibleActive => active.where(matches).toList();
+  List<_ActiveHabitEntry> get visibleActive =>
+      active.where((entry) => matches(entry.habit)).toList();
 
   List<Habit> get visibleRecommendations =>
       recommendations
-          .where((h) => !active.any((a) => a.id == h.id) && matches(h))
+          .where(
+            (habit) =>
+                !active.any((entry) => entry.habit.id == habit.id) &&
+                matches(habit),
+          )
           .toList();
 
   @override
@@ -332,7 +467,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     _header(),
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                         children: [
                           const Text(
                             '¿Qué quieres mejorar?',
@@ -345,42 +480,58 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Elige el tipo de hábito. Nosotros lo convertimos en misión.',
+                            'Pequeños cambios, grandes resultados. '
+                            'Elige tu siguiente misión.',
                             style: TextStyle(
                               color: muted,
                               fontSize: 13,
-                              height: 1.4,
+                              height: 1.45,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           _categoryGrid(),
-                          const SizedBox(height: 27),
-                          _sectionHeader('Activos', '${active.length} hábitos'),
+                          const SizedBox(height: 28),
+                          _sectionHeader(
+                            'Mis hábitos activos',
+                            '${active.length}/$habitSlots espacios',
+                          ),
                           const SizedBox(height: 14),
                           if (visibleActive.isEmpty)
-                            _empty('No hay hábitos en esta categoría.')
-                          else
-                            ...visibleActive.map(
-                              (h) => Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: _activeCard(h),
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          _sectionHeader('Recomendados para ti', ''),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Ve chequeando tu próximo hábito',
-                            style: TextStyle(color: muted, fontSize: 12),
-                          ),
-                          const SizedBox(height: 12),
-                          if (visibleRecommendations.isEmpty)
                             _empty(
-                              'No hay recomendaciones pendientes en esta categoría.',
+                              'Todavía no tienes hábitos activos en '
+                              'esta categoría. ¡Elige uno para comenzar!',
                             )
                           else
-                            _recommendationList(visibleRecommendations),
-                          const SizedBox(height: 30),
+                            ...visibleActive.map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _activeCard(entry),
+                              ),
+                            ),
+                          const SizedBox(height: 14),
+                          _sectionHeader(
+                            'Descubre nuevos hábitos',
+                            '${visibleRecommendations.length}',
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Encuentra una misión que se adapte a ti.',
+                            style: TextStyle(color: muted, fontSize: 12),
+                          ),
+                          const SizedBox(height: 14),
+                          if (visibleRecommendations.isEmpty)
+                            _empty(
+                              'No hay recomendaciones pendientes '
+                              'en esta categoría.',
+                            )
+                          else
+                            ...visibleRecommendations.map(
+                              (habit) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _recommendationCard(habit),
+                              ),
+                            ),
+                          const SizedBox(height: 18),
                           _encouragement(),
                         ],
                       ),
@@ -391,68 +542,73 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
-  Widget _header() => Padding(
-    padding: const EdgeInsets.fromLTRB(17, 10, 17, 12),
-    child: Row(
-      children: [
-        if (searching)
-          Expanded(
-            child: TextField(
-              controller: searchController,
-              autofocus: true,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Buscar hábitos...',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed:
-                      () => setState(() {
+  Widget _header() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+      child: Row(
+        children: [
+          if (searching)
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Buscar hábitos...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      setState(() {
                         searching = false;
                         searchController.clear();
-                      }),
+                      });
+                    },
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
+              ),
+            )
+          else ...[
+            const Expanded(
+              child: Text(
+                'Hábitos',
+                style: TextStyle(
+                  color: navy,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-          )
-        else ...[
-          const Expanded(
-            child: Text(
-              'Hábitos',
-              style: TextStyle(
-                color: navy,
-                fontSize: 25,
-                fontWeight: FontWeight.w800,
+            Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              child: IconButton(
+                tooltip: 'Buscar hábitos',
+                onPressed: () {
+                  setState(() => searching = true);
+                },
+                icon: const Icon(Icons.search_rounded, color: navy, size: 25),
               ),
             ),
-          ),
-          Material(
-            color: Colors.white,
-            shape: const CircleBorder(),
-            child: IconButton(
-              tooltip: 'Buscar hábitos',
-              onPressed: () => setState(() => searching = true),
-              icon: const Icon(Icons.search_rounded, color: navy, size: 25),
-            ),
-          ),
+          ],
         ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _categoryGrid() {
     const cats = [
-      ('Alimentación', Icons.apple_rounded),
-      ('Hidratación', Icons.water_drop_outlined),
+      ('Alimentación', Icons.restaurant_rounded),
+      ('Hidratación', Icons.water_drop_rounded),
       ('Energía', Icons.bolt_rounded),
-      ('Bienestar', Icons.favorite_border_rounded),
+      ('Bienestar', Icons.favorite_rounded),
     ];
 
     return Column(
@@ -476,7 +632,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
-              onPressed: () => setState(() => selectedCategory = 'Todos'),
+              onPressed: () {
+                setState(() => selectedCategory = 'Todos');
+              },
               icon: const Icon(Icons.close_rounded, size: 16),
               label: const Text('Mostrar todas las categorías'),
               style: TextButton.styleFrom(foregroundColor: greenDark),
@@ -488,29 +646,31 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Widget _categoryButton(String category, IconData icon) {
     final selected = selectedCategory == category;
+    final color = categoryInk(category);
 
     return InkWell(
       borderRadius: BorderRadius.circular(17),
-      onTap:
-          () => setState(() {
-            selectedCategory = selected ? 'Todos' : category;
-          }),
+      onTap: () {
+        setState(() {
+          selectedCategory = selected ? 'Todos' : category;
+        });
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        height: 55,
+        duration: const Duration(milliseconds: 180),
+        height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: categoryBg(category),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: selected ? categoryInk(category) : Colors.white,
+            color: selected ? color : Colors.white,
             width: selected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: categoryInk(category), size: 22),
-            const SizedBox(width: 10),
+            Icon(icon, color: color, size: 21),
+            const SizedBox(width: 9),
             Expanded(
               child: Text(
                 category,
@@ -523,154 +683,332 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 ),
               ),
             ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: color, size: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _sectionHeader(String title, String trailing) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+  Widget _sectionHeader(String title, String trailing) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: navy,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-      ),
-      if (trailing.isNotEmpty)
-        Text(
-          trailing,
-          style: const TextStyle(
-            color: green,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+        if (trailing.isNotEmpty)
+          Text(
+            trailing,
+            style: const TextStyle(
+              color: greenDark,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-    ],
-  );
+      ],
+    );
+  }
 
-  Widget _activeCard(Habit h) {
-    final done = h.progress >= h.target;
-    final isWater = h.id == 'water';
-    final color = categoryInk(h.category);
+  Widget _activeCard(_ActiveHabitEntry entry) {
+    final habit = entry.habit;
+    final attempt = entry.attempt;
+
+    final color = categoryInk(habit.category);
+    final progress =
+        attempt.target > 0
+            ? (attempt.progress / attempt.target).clamp(0.0, 1.0)
+            : 0.0;
+
+    final done = attempt.hasReachedGoal;
+    final isWater = habit.category == 'Hidratación' && habit.id == 'water';
+
+    final remaining = (attempt.target - attempt.progress).clamp(
+      0,
+      attempt.target,
+    );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(17, 17, 17, 16),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
       decoration: BoxDecoration(
-        color: categoryBg(h.category),
+        color: categoryBg(habit.category),
         borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(categoryIcon(h.category), color: color, size: 23),
-              ),
-              const SizedBox(width: 12),
+              Icon(categoryIcon(habit.category), color: color, size: 17),
+              const SizedBox(width: 7),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      h.title,
-                      style: const TextStyle(
-                        color: navy,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isWater
-                          ? '${h.progress} de ${h.target} hoy · +${h.xp} XP'
-                          : done
-                          ? 'Completado hoy · +${h.xp} XP'
-                          : '${h.subtitle} · +${h.xp} XP',
-                      style: const TextStyle(color: muted, fontSize: 11),
-                    ),
-                  ],
+                child: Text(
+                  habit.category.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              _actionButton(
-                done
-                    ? 'Listo'
-                    : isWater
-                    ? 'Registrar'
-                    : 'Completar',
-                onPressed: done ? null : () => _abrirRegistroHabito(h),
-                disabled: done,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF2C8),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '+${habit.xp} XP',
+                  style: const TextStyle(
+                    color: Color(0xFF9B7415),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),
-          if (isWater) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: LinearProgressIndicator(
-                value: (h.progress / h.target).clamp(0.0, 1.0),
-                minHeight: 7,
-                backgroundColor: Colors.white.withValues(alpha: 0.8),
-                valueColor: const AlwaysStoppedAnimation(Color(0xFF51C7E9)),
+          const SizedBox(height: 15),
+          Text(
+            habit.title,
+            style: const TextStyle(
+              color: navy,
+              fontSize: 22,
+              height: 1.18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          if (isWater)
+            _waterProgress(attempt.progress, attempt.target)
+          else
+            _generalProgress(
+              attempt.progress,
+              attempt.target,
+              color,
+              habit.category,
+            ),
+
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                '${attempt.progress} de ${attempt.target}',
+                style: const TextStyle(
+                  color: navy,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  done
+                      ? '¡Meta alcanzada!'
+                      : isWater
+                      ? 'Solo faltan $remaining vasos'
+                      : 'Sigue avanzando',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: muted, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          SizedBox(
+            width: double.infinity,
+            height: 51,
+            child: ElevatedButton.icon(
+              onPressed: done ? null : () => _abrirRegistroHabito(entry),
+              icon: Icon(
+                done ? Icons.check_circle_rounded : Icons.add_rounded,
+                size: 21,
+              ),
+              label: Text(
+                done ? 'Hábito completado' : 'Registrar avance',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFFDDE9E4),
+                disabledForegroundColor: greenDark,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(17),
+                ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _recommendationList(List<Habit> habits) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.6),
-      border: Border.all(color: border),
-      borderRadius: BorderRadius.circular(23),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Column(
+  /// Indicador de vasos para el hábito de hidratación.
+  Widget _waterProgress(int progress, int target) {
+    final safeTarget = target.clamp(1, 10);
+
+    return Wrap(
+      spacing: 9,
+      runSpacing: 9,
+      children: List.generate(safeTarget, (index) {
+        final completed = index < progress;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 43,
+          height: 49,
+          decoration: BoxDecoration(
+            color:
+                completed ? Colors.white : Colors.white.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: completed ? Colors.white : const Color(0xFFB7DCE9),
+            ),
+          ),
+          child: Icon(
+            completed ? Icons.water_drop_rounded : Icons.local_drink_outlined,
+            color:
+                completed ? const Color(0xFF36A9D6) : const Color(0xFF9BC7D8),
+            size: 27,
+          ),
+        );
+      }),
+    );
+  }
+
+  /// Indicador genérico para otros tipos de hábitos.
+  Widget _generalProgress(
+    int progress,
+    int target,
+    Color color,
+    String category,
+  ) {
+    final safeTarget = target.clamp(1, 10);
+
+    return Column(
       children: [
-        for (int i = 0; i < habits.length; i++) ...[
-          _recommendationRow(habits[i]),
-          if (i < habits.length - 1) const Divider(height: 1, color: border),
-        ],
+        Row(
+          children: List.generate(safeTarget, (index) {
+            final completed = index < progress;
+
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: index == safeTarget - 1 ? 0 : 6,
+                ),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 39,
+                  decoration: BoxDecoration(
+                    color:
+                        completed
+                            ? color.withValues(alpha: 0.18)
+                            : Colors.white.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color:
+                          completed
+                              ? color.withValues(alpha: 0.35)
+                              : Colors.white,
+                    ),
+                  ),
+                  child: Icon(
+                    completed ? categoryIcon(category) : Icons.circle_outlined,
+                    color: completed ? color : const Color(0xFFB8C8C3),
+                    size: 19,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: LinearProgressIndicator(
+            value: target > 0 ? (progress / target).clamp(0.0, 1.0) : 0,
+            minHeight: 7,
+            backgroundColor: Colors.white,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
       ],
-    ),
-  );
+    );
+  }
 
-  Widget _recommendationRow(Habit h) {
-    final color = categoryInk(h.category);
+  Widget _recommendationCard(Habit habit) {
+    final color = categoryInk(habit.category);
+    final unlocked = _isUnlocked(habit);
+    final hasSlot = active.length < habitSlots;
+    final canAdd = unlocked && hasSlot && !saving;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
+    final buttonText =
+        !unlocked
+            ? 'Bloqueado'
+            : !hasSlot
+            ? 'Sin espacio'
+            : saving
+            ? 'Guardando'
+            : 'Agregar';
+
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: navy.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 49,
+            height: 49,
             decoration: BoxDecoration(
-              color: categoryBg(h.category),
-              borderRadius: BorderRadius.circular(14),
+              color: categoryBg(habit.category),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(categoryIcon(h.category), color: color, size: 23),
+            child: Icon(categoryIcon(habit.category), color: color, size: 24),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  h.title,
+                  habit.title,
                   style: const TextStyle(
                     color: navy,
                     fontSize: 14,
@@ -680,132 +1018,119 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${h.subtitle} · +${h.xp} XP',
+                  habit.category,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${habit.subtitle} · ${habit.difficulty}',
                   style: const TextStyle(color: muted, fontSize: 11),
                 ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.stars_rounded,
+                      color: Color(0xFFD6A52B),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+${habit.xp} XP',
+                      style: const TextStyle(
+                        color: navy,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                if (!unlocked || !hasSlot) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    !unlocked
+                        ? 'Requisitos aún no cumplidos'
+                        : 'Libera un espacio para agregarlo',
+                    style: const TextStyle(color: muted, fontSize: 10),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(width: 8),
-          _actionButton('Agregar', onPressed: () => addHabit(h)),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton(
+              onPressed: canAdd ? () => addHabit(habit) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFFE5ECE9),
+                disabledForegroundColor: muted,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: const StadiumBorder(),
+                textStyle: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: Text(buttonText),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _actionButton(
-    String label, {
-    required VoidCallback? onPressed,
-    bool disabled = false,
-  }) => SizedBox(
-    height: 34,
-    child: ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: disabled ? const Color(0xFFDDE9E4) : green,
-        foregroundColor: disabled ? greenDark : Colors.white,
-        disabledBackgroundColor: const Color(0xFFDDE9E4),
-        disabledForegroundColor: greenDark,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        elevation: 0,
-        shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+  Widget _empty(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: border),
       ),
-      child: Text(label),
-    ),
-  );
-
-  Widget _empty(String message) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: border),
-    ),
-    child: Text(message, style: const TextStyle(color: muted, fontSize: 13)),
-  );
-
-  Widget _encouragement() => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE1F6ED),
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: const Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.spa_outlined, color: greenDark, size: 25),
-        SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'No necesitas hacerlo todo hoy. Como dicen: '
-            '“Empieza con un hábito, repítelo y hazlo tuyo.”',
-            style: TextStyle(color: muted, fontSize: 12, height: 1.5),
+      child: Column(
+        children: [
+          const Icon(Icons.spa_outlined, color: green, size: 30),
+          const SizedBox(height: 9),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: muted, fontSize: 12, height: 1.45),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-class Habit {
-  final String id;
-  final String title;
-  final String category;
-  final String subtitle;
-  final int xp;
-  final int target;
-  final int progress;
-
-  const Habit({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.subtitle,
-    required this.xp,
-    required this.target,
-    required this.progress,
-  });
-
-  Habit copy({int? progress}) => Habit(
-    id: id,
-    title: title,
-    category: category,
-    subtitle: subtitle,
-    xp: xp,
-    target: target,
-    progress: progress ?? this.progress,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'category': category,
-    'subtitle': subtitle,
-    'xp': xp,
-    'target': target,
-    'progress': progress,
-  };
-
-  factory Habit.fromJson(Map<String, dynamic> json) => Habit(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    category: json['category'] as String,
-    subtitle: json['subtitle'] as String,
-    xp: (json['xp'] as num).toInt(),
-    target: (json['target'] as num).toInt(),
-    progress: (json['progress'] as num).toInt(),
-  );
-
-  factory Habit.fromFirestore(String documentId, Map<String, dynamic> data) =>
-      Habit(
-        id: documentId,
-        title: data['title']?.toString() ?? 'Hábito',
-        category: data['category']?.toString() ?? 'Bienestar',
-        subtitle: data['subtitle']?.toString() ?? '',
-        xp: (data['xp'] as num?)?.toInt() ?? 0,
-        target: (data['target'] as num?)?.toInt() ?? 1,
-        progress: (data['progress'] as num?)?.toInt() ?? 0,
-      );
+  Widget _encouragement() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE1F6ED),
+        borderRadius: BorderRadius.circular(19),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.spa_outlined, color: greenDark, size: 25),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'No necesitas hacerlo todo hoy. '
+              'Empieza con un hábito, repítelo y hazlo tuyo.',
+              style: TextStyle(color: muted, fontSize: 12, height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

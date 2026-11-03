@@ -49,44 +49,67 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Método para iniciar sesión con correo y contraseña
+
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, completa todos los campos.'),
-          backgroundColor: Colors.orange,
-        ),
+        const SnackBar(content: Text('Ingresa tu correo y contraseña.')),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
-      await _authService.signIn(email: email, password: password);
+      final user = await _authService.signIn(email: email, password: password);
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen2()),
-        );
+      if (!mounted || user == null) return;
+
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen2()));
+    } on EmailNotVerifiedException catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          duration: const Duration(seconds: 7),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String mensaje;
+      switch (e.code) {
+        case 'invalid-email':
+          mensaje = 'El correo electrónico no es válido.';
+          break;
+        case 'user-not-found':
+        case 'wrong-password':
+        case 'invalid-credential':
+          mensaje = 'Correo o contraseña incorrectos.';
+          break;
+        case 'too-many-requests':
+          mensaje = 'Demasiados intentos. Espera un momento.';
+          break;
+        case 'network-request-failed':
+          mensaje = 'Error de conexión. Comprueba tu internet.';
+          break;
+        default:
+          mensaje = 'No se pudo iniciar sesión. Inténtalo de nuevo.';
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al iniciar sesión: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensaje)));
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ocurrió un error al iniciar sesión.')),
+      );
     }
   }
 
