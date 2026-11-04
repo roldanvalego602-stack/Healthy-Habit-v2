@@ -10,6 +10,13 @@ import '../páginas/perfil/profile_screen.dart';
 import '../páginas/chatbot/nutrichat.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+// Función global para convertir valores a enteros
+int _leerEntero(dynamic value, int fallback) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
 void main() => runApp(const HabitTrackerApp());
 
 class HabitTrackerApp extends StatelessWidget {
@@ -231,13 +238,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
         );
       },
     );
-  }
-
-  int _leerEntero(dynamic value, int fallback) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-
-    return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
   Future<List<Map<String, dynamic>>> _cargarDatosHabitos(
