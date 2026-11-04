@@ -14,8 +14,10 @@ import 'páginas/notifications_screen.dart';
 import 'páginas/habitos/registrar_habito_screen.dart';
 import 'páginas/chatbot/nutrichat.dart';
 
+
 // Instancia compartida de Firestore.
 late final FirebaseFirestore firestoreDb;
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,56 +80,6 @@ class HomeScreen extends StatefulWidget {
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.mintCard,
-              backgroundImage: user?.photoURL == null
-                  ? null
-                  : NetworkImage(user!.photoURL!),
-              child: user?.photoURL == null
-                  ? const Icon(
-                      Icons.person,
-                      color: AppColors.primaryGreen,
-                      size: 40,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              user?.displayName ?? 'Usuario',
-              style: const TextStyle(
-                color: AppColors.textDark,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (user?.email != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                user!.email!,
-                style: const TextStyle(color: AppColors.textGrey),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -280,6 +232,53 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
+      ),
+    );
+  }
+}
+
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppColors.mintCard,
+              backgroundImage:
+                  user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+              child:
+                  user?.photoURL == null
+                      ? const Icon(
+                        Icons.person,
+                        color: AppColors.primaryGreen,
+                        size: 40,
+                      )
+                      : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              user?.displayName ?? 'Usuario',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            if (user?.email != null) ...[
+              const SizedBox(height: 4),
+              Text(user!.email!, style: const TextStyle(color: AppColors.textGrey)),
+            ],
+          ],
+        ),
       ),
     );
   }
