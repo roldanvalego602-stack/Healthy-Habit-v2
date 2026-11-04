@@ -96,27 +96,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
         final userData = userSnapshot.data?.data() ?? {};
 
-        final String name = (userData['name'] ?? 'Usuario').toString();
-
-        final String? photoUrl =
-            (userData['photoUrl'] ?? currentUser.photoURL)?.toString();
-
-        final int level = _leerEntero(userData['level'], 1);
-
-        final String levelTitle =
-            (userData['title'] ?? 'Cultivador Constante').toString();
-
-        // El sistema de registro actualiza el campo xp.
-        // Se conserva currentXp como alternativa para datos anteriores.
-        final int currentXp = _leerEntero(
-          userData['xp'] ?? userData['currentXp'],
-          0,
-        );
-
-        final int nextLevelXp = _leerEntero(userData['nextLevelXp'], 1000);
-
-        final int streakDays = _leerEntero(userData['streakDays'], 0);
-
         final String name =
             ((userData['name'] as String?) ?? '').trim().isNotEmpty
                 ? (userData['name'] as String).trim()
@@ -124,17 +103,18 @@ class _HomeScreen2State extends State<HomeScreen2> {
                     ? currentUser.displayName!.trim()
                     : 'Usuario');
         final String? photoUrl = userData['photoUrl'] ?? currentUser.photoURL;
-        final int level = userData['level'] ?? 1;
-        final String levelTitle = userData['title'] ?? 'Cultivador Constante';
-        final int currentXp = userData['currentXp'] ?? 0;
-        final int nextLevelXp = userData['nextLevelXp'] ?? 1000;
-        final int streakDays = userData['streakDays'] ?? 0;
+        final int level = (userData['level'] as num?)?.toInt() ?? 1;
+        final String levelTitle =
+            userData['title'] as String? ?? 'Cultivador Constante';
+        final int currentXp = (userData['currentXp'] as num?)?.toInt() ?? 0;
+        final int nextLevelXp =
+            (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
+        final int streakDays = (userData['streakDays'] as num?)?.toInt() ?? 0;
         final String nextAchievement =
-            (userData['nextAchievementTitle'] ?? 'Insignia Ritmo firme')
-                .toString();
-
+            userData['nextAchievementTitle'] as String? ??
+            'Insignia Ritmo firme';
         final String nextAchievementSub =
-            (userData['nextAchievementSubtitle'] ?? 'A 2 misiones').toString();
+            userData['nextAchievementSubtitle'] as String? ?? 'A 2 misiones';
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
@@ -919,13 +899,6 @@ class _MissionCard extends StatelessWidget {
       ),
     );
   }
-}
-
-int _leerEntero(dynamic value, int fallback) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-
-  return int.tryParse(value?.toString() ?? '') ?? fallback;
 }
 
 // ---------- Banner Próximo Logro ----------
