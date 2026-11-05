@@ -288,6 +288,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
       if (selectedAttempt == null) continue;
 
       resultado.add({
+        'subtitle': (habitData['subtitle'] ?? '').toString(),
+        'difficulty': (habitData['difficulty'] ?? 'Sencillo').toString(),
         'habitId': habitDoc.id,
         'attemptId': selectedAttempt['attemptId'],
         'title':
@@ -685,6 +687,55 @@ class _MissionCard extends StatelessWidget {
 
   const _MissionCard({this.missionData, required this.onTapViewHabits});
 
+  static const navy = Color(0xFF193344);
+  static const green = Color(0xFF08B889);
+  static const muted = Color(0xFF71879A);
+
+  Color _categoryBg(String category) {
+    switch (category) {
+      case 'Alimentación':
+        return const Color(0xFFFFEFEC);
+      case 'Hidratación':
+        return const Color(0xFFE4F5FB);
+      case 'Energía':
+        return const Color(0xFFFFF5D9);
+      case 'Bienestar':
+        return const Color(0xFFF2ECFC);
+      default:
+        return Colors.white;
+    }
+  }
+
+  Color _categoryInk(String category) {
+    switch (category) {
+      case 'Alimentación':
+        return const Color(0xFFE66C65);
+      case 'Hidratación':
+        return const Color(0xFF299FCB);
+      case 'Energía':
+        return const Color(0xFFB88713);
+      case 'Bienestar':
+        return const Color(0xFF9473C9);
+      default:
+        return const Color(0xFF078765);
+    }
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case 'Alimentación':
+        return Icons.restaurant_rounded;
+      case 'Hidratación':
+        return Icons.water_drop_rounded;
+      case 'Energía':
+        return Icons.bolt_rounded;
+      case 'Bienestar':
+        return Icons.favorite_rounded;
+      default:
+        return Icons.track_changes_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (missionData == null) {
@@ -692,31 +743,28 @@ class _MissionCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: AppColors.blueWaterCard,
-          borderRadius: BorderRadius.circular(26),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: const Color(0xFFDCE8E3)),
         ),
         child: Column(
           children: [
-            const Icon(
-              Icons.flag_outlined,
-              size: 40,
-              color: AppColors.primaryGreen,
-            ),
+            const Icon(Icons.flag_outlined, size: 40, color: green),
             const SizedBox(height: 12),
             const Text(
-              'Todavía no tienes hábitos en proceso.',
+              'Todavía no tienes hábitos activos.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
+                color: navy,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Selecciona un hábito para comenzar tu progreso.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+              style: TextStyle(fontSize: 13, color: muted),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -725,16 +773,16 @@ class _MissionCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onTapViewHabits,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGreen,
+                  backgroundColor: green,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(17),
                   ),
                 ),
                 child: const Text(
                   'Explorar hábitos',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
@@ -745,160 +793,207 @@ class _MissionCard extends StatelessWidget {
 
     final String habitId = missionData!['habitId'].toString();
     final String attemptId = missionData!['attemptId'].toString();
-
-    final String category = missionData!['category'].toString().toUpperCase();
-
+    final String category = missionData!['category'].toString();
     final String title = missionData!['title'].toString();
+    final String subtitle = (missionData!['subtitle'] ?? '').toString();
 
     final int xp = _leerEntero(missionData!['xp'], 0);
-
     final int currentVal = _leerEntero(missionData!['progress'], 0);
-
     final int targetVal = _leerEntero(missionData!['target'], 1).clamp(1, 100);
 
-    final int faltantes = (targetVal - currentVal).clamp(0, targetVal);
+    final int remaining = (targetVal - currentVal).clamp(0, targetVal);
+
+    final bool done = currentVal >= targetVal;
 
     final double progress = (currentVal / targetVal).clamp(0.0, 1.0);
 
+    final color = _categoryInk(category);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
       decoration: BoxDecoration(
-        color: AppColors.blueWaterCard,
-        borderRadius: BorderRadius.circular(26),
+        color: _categoryBg(category),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Icon(_categoryIcon(category), color: color, size: 17),
+              const SizedBox(width: 7),
               Expanded(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.track_changes_rounded,
-                      color: Color(0xFF2B7FD1),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        category,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF2B7FD1),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  category.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               if (xp > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.yellowCard,
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFFFF2C8),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '$xp XP',
+                    '+$xp XP',
                     style: const TextStyle(
-                      color: AppColors.textDark,
+                      color: Color(0xFF9B7415),
+                      fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      fontSize: 11,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 15),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 20,
+              color: navy,
+              fontSize: 22,
+              height: 1.18,
               fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(subtitle, style: const TextStyle(color: muted, fontSize: 12)),
+          ],
+          const SizedBox(height: 15),
+
+          // Indicadores individuales de sesiones.
+          Column(
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.white,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF2B7FD1)),
-                  ),
-                ),
+              Row(
+                children: List.generate(targetVal.clamp(1, 10), (index) {
+                  final completed = index < currentVal;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: index == targetVal.clamp(1, 10) - 1 ? 0 : 6,
+                      ),
+                      child: Container(
+                        height: 39,
+                        decoration: BoxDecoration(
+                          color:
+                              completed
+                                  ? color.withValues(alpha: 0.18)
+                                  : Colors.white.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color:
+                                completed
+                                    ? color.withValues(alpha: 0.35)
+                                    : Colors.white,
+                          ),
+                        ),
+                        child: Icon(
+                          completed
+                              ? _categoryIcon(category)
+                              : Icons.circle_outlined,
+                          color: completed ? color : const Color(0xFFB8C8C3),
+                          size: 19,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
-              const SizedBox(width: 12),
-              Text(
-                '$currentVal / $targetVal',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 7,
+                  backgroundColor: Colors.white,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$currentVal de $targetVal',
+                '$currentVal de $targetVal sesiones',
                 style: const TextStyle(
+                  color: navy,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
                 ),
               ),
-              Text(
-                faltantes == 0 ? 'Meta completada' : 'Faltan $faltantes',
-                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  done ? '¡Meta alcanzada!' : 'Faltan $remaining sesiones',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: muted, fontSize: 12),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 15),
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 51,
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => RegistrarHabitoScreen(
-                          habitId: habitId,
-                          attemptId: attemptId,
-                          habitTitle: title,
-                          category: missionData!['category'].toString(),
-                          currentProgress: currentVal,
-                          goal: targetVal,
-                        ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text(
-                'Registrar progreso',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              onPressed:
+                  done
+                      ? null
+                      : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => RegistrarHabitoScreen(
+                                  habitId: habitId,
+                                  attemptId: attemptId,
+                                  habitTitle: title,
+                                  category: category,
+                                  currentProgress: currentVal,
+                                  goal: targetVal,
+                                ),
+                          ),
+                        );
+                      },
+              icon: Icon(
+                done ? Icons.check_circle_rounded : Icons.add_rounded,
+                size: 21,
+              ),
+              label: Text(
+                done ? 'Hábito completado' : 'Registrar sesión',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
+                backgroundColor: green,
                 foregroundColor: Colors.white,
+                disabledBackgroundColor: const Color(0xFFDDE9E4),
+                disabledForegroundColor: const Color(0xFF078765),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(17),
                 ),
               ),
             ),
