@@ -24,6 +24,18 @@ class AuthService {
     final user = credential.user;
     if (user == null) return null;
 
+      if (user != null) {
+        await user.updateDisplayName(name);
+        await user.reload();
+
+        // Guardar su perfil inicial en Firestore
+        await _firebaseService.saveUserData(
+          uid: user.uid,
+          name: name,
+          username: username,
+          email: email,
+        );
+      }
     try {
       await user.updateDisplayName(name.trim());
 
