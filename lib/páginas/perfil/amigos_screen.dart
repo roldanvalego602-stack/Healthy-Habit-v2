@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'reaction_picker_dialog.dart'; // Agrega esta línea
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
 import 'perfil_muestra.dart';
@@ -577,6 +577,28 @@ class _AmigosScreenState extends State<AmigosScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Botón de reacción (solo si ya sigues a esta persona)
+              if (siguiendo && _uid != null)
+                Material(
+                  color: Colors.transparent,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.add_reaction_outlined,
+                      color: _C.grey,
+                    ),
+                    tooltip: 'Enviar reacción',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ReactionPickerDialog(
+                          fromUid: _uid!, // Tu ID
+                          toUid: uid, // El ID del amigo
+                          friendName: nombre,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               _botonSeguir(uid, nombre, siguiendo, ocupado),
             ],
           ),
