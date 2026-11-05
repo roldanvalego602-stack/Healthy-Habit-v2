@@ -3,8 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
+import 'amigos_servicio.dart';
 import '../../servicios/autenticacion_servicio.dart';
+import 'amigos_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profesionales_screen.dart';
@@ -122,6 +123,8 @@ class ProfileScreen extends StatelessWidget {
                     email: email,
                     coins: coins,
                   ),
+                  const SizedBox(height: 16),
+                  _friendsCard(context, user.uid),
                   const SizedBox(height: 22),
                   _levelCard(level: level, xp: xp),
                   const SizedBox(height: 14),
@@ -466,6 +469,149 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _friendsCard(BuildContext context, String uid) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: navy.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2F4EB),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.groups_rounded, color: green, size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Amigos',
+                  style: TextStyle(
+                    color: navy,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openFriends(context, 0),
+                child: const Text(
+                  'Ver todos',
+                  style: TextStyle(
+                    color: green,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _friendStat(context, uid, 'following', 'Siguiendo', 0),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _friendStat(context, uid, 'followers', 'Seguidores', 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BuscarAmigosScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 19),
+              label: const Text(
+                'Agregar amigos',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: green,
+                side: const BorderSide(color: mint, width: 1.6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _friendStat(
+    BuildContext context,
+    String uid,
+    String collection,
+    String label,
+    int tab,
+  ) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _openFriends(context, tab),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            children: [
+              StreamBuilder<int>(
+                stream: AmigosServicio.contar(uid, collection),
+                builder: (context, snap) {
+                  return Text(
+                    '${snap.data ?? 0}',
+                    style: const TextStyle(
+                      color: navy,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: const TextStyle(color: Color(0xFF8496A0), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openFriends(BuildContext context, int tab) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AmigosScreen(initialTab: tab)),
     );
   }
 

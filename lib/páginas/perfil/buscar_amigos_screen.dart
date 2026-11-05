@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/p%C3%A1ginas/perfil/perfil_muestra.dart';
 
+import 'amigos_servicio.dart';
 import '../../Contenido_del_tema/colores.dart';
 import '../../Contenido_del_tema/chip_recompensa.dart';
 
@@ -19,12 +22,24 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
 
   String _terminoBusqueda = '';
 
+  Set<String> _siguiendo = {};
+  final Set<String> _ocupados = {};
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _siguiendoSub;
+
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
 
   @override
   void initState() {
     super.initState();
+
+    final miUid = AmigosServicio.uidActual;
+    if (miUid != null) {
+      _siguiendoSub = AmigosServicio.siguiendo(miUid).listen((snap) {
+        if (!mounted) return;
+        setState(() => _siguiendo = snap.docs.map((d) => d.id).toSet());
+      });
+    }
 
     _searchController.addListener(() {
       if (!mounted) return;
@@ -37,6 +52,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
 
   @override
   void dispose() {
+    _siguiendoSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -70,6 +86,83 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     return nombre.contains(_terminoBusqueda) ||
         username.contains(_terminoBusqueda) ||
         usernameConArroba.contains(_terminoBusqueda);
+  }
+
+  Future<void> _alternarSeguir(String uid, String nombre) async {
+    if (_ocupados.contains(uid)) return;
+
+    final yaSigue = _siguiendo.contains(uid);
+    setState(() => _ocupados.add(uid));
+
+    try {
+      if (yaSigue) {
+        await AmigosServicio.dejarDeSeguir(uid);
+      } else {
+        await AmigosServicio.seguir(uid);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            yaSigue ? 'Dejaste de seguir a $nombre' : 'Ahora sigues a $nombre',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo completar la acción: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _ocupados.remove(uid));
+    }
+  }
+
+  Widget _botonSeguir(String uid, String nombre) {
+    final siguiendo = _siguiendo.contains(uid);
+    final ocupado = _ocupados.contains(uid);
+
+    return GestureDetector(
+      onTap: () => _alternarSeguir(uid, nombre),
+      child: Container(
+        height: 36,
+        constraints: const BoxConstraints(minWidth: 88),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: siguiendo ? Colors.white : AppColores.verdeMenta,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color:
+                siguiendo
+                    ? AppColores.verdePrincipal
+                    : AppColores.verdeMenta,
+            width: 1.4,
+          ),
+        ),
+        child:
+            ocupado
+                ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColores.verdePrincipal,
+                  ),
+                )
+                : Text(
+                  siguiendo ? 'Siguiendo' : 'Seguir',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color:
+                        siguiendo
+                            ? AppColores.verdePrincipal
+                            : AppColores.verdeOscuro,
+                  ),
+                ),
+      ),
+    );
   }
 
   void _abrirPerfil(Map<String, dynamic> datos, String uid) {
@@ -306,10 +399,11 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                       tooltip: 'Ver perfil',
                                       onPressed: () => _abrirPerfil(datos, uid),
                                       icon: const Icon(
-                                        Icons.person_add_alt_1_rounded,
-                                        color: AppColores.verdePrincipal,
+                                        Icons.account_circle_outlined,
+                                        color: AppColores.textoGris,
                                       ),
                                     ),
+                                    _botonSeguir(uid, nombre),
                                   ],
                                 ),
                               );

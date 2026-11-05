@@ -6,9 +6,9 @@ import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
 import '../páginas/habitos/habits_screen.dart';
 import '../páginas/desafios/desafios_screen.dart';
 import '../páginas/tienda/store_screen.dart';
-import '../páginas/perfil/profile_screen.dart';
 import '../páginas/chatbot/nutrichat.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'perfil/profile_screen.dart';
 
 void main() => runApp(const HabitTrackerApp());
 
