@@ -1,7 +1,3 @@
-import 'dart:math';
-import 'package:flutter/material.dart';
-import 'nutrichat.dart';
-
 class NutriCalculatorService {
   // Estados para IMC
   int pasoIMC = 0;

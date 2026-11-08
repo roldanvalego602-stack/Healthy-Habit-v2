@@ -1,46 +1,54 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:healthy_habit/p%C3%A1ginas/habitos/registrar_habito_screen.dart';
-import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
-import '../páginas/habitos/habits_screen.dart';
-import '../páginas/desafios/desafios_screen.dart';
-import '../páginas/tienda/store_screen.dart';
-import '../páginas/chatbot/nutrichat.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'perfil/profile_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:healthy_habit/páginas/ranking_screen.dart';
 
+import 'habitos/habits_screen.dart';
+import 'habitos/registrar_habito_screen.dart';
+import 'tienda/store_screen.dart';
+import 'perfil/profile_screen.dart';
+import 'catalogo/catalogo_screen.dart';
+import 'chatbot/nutrichat.dart';
+import 'notifications_screen.dart';
+import 'logros/logros_screen.dart';
+import 'logros/logros_service.dart';
+import 'estadisticas/progreso_screen.dart';
+
+// La inicialización real de Firebase permanece en lib/main.dart.
+// Se conservan estas clases porque otras pantallas pueden importarlas.
 void main() => runApp(const HabitTrackerApp());
 
 class HabitTrackerApp extends StatelessWidget {
   const HabitTrackerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Healthy Habit',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF7F9F8),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen2(),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Healthy Habit',
+    theme: ThemeData(
+      fontFamily: 'Inter',
+      scaffoldBackgroundColor: AppColors.page,
+      useMaterial3: true,
+    ),
+    home: const HomeScreen2(),
+  );
 }
 
-// ---------- Paleta de Colores Explícita desde Figma ----------
 class AppColors {
-  static const primaryGreen = Color(0xFF00C88C);
+  static const primaryGreen = Color(0xFF08B889);
   static const darkGreenCard = Color(0xFF143834);
-  static const textDark = Color(0xFF0E1A30);
-  static const textGrey = Color(0xFF7A869A);
+  static const textDark = Color(0xFF193344);
+  static const textGrey = Color(0xFF71879A);
   static const yellowCard = Color(0xFFFDE89D);
   static const blueWaterCard = Color(0xFFE8F6FC);
   static const purpleCard = Color(0xFFF0EBFC);
   static const mintCard = Color(0xFFE2F7ED);
+  static const page = Color(0xFFF5F8F6);
 }
+
+int _number(dynamic v, [int fallback = 0]) =>
+    v is num ? v.toInt() : int.tryParse('$v') ?? fallback;
 
 class HomeScreen2 extends StatefulWidget {
   const HomeScreen2({super.key});
@@ -51,188 +59,168 @@ class HomeScreen2 extends StatefulWidget {
 
 class _HomeScreen2State extends State<HomeScreen2> {
   int _selectedIndex = 0;
-
-  List<Widget> get _tabs => [
-    _buildHomeBody(),
-    const HabitsScreen(),
-    const StoreScreen(),
-    const DesafiosScreen(),
-    const ProfileScreen(),
-  ];
-
-  void _onNavTap(int index) {
-    setState(() => _selectedIndex = index);
-  }
-
   late final FirebaseFirestore _db;
 
   @override
   void initState() {
     super.initState();
-
     _db = FirebaseFirestore.instanceFor(
       app: Firebase.app(),
       databaseId: 'default',
     );
   }
 
-  Widget _buildHomeBody() {
-    final currentUser = FirebaseAuth.instance.currentUser;
+  @override
+  Widget build(BuildContext context) {
+    final screens = <Widget>[
+      _home(),
+      const HabitsScreen(),
+      const StoreScreen(),
+      const CatalogoScreen(),
+      const ProfileScreen(),
+    ];
 
-    if (currentUser == null) {
+    const labels = ['Inicio', 'Hábitos', 'Tienda', 'Catálogo', 'Perfil'];
+
+    const icons = [
+      Icons.home_rounded,
+      Icons.track_changes_rounded,
+      Icons.storefront_rounded,
+      Icons.menu_book_rounded,
+      Icons.person_outline_rounded,
+    ];
+
+    return Scaffold(
+      backgroundColor: AppColors.page,
+      body: SafeArea(child: screens[_selectedIndex]),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFE5ECE9))),
+          ),
+          child: Row(
+            children: List.generate(
+              5,
+              (i) => Expanded(
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedIndex = i;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icons[i],
+                          color:
+                              i == _selectedIndex
+                                  ? AppColors.primaryGreen
+                                  : AppColors.textGrey,
+                          size: 23,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          labels[i],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight:
+                                i == _selectedIndex
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                            color:
+                                i == _selectedIndex
+                                    ? AppColors.primaryGreen
+                                    : AppColors.textGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _home() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
       return const Center(child: Text('No se encontró sesión de usuario.'));
     }
 
-    final userRef = _db.collection('users').doc(currentUser.uid);
+    final userRef = _db.collection('users').doc(user.uid);
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userRef.snapshots(),
-      builder: (context, userSnapshot) {
-        if (userSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryGreen),
-          );
+      builder: (context, profile) {
+        if (profile.hasError) {
+          return const Center(child: Text('No se pudo cargar tu perfil.'));
         }
 
-        final userData = userSnapshot.data?.data() ?? {};
+        if (!profile.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        final String name = (userData['name'] ?? 'Usuario').toString();
+        final data = profile.data?.data() ?? <String, dynamic>{};
 
-        final String? photoUrl =
-            (userData['photoUrl'] ?? currentUser.photoURL)?.toString();
+        final name = (data['name'] ?? user.displayName ?? 'Usuario').toString();
 
-        final int level = _leerEntero(userData['level'], 1);
+        final photo = (data['photoUrl'] ?? user.photoURL)?.toString();
 
-        final String levelTitle =
-            (userData['title'] ?? 'Cultivador Constante').toString();
+        final xp = _number(data['xp'] ?? data['currentXp']);
 
-        // El sistema de registro actualiza el campo xp.
-        // Se conserva currentXp como alternativa para datos anteriores.
-        final int currentXp = _leerEntero(
-          userData['xp'] ?? userData['currentXp'],
-          0,
-        );
+        final level = _number(data['level'], 1);
 
-        final int nextLevelXp = _leerEntero(userData['nextLevelXp'], 1000);
-
-        final int streakDays = _leerEntero(userData['streakDays'], 0);
-
-        final String nextAchievement =
-            (userData['nextAchievementTitle'] ?? 'Insignia Ritmo firme')
-                .toString();
-
-        final String nextAchievementSub =
-            (userData['nextAchievementSubtitle'] ?? 'A 2 misiones').toString();
+        final streak = _number(data['currentStreak'] ?? data['streakDays']);
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
-          builder: (context, habitsSnapshot) {
-            if (habitsSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryGreen),
-              );
-            }
-
-            if (habitsSnapshot.hasError) {
+          builder: (context, habits) {
+            if (habits.hasError) {
               return const Center(
                 child: Text('No se pudieron cargar tus hábitos.'),
               );
             }
 
-            final habitDocs = habitsSnapshot.data?.docs ?? [];
+            if (!habits.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-            return FutureBuilder<List<Map<String, dynamic>>>(
-              future: _cargarDatosHabitos(habitDocs),
-              builder: (context, attemptsSnapshot) {
-                if (attemptsSnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryGreen,
-                    ),
-                  );
-                }
+            final docs = habits.data!.docs;
 
-                if (attemptsSnapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      'No se pudieron cargar tus hábitos en proceso.',
-                    ),
-                  );
-                }
-
-                final entries = attemptsSnapshot.data ?? [];
-
-                final activeHabits =
-                    entries
-                        .where((item) => item['status'] == 'inProgress')
-                        .toList();
-
-                final completedHabits =
-                    entries
-                        .where((item) => item['status'] == 'completed')
-                        .length;
-
-                final int totalHabits = entries.length;
-
-                final Map<String, dynamic>? activeMission =
-                    activeHabits.isNotEmpty ? activeHabits.first : null;
-
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TopBar(photoUrl: photoUrl),
-                      const SizedBox(height: 16),
-                      Text(
-                        '¡Hola, $name!',
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const Text(
-                        'Continúa con tus hábitos de hoy.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textGrey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _LevelCard(
-                        level: level,
-                        title: levelTitle,
-                        currentXp: currentXp,
-                        nextLevelXp: nextLevelXp,
-                      ),
-                      const SizedBox(height: 16),
-                      _StatsRow(
-                        streakDays: streakDays,
-                        completedHabits: completedHabits,
-                        totalHabits: totalHabits,
-                      ),
-                      const SizedBox(height: 24),
-                      _SectionHeader(onTapViewHabits: () => _onNavTap(1)),
-                      const SizedBox(height: 14),
-                      _MissionCard(
-                        missionData: activeMission,
-                        onTapViewHabits: () => _onNavTap(1),
-                      ),
-                      const SizedBox(height: 16),
-                      _NextAchievementCard(
-                        title: nextAchievement,
-                        subtitle: nextAchievementSub,
-                      ),
-                      const SizedBox(height: 16),
-                      const _MrHealthyBannerCard(),
-                    ],
-                  ),
-                );
+            return _HomeContent(
+              key: ValueKey(user.uid),
+              name: name,
+              photoUrl: photo,
+              xp: xp,
+              level: level,
+              streak: streak,
+              habits: docs,
+              onHabits: () {
+                setState(() {
+                  _selectedIndex = 1;
+                });
+              },
+              userRef: userRef,
+              coins: _number(data['habitCoins']),
+              onProfile: () {
+                setState(() {
+                  _selectedIndex = 4;
+                });
+              },
+              onStore: () {
+                setState(() {
+                  _selectedIndex = 2;
+                });
               },
             );
           },
@@ -240,206 +228,286 @@ class _HomeScreen2State extends State<HomeScreen2> {
       },
     );
   }
-
-  int _leerEntero(dynamic value, int fallback) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-
-    return int.tryParse(value?.toString() ?? '') ?? fallback;
-  }
-
-  Future<List<Map<String, dynamic>>> _cargarDatosHabitos(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> habitDocs,
-  ) async {
-    final List<Map<String, dynamic>> resultado = [];
-
-    for (final habitDoc in habitDocs) {
-      final habitData = habitDoc.data();
-
-      final attemptsSnapshot =
-          await habitDoc.reference.collection('attempts').get();
-
-      final attempts =
-          attemptsSnapshot.docs.map((doc) {
-            return <String, dynamic>{...doc.data(), 'attemptId': doc.id};
-          }).toList();
-
-      // Preferir el intento que sigue en proceso.
-      final activeAttempts = attempts.where(
-        (attempt) => attempt['status'] == 'inProgress',
-      );
-
-      Map<String, dynamic>? selectedAttempt;
-
-      if (activeAttempts.isNotEmpty) {
-        selectedAttempt = activeAttempts.first;
-      } else {
-        // Si no hay uno activo, conservar el último intento
-        // completado para contabilizarlo en las estadísticas.
-        final completedAttempts = attempts.where(
-          (attempt) => attempt['status'] == 'completed',
-        );
-
-        if (completedAttempts.isNotEmpty) {
-          selectedAttempt = completedAttempts.first;
-        }
-      }
-
-      if (selectedAttempt == null) continue;
-
-      resultado.add({
-        'subtitle': (habitData['subtitle'] ?? '').toString(),
-        'difficulty': (habitData['difficulty'] ?? 'Sencillo').toString(),
-        'habitId': habitDoc.id,
-        'attemptId': selectedAttempt['attemptId'],
-        'title':
-            (habitData['title'] ?? habitData['name'] ?? 'Hábito').toString(),
-        'category': (habitData['category'] ?? 'Bienestar').toString(),
-        'status': selectedAttempt['status'],
-        'progress': _leerEntero(selectedAttempt['progress'], 0),
-        'target': _leerEntero(selectedAttempt['target'], 1),
-        'xp': _leerEntero(habitData['xp'], 0),
-      });
-    }
-
-    // Primero aparecen los hábitos en proceso.
-    resultado.sort((a, b) {
-      final aActive = a['status'] == 'inProgress';
-      final bActive = b['status'] == 'inProgress';
-
-      if (aActive && !bActive) return -1;
-      if (!aActive && bActive) return 1;
-
-      return 0;
-    });
-
-    return resultado;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(child: _tabs[_selectedIndex]),
-      bottomNavigationBar: _BottomNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: _onNavTap,
-      ),
-    );
-  }
 }
 
-// ---------- Top Bar ----------
-class _TopBar extends StatelessWidget {
+class _HomeContent extends StatelessWidget {
+  const _HomeContent({
+    super.key,
+    required this.name,
+    required this.photoUrl,
+    required this.xp,
+    required this.level,
+    required this.streak,
+    required this.habits,
+    required this.onHabits,
+    required this.userRef,
+    required this.coins,
+    required this.onProfile,
+    required this.onStore,
+  });
+
+  final String name;
   final String? photoUrl;
-  const _TopBar({this.photoUrl});
+  final int xp;
+  final int level;
+  final int streak;
+
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> habits;
+
+  final VoidCallback onHabits;
+  final VoidCallback onProfile;
+  final VoidCallback onStore;
+
+  final int coins;
+
+  final DocumentReference<Map<String, dynamic>> userRef;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: AssetImage('assets/logo/logo.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'Healthy Habit',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark,
-          ),
-        ),
-        const Spacer(),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+    final active =
+        habits.where((h) => h.data()['latestStatus'] == 'inProgress').toList();
+
+    final completed =
+        habits.where((h) => h.data()['latestStatus'] == 'completed').length;
+
+    final mission = active.isEmpty ? null : active.first;
+
+    final total =
+        habits
+            .where(
+              (h) =>
+                  h.data()['latestStatus'] == 'inProgress' ||
+                  h.data()['latestStatus'] == 'completed',
+            )
+            .length;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ENCABEZADO
+          Row(
+            children: [
+              Image.asset(
+                'assets/logo/logo.png',
+                width: 38,
+                height: 38,
+                errorBuilder:
+                    (_, __, ___) =>
+                        const Icon(Icons.eco, color: AppColors.primaryGreen),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Healthy Habit',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              IconButton.filledTonal(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.notifications_none_rounded),
+              ),
+              const SizedBox(width: 7),
+              Tooltip(
+                message: 'Abrir mi perfil',
+                child: InkWell(
+                  onTap: onProfile,
+                  borderRadius: BorderRadius.circular(30),
+                  child: CircleAvatar(
+                    backgroundColor: AppColors.mintCard,
+                    foregroundImage:
+                        photoUrl != null && photoUrl!.isNotEmpty
+                            ? NetworkImage(photoUrl!)
+                            : null,
+                    child: const Icon(
+                      Icons.person,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          child: TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsScreen(),
-                ),
-              );
-            },
-            child: const Icon(
-              Icons.notifications_none_rounded,
+
+          const SizedBox(height: 18),
+
+          Text(
+            '¡Hola, $name!',
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
               color: AppColors.textDark,
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.mintCard,
-            border: Border.all(color: Colors.white, width: 2),
-            image:
-                photoUrl != null
-                    ? DecorationImage(
-                      image: NetworkImage(photoUrl!),
-                      fit: BoxFit.cover,
-                    )
-                    : null,
+
+          const Text(
+            'Continúa con tus hábitos de hoy.',
+            style: TextStyle(color: AppColors.textGrey),
           ),
-          child:
-              photoUrl == null
-                  ? const Icon(Icons.person, color: AppColors.primaryGreen)
-                  : null,
-        ),
-      ],
+
+          const SizedBox(height: 14),
+
+          // HABIT COINS
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ActionChip(
+              avatar: Image.asset(
+                'assets/monedas/h coin.png',
+                width: 23,
+                height: 23,
+                errorBuilder:
+                    (_, __, ___) => const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 19,
+                    ),
+              ),
+              label: Text('$coins Habit Coins · Ir a tienda'),
+              onPressed: onStore,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // NIVEL Y XP
+          _levelCard(),
+
+          const SizedBox(height: 16),
+
+          // ESTADÍSTICAS RÁPIDAS
+          Row(
+            children: [
+              Expanded(
+                child: _stat(
+                  Icons.local_fire_department,
+                  '$streak días',
+                  'Racha actual',
+                  AppColors.yellowCard,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _stat(
+                  Icons.check_circle_outline,
+                  '$completed / $total',
+                  'Hábitos completados',
+                  Colors.white,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // BOTÓN DE ESTADÍSTICAS Y PROGRESO
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProgresoScreen()),
+                );
+              },
+              icon: const Icon(Icons.insights_rounded),
+              label: const Text('Ver mis estadísticas y progreso'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.darkGreenCard,
+                side: const BorderSide(color: AppColors.primaryGreen),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // NUEVO BOTÓN DEL RANKING GLOBAL
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RankingScreen()),
+                );
+              },
+              icon: const Icon(Icons.emoji_events_rounded),
+              label: const Text('Ver ranking de usuarios'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.darkGreenCard,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // MISIÓN DEL DÍA
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Tu misión de hoy',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              TextButton(onPressed: onHabits, child: const Text('Ver hábitos')),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          _mission(context, mission),
+
+          const SizedBox(height: 16),
+
+          _achievement(context),
+
+          const SizedBox(height: 16),
+
+          _mascot(context),
+        ],
+      ),
     );
   }
-}
 
-// ---------- Tarjeta Nivel XP Dinámica ----------
-class _LevelCard extends StatelessWidget {
-  final int level;
-  final String title;
-  final int currentXp;
-  final int nextLevelXp;
+  // TARJETA DE NIVEL Y EXPERIENCIA
+  Widget _levelCard() {
+    const perLevel = 1000;
 
-  const _LevelCard({
-    required this.level,
-    required this.title,
-    required this.currentXp,
-    required this.nextLevelXp,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final double progress =
-        nextLevelXp > 0 ? (currentXp / nextLevelXp).clamp(0.0, 1.0) : 0.0;
-    final int percentage = (progress * 100).toInt();
-    final int remainingXp = (nextLevelXp - currentXp).clamp(0, nextLevelXp);
+    final progressXp = xp % perLevel;
+    final progress = progressXp / perLevel;
 
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25),
         gradient: const LinearGradient(
           colors: [Color(0xFF0F3832), Color(0xFF1E4D44)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,554 +515,224 @@ class _LevelCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.primaryGreen.withOpacity(.25),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: Center(
-                  child: Text(
-                    '$level',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
+                child: Text(
+                  '$level',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
               const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'NIVEL $level',
-                      style: const TextStyle(
-                        color: AppColors.primaryGreen,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+              const Expanded(
+                child: Text(
+                  'TU NIVEL ACTUAL\nCultivador constante',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.6,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$currentXp XP',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Text(
-                '$percentage%',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+
+          const SizedBox(height: 17),
+
+          Text(
+            '$xp XP acumulados',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 23,
+              fontWeight: FontWeight.w900,
+            ),
           ),
+
           const SizedBox(height: 8),
+
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: Colors.white12,
+              backgroundColor: Colors.white24,
               valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 8),
+
           Text(
-            '$remainingXp XP para nivel ${level + 1}',
-            style: const TextStyle(color: Colors.white60, fontSize: 11),
+            '${perLevel - progressXp} XP para el siguiente tramo',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),
     );
   }
-}
 
-// ---------- Fila Racha y Progreso Diario Ajustada ----------
-class _StatsRow extends StatelessWidget {
-  final int streakDays;
-  final int completedHabits;
-  final int totalHabits;
-
-  const _StatsRow({
-    required this.streakDays,
-    required this.completedHabits,
-    required this.totalHabits,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final double habitProgress =
-        totalHabits > 0 ? (completedHabits / totalHabits) : 0.0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.yellowCard,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '$streakDays días',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Racha actual',
-                  style: TextStyle(fontSize: 11, color: AppColors.textGrey),
-                ),
-              ],
-            ),
-          ),
+  // TARJETAS DE ESTADÍSTICAS
+  Widget _stat(IconData icon, String value, String caption, Color bg) =>
+      Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(22),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: AppColors.primaryGreen),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: CircularProgressIndicator(
-                    value: habitProgress,
-                    strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withOpacity(0.15),
-                    valueColor: const AlwaysStoppedAnimation(
-                      AppColors.primaryGreen,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$completedHabits / $totalHabits',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const Text(
-                        'Completados',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textGrey,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Text(
+              caption,
+              style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
             ),
-          ),
+          ],
         ),
-      ],
-    );
-  }
-}
+      );
 
-class _SectionHeader extends StatelessWidget {
-  final VoidCallback onTapViewHabits;
-  const _SectionHeader({required this.onTapViewHabits});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Tu misión de hoy',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: AppColors.textDark,
-          ),
-        ),
-        GestureDetector(
-          onTap: onTapViewHabits,
-          child: const Text(
-            'Ver hábitos',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryGreen,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------- Tarjeta Misión Adaptable ----------
-class _MissionCard extends StatelessWidget {
-  final Map<String, dynamic>? missionData;
-  final VoidCallback onTapViewHabits;
-
-  const _MissionCard({this.missionData, required this.onTapViewHabits});
-
-  static const navy = Color(0xFF193344);
-  static const green = Color(0xFF08B889);
-  static const muted = Color(0xFF71879A);
-
-  Color _categoryBg(String category) {
-    switch (category) {
-      case 'Alimentación':
-        return const Color(0xFFFFEFEC);
-      case 'Hidratación':
-        return const Color(0xFFE4F5FB);
-      case 'Energía':
-        return const Color(0xFFFFF5D9);
-      case 'Bienestar':
-        return const Color(0xFFF2ECFC);
-      default:
-        return Colors.white;
-    }
-  }
-
-  Color _categoryInk(String category) {
-    switch (category) {
-      case 'Alimentación':
-        return const Color(0xFFE66C65);
-      case 'Hidratación':
-        return const Color(0xFF299FCB);
-      case 'Energía':
-        return const Color(0xFFB88713);
-      case 'Bienestar':
-        return const Color(0xFF9473C9);
-      default:
-        return const Color(0xFF078765);
-    }
-  }
-
-  IconData _categoryIcon(String category) {
-    switch (category) {
-      case 'Alimentación':
-        return Icons.restaurant_rounded;
-      case 'Hidratación':
-        return Icons.water_drop_rounded;
-      case 'Energía':
-        return Icons.bolt_rounded;
-      case 'Bienestar':
-        return Icons.favorite_rounded;
-      default:
-        return Icons.track_changes_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (missionData == null) {
+  // MISIÓN DEL DÍA
+  Widget _mission(
+    BuildContext context,
+    QueryDocumentSnapshot<Map<String, dynamic>>? habit,
+  ) {
+    if (habit == null) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: const Color(0xFFDCE8E3)),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
-            const Icon(Icons.flag_outlined, size: 40, color: green),
-            const SizedBox(height: 12),
+            const Icon(
+              Icons.flag_outlined,
+              color: AppColors.primaryGreen,
+              size: 40,
+            ),
+            const SizedBox(height: 10),
             const Text(
               'Todavía no tienes hábitos activos.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: navy,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Selecciona un hábito para comenzar tu progreso.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: muted),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: onTapViewHabits,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: green,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                ),
-                child: const Text(
-                  'Explorar hábitos',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                ),
-              ),
+            FilledButton(
+              onPressed: onHabits,
+              child: const Text('Explorar hábitos'),
             ),
           ],
         ),
       );
     }
 
-    final String habitId = missionData!['habitId'].toString();
-    final String attemptId = missionData!['attemptId'].toString();
-    final String category = missionData!['category'].toString();
-    final String title = missionData!['title'].toString();
-    final String subtitle = (missionData!['subtitle'] ?? '').toString();
+    final data = habit.data();
 
-    final int xp = _leerEntero(missionData!['xp'], 0);
-    final int currentVal = _leerEntero(missionData!['progress'], 0);
-    final int targetVal = _leerEntero(missionData!['target'], 1).clamp(1, 100);
+    final title = (data['title'] ?? data['name'] ?? 'Hábito').toString();
 
-    final int remaining = (targetVal - currentVal).clamp(0, targetVal);
+    final category = (data['category'] ?? 'Bienestar').toString();
 
-    final bool done = currentVal >= targetVal;
+    final attemptId = (data['latestAttemptId'] ?? '').toString();
 
-    final double progress = (currentVal / targetVal).clamp(0.0, 1.0);
+    final progress = _number(data['latestProgress']);
 
-    final color = _categoryInk(category);
+    final target = _number(data['latestTarget'], 1).clamp(1, 100000);
+
+    final fraction = (progress / target).clamp(0.0, 1.0);
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
+      padding: const EdgeInsets.all(19),
       decoration: BoxDecoration(
-        color: _categoryBg(category),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: AppColors.blueWaterCard,
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(_categoryIcon(category), color: color, size: 17),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  category.toUpperCase(),
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              if (xp > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF2C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '+$xp XP',
-                    style: const TextStyle(
-                      color: Color(0xFF9B7415),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-            ],
+          Text(
+            category.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.primaryGreen,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
           ),
-          const SizedBox(height: 15),
+
+          const SizedBox(height: 10),
+
           Text(
             title,
             style: const TextStyle(
-              color: navy,
-              fontSize: 22,
-              height: 1.18,
+              color: AppColors.textDark,
               fontWeight: FontWeight.w900,
+              fontSize: 21,
             ),
           ),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(subtitle, style: const TextStyle(color: muted, fontSize: 12)),
-          ],
-          const SizedBox(height: 15),
 
-          // Indicadores individuales de sesiones.
-          Column(
-            children: [
-              Row(
-                children: List.generate(targetVal.clamp(1, 10), (index) {
-                  final completed = index < currentVal;
+          const SizedBox(height: 14),
 
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: index == targetVal.clamp(1, 10) - 1 ? 0 : 6,
-                      ),
-                      child: Container(
-                        height: 39,
-                        decoration: BoxDecoration(
-                          color:
-                              completed
-                                  ? color.withValues(alpha: 0.18)
-                                  : Colors.white.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(
-                            color:
-                                completed
-                                    ? color.withValues(alpha: 0.35)
-                                    : Colors.white,
-                          ),
-                        ),
-                        child: Icon(
-                          completed
-                              ? _categoryIcon(category)
-                              : Icons.circle_outlined,
-                          color: completed ? color : const Color(0xFFB8C8C3),
-                          size: 19,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 7,
-                  backgroundColor: Colors.white,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                ),
-              ),
-            ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 8,
+              backgroundColor: Colors.white,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text(
-                '$currentVal de $targetVal sesiones',
-                style: const TextStyle(
-                  color: navy,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              Flexible(
-                child: Text(
-                  done ? '¡Meta alcanzada!' : 'Faltan $remaining sesiones',
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(color: muted, fontSize: 12),
-                ),
-              ),
-            ],
+
+          const SizedBox(height: 9),
+
+          Text(
+            '$progress de $target sesiones',
+            style: const TextStyle(color: AppColors.textGrey),
           ),
-          const SizedBox(height: 15),
+
+          const SizedBox(height: 14),
+
           SizedBox(
             width: double.infinity,
-            height: 51,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed:
-                  done
-                      ? null
+                  attemptId.isEmpty
+                      ? onHabits
                       : () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
                                 (_) => RegistrarHabitoScreen(
-                                  habitId: habitId,
+                                  habitId: habit.id,
                                   attemptId: attemptId,
                                   habitTitle: title,
                                   category: category,
-                                  currentProgress: currentVal,
-                                  goal: targetVal,
+                                  currentProgress: progress,
+                                  goal: target,
                                 ),
                           ),
                         );
                       },
-              icon: Icon(
-                done ? Icons.check_circle_rounded : Icons.add_rounded,
-                size: 21,
-              ),
+              icon: const Icon(Icons.add_rounded),
               label: Text(
-                done ? 'Hábito completado' : 'Registrar sesión',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
+                attemptId.isEmpty ? 'Ver hábitos' : 'Registrar sesión',
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: green,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFDDE9E4),
-                disabledForegroundColor: const Color(0xFF078765),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(17),
-                ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
               ),
             ),
           ),
@@ -1002,273 +740,199 @@ class _MissionCard extends StatelessWidget {
       ),
     );
   }
-}
 
-int _leerEntero(dynamic value, int fallback) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
+  // LOGROS
+  Widget _achievement(
+    BuildContext context,
+  ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    stream: userRef.collection('achievements').snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return const Card(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No se pudieron consultar los logros.'),
+          ),
+        );
+      }
 
-  return int.tryParse(value?.toString() ?? '') ?? fallback;
-}
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-// ---------- Banner Próximo Logro ----------
-class _NextAchievementCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
+      final ids = snapshot.data!.docs.map((d) => d.id).toSet();
 
-  const _NextAchievementCard({required this.title, required this.subtitle});
+      final perfil = <String, dynamic>{
+        'xp': xp,
+        'level': level,
+        'currentStreak': streak,
+      };
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      final completados =
+          habits.where((h) => h.data()['latestStatus'] == 'completed').length;
+
+      final siguiente = LogrosService.siguiente(
+        perfil,
+        habits.length,
+        completados,
+        ids,
+      );
+
+      final progreso =
+          siguiente == null
+              ? 0
+              : LogrosService.progreso(
+                siguiente,
+                perfil,
+                habits.length,
+                completados,
+                ids,
+              );
+
+      return Material(
         color: AppColors.purpleCard,
         borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.yellowCard,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.local_fire_department_rounded,
-              color: Colors.orange,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const LogrosScreen()));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                const Text(
-                  'PRÓXIMO LOGRO',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.purple,
-                    letterSpacing: 0.5,
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: const BoxDecoration(
+                    color: AppColors.yellowCard,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    siguiente == null
+                        ? Icons.emoji_events_rounded
+                        : siguiente.icono,
+                    color: Colors.deepOrange,
                   ),
                 ),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textGrey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textGrey),
-        ],
-      ),
-    );
-  }
-}
 
-// ---------- Banner Mr. Healthy ----------
-class _MrHealthyBannerCard extends StatelessWidget {
-  const _MrHealthyBannerCard();
+                const SizedBox(width: 12),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.mintCard,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'MR. HEALTHY',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryGreen,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Un vaso con tu almuerzo mantiene tu racha fácil.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NutriChatPage(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        siguiente == null
+                            ? 'COLECCIÓN COMPLETA'
+                            : 'PRÓXIMO LOGRO',
+                        style: const TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                        ),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome,
-                          size: 16,
-                          color: AppColors.primaryGreen,
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        siguiente?.nombre ?? '¡Todos los logros conseguidos!',
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
                         ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Chatear',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryGreen,
-                          ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        siguiente == null
+                            ? 'Consulta tu colección de medallas.'
+                            : '${siguiente.descripcion} · ${progreso.clamp(0, siguiente.meta)} / ${siguiente.meta}',
+                        style: const TextStyle(
+                          color: AppColors.textGrey,
+                          fontSize: 11,
                         ),
-                      ],
-                    ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      const Text(
+                        'Ver todos los logros',
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textGrey,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 72,
-            height: 72,
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (context, error, stackTrace) => const Icon(
-                    Icons.eco_rounded,
-                    color: AppColors.primaryGreen,
-                    size: 50,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------- Bottom Nav Bar ----------
-class _BottomNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-
-  const _BottomNavBar({required this.selectedIndex, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.home_rounded,
-              label: 'Inicio',
-              isSelected: selectedIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            _NavItem(
-              icon: Icons.track_changes_rounded,
-              label: 'Hábitos',
-              isSelected: selectedIndex == 1,
-              onTap: () => onTap(1),
-            ),
-            _NavItem(
-              icon: Icons.storefront_rounded,
-              label: 'Tienda',
-              isSelected: selectedIndex == 2,
-              onTap: () => onTap(2),
-            ),
-            _NavItem(
-              icon: Icons.emoji_events_rounded,
-              label: 'Desafíos',
-              isSelected: selectedIndex == 3,
-              onTap: () => onTap(3),
-            ),
-            _NavItem(
-              icon: Icons.person_outline_rounded,
-              label: 'Perfil',
-              isSelected: selectedIndex == 4,
-              onTap: () => onTap(4),
-            ),
-          ],
         ),
-      ),
-    );
-  }
-}
+      );
+    },
+  );
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primaryGreen : AppColors.textGrey;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+  // MASCOTA Y NUTRICHAT
+  Widget _mascot(BuildContext context) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: AppColors.mintCard,
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'MR. HEALTHY',
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 7),
+
+              const Text(
+                'Cada pequeño paso cuenta.',
+                style: TextStyle(color: AppColors.textDark),
+              ),
+
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NutriChatPage()),
+                  );
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Chatear'),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
+
+        Image.asset(
+          'assets/mascot/healthy.png',
+          width: 72,
+          height: 72,
+          errorBuilder: (_, __, ___) => const Icon(Icons.eco, size: 50),
+        ),
+      ],
+    ),
+  );
 }

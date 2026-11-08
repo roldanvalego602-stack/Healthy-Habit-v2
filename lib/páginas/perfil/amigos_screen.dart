@@ -125,10 +125,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(color: _C.grey),
-                ),
+                child: const Text('Cancelar', style: TextStyle(color: _C.grey)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
@@ -389,7 +386,9 @@ class _AmigosScreenState extends State<AmigosScreen> {
         controller: _search,
         decoration: InputDecoration(
           hintText:
-              _tab == 0 ? 'Buscar entre quienes sigues...' : 'Buscar seguidor...',
+              _tab == 0
+                  ? 'Buscar entre quienes sigues...'
+                  : 'Buscar seguidor...',
           hintStyle: const TextStyle(color: _C.grey, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: _C.grey),
           suffixIcon:
@@ -438,25 +437,22 @@ class _AmigosScreenState extends State<AmigosScreen> {
           );
         }
         if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator(color: _C.green));
+          return const Center(
+            child: CircularProgressIndicator(color: _C.green),
+          );
         }
 
         final perfiles = snap.data!;
         final items =
-            ids
-                .where(perfiles.containsKey)
-                .where((id) {
-                  if (_q.isEmpty) return true;
-                  final d = perfiles[id]!;
-                  final nombre = _texto(d['name']).toLowerCase();
-                  final user = _texto(d['username']).toLowerCase();
-                  return nombre.contains(_q) || user.contains(_q);
-                })
-                .toList()
+            ids.where(perfiles.containsKey).where((id) {
+                if (_q.isEmpty) return true;
+                final d = perfiles[id]!;
+                final nombre = _texto(d['name']).toLowerCase();
+                final user = _texto(d['username']).toLowerCase();
+                return nombre.contains(_q) || user.contains(_q);
+              }).toList()
               ..sort(
-                (a, b) => _texto(
-                  perfiles[a]!['name'],
-                ).toLowerCase().compareTo(
+                (a, b) => _texto(perfiles[a]!['name']).toLowerCase().compareTo(
                   _texto(perfiles[b]!['name']).toLowerCase(),
                 ),
               );
@@ -591,10 +587,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: _C.green,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: _C.green),
             )
             : Row(
               mainAxisSize: MainAxisSize.min,

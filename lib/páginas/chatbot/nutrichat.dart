@@ -1,6 +1,9 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
+import 'nutri_respuestas_service.dart';
 
 class ChatMessage {
   final String text;
@@ -18,157 +21,219 @@ class NutriChatPage extends StatefulWidget {
 }
 
 class _NutriChatPageState extends State<NutriChatPage> {
+  static const _background = Color(0xFFF7F9F8);
+  static const _navy = Color(0xFF172B36);
+  static const _muted = Color(0xFF7A869A);
+  static const _green = Color(0xFF198568);
+
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
+  final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
+
+  final NutriRespuestasService _respuestas = NutriRespuestasService();
+  Map<String, dynamic> _perfil = <String, dynamic>{};
+  String _primerNombre = '';
   bool isTyping = false;
+  bool _hasSentMessage = false;
 
   final List<ChatMessage> messages = [
     ChatMessage(
       text:
-          '¡Hola, Diego! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
+          '¡Hola! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
       isUser: false,
-      time: '9:40',
+      time: _timeNow(),
     ),
   ];
 
-  final List<String> quickOptions = [
+  final List<String> quickOptions = const [
     '¿Cómo mejorar mi racha?',
     '¿Qué misión tengo hoy?',
     'Quiero mejorar mi hidratación',
     'Hablar con un profesional',
+    'Sugiere hábitos para mí',
+    '¿Cómo va mi perfil?',
+    'Quiero calcular mi GET',
   ];
 
-  String _getFormattedTime() {
+  static String _timeNow() {
     final now = DateTime.now();
-    final hour = now.hour.toString().padLeft(2, '0');
-    final minute = now.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
-  void sendMessage([String? predefinedText]) {
-    final text = (predefinedText ?? messageController.text).trim();
+  @override
+  void initState() {
+    super.initState();
+    _inputFocus.addListener(_onFocusChange);
+    _cargarSaludoPersonalizado();
+  }
 
-    if (text.isEmpty || isTyping) return;
+  Future<void> _cargarSaludoPersonalizado() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // El nombre guardado en el perfil tiene prioridad sobre el de Auth.
+    String nombre = (user.displayName ?? '').trim();
+    try {
+      final db = FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'default',
+      );
+      final snapshot = await db.collection('users').doc(user.uid).get();
+      final data = snapshot.data() ?? <String, dynamic>{};
+      if (!mounted) return;
+      _perfil = data;
+      final storedName = data['name'];
+      if (storedName is String && storedName.trim().isNotEmpty) {
+        nombre = storedName.trim();
+      }
+    } catch (_) {
+      // Sin conexión o sin permisos: usar el nombre de Auth si existe.
+    }
+
+    if (!mounted) return;
+    _primerNombre = nombre.isEmpty ? '' : nombre.split(RegExp(r'\s+')).first;
+    if (_hasSentMessage || nombre.isEmpty) return;
+    final primerNombre = _primerNombre;
+    setState(() {
+      messages[0] = ChatMessage(
+        text:
+            '¡Hola, $primerNombre! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
+        isUser: false,
+        time: messages[0].time,
+      );
+    });
+  }
+
+  void _onFocusChange() {
+    if (_inputFocus.hasFocus) {
+      // Espera al ajuste de tamaño causado por el teclado.
+      Future<void>.delayed(const Duration(milliseconds: 250), _scrollToBottom);
+    }
+  }
+
+  Future<void> sendMessage([String? predefinedText]) async {
+    if (!mounted || isTyping) return;
+    final text = (predefinedText ?? messageController.text).trim();
+    if (text.isEmpty) return;
 
     messageController.clear();
-
-    final currentTime = _getFormattedTime();
-
     setState(() {
-      messages.add(ChatMessage(text: text, isUser: true, time: currentTime));
+      _hasSentMessage = true;
+      messages.add(ChatMessage(text: text, isUser: true, time: _timeNow()));
       isTyping = true;
     });
+    _scrollToBottom();
 
-    scrollToBottom();
+    String response;
+    try {
+      final normalized = NutriRespuestasService.normalizar(text);
+      // Moderación antes de los flujos: el lenguaje ofensivo no se procesa
+      // como un dato numérico de IMC/GET. No se bloquea el resto del chat.
+      if (NutriRespuestasService.tieneGroserias(text) ||
+          NutriRespuestasService.contiene(text, [
+            'suicidio',
+            'suicidarme',
+            'matarme',
+            'hacerme daño',
+            'autolesion',
+          ])) {
+        response = _respuestas.moderar(text, _primerNombre);
+      } else if (NutriRespuestasService.contiene(normalized, [
+            'cancelar',
+            'salir del calculo',
+            'detener calculo',
+          ]) &&
+          (_calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0)) {
+        _calculatorService.resetIMC();
+        _calculatorService.resetGET();
+        response = 'Cálculo cancelado. ¿Te ayudo con otra cosa? 🌿';
+      } else {
+        // Actualizar estadísticas solo cuando se preguntan; no inventar datos.
+        if (NutriRespuestasService.contiene(normalized, [
+          'mi perfil',
+          'mis datos',
+          'mis estadisticas',
+          'cuantas monedas',
+          'habit coins',
+          'mi nivel',
+          'cuanta xp',
+          'mi xp',
+          'mi racha',
+          'mi nombre',
+          'mi usuario',
+          'como va mi perfil',
+        ])) {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            try {
+              final snapshot =
+                  await FirebaseFirestore.instanceFor(
+                    app: Firebase.app(),
+                    databaseId: 'default',
+                  ).collection('users').doc(user.uid).get();
+              _perfil = snapshot.data() ?? <String, dynamic>{};
+            } catch (_) {
+              _perfil = <String, dynamic>{};
+            }
+          } else {
+            _perfil = <String, dynamic>{};
+          }
+        }
+        final activeCalculator =
+            _calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0;
+        final calculatorIntent = NutriRespuestasService.contiene(normalized, [
+          'imc',
+          'indice de masa corporal',
+          'get',
+          'gasto energetico',
+          'calorias diarias',
+          'calcular mi get',
+        ]);
+        final calcResponse =
+            (activeCalculator || calculatorIntent)
+                ? _calculatorService.procesarMensaje(text)
+                : '';
+        response =
+            calcResponse.isNotEmpty
+                ? calcResponse
+                : _respuestas.responder(
+                  text,
+                  nombre: _primerNombre,
+                  perfil: _perfil,
+                );
+      }
+    } catch (_) {
+      response =
+          'Tuve un problema al preparar la respuesta. Intenta de nuevo en un momento. 🌿';
+    }
 
-    final normalizedText = _normalizeText(text);
-    final isActiveCalculatorFlow =
-        _calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0;
-    final isQuickOption = quickOptions.any(
-      (option) => _normalizeText(option) == normalizedText,
-    );
-    final isImcIntent = _containsAny(normalizedText, [
-      'imc',
-      'indice de masa corporal',
-    ]);
-    final respuesta =
-        (isActiveCalculatorFlow || isImcIntent || isQuickOption)
-            ? _calculatorService.procesarMensaje(text)
-            : '';
-    final response = respuesta.isNotEmpty ? respuesta : getNutriResponse(text);
-
-    Future.delayed(const Duration(milliseconds: 450), () {
-      if (!mounted) return;
-
-      setState(() {
-        messages.add(
-          ChatMessage(text: response, isUser: false, time: _getFormattedTime()),
-        );
-        isTyping = false;
-      });
-
-      scrollToBottom();
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    setState(() {
+      messages.add(
+        ChatMessage(text: response, isUser: false, time: _timeNow()),
+      );
+      isTyping = false;
     });
+    _scrollToBottom();
   }
 
-  void scrollToBottom() {
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !scrollController.hasClients) return;
-
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
       );
     });
-  }
-
-  String getNutriResponse(String input) {
-    final text = _normalizeText(input);
-
-    if (_containsAny(text, ['racha', 'como mejorar mi racha'])) {
-      return 'Para mantener tu racha activa, asegúrate de completar y registrar al menos un hábito o misión principal al día antes de que termine la jornada.';
-    }
-
-    if (_containsAny(text, ['mision', 'misión', 'que mision tengo hoy'])) {
-      return 'Tu misión destacada de hoy es Hidratación (4 de 6 vasos de agua tomados). ¡Solo te faltan 2 vasos para completarla!';
-    }
-
-    if (_containsAny(text, [
-      'hidratacion',
-      'hidratación',
-      'quiero mejorar mi hidratacion',
-    ])) {
-      return 'Puedes asociar tu hábito a un momento cotidiano y configurar un recordatorio en Hábitos → Hidratación.\n\nEs una idea general, no una indicación médica. Si necesitas orientación individual, consulta a un profesional.';
-    }
-
-    if (_containsAny(text, ['profesional', 'hablar con un profesional'])) {
-      return 'Puedes consultar la pestaña de Orientación Profesional en el menú principal para contactar con nutriólogos y psicólogos capacitados.';
-    }
-
-    const List<String> consejosHabitos = [
-      '1. Bebe un vaso de agua al despertar y mantén una botella a la mano durante el día.',
-      '2. Añade una porción de verdura o fruta a cada comida.',
-      '3. Camina al menos 20-30 minutos al día.',
-      '4. Duerme entre 7 y 9 horas a la misma hora.',
-    ];
-
-    if (_containsAny(text, ['habito', 'habitos', 'consejo'])) {
-      final consejo = consejosHabitos[Random().nextInt(consejosHabitos.length)];
-      return 'Aquí tienes una sugerencia práctica:\n\n$consejo';
-    }
-
-    return 'Puedo ayudarte con información sobre hábitos, misiones diarias, hidratación o cálculo de tu IMC/GET. ¿Sobre cuál te gustaría profundizar?';
-  }
-
-  bool _containsAny(String text, List<String> keywords) {
-    final normalized = _normalizeText(text);
-    return keywords.any((keyword) {
-      final key = _normalizeText(keyword);
-      if (key.isEmpty) return false;
-      final pattern = RegExp(
-        r'(^|[^a-z0-9])' + RegExp.escape(key) + r'($|[^a-z0-9])',
-      );
-      return pattern.hasMatch(normalized);
-    });
-  }
-
-  String _normalizeText(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll('á', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ú', 'u')
-        .replaceAll('ñ', 'n')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
   }
 
   @override
   void dispose() {
+    _inputFocus.removeListener(_onFocusChange);
+    _inputFocus.dispose();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
@@ -176,290 +241,268 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: _background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9F8),
+        backgroundColor: _background,
         elevation: 0,
-        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF172B36)),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: _navy),
+          onPressed: () => Navigator.maybePop(context),
         ),
+        titleSpacing: 0,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Mr. Healthy',
               style: TextStyle(
-                color: Color(0xFF172B36),
-                fontSize: 20,
+                color: _navy,
+                fontSize: 19,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            SizedBox(height: 2),
             Text(
               'Asistente de Healthy Habit',
-              style: TextStyle(
-                color: Color(0xFF7A869A),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: _muted, fontSize: 11),
             ),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset(
+              'assets/mascot/healthy.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.contain,
+              errorBuilder:
+                  (_, __, ___) => const Icon(Icons.eco, color: _green),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView.builder(
                 controller: scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Hero Banner de Mr. Healthy
-                    Center(
-                      child: Column(
-                        children: [
-                          const SizedBox(
-                            width: 120,
-                            height: 6,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Color(0xFF172B36),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(3),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/mascot/healthy.png',
-                                width: 56,
-                                height: 56,
-                                errorBuilder:
-                                    (context, error, stackTrace) => const Icon(
-                                      Icons.eco_rounded,
-                                      color: Color(0xFF00C88C),
-                                      size: 48,
-                                    ),
-                              ),
-                              const SizedBox(width: 14),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE2F7ED),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Text(
-                                      'A TU RITMO',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Color(0xFF198568),
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  const Text(
-                                    'Un pequeño paso, juntos.',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF172B36),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+                itemCount:
+                    1 +
+                    messages.length +
+                    (isTyping ? 1 : 0) +
+                    (!_hasSentMessage && !keyboardVisible ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _hasSentMessage || keyboardVisible
+                        ? const SizedBox.shrink()
+                        : _buildWelcome();
+                  }
+                  final messageIndex = index - 1;
+                  if (messageIndex < messages.length) {
+                    return _buildMessageBubble(messages[messageIndex]);
+                  }
+                  if (isTyping && messageIndex == messages.length) {
+                    return const Padding(
+                      padding: EdgeInsets.only(left: 6, bottom: 14),
+                      child: Text(
+                        'Mr. Healthy está escribiendo…',
+                        style: TextStyle(
+                          color: _green,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Lista de Mensajes
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: messages.length + (isTyping ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= messages.length) {
-                          return const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              'Mr. Healthy está escribiendo...',
-                              style: TextStyle(
-                                color: Color(0xFF198568),
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          );
-                        }
-                        return _buildMessageBubble(messages[index]);
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Sugerencias rápidas verticales
-                    const Text(
-                      'Sugerencias rápidas',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF7A869A),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Column(
-                      children:
-                          quickOptions.map((option) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: InkWell(
-                                onTap:
-                                    isTyping ? null : () => sendMessage(option),
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: const Color(0xFFE5EEE9),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          option,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xFF172B36),
-                                          ),
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.north_east_rounded,
-                                        size: 18,
-                                        color: Color(0xFF198568),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                  ],
-                ),
+                    );
+                  }
+                  return _buildQuickOptions();
+                },
               ),
             ),
-
-            // Input inferior con caja blanca redondeada y nota médica
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              color: const Color(0xFFF7F9F8),
-              child: Column(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: const Color(0xFFE5EEE9),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 18),
-                        Expanded(
-                          child: TextField(
-                            controller: messageController,
-                            textCapitalization: TextCapitalization.sentences,
-                            minLines: 1,
-                            maxLines: 3,
-                            onSubmitted: (_) => sendMessage(),
-                            decoration: const InputDecoration(
-                              hintText: 'Escribe a Mr. Healthy...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF8A8F98),
-                                fontSize: 14,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: InkWell(
-                            onTap: isTyping ? null : () => sendMessage(),
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF8DE0C0),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.arrow_upward_rounded,
-                                color: Color(0xFF172B36),
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8A8F98),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildComposer(keyboardVisible),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildWelcome() => Padding(
+    padding: const EdgeInsets.only(bottom: 20),
+    child: Row(
+      children: [
+        Image.asset(
+          'assets/mascot/healthy.png',
+          width: 52,
+          height: 52,
+          errorBuilder:
+              (_, __, ___) => const Icon(Icons.eco, size: 45, color: _green),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'A TU RITMO',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _green,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Un pequeño paso, juntos.',
+                maxLines: 2,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  color: _navy,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildQuickOptions() => Padding(
+    padding: const EdgeInsets.only(top: 8, bottom: 10),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Preguntas frecuentes',
+          style: TextStyle(
+            color: _muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...quickOptions.map(
+          (option) => Padding(
+            padding: const EdgeInsets.only(bottom: 7),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: isTyping ? null : () => sendMessage(option),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5EEE9)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          option,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: _navy,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: _green,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildComposer(bool keyboardVisible) => Container(
+    padding: EdgeInsets.fromLTRB(14, 8, 14, keyboardVisible ? 8 : 12),
+    decoration: const BoxDecoration(
+      color: _background,
+      border: Border(top: BorderSide(color: Color(0xFFE5EEE9))),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(left: 16, right: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xFFDDE8E2)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: messageController,
+                  focusNode: _inputFocus,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.send,
+                  minLines: 1,
+                  maxLines: 3,
+                  onSubmitted: (_) => sendMessage(),
+                  decoration: const InputDecoration(
+                    hintText: 'Escribe a Mr. Healthy…',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF8A8F98),
+                      fontSize: 13,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              IconButton.filled(
+                onPressed: isTyping ? null : () => sendMessage(),
+                icon: const Icon(Icons.arrow_upward_rounded, size: 21),
+                tooltip: 'Enviar mensaje',
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFF8DE0C0),
+                  foregroundColor: _navy,
+                  disabledBackgroundColor: const Color(0xFFE5EEE9),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!keyboardVisible) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: Color(0xFF8A8F98),
+              height: 1.3,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
@@ -468,16 +511,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF172B36) : const Color(0xFFE2F7ED),
+          color: isUser ? _navy : const Color(0xFFE2F7ED),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(22),
-            topRight: const Radius.circular(22),
-            bottomLeft: Radius.circular(isUser ? 22 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 22),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isUser ? 18 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
         ),
         child: Column(
@@ -486,19 +529,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
             Text(
               message.text,
               style: TextStyle(
-                color: isUser ? Colors.white : const Color(0xFF172B36),
+                color: isUser ? Colors.white : _navy,
                 fontSize: 14,
                 height: 1.4,
-                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              isUser ? 'Tú · ${message.time}' : 'Mr. Healthy · ${message.time}',
+              '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
-                color: isUser ? Colors.white60 : const Color(0xFF198568),
+                color: isUser ? Colors.white70 : _green,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ],

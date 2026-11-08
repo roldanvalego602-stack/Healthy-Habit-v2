@@ -6,10 +6,8 @@ import 'package:firebase_core/firebase_core.dart';
 class TemporaryEvidenceService {
   static const int maxImageBytes = 250 * 1024;
 
-  static FirebaseFirestore get _db => FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
-        databaseId: 'default',
-      );
+  static FirebaseFirestore get _db =>
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
 
   static Future<int> cleanExpiredForCurrentUser() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -22,10 +20,11 @@ class TemporaryEvidenceService {
     // Un máximo por invocación evita lecturas/escrituras descontroladas en Spark.
     // Se usa consulta sin orderBy para evitar un índice compuesto adicional.
     for (var page = 0; page < 3; page++) {
-      final expired = await collection
-          .where('expiresAt', isLessThanOrEqualTo: Timestamp.now())
-          .limit(30)
-          .get();
+      final expired =
+          await collection
+              .where('expiresAt', isLessThanOrEqualTo: Timestamp.now())
+              .limit(30)
+              .get();
       if (expired.docs.isEmpty) break;
       final batch = _db.batch();
       for (final doc in expired.docs) {
