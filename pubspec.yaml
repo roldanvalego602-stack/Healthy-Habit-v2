@@ -1,4 +1,4 @@
-name: Healthy Habit
+name: healthy_habit
 description: "Una aplicación demasiado insana para mortales."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
