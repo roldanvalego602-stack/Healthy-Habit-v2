@@ -9,6 +9,7 @@ import 'amigos_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profesionales_screen.dart';
+import 'feed_amigos_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -532,9 +533,47 @@ class ProfileScreen extends StatelessWidget {
               Expanded(
                 child: _friendStat(context, uid, 'followers', 'Seguidores', 1),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _friendStat(
+                  context,
+                  uid,
+                  'solicitudes',
+                  'Solicitudes',
+                  2,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeedAmigosScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.dynamic_feed_rounded, size: 19),
+              label: const Text(
+                'Ver progreso de amigos',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 46,

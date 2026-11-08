@@ -26,9 +26,9 @@ class _C {
 
 typedef _Perfiles = Map<String, Map<String, dynamic>>;
 
-/// Pantalla de amigos con dos pestañas: Siguiendo y Seguidores.
+/// Pantalla de amigos con tres pestañas: Siguiendo, Seguidores y Solicitudes.
 class AmigosScreen extends StatefulWidget {
-  /// 0 = Siguiendo, 1 = Seguidores
+  /// 0 = Siguiendo, 1 = Seguidores, 2 = Solicitudes
   final int initialTab;
 
   const AmigosScreen({super.key, this.initialTab = 0});
@@ -41,11 +41,16 @@ class _AmigosScreenState extends State<AmigosScreen> {
   final TextEditingController _search = TextEditingController();
   final Set<String> _ocupados = {};
 
-  late int _tab = widget.initialTab == 1 ? 1 : 0;
+  late int _tab =
+      (widget.initialTab >= 0 && widget.initialTab <= 2)
+          ? widget.initialTab
+          : 0;
   late final String? _uid = AmigosServicio.uidActual;
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? _siguiendoStream;
   Stream<QuerySnapshot<Map<String, dynamic>>>? _seguidoresStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _solicitudesStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _solicitudesEnviadasStream;
 
   String _q = '';
   String _cacheKey = '';
@@ -59,6 +64,8 @@ class _AmigosScreenState extends State<AmigosScreen> {
     if (uid != null) {
       _siguiendoStream = AmigosServicio.siguiendo(uid);
       _seguidoresStream = AmigosServicio.seguidores(uid);
+      _solicitudesStream = AmigosServicio.solicitudesRecibidas(uid);
+      _solicitudesEnviadasStream = AmigosServicio.solicitudesEnviadas(uid);
     }
 
     _search.addListener(() {
@@ -146,7 +153,14 @@ class _AmigosScreenState extends State<AmigosScreen> {
     return ok == true;
   }
 
-  Future<void> _toggle(String uid, String nombre, bool siguiendo) async {
+  /// Alterna entre: enviar solicitud, cancelarla si ya está pendiente, o
+  /// dejar de seguir si ya se sigue a esa persona.
+  Future<void> _toggle(
+    String uid,
+    String nombre,
+    bool siguiendo,
+    bool pendiente,
+  ) async {
     if (_ocupados.contains(uid)) return;
 
     if (siguiendo) {
@@ -158,11 +172,40 @@ class _AmigosScreenState extends State<AmigosScreen> {
     try {
       if (siguiendo) {
         await AmigosServicio.dejarDeSeguir(uid);
+      } else if (pendiente) {
+        await AmigosServicio.cancelarSolicitud(uid);
       } else {
-        await AmigosServicio.seguir(uid);
+        await AmigosServicio.enviarSolicitud(uid);
+        if (mounted) _snack('Solicitud enviada a $nombre');
       }
     } catch (e) {
       if (mounted) _snack('No se pudo completar la acción: $e');
+    } finally {
+      if (mounted) setState(() => _ocupados.remove(uid));
+    }
+  }
+
+  Future<void> _aceptar(String uid, String nombre) async {
+    if (_ocupados.contains(uid)) return;
+    setState(() => _ocupados.add(uid));
+    try {
+      await AmigosServicio.aceptarSolicitud(uid);
+      if (mounted) _snack('Ahora $nombre te sigue');
+    } catch (e) {
+      if (mounted) _snack('No se pudo aceptar la solicitud: $e');
+    } finally {
+      if (mounted) setState(() => _ocupados.remove(uid));
+    }
+  }
+
+  Future<void> _rechazar(String uid, String nombre) async {
+    if (_ocupados.contains(uid)) return;
+    setState(() => _ocupados.add(uid));
+    try {
+      await AmigosServicio.rechazarSolicitud(uid);
+      if (mounted) _snack('Rechazaste la solicitud de $nombre');
+    } catch (e) {
+      if (mounted) _snack('No se pudo rechazar la solicitud: $e');
     } finally {
       if (mounted) setState(() => _ocupados.remove(uid));
     }
@@ -263,43 +306,80 @@ class _AmigosScreenState extends State<AmigosScreen> {
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: _seguidoresStream,
           builder: (context, snapSeguidores) {
-            if (snapSiguiendo.hasError || snapSeguidores.hasError) {
-              return _mensaje(
-                icono: Icons.cloud_off_outlined,
-                titulo: 'No se pudieron cargar tus amigos',
-                detalle:
-                    'Comprueba tu conexión y que las reglas de Firestore '
-                    'permitan leer las colecciones following y followers.',
-              );
-            }
+            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _solicitudesStream,
+              builder: (context, snapSolicitudes) {
+                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _solicitudesEnviadasStream,
+                  builder: (context, snapEnviadas) {
+                    if (snapSiguiendo.hasError ||
+                        snapSeguidores.hasError ||
+                        snapSolicitudes.hasError ||
+                        snapEnviadas.hasError) {
+                      return _mensaje(
+                        icono: Icons.cloud_off_outlined,
+                        titulo: 'No se pudieron cargar tus amigos',
+                        detalle:
+                            'Comprueba tu conexión y que las reglas de Firestore '
+                            'permitan leer las colecciones following, followers, '
+                            'solicitudes y solicitudes_enviadas.',
+                      );
+                    }
 
-            if (!snapSiguiendo.hasData || !snapSeguidores.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: _C.green),
-              );
-            }
+                    if (!snapSiguiendo.hasData ||
+                        !snapSeguidores.hasData ||
+                        !snapSolicitudes.hasData ||
+                        !snapEnviadas.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: _C.green),
+                      );
+                    }
 
-            final siguiendoIds =
-                snapSiguiendo.data!.docs.map((d) => d.id).toList();
-            final seguidoresIds =
-                snapSeguidores.data!.docs.map((d) => d.id).toList();
-            final siguiendoSet = siguiendoIds.toSet();
+                    final siguiendoIds =
+                        snapSiguiendo.data!.docs.map((d) => d.id).toList();
+                    final seguidoresIds =
+                        snapSeguidores.data!.docs.map((d) => d.id).toList();
+                    final solicitudesIds =
+                        snapSolicitudes.data!.docs.map((d) => d.id).toList();
+                    final enviadasSet =
+                        snapEnviadas.data!.docs.map((d) => d.id).toSet();
+                    final siguiendoSet = siguiendoIds.toSet();
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _segmentos(siguiendoIds.length, seguidoresIds.length),
-                const SizedBox(height: 14),
-                _buscador(),
-                const SizedBox(height: 14),
-                Expanded(
-                  child: _lista(
-                    ids: _tab == 0 ? siguiendoIds : seguidoresIds,
-                    siguiendoSet: siguiendoSet,
-                    union: {...siguiendoIds, ...seguidoresIds},
-                  ),
-                ),
-              ],
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _segmentos(
+                          siguiendoIds.length,
+                          seguidoresIds.length,
+                          solicitudesIds.length,
+                        ),
+                        const SizedBox(height: 14),
+                        if (_tab != 2) ...[
+                          _buscador(),
+                          const SizedBox(height: 14),
+                        ],
+                        Expanded(
+                          child:
+                              _tab == 2
+                                  ? _listaSolicitudes(solicitudesIds)
+                                  : _lista(
+                                    ids:
+                                        _tab == 0
+                                            ? siguiendoIds
+                                            : seguidoresIds,
+                                    siguiendoSet: siguiendoSet,
+                                    pendientesSet: enviadasSet,
+                                    union: {
+                                      ...siguiendoIds,
+                                      ...seguidoresIds,
+                                    },
+                                  ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             );
           },
         );
@@ -307,8 +387,8 @@ class _AmigosScreenState extends State<AmigosScreen> {
     );
   }
 
-  Widget _segmentos(int siguiendo, int seguidores) {
-    Widget item(int index, String label, int total) {
+  Widget _segmentos(int siguiendo, int seguidores, int solicitudes) {
+    Widget item(int index, String label, int total, {bool resaltar = false}) {
       final activo = _tab == index;
       return Expanded(
         child: GestureDetector(
@@ -322,32 +402,46 @@ class _AmigosScreenState extends State<AmigosScreen> {
               borderRadius: BorderRadius.circular(15),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: activo ? Colors.white : _C.grey,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: activo ? Colors.white : _C.grey,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 7),
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 7,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: activo ? Colors.white24 : _C.mintSoft,
+                    color:
+                        activo
+                            ? Colors.white24
+                            : (resaltar && total > 0
+                                ? Colors.redAccent.withOpacity(0.15)
+                                : _C.mintSoft),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '$total',
                     style: TextStyle(
-                      color: activo ? Colors.white : _C.green,
+                      color:
+                          activo
+                              ? Colors.white
+                              : (resaltar && total > 0
+                                  ? Colors.redAccent
+                                  : _C.green),
                       fontWeight: FontWeight.w900,
-                      fontSize: 11.5,
+                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -371,6 +465,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
         children: [
           item(0, 'Siguiendo', siguiendo),
           item(1, 'Seguidores', seguidores),
+          item(2, 'Solicitudes', solicitudes, resaltar: true),
         ],
       ),
     );
@@ -409,6 +504,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
   Widget _lista({
     required List<String> ids,
     required Set<String> siguiendoSet,
+    required Set<String> pendientesSet,
     required Set<String> union,
   }) {
     if (ids.isEmpty) {
@@ -475,14 +571,24 @@ class _AmigosScreenState extends State<AmigosScreen> {
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, i) {
             final uid = items[i];
-            return _tarjeta(uid, perfiles[uid]!, siguiendoSet.contains(uid));
+            return _tarjeta(
+              uid,
+              perfiles[uid]!,
+              siguiendoSet.contains(uid),
+              pendientesSet.contains(uid),
+            );
           },
         );
       },
     );
   }
 
-  Widget _tarjeta(String uid, Map<String, dynamic> d, bool siguiendo) {
+  Widget _tarjeta(
+    String uid,
+    Map<String, dynamic> d,
+    bool siguiendo,
+    bool pendiente,
+  ) {
     final nombre = _texto(d['name'], 'Usuario');
     final user = _username(d);
     final nivel = _num(d['level'], 1);
@@ -599,7 +705,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                     },
                   ),
                 ),
-              _botonSeguir(uid, nombre, siguiendo, ocupado),
+              _botonSeguir(uid, nombre, siguiendo, pendiente, ocupado),
             ],
           ),
         ),
@@ -607,7 +713,22 @@ class _AmigosScreenState extends State<AmigosScreen> {
     );
   }
 
-  Widget _botonSeguir(String uid, String nombre, bool siguiendo, bool ocupado) {
+  Widget _botonSeguir(
+    String uid,
+    String nombre,
+    bool siguiendo,
+    bool pendiente,
+    bool ocupado,
+  ) {
+    final IconData icono =
+        siguiendo
+            ? Icons.check_rounded
+            : (pendiente ? Icons.schedule_rounded : Icons.add_rounded);
+    final String etiqueta =
+        siguiendo ? 'Siguiendo' : (pendiente ? 'Pendiente' : 'Seguir');
+    final Color colorTexto =
+        siguiendo ? _C.green : (pendiente ? _C.gold : _C.navy);
+
     final child =
         ocupado
             ? const SizedBox(
@@ -621,16 +742,12 @@ class _AmigosScreenState extends State<AmigosScreen> {
             : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  siguiendo ? Icons.check_rounded : Icons.add_rounded,
-                  size: 16,
-                  color: siguiendo ? _C.green : _C.navy,
-                ),
+                Icon(icono, size: 16, color: colorTexto),
                 const SizedBox(width: 4),
                 Text(
-                  siguiendo ? 'Siguiendo' : 'Seguir',
+                  etiqueta,
                   style: TextStyle(
-                    color: siguiendo ? _C.green : _C.navy,
+                    color: colorTexto,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   ),
@@ -638,19 +755,182 @@ class _AmigosScreenState extends State<AmigosScreen> {
               ],
             );
 
+    final Color colorBorde =
+        siguiendo ? _C.green : (pendiente ? _C.gold : _C.mint);
+
     return GestureDetector(
-      onTap: () => _toggle(uid, nombre, siguiendo),
+      onTap: () => _toggle(uid, nombre, siguiendo, pendiente),
       child: Container(
         height: 36,
-        constraints: const BoxConstraints(minWidth: 92),
+        constraints: const BoxConstraints(minWidth: 96),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: siguiendo ? Colors.white : _C.mint,
+          color: (siguiendo || pendiente) ? Colors.white : _C.mint,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: siguiendo ? _C.green : _C.mint, width: 1.4),
+          border: Border.all(color: colorBorde, width: 1.4),
         ),
         child: child,
+      ),
+    );
+  }
+
+  // ---------- Pestaña: Solicitudes recibidas ----------
+
+  Widget _listaSolicitudes(List<String> ids) {
+    if (ids.isEmpty) {
+      return _mensaje(
+        icono: Icons.mark_email_read_outlined,
+        titulo: 'No tienes solicitudes pendientes',
+        detalle: 'Cuando alguien quiera seguirte, aparecerá aquí.',
+      );
+    }
+
+    return FutureBuilder<_Perfiles>(
+      future: _perfiles(ids.toSet()),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return _mensaje(
+            icono: Icons.cloud_off_outlined,
+            titulo: 'No se pudieron cargar los perfiles',
+            detalle: 'Inténtalo de nuevo en unos segundos.',
+          );
+        }
+        if (!snap.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: _C.green),
+          );
+        }
+
+        final perfiles = snap.data!;
+        final items = ids.where(perfiles.containsKey).toList();
+
+        if (items.isEmpty) {
+          return _mensaje(
+            icono: Icons.mark_email_read_outlined,
+            titulo: 'No tienes solicitudes pendientes',
+            detalle: 'Cuando alguien quiera seguirte, aparecerá aquí.',
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.only(bottom: 24),
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            final uid = items[i];
+            return _tarjetaSolicitud(uid, perfiles[uid]!);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _tarjetaSolicitud(String uid, Map<String, dynamic> d) {
+    final nombre = _texto(d['name'], 'Usuario');
+    final user = _username(d);
+    final nivel = _num(d['level'], 1);
+    final ocupado = _ocupados.contains(uid);
+
+    final color =
+        _C.avatars[uid.codeUnits.fold<int>(0, (a, b) => a + b) %
+            _C.avatars.length];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _C.border),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 25,
+            backgroundColor: color,
+            child: Text(
+              nombre.characters.first.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.navy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (user.isNotEmpty)
+                  Text(
+                    user,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: _C.grey, fontSize: 12),
+                  ),
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _C.mintSoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Nivel $nivel',
+                    style: const TextStyle(
+                      color: _C.green,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          if (ocupado)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: _C.green,
+              ),
+            )
+          else ...[
+            Material(
+              color: Colors.transparent,
+              child: IconButton(
+                tooltip: 'Rechazar',
+                onPressed: () => _rechazar(uid, nombre),
+                icon: const Icon(Icons.close_rounded, color: _C.grey),
+              ),
+            ),
+            Material(
+              color: _C.mintSoft,
+              borderRadius: BorderRadius.circular(12),
+              child: IconButton(
+                tooltip: 'Aceptar',
+                onPressed: () => _aceptar(uid, nombre),
+                icon: const Icon(Icons.check_rounded, color: _C.green),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

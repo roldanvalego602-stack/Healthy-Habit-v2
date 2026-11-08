@@ -13,6 +13,7 @@ import 'páginas/splash_screen.dart';
 import 'páginas/notifications_screen.dart';
 import 'páginas/habitos/registrar_habito_screen.dart';
 import 'páginas/chatbot/nutrichat.dart';
+import 'páginas/perfil/feed_amigos_screen.dart';
 
 
 // Instancia compartida de Firestore.
@@ -315,6 +316,32 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const Spacer(),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+            ],
+          ),
+          child: TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedAmigosScreen(),
+                ),
+              );
+            },
+            child: const Icon(
+              Icons.dynamic_feed_rounded,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
         Container(
           width: 42,
           height: 42,
