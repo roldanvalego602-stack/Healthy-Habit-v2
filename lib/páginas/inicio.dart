@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
-import 'package:flutter/foundation.dart';
+
 import 'habitos/habits_screen.dart';
 import 'habitos/registrar_habito_screen.dart';
 import 'tienda/store_screen.dart';
 import 'niveles/camino_niveles_screen.dart';
+import 'niveles/levels_system.dart';
 import 'perfil/profile_screen.dart';
 import 'catalogo/catalogo_screen.dart';
 import 'chatbot/nutrichat.dart';
@@ -16,24 +18,25 @@ import 'logros/logros_screen.dart';
 import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
 
-// La inicialización real de Firebase permanece en lib/main.dart.
-// Se conservan estas clases porque otras pantallas pueden importarlas.
+// Firebase se inicializa realmente en lib/main.dart.
 void main() => runApp(const HabitTrackerApp());
 
 class HabitTrackerApp extends StatelessWidget {
   const HabitTrackerApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    title: 'Healthy Habit',
-    theme: ThemeData(
-      fontFamily: 'Inter',
-      scaffoldBackgroundColor: AppColors.page,
-      useMaterial3: true,
-    ),
-    home: const HomeScreen2(),
-  );
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Healthy Habit',
+      theme: ThemeData(
+        fontFamily: 'Inter',
+        scaffoldBackgroundColor: AppColors.page,
+        useMaterial3: true,
+      ),
+      home: const HomeScreen2(),
+    );
+  }
 }
 
 class AppColors {
@@ -48,8 +51,10 @@ class AppColors {
   static const page = Color(0xFFF5F8F6);
 }
 
-int _number(dynamic v, [int fallback = 0]) =>
-    v is num ? v.toInt() : int.tryParse('$v') ?? fallback;
+int _number(dynamic value, [int fallback = 0]) {
+  if (value is num) return value.toInt();
+  return int.tryParse('$value') ?? fallback;
+}
 
 class HomeScreen2 extends StatefulWidget {
   const HomeScreen2({super.key});
@@ -60,8 +65,32 @@ class HomeScreen2 extends StatefulWidget {
 
 class _HomeScreen2State extends State<HomeScreen2> {
   int _selectedIndex = 0;
+
   late final FirebaseFirestore _db;
+
   bool _procesandoTruco = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: 'default',
+    );
+  }
+
+  void _mostrarMensaje(String mensaje) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
+  // --------------------------------------------------
+  // BOTÓN MÁGICO: SUBIR DE NIVEL MEDIANTE XP
+  // --------------------------------------------------
 
   Future<void> _subirNivelMagico() async {
     if (!kDebugMode || _procesandoTruco) return;
@@ -74,7 +103,9 @@ class _HomeScreen2State extends State<HomeScreen2> {
     try {
       final userRef = _db.collection('users').doc(user.uid);
 
-      final nuevoNivel = await _db.runTransaction<int>((transaction) async {
+      final resultado = await _db.runTransaction<({int nivel, int xp})>((
+        transaction,
+      ) async {
         final snapshot = await transaction.get(userRef);
 
         if (!snapshot.exists) {
@@ -83,40 +114,53 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
         final datos = snapshot.data() ?? <String, dynamic>{};
 
-        final nivelActual = _number(datos['level'], 1);
+        final xpActual =
+            _number(
+              datos['xp'] ?? datos['currentXp'],
+            ).clamp(0, 1000000000).toInt();
 
-        final siguienteNivel = (nivelActual + 1).clamp(1, 10).toInt();
+        final nivelActual = LevelSystem.fromXp(xpActual);
 
-        if (siguienteNivel != nivelActual) {
-          transaction.update(userRef, {'level': siguienteNivel});
+        final siguiente = LevelSystem.nextLevel(xpActual);
+
+        if (siguiente == null) {
+          // Ya alcanzó el último nivel configurado.
+          // Sincronizamos el nivel guardado si fuera necesario.
+          if (_number(datos['level'], 1) != nivelActual.number) {
+            transaction.update(userRef, {'level': nivelActual.number});
+          }
+
+          return (nivel: nivelActual.number, xp: xpActual);
         }
 
-        return siguienteNivel;
+        // La XP llega exactamente al umbral del
+        // siguiente nivel.
+        final xpNueva = siguiente.requiredXp;
+
+        transaction.update(userRef, {'xp': xpNueva, 'level': siguiente.number});
+
+        return (nivel: siguiente.number, xp: xpNueva);
       });
 
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            nuevoNivel >= 10
-                ? '🪄 Nivel $nuevoNivel. Alcanzaste el máximo de prueba.'
-                : '🪄 ¡Ahora eres nivel $nuevoNivel!',
-          ),
-        ),
+      _mostrarMensaje(
+        resultado.nivel >= LevelSystem.levels.last.number
+            ? '🪄 Nivel ${resultado.nivel}. '
+                'Has alcanzado el último nivel disponible.'
+            : '🪄 ¡Ahora eres nivel ${resultado.nivel}! '
+                'Tienes ${resultado.xp} XP.',
       );
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al subir de nivel: $e')));
+      _mostrarMensaje('Error al subir de nivel: $e');
     } finally {
       if (mounted) {
         setState(() => _procesandoTruco = false);
       }
     }
   }
+
+  // --------------------------------------------------
+  // BOTÓN MÁGICO: RECIBIR 500 HABIT COINS
+  // --------------------------------------------------
 
   Future<void> _recibirMonedasMagicas() async {
     if (!kDebugMode || _procesandoTruco) return;
@@ -147,19 +191,12 @@ class _HomeScreen2State extends State<HomeScreen2> {
         return saldoNuevo;
       });
 
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🪙 ¡Recibiste 500 Habit Coins! Saldo: $nuevoSaldo'),
-        ),
+      _mostrarMensaje(
+        '🪙 ¡Recibiste 500 Habit Coins! '
+        'Saldo actual: $nuevoSaldo',
       );
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al recibir monedas: $e')));
+      _mostrarMensaje('Error al recibir monedas: $e');
     } finally {
       if (mounted) {
         setState(() => _procesandoTruco = false);
@@ -167,14 +204,69 @@ class _HomeScreen2State extends State<HomeScreen2> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _db = FirebaseFirestore.instanceFor(
-      app: Firebase.app(),
-      databaseId: 'default',
-    );
+  // --------------------------------------------------
+  // REPARACIÓN TEMPORAL DEL NIVEL 6 DE PRUEBA
+  // --------------------------------------------------
+
+  Future<void> _repararNivelDePrueba() async {
+    if (!kDebugMode || _procesandoTruco) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _procesandoTruco = true);
+
+    try {
+      final userRef = _db.collection('users').doc(user.uid);
+
+      final resultado = await _db.runTransaction<({int nivel, int xp})>((
+        transaction,
+      ) async {
+        final snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists) {
+          throw StateError('No se encontró tu perfil en Firebase.');
+        }
+
+        final datos = snapshot.data() ?? <String, dynamic>{};
+
+        final xpActual =
+            _number(
+              datos['xp'] ?? datos['currentXp'],
+            ).clamp(0, 1000000000).toInt();
+
+        final xpNivelSeis =
+            LevelSystem.levels
+                .firstWhere((nivel) => nivel.number == 6)
+                .requiredXp;
+
+        // Nunca quitamos XP.
+        // Si ya tiene más de 1,000, se conserva.
+        final xpFinal = xpActual < xpNivelSeis ? xpNivelSeis : xpActual;
+
+        final nivelFinal = LevelSystem.fromXp(xpFinal).number;
+
+        transaction.update(userRef, {'xp': xpFinal, 'level': nivelFinal});
+
+        return (nivel: nivelFinal, xp: xpFinal);
+      });
+
+      _mostrarMensaje(
+        '✅ XP y nivel sincronizados. '
+        'Nivel ${resultado.nivel} · ${resultado.xp} XP.',
+      );
+    } catch (e) {
+      _mostrarMensaje('Error al sincronizar nivel: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _procesandoTruco = false);
+      }
+    }
   }
+
+  // --------------------------------------------------
+  // NAVEGACIÓN PRINCIPAL
+  // --------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -256,6 +348,10 @@ class _HomeScreen2State extends State<HomeScreen2> {
     );
   }
 
+  // --------------------------------------------------
+  // DATOS DE INICIO
+  // --------------------------------------------------
+
   Widget _home() {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -282,9 +378,14 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
         final photo = (data['photoUrl'] ?? user.photoURL)?.toString();
 
-        final xp = _number(data['xp'] ?? data['currentXp']);
+        final xp =
+            _number(
+              data['xp'] ?? data['currentXp'],
+            ).clamp(0, 1000000000).toInt();
 
-        final level = _number(data['level'], 1);
+        // CAMBIO IMPORTANTE:
+        // El nivel visible depende solamente de XP.
+        final level = LevelSystem.fromXp(xp).number;
 
         final streak = _number(data['currentStreak'] ?? data['streakDays']);
 
@@ -301,26 +402,25 @@ class _HomeScreen2State extends State<HomeScreen2> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final docs = habits.data!.docs;
-
             return _HomeContent(
               key: ValueKey(user.uid),
-              onSubirNivelMagico: _subirNivelMagico,
-              onRecibirMonedasMagicas: _recibirMonedasMagicas,
-              procesandoTruco: _procesandoTruco,
               name: name,
               photoUrl: photo,
               xp: xp,
               level: level,
               streak: streak,
-              habits: docs,
+              habits: habits.data!.docs,
+              userRef: userRef,
+              coins: _number(data['habitCoins']),
+              procesandoTruco: _procesandoTruco,
+              onSubirNivelMagico: _subirNivelMagico,
+              onRecibirMonedasMagicas: _recibirMonedasMagicas,
+              onRepararNivelDePrueba: _repararNivelDePrueba,
               onHabits: () {
                 setState(() {
                   _selectedIndex = 1;
                 });
               },
-              userRef: userRef,
-              coins: _number(data['habitCoins']),
               onProfile: () {
                 setState(() {
                   _selectedIndex = 4;
@@ -339,13 +439,14 @@ class _HomeScreen2State extends State<HomeScreen2> {
   }
 }
 
+// ====================================================
+// CONTENIDO DE LA PÁGINA DE INICIO
+// ====================================================
+
 class _HomeContent extends StatelessWidget {
   const _HomeContent({
     super.key,
     required this.name,
-    required this.onSubirNivelMagico,
-    required this.onRecibirMonedasMagicas,
-    required this.procesandoTruco,
     required this.photoUrl,
     required this.xp,
     required this.level,
@@ -356,15 +457,21 @@ class _HomeContent extends StatelessWidget {
     required this.coins,
     required this.onProfile,
     required this.onStore,
+    required this.procesandoTruco,
+    required this.onSubirNivelMagico,
+    required this.onRecibirMonedasMagicas,
+    required this.onRepararNivelDePrueba,
   });
-  final VoidCallback onSubirNivelMagico;
-  final VoidCallback onRecibirMonedasMagicas;
-  final bool procesandoTruco;
+
   final String name;
   final String? photoUrl;
+
   final int xp;
   final int level;
   final int streak;
+  final int coins;
+
+  final bool procesandoTruco;
 
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> habits;
 
@@ -372,7 +479,9 @@ class _HomeContent extends StatelessWidget {
   final VoidCallback onProfile;
   final VoidCallback onStore;
 
-  final int coins;
+  final VoidCallback onSubirNivelMagico;
+  final VoidCallback onRecibirMonedasMagicas;
+  final VoidCallback onRepararNivelDePrueba;
 
   final DocumentReference<Map<String, dynamic>> userRef;
 
@@ -387,13 +496,11 @@ class _HomeContent extends StatelessWidget {
     final mission = active.isEmpty ? null : active.first;
 
     final total =
-        habits
-            .where(
-              (h) =>
-                  h.data()['latestStatus'] == 'inProgress' ||
-                  h.data()['latestStatus'] == 'completed',
-            )
-            .length;
+        habits.where((h) {
+          final status = h.data()['latestStatus'];
+
+          return status == 'inProgress' || status == 'completed';
+        }).length;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -495,11 +602,12 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // NIVEL Y XP
+          // NIVEL CALCULADO DESDE XP
           _levelCard(),
 
           const SizedBox(height: 12),
 
+          // CAMINO DE NIVELES
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -526,84 +634,8 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // HERRAMIENTAS MÁGICAS DE PRUEBA
-          if (kDebugMode) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: AppColors.primaryGreen.withOpacity(0.35),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
-                      SizedBox(width: 8),
-                      Text(
-                        'Herramientas de prueba',
-                        style: TextStyle(
-                          color: AppColors.textDark,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    'Solo disponibles durante el desarrollo.',
-                    style: TextStyle(color: AppColors.textGrey, fontSize: 12),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed:
-                          procesandoTruco || level >= 10
-                              ? null
-                              : onSubirNivelMagico,
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('🪄 Subir 1 nivel'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.darkGreenCard,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed:
-                          procesandoTruco ? null : onRecibirMonedasMagicas,
-                      icon: const Icon(Icons.monetization_on_rounded),
-                      label: const Text('🪙 Recibir 500 Habit Coins'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primaryGreen,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-          ],
+          // HERRAMIENTAS DE PRUEBA
+          if (kDebugMode) ...[_debugTools(), const SizedBox(height: 16)],
 
           // ESTADÍSTICAS RÁPIDAS
           Row(
@@ -630,7 +662,7 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // BOTÓN DE ESTADÍSTICAS Y PROGRESO
+          // ESTADÍSTICAS Y PROGRESO
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -655,7 +687,7 @@ class _HomeContent extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // NUEVO BOTÓN DEL RANKING GLOBAL
+          // RANKING GLOBAL
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -713,12 +745,16 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  // TARJETA DE NIVEL Y EXPERIENCIA
-  Widget _levelCard() {
-    const perLevel = 1000;
+  // --------------------------------------------------
+  // TARJETA DE NIVEL Y XP
+  // --------------------------------------------------
 
-    final progressXp = xp % perLevel;
-    final progress = progressXp / perLevel;
+  Widget _levelCard() {
+    final current = LevelSystem.fromXp(xp);
+    final next = LevelSystem.nextLevel(xp);
+
+    final progress = LevelSystem.progress(xp);
+    final remaining = LevelSystem.remainingXp(xp);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -734,29 +770,50 @@ class _HomeContent extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(14),
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(.25),
-                  borderRadius: BorderRadius.circular(15),
+                  color: AppColors.primaryGreen.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Text(
-                  '$level',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(current.icon, color: current.accentColor, size: 22),
+                    Text(
+                      '${current.number}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
-                child: Text(
-                  'TU NIVEL ACTUAL\nCultivador constante',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    height: 1.6,
-                  ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'TU NIVEL ACTUAL',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      current.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -785,47 +842,173 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
 
           Text(
-            '${perLevel - progressXp} XP para el siguiente tramo',
+            next == null
+                ? '¡Alcanzaste el último nivel disponible!'
+                : 'Faltan $remaining XP para '
+                    'nivel ${next.number}: ${next.name}',
             style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+
+          if (next != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Próxima recompensa prevista: '
+              '${next.rewardCoins} Habit Coins',
+              style: const TextStyle(
+                color: Color(0xFFFFE49A),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // HERRAMIENTAS DE DESARROLLO
+  // --------------------------------------------------
+
+  Widget _debugTools() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Herramientas de prueba',
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          const Text(
+            'Solo visibles en modo depuración. '
+            'Utilízalas con una cuenta de prueba.',
+            style: TextStyle(color: AppColors.textGrey, fontSize: 12),
+          ),
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed:
+                  procesandoTruco || LevelSystem.nextLevel(xp) == null
+                      ? null
+                      : onSubirNivelMagico,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('🪄 Subir 1 nivel con XP'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.darkGreenCard,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: procesandoTruco ? null : onRecibirMonedasMagicas,
+              icon: const Icon(Icons.monetization_on_rounded),
+              label: const Text('Recibir 500 Habit Coins'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: procesandoTruco ? null : onRepararNivelDePrueba,
+              icon: const Icon(Icons.sync_rounded),
+              label: const Text('Sincronizar mi nivel 6 de prueba'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.darkGreenCard,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 7),
+
+          const Text(
+            'La sincronización conserva la XP existente '
+            'y la eleva a 1,000 solo si es menor.',
+            style: TextStyle(color: AppColors.textGrey, fontSize: 11),
           ),
         ],
       ),
     );
   }
 
+  // --------------------------------------------------
   // TARJETAS DE ESTADÍSTICAS
-  Widget _stat(IconData icon, String value, String caption, Color bg) =>
-      Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: AppColors.primaryGreen),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.textDark,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              caption,
-              style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
-            ),
-          ],
-        ),
-      );
+  // --------------------------------------------------
 
+  Widget _stat(IconData icon, String value, String caption, Color bg) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primaryGreen),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.textDark,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            caption,
+            style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------
   // MISIÓN DEL DÍA
+  // --------------------------------------------------
+
   Widget _mission(
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>>? habit,
@@ -870,7 +1053,7 @@ class _HomeContent extends StatelessWidget {
 
     final progress = _number(data['latestProgress']);
 
-    final target = _number(data['latestTarget'], 1).clamp(1, 100000);
+    final target = _number(data['latestTarget'], 1).clamp(1, 100000).toInt();
 
     final fraction = (progress / target).clamp(0.0, 1.0);
 
@@ -960,198 +1143,208 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
+  // --------------------------------------------------
   // LOGROS
-  Widget _achievement(
-    BuildContext context,
-  ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-    stream: userRef.collection('achievements').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return const Card(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('No se pudieron consultar los logros.'),
+  // --------------------------------------------------
+
+  Widget _achievement(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: userRef.collection('achievements').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('No se pudieron consultar los logros.'),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final ids = snapshot.data!.docs.map((d) => d.id).toSet();
+
+        final perfil = <String, dynamic>{
+          'xp': xp,
+          'level': level,
+          'currentStreak': streak,
+        };
+
+        final completados =
+            habits.where((h) => h.data()['latestStatus'] == 'completed').length;
+
+        final siguiente = LogrosService.siguiente(
+          perfil,
+          habits.length,
+          completados,
+          ids,
+        );
+
+        final progreso =
+            siguiente == null
+                ? 0
+                : LogrosService.progreso(
+                  siguiente,
+                  perfil,
+                  habits.length,
+                  completados,
+                  ids,
+                );
+
+        return Material(
+          color: AppColors.purpleCard,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LogrosScreen()));
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(
+                      color: AppColors.yellowCard,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      siguiente == null
+                          ? Icons.emoji_events_rounded
+                          : siguiente.icono,
+                      color: Colors.deepOrange,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          siguiente == null
+                              ? 'COLECCIÓN COMPLETA'
+                              : 'PRÓXIMO LOGRO',
+                          style: const TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 10,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          siguiente?.nombre ?? '¡Todos los logros conseguidos!',
+                          style: const TextStyle(
+                            color: AppColors.textDark,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          siguiente == null
+                              ? 'Consulta tu colección de medallas.'
+                              : '${siguiente.descripcion} · '
+                                  '${progreso.clamp(0, siguiente.meta)} '
+                                  '/ ${siguiente.meta}',
+                          style: const TextStyle(
+                            color: AppColors.textGrey,
+                            fontSize: 11,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        const Text(
+                          'Ver todos los logros',
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textGrey,
+                  ),
+                ],
+              ),
+            ),
           ),
         );
-      }
+      },
+    );
+  }
 
-      if (!snapshot.hasData) {
-        return const Center(child: CircularProgressIndicator());
-      }
+  // --------------------------------------------------
+  // MASCOTA Y NUTRICHAT
+  // --------------------------------------------------
 
-      final ids = snapshot.data!.docs.map((d) => d.id).toSet();
-
-      final perfil = <String, dynamic>{
-        'xp': xp,
-        'level': level,
-        'currentStreak': streak,
-      };
-
-      final completados =
-          habits.where((h) => h.data()['latestStatus'] == 'completed').length;
-
-      final siguiente = LogrosService.siguiente(
-        perfil,
-        habits.length,
-        completados,
-        ids,
-      );
-
-      final progreso =
-          siguiente == null
-              ? 0
-              : LogrosService.progreso(
-                siguiente,
-                perfil,
-                habits.length,
-                completados,
-                ids,
-              );
-
-      return Material(
-        color: AppColors.purpleCard,
-        borderRadius: BorderRadius.circular(22),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: () {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const LogrosScreen()));
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+  Widget _mascot(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.mintCard,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: const BoxDecoration(
-                    color: AppColors.yellowCard,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    siguiente == null
-                        ? Icons.emoji_events_rounded
-                        : siguiente.icono,
-                    color: Colors.deepOrange,
+                const Text(
+                  'MR. HEALTHY',
+                  style: TextStyle(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
 
-                const SizedBox(width: 12),
+                const SizedBox(height: 7),
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        siguiente == null
-                            ? 'COLECCIÓN COMPLETA'
-                            : 'PRÓXIMO LOGRO',
-                        style: const TextStyle(
-                          color: Colors.deepPurple,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 10,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        siguiente?.nombre ?? '¡Todos los logros conseguidos!',
-                        style: const TextStyle(
-                          color: AppColors.textDark,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        siguiente == null
-                            ? 'Consulta tu colección de medallas.'
-                            : '${siguiente.descripcion} · ${progreso.clamp(0, siguiente.meta)} / ${siguiente.meta}',
-                        style: const TextStyle(
-                          color: AppColors.textGrey,
-                          fontSize: 11,
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      const Text(
-                        'Ver todos los logros',
-                        style: TextStyle(
-                          color: Colors.deepPurple,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                const Text(
+                  'Cada pequeño paso cuenta.',
+                  style: TextStyle(color: AppColors.textDark),
                 ),
 
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.textGrey,
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NutriChatPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Chatear'),
                 ),
               ],
             ),
           ),
-        ),
-      );
-    },
-  );
 
-  // MASCOTA Y NUTRICHAT
-  Widget _mascot(BuildContext context) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: AppColors.mintCard,
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'MR. HEALTHY',
-                style: TextStyle(
-                  color: AppColors.primaryGreen,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-
-              const SizedBox(height: 7),
-
-              const Text(
-                'Cada pequeño paso cuenta.',
-                style: TextStyle(color: AppColors.textDark),
-              ),
-
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NutriChatPage()),
-                  );
-                },
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Chatear'),
-              ),
-            ],
+          Image.asset(
+            'assets/mascot/healthy.png',
+            width: 72,
+            height: 72,
+            errorBuilder: (_, __, ___) => const Icon(Icons.eco, size: 50),
           ),
-        ),
-
-        Image.asset(
-          'assets/mascot/healthy.png',
-          width: 72,
-          height: 72,
-          errorBuilder: (_, __, ___) => const Icon(Icons.eco, size: 50),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
