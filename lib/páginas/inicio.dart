@@ -3,10 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
-
+import 'package:flutter/foundation.dart';
 import 'habitos/habits_screen.dart';
 import 'habitos/registrar_habito_screen.dart';
 import 'tienda/store_screen.dart';
+import 'niveles/camino_niveles_screen.dart';
 import 'perfil/profile_screen.dart';
 import 'catalogo/catalogo_screen.dart';
 import 'chatbot/nutrichat.dart';
@@ -60,6 +61,111 @@ class HomeScreen2 extends StatefulWidget {
 class _HomeScreen2State extends State<HomeScreen2> {
   int _selectedIndex = 0;
   late final FirebaseFirestore _db;
+  bool _procesandoTruco = false;
+
+  Future<void> _subirNivelMagico() async {
+    if (!kDebugMode || _procesandoTruco) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _procesandoTruco = true);
+
+    try {
+      final userRef = _db.collection('users').doc(user.uid);
+
+      final nuevoNivel = await _db.runTransaction<int>((transaction) async {
+        final snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists) {
+          throw StateError('No se encontró tu perfil en Firebase.');
+        }
+
+        final datos = snapshot.data() ?? <String, dynamic>{};
+
+        final nivelActual = _number(datos['level'], 1);
+
+        final siguienteNivel = (nivelActual + 1).clamp(1, 10).toInt();
+
+        if (siguienteNivel != nivelActual) {
+          transaction.update(userRef, {'level': siguienteNivel});
+        }
+
+        return siguienteNivel;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            nuevoNivel >= 10
+                ? '🪄 Nivel $nuevoNivel. Alcanzaste el máximo de prueba.'
+                : '🪄 ¡Ahora eres nivel $nuevoNivel!',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al subir de nivel: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _procesandoTruco = false);
+      }
+    }
+  }
+
+  Future<void> _recibirMonedasMagicas() async {
+    if (!kDebugMode || _procesandoTruco) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _procesandoTruco = true);
+
+    try {
+      final userRef = _db.collection('users').doc(user.uid);
+
+      final nuevoSaldo = await _db.runTransaction<int>((transaction) async {
+        final snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists) {
+          throw StateError('No se encontró tu perfil en Firebase.');
+        }
+
+        final datos = snapshot.data() ?? <String, dynamic>{};
+
+        final saldoActual = _number(datos['habitCoins']);
+
+        final saldoNuevo = saldoActual + 500;
+
+        transaction.update(userRef, {'habitCoins': saldoNuevo});
+
+        return saldoNuevo;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🪙 ¡Recibiste 500 Habit Coins! Saldo: $nuevoSaldo'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al recibir monedas: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _procesandoTruco = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -199,6 +305,9 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
             return _HomeContent(
               key: ValueKey(user.uid),
+              onSubirNivelMagico: _subirNivelMagico,
+              onRecibirMonedasMagicas: _recibirMonedasMagicas,
+              procesandoTruco: _procesandoTruco,
               name: name,
               photoUrl: photo,
               xp: xp,
@@ -234,6 +343,9 @@ class _HomeContent extends StatelessWidget {
   const _HomeContent({
     super.key,
     required this.name,
+    required this.onSubirNivelMagico,
+    required this.onRecibirMonedasMagicas,
+    required this.procesandoTruco,
     required this.photoUrl,
     required this.xp,
     required this.level,
@@ -245,7 +357,9 @@ class _HomeContent extends StatelessWidget {
     required this.onProfile,
     required this.onStore,
   });
-
+  final VoidCallback onSubirNivelMagico;
+  final VoidCallback onRecibirMonedasMagicas;
+  final bool procesandoTruco;
   final String name;
   final String? photoUrl;
   final int xp;
@@ -384,7 +498,112 @@ class _HomeContent extends StatelessWidget {
           // NIVEL Y XP
           _levelCard(),
 
+          const SizedBox(height: 12),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CaminoNivelesScreen(xp: xp),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.route_rounded),
+              label: const Text('Ver mi camino de niveles'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.darkGreenCard,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 16),
+
+          // HERRAMIENTAS MÁGICAS DE PRUEBA
+          if (kDebugMode) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withOpacity(0.35),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
+                      SizedBox(width: 8),
+                      Text(
+                        'Herramientas de prueba',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    'Solo disponibles durante el desarrollo.',
+                    style: TextStyle(color: AppColors.textGrey, fontSize: 12),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed:
+                          procesandoTruco || level >= 10
+                              ? null
+                              : onSubirNivelMagico,
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('🪄 Subir 1 nivel'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.darkGreenCard,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed:
+                          procesandoTruco ? null : onRecibirMonedasMagicas,
+                      icon: const Icon(Icons.monetization_on_rounded),
+                      label: const Text('🪙 Recibir 500 Habit Coins'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
 
           // ESTADÍSTICAS RÁPIDAS
           Row(
