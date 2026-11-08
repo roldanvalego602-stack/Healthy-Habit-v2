@@ -26,6 +26,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   static const muted = Color(0xFF71879A);
   static const border = Color(0xFFDCE8E3);
   static const int initialHabitSlots = 3;
+  static const int maxDifficultCancellationFee = 25;
   final TextEditingController searchController = TextEditingController();
   String selectedCategory = 'Todos';
   String selectedDifficulty = 'Todos';
@@ -96,7 +97,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       final habitsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
       final userData = userSnapshot.data() ?? {};
       final loadedXp = (userData['xp'] as num?)?.toInt() ?? 0;
-      final loadedCoins = (userData['coins'] as num?)?.toInt() ?? 0;
+      final loadedCoins = (userData['habitCoins'] as num?)?.toInt() ?? 0;
       final loadedLevel = (userData['level'] as num?)?.toInt() ?? 1;
       final loadedSlots =
           (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
@@ -147,6 +148,142 @@ class _HabitsScreenState extends State<HabitsScreen> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _confirmAddHabit(Habit habit) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(habit.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Dificultad: ${habit.difficulty}'),
+            const SizedBox(height: 8),
+            Text('Sesiones necesarias: ${habit.target}'),
+            const SizedBox(height: 8),
+            Text('Recompensa: ${habit.xp} XP'),
+            if (habit.coinCost > 0) ...[
+              const SizedBox(height: 8),
+              Text('Costo para adquirirlo: ${habit.coinCost} Habit Coins'),
+            ],
+            if (_isDifficult(habit)) ...[
+              const SizedBox(height: 8),
+              const Text('Si lo abandonas, la penalización será de hasta 25 Habit Coins.'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Aceptar hábito'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true && mounted) await addHabit(habit);
+  }
+
+  bool _isDifficult(Habit habit) {
+    final difficulty = habit.difficulty.trim().toLowerCase();
+    return difficulty == 'difícil' || difficulty == 'dificil';
+  }
+
+  Future<void> _confirmCancelHabit(_ActiveHabitEntry entry) async {
+    if (saving) return;
+    final fee = _isDifficult(entry.habit)
+        ? (coins < maxDifficultCancellationFee ? coins : maxDifficultCancellationFee)
+        : 0;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Abandonar hábito?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(entry.habit.title),
+            const SizedBox(height: 10),
+            Text('Sesiones realizadas: ${entry.attempt.progress} de ${entry.attempt.target}'),
+            const SizedBox(height: 8),
+            Text('Penalización estimada: $fee Habit Coins'),
+            const SizedBox(height: 8),
+            const Text('Se conservarán tus sesiones anteriores y el XP obtenido.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Conservar hábito'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Abandonar'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true && mounted) await _cancelHabit(entry);
+  }
+
+  Future<void> _cancelHabit(_ActiveHabitEntry entry) async {
+    final userDoc = _userDoc;
+    final collection = _habitsCollection;
+    if (userDoc == null || collection == null || saving) return;
+    setState(() => saving = true);
+    try {
+      final habitRef = collection.doc(entry.habit.id);
+      final attemptRef = habitRef.collection('attempts').doc(entry.attempt.id);
+      final deducted = await _db.runTransaction<int>((transaction) async {
+        final attemptSnap = await transaction.get(attemptRef);
+        final habitSnap = await transaction.get(habitRef);
+        final userSnap = await transaction.get(userDoc);
+        if (!attemptSnap.exists ||
+            attemptSnap.data()?['status'] != 'inProgress' ||
+            habitSnap.data()?['lastAttemptId'] != entry.attempt.id) {
+          throw StateError('Este hábito ya no está activo. Actualiza la pantalla.');
+        }
+        final rawBalance = (userSnap.data()?['habitCoins'] as num?)?.toInt() ?? 0;
+        final balance = rawBalance < 0 ? 0 : rawBalance;
+        final penalty = _isDifficult(entry.habit)
+            ? (balance < maxDifficultCancellationFee ? balance : maxDifficultCancellationFee)
+            : 0;
+        transaction.update(attemptRef, {
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'cancellationPenalty': penalty,
+        });
+        transaction.update(habitRef, {
+          'lastStatus': 'cancelled',
+          'latestStatus': 'cancelled',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        if (penalty > 0) {
+          transaction.update(userDoc, {'habitCoins': balance - penalty});
+        }
+        return penalty;
+      });
+      if (!mounted) return;
+      setState(() {
+        active.removeWhere((item) => item.attempt.id == entry.attempt.id && item.habit.id == entry.habit.id);
+        coins = (coins - deducted).clamp(0, 2147483647);
+      });
+      _showMessage(deducted == 0
+          ? 'Hábito abandonado. Tu historial se conserva.'
+          : 'Hábito abandonado. Se descontaron $deducted Habit Coins.');
+      await _load();
+    } catch (e, stackTrace) {
+      debugPrint('Error al abandonar hábito: $e\n$stackTrace');
+      if (mounted) _showMessage('No se pudo abandonar el hábito: $e');
+    } finally {
+      if (mounted) setState(() => saving = false);
     }
   }
 
@@ -211,14 +348,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (habit.coinCost > 0) {
         await _db.runTransaction((transaction) async {
           final userSnapshot = await transaction.get(userDoc);
-          final balance = (userSnapshot.data()?['coins'] as num?)?.toInt() ?? 0;
+          final balance = (userSnapshot.data()?['habitCoins'] as num?)?.toInt() ?? 0;
           if (balance < habit.coinCost) {
             throw StateError('No tienes suficientes monedas.');
           }
           transaction.set(userDoc, {
             'uid': user.uid,
             'habitSlots': habitSlots,
-            'coins': balance - habit.coinCost,
+            'habitCoins': balance - habit.coinCost,
           }, SetOptions(merge: true));
           transaction.set(habitRef, {
             ...habit.toMap(),
@@ -833,6 +970,16 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: saving ? null : () => _confirmCancelHabit(entry),
+              icon: const Icon(Icons.cancel_outlined, size: 17),
+              label: const Text('Abandonar hábito'),
+              style: TextButton.styleFrom(foregroundColor: const Color(0xFFAD5151)),
+            ),
+          ),
         ],
       ),
     );
@@ -962,6 +1109,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   style: const TextStyle(color: muted, fontSize: 11),
                 ),
                 const SizedBox(height: 5),
+                Text(
+                  '${habit.target} sesiones para completar',
+                  style: const TextStyle(color: navy, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 5),
                 Row(
                   children: [
                     const Icon(
@@ -996,7 +1148,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           SizedBox(
             height: 36,
             child: ElevatedButton(
-              onPressed: canAdd ? () => addHabit(habit) : null,
+              onPressed: canAdd ? () => _confirmAddHabit(habit) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: green,
                 foregroundColor: Colors.white,
