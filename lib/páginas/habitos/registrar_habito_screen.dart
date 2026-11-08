@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../Contenido_del_tema/colores.dart';
 import 'temporary_evidence_service.dart';
+import 'habit_interaction_card.dart';
 
 class RegistrarHabitoScreen extends StatefulWidget {
   final String? habitId;
@@ -37,6 +38,11 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   bool _guardando = false;
   bool _cargando = true;
   bool _subiendoImagen = false;
+  String _interactionType = 'manual';
+  int _interactionTarget = 1;
+  String _interactionUnit = 'vez';
+  bool _interactionComplete = true;
+  int _interactionValue = 0;
   String? _error;
   String _nombreHabito = 'Tomar 6 vasos de agua';
   String _categoria = 'Hidratación';
@@ -55,7 +61,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   bool get _tieneEvidencia => _imagenSeleccionada != null;
   bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
-  bool get _puedeGuardar => !_guardando && !_cargando && !_metaCompletada;
+  bool get _puedeGuardar => !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
   @override
   void initState() {
     super.initState();
@@ -136,6 +142,21 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           (datosHabito['category'] ?? datosHabito['categoria'] ?? _categoria)
               .toString();
       _progreso = _leerEntero(datosAttempt['progress'], _progreso);
+      // El objetivo interactivo es por sesión; no altera la meta del intento.
+      final rawInteraction = datosHabito['interaction'];
+      final interaction = rawInteraction is Map ? rawInteraction : <String, dynamic>{};
+      final configuredType = (interaction['type'] ?? '').toString();
+      final text = '$_nombreHabito $_categoria'.toLowerCase();
+      final fallbackType = text.contains('agua') || text.contains('vaso')
+          ? 'counter' : text.contains('caminar') || text.contains('correr') ||
+              text.contains('ejercicio') ? 'stopwatch' : 'manual';
+      final type = configuredType.isEmpty ? fallbackType : configuredType;
+      _interactionType = ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+      _interactionTarget = _leerEntero(interaction['target'],
+          _interactionType == 'counter' ? 1 : 60).clamp(1, 86400);
+      _interactionUnit = (interaction['unit'] ??
+          (_interactionType == 'counter' ? 'vaso' : 'segundos')).toString();
+      _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
       if (_meta < 1) _meta = 1;
       if (mounted) {
@@ -231,6 +252,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       // al documento principal del hábito.
       final registroRef = attemptRef.collection('logs').doc();
       final nota = _notaController.text.trim();
+      if (!_interactionComplete) throw Exception('Completa la actividad interactiva.');
+      final interactionType = _interactionType;
+      final interactionValue = _interactionValue;
+      final interactionUnit = _interactionUnit;
       final uid = usuario.uid;
       final bytesEvidencia = _bytesImagen;
       final tieneEvidenciaReal =
@@ -342,6 +367,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'habitTitle': _nombreHabito,
           'category': _categoria,
           'note': nota,
+          'interactionType': interactionType,
+          'interactionValue': interactionValue,
+          'interactionUnit': interactionUnit,
           'hasEvidence': tieneEvidenciaReal,
           'imageUrl': null,
           'evidenceId': tieneEvidenciaReal ? registroRef.id : null,
@@ -434,7 +462,23 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTarjetaHabito(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+            if (_interactionType != 'manual') ...[
+              HabitInteractionCard(
+                type: _interactionType,
+                target: _interactionTarget,
+                unit: _interactionUnit,
+                enabled: !_guardando && !_metaCompletada,
+                onChanged: (complete, value) {
+                  if (!mounted) return;
+                  setState(() {
+                    _interactionComplete = complete;
+                    _interactionValue = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildTituloSeccion('Fotografía', 'Opcional'),
             const SizedBox(height: 12),
             _buildFotografia(),
