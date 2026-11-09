@@ -49,6 +49,17 @@ class CatalogoDetalleScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset(
+              item.imagen,
+              height: 190,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox(height: 190, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 56, color: _verde))),
+            ),
+          ),
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(

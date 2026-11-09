@@ -1,0 +1,1054 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../Contenido_del_tema/colores.dart';
+import 'temporary_evidence_service.dart';
+import 'habit_interaction_card.dart';
+
+class RegistrarHabitoScreen extends StatefulWidget {
+  final String? habitId;
+  final String? attemptId;
+  final String? habitTitle;
+  final String? category;
+  final int? currentProgress;
+  final int? goal;
+  const RegistrarHabitoScreen({
+    super.key,
+    this.habitId,
+    this.attemptId,
+    this.habitTitle,
+    this.category,
+    this.currentProgress,
+    this.goal,
+  });
+  @override
+  State<RegistrarHabitoScreen> createState() => _RegistrarHabitoScreenState();
+}
+
+class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
+  late final FirebaseFirestore _db;
+  final TextEditingController _notaController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _imagenSeleccionada;
+  Uint8List? _bytesImagen;
+  bool _guardando = false;
+  bool _cargando = true;
+  bool _subiendoImagen = false;
+  String _interactionType = 'manual';
+  int _interactionTarget = 1;
+  String _interactionUnit = 'vez';
+  bool _interactionComplete = true;
+  int _interactionValue = 0;
+  String? _error;
+  String _nombreHabito = 'Tomar 6 vasos de agua';
+  String _categoria = 'Hidratación';
+  int _progreso = 0;
+  int _meta = 6;
+  DocumentReference<Map<String, dynamic>>? _habitoRef;
+  DocumentReference<Map<String, dynamic>>? _attemptRef;
+  DocumentReference<Map<String, dynamic>> get _userDoc {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    return _db.collection('users').doc(uid);
+  }
+
+  CollectionReference<Map<String, dynamic>> get _habitos {
+    return _userDoc.collection('user_habits');
+  }
+
+  bool get _tieneEvidencia => _imagenSeleccionada != null;
+  bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
+  bool get _puedeGuardar => !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
+  @override
+  void initState() {
+    super.initState();
+    _db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: 'default',
+    );
+    _nombreHabito = widget.habitTitle ?? _nombreHabito;
+    _categoria = widget.category ?? _categoria;
+    _progreso = widget.currentProgress ?? 0;
+    _meta = widget.goal ?? 6;
+    _cargarHabito();
+    TemporaryEvidenceService.cleanExpiredForCurrentUser().catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _notaController.dispose();
+    super.dispose();
+  }
+
+  int _leerEntero(dynamic value, int fallback) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  Future<void> _cargarHabito() async {
+    final usuario = FirebaseAuth.instance.currentUser;
+    if (usuario == null) {
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _error = 'Inicia sesión para registrar un hábito.';
+        });
+      }
+      return;
+    }
+    try {
+      if (widget.habitId == null ||
+          widget.habitId!.isEmpty ||
+          widget.attemptId == null ||
+          widget.attemptId!.isEmpty) {
+        throw Exception(
+          'No se recibió el identificador del hábito y su intento.',
+        );
+      }
+      final habitoRef = _habitos.doc(widget.habitId);
+      final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
+      final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
+      final habitoSnapshot =
+          resultados[0] as DocumentSnapshot<Map<String, dynamic>>;
+      final attemptSnapshot =
+          resultados[1] as DocumentSnapshot<Map<String, dynamic>>;
+      if (!habitoSnapshot.exists) {
+        throw Exception('No se encontró el hábito seleccionado.');
+      }
+      if (!attemptSnapshot.exists) {
+        throw Exception('No se encontró el intento del hábito.');
+      }
+      final datosHabito = habitoSnapshot.data()!;
+      final datosAttempt = attemptSnapshot.data()!;
+      final estado = (datosAttempt['status'] ?? '').toString();
+      if (estado != 'inProgress') {
+        throw Exception(
+          'Este intento ya no está activo y no admite registros.',
+        );
+      }
+      _habitoRef = habitoRef;
+      _attemptRef = attemptRef;
+      _nombreHabito =
+          (datosHabito['title'] ??
+                  datosHabito['name'] ??
+                  datosHabito['nombre'] ??
+                  _nombreHabito)
+              .toString();
+      _categoria =
+          (datosHabito['category'] ?? datosHabito['categoria'] ?? _categoria)
+              .toString();
+      _progreso = _leerEntero(datosAttempt['progress'], _progreso);
+      // El objetivo interactivo es por sesión; no altera la meta del intento.
+      final rawInteraction = datosHabito['interaction'];
+      final interaction = rawInteraction is Map ? rawInteraction : <String, dynamic>{};
+      final configuredType = (interaction['type'] ?? '').toString();
+      final text = '$_nombreHabito $_categoria'.toLowerCase();
+      final fallbackType = text.contains('agua') || text.contains('vaso')
+          ? 'counter' : text.contains('caminar') || text.contains('correr') ||
+              text.contains('ejercicio') ? 'stopwatch' : 'manual';
+      final type = configuredType.isEmpty ? fallbackType : configuredType;
+      _interactionType = ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+      _interactionTarget = _leerEntero(interaction['target'],
+          _interactionType == 'counter' ? 1 : 60).clamp(1, 86400);
+      _interactionUnit = (interaction['unit'] ??
+          (_interactionType == 'counter' ? 'vaso' : 'segundos')).toString();
+      _interactionComplete = _interactionType == 'manual';
+      _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
+      if (_meta < 1) _meta = 1;
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _error = 'No se pudo cargar el hábito: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _seleccionarImagen(ImageSource origen) async {
+    if (_guardando || _cargando) return;
+    try {
+      final XFile? imagen = await _imagePicker.pickImage(
+        source: origen,
+        imageQuality: 35,
+        maxWidth: 640,
+        maxHeight: 640,
+      );
+      if (!mounted || imagen == null) return;
+      final bytes = await imagen.readAsBytes();
+      if (!mounted) return;
+      if (bytes.lengthInBytes > TemporaryEvidenceService.maxImageBytes) {
+        _mostrarMensaje(
+          'La imagen supera 250 KB. Selecciona otra más pequeña.',
+        );
+        return;
+      }
+      setState(() {
+        _imagenSeleccionada = imagen;
+        _bytesImagen = bytes;
+        _error = null;
+      });
+    } catch (e) {
+      _mostrarMensaje(
+        'No se pudo seleccionar la imagen. '
+        'Comprueba los permisos o la compatibilidad del dispositivo.',
+      );
+    }
+  }
+
+  void _quitarImagen() {
+    if (_guardando) return;
+    setState(() {
+      _imagenSeleccionada = null;
+      _bytesImagen = null;
+    });
+  }
+
+  // Fecha civil local, independiente de los cambios de horario de verano.
+  String _fechaLocal(DateTime fecha) =>
+      '${fecha.year.toString().padLeft(4, '0')}-'
+      '${fecha.month.toString().padLeft(2, '0')}-'
+      '${fecha.day.toString().padLeft(2, '0')}';
+
+  int? _diasEntreFechas(String anterior, String actual) {
+    final a = DateTime.tryParse(anterior);
+    final b = DateTime.tryParse(actual);
+    if (a == null || b == null) return null;
+    final diaA = DateTime.utc(a.year, a.month, a.day);
+    final diaB = DateTime.utc(b.year, b.month, b.day);
+    return diaB.difference(diaA).inDays;
+  }
+
+  Future<void> _guardarRegistro() async {
+    if (!_puedeGuardar) return;
+    final usuario = FirebaseAuth.instance.currentUser;
+    if (usuario == null) {
+      _mostrarMensaje('Debes iniciar sesión para guardar el registro.');
+      return;
+    }
+    final habitoRef = _habitoRef;
+    final attemptRef = _attemptRef;
+    if (habitoRef == null || attemptRef == null) {
+      _mostrarMensaje('No se pudo identificar el intento del hábito.');
+      return;
+    }
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    try {
+      final usuarioRef = _userDoc;
+      // Los registros pertenecen al intento, no directamente
+      // al documento principal del hábito.
+      final registroRef = attemptRef.collection('logs').doc();
+      final nota = _notaController.text.trim();
+      if (!_interactionComplete) throw Exception('Completa la actividad interactiva.');
+      final interactionType = _interactionType;
+      final interactionValue = _interactionValue;
+      final interactionUnit = _interactionUnit;
+      final uid = usuario.uid;
+      final bytesEvidencia = _bytesImagen;
+      final tieneEvidenciaReal =
+          _imagenSeleccionada != null && bytesEvidencia != null;
+      if (tieneEvidenciaReal &&
+          bytesEvidencia!.lengthInBytes >
+              TemporaryEvidenceService.maxImageBytes) {
+        throw Exception('La fotografía supera el límite de 250 KB.');
+      }
+      final xpGanado = tieneEvidenciaReal ? 15 : 10;
+      final evidenciaRef = _userDoc
+          .collection('temporary_habit_evidence')
+          .doc(registroRef.id);
+      final ahora = DateTime.now().toUtc();
+      final expira = ahora.add(const Duration(hours: 24));
+      final extension =
+          (_imagenSeleccionada?.name.split('.').last ?? 'jpg').toLowerCase();
+      final imagenTipo =
+          extension == 'png'
+              ? 'image/png'
+              : extension == 'webp'
+              ? 'image/webp'
+              : 'image/jpeg';
+
+      await _db.runTransaction((transaction) async {
+        final attemptSnapshot = await transaction.get(attemptRef);
+        final habitoSnapshot = await transaction.get(habitoRef);
+        final usuarioSnapshot = await transaction.get(usuarioRef);
+        if (!attemptSnapshot.exists) {
+          throw Exception('El intento ya no existe.');
+        }
+        final datosAttempt = attemptSnapshot.data()!;
+        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
+        final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
+        // Comprobar el estado dentro de la transacción
+        // evita guardar registros en intentos cancelados
+        // o completados.
+        final estado = (datosAttempt['status'] ?? '').toString();
+        if (estado != 'inProgress') {
+          throw Exception('El intento ya no está activo.');
+        }
+        final progresoActual = _leerEntero(datosAttempt['progress'], 0);
+        final metaActual = _leerEntero(datosAttempt['target'], _meta);
+        final metaSegura = metaActual < 1 ? 1 : metaActual;
+        if (progresoActual >= metaSegura) {
+          throw Exception('La meta de este hábito ya fue completada.');
+        }
+        // La racha se actualiza una sola vez por fecha local, dentro
+        // de la misma transacción que crea el registro.
+        final fechaHoy = _fechaLocal(DateTime.now().toLocal());
+        final ultimaFecha = (datosUsuario['lastStreakDate'] ?? '').toString();
+        final diferencia = _diasEntreFechas(ultimaFecha, fechaHoy);
+        final rachaAnterior = _leerEntero(datosUsuario['currentStreak'], 0);
+        final recordAnterior = _leerEntero(datosUsuario['longestStreak'], 0);
+        final nuevaRacha =
+            diferencia == 0
+                ? (rachaAnterior > 0 ? rachaAnterior : 1)
+                : diferencia == 1
+                ? rachaAnterior + 1
+                : 1;
+        final nuevoRecord =
+            nuevaRacha > recordAnterior ? nuevaRacha : recordAnterior;
+        final xpActual = _leerEntero(datosUsuario['xp'], 0);
+        final xpHabito = _leerEntero(datosAttempt['xpEarned'], 0);
+        final nuevoProgreso = progresoActual + 1;
+        final completado = nuevoProgreso >= metaSegura;
+        final datosActualizacion = <String, dynamic>{
+          'progress': nuevoProgreso,
+          'target': metaSegura,
+          'xpEarned': xpHabito + xpGanado,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        if (completado) {
+          datosActualizacion['status'] = 'completed';
+          datosActualizacion['completedAt'] = FieldValue.serverTimestamp();
+        }
+        transaction.update(attemptRef, datosActualizacion);
+        transaction.set(habitoRef, {
+          'latestAttemptId': attemptRef.id,
+          'latestProgress': nuevoProgreso,
+          'latestTarget': metaSegura,
+          'latestStatus': completado ? 'completed' : 'inProgress',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        transaction.set(usuarioRef, {
+          'xp': xpActual + xpGanado,
+          'currentStreak': nuevaRacha,
+          'streakDays': nuevaRacha,
+          'longestStreak': nuevoRecord,
+          'lastStreakDate': fechaHoy,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        if (tieneEvidenciaReal) {
+          transaction.set(evidenciaRef, {
+            'userId': uid,
+            'habitId': habitoRef.id,
+            'attemptId': attemptRef.id,
+            'logId': registroRef.id,
+            'imageBase64': base64Encode(bytesEvidencia!),
+            'contentType': imagenTipo,
+            'createdAt': FieldValue.serverTimestamp(),
+            'expiresAt': Timestamp.fromDate(expira),
+          });
+        }
+
+        transaction.set(registroRef, {
+          'habitId': habitoRef.id,
+          'attemptId': attemptRef.id,
+          'habitTitle': _nombreHabito,
+          'category': _categoria,
+          'note': nota,
+          'interactionType': interactionType,
+          'interactionValue': interactionValue,
+          'interactionUnit': interactionUnit,
+          'hasEvidence': tieneEvidenciaReal,
+          'imageUrl': null,
+          'evidenceId': tieneEvidenciaReal ? registroRef.id : null,
+          'evidenceExpiresAt':
+              tieneEvidenciaReal ? Timestamp.fromDate(expira) : null,
+          'xpEarned': xpGanado,
+          'progressAfter': nuevoProgreso,
+          'goal': metaSegura,
+          'completed': completado,
+          'createdAt': FieldValue.serverTimestamp(),
+          'userId': uid,
+        });
+      });
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error =
+              'No se pudo guardar el registro. Verifica tu conexión, '
+              'Firestore y las reglas de seguridad.';
+        });
+        _mostrarMensaje('Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _guardando = false);
+      }
+    }
+  }
+
+  void _mostrarMensaje(String mensaje) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_cargando) {
+      return Scaffold(
+        backgroundColor: AppColores.fondoClaro,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return Scaffold(
+      backgroundColor: AppColores.fondoClaro,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+          onPressed: _guardando ? null : () => Navigator.pop(context),
+        ),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Registrar Hábito',
+              style: TextStyle(
+                color: AppColores.textoOscuro,
+                fontWeight: FontWeight.w900,
+                fontSize: 22,
+              ),
+            ),
+            Text(
+              'Añade algo que acompañe tu registro.',
+              style: TextStyle(
+                color: AppColores.textoGris,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTarjetaHabito(),
+            const SizedBox(height: 18),
+            if (_interactionType != 'manual') ...[
+              HabitInteractionCard(
+                type: _interactionType,
+                target: _interactionTarget,
+                unit: _interactionUnit,
+                enabled: !_guardando && !_metaCompletada,
+                onChanged: (complete, value) {
+                  if (!mounted) return;
+                  setState(() {
+                    _interactionComplete = complete;
+                    _interactionValue = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+            _buildTituloSeccion('Fotografía', 'Opcional'),
+            const SizedBox(height: 12),
+            _buildFotografia(),
+            const SizedBox(height: 8),
+            const Text(
+              'Puedes adjuntar una fotografía como evidencia. '
+              'Se eliminará después de 24 horas al ejecutar la limpieza.',
+              style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+            ),
+            const SizedBox(height: 24),
+            _buildTituloSeccion('Añadir una nota', 'Opcional'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notaController,
+              enabled: !_guardando,
+              maxLength: 500,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Ej. Terminé mi botella durante el almuerzo.',
+                hintStyle: const TextStyle(
+                  color: AppColores.textoGris,
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColores.bordeGris),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColores.bordeGris),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Tu registro suma',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColores.textoOscuro,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildTarjetasXP(),
+            const SizedBox(height: 24),
+            _buildPrivacidad(),
+            const SizedBox(height: 16),
+            _buildMrHealthy(),
+            const SizedBox(height: 24),
+            if (_error != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (_metaCompletada) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColores.verdeMenta,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  '¡Meta completada! Este intento ya no admite '
+                  'más registros.',
+                  style: TextStyle(
+                    color: AppColores.verdePrincipal,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _puedeGuardar ? _guardarRegistro : null,
+                icon:
+                    _guardando
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : const Icon(Icons.check_circle_outline, size: 20),
+                label: Text(
+                  _guardando
+                      ? (_subiendoImagen
+                          ? 'Preparando imagen...'
+                          : 'Guardando...')
+                      : _metaCompletada
+                      ? 'Meta completada'
+                      : 'Guardar registro',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColores.verdePrincipal,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColores.verdePrincipal
+                      .withOpacity(0.6),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: TextButton(
+                onPressed: _guardando ? null : () => Navigator.pop(context),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColores.verdePrincipal,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTarjetaHabito() {
+    final progresoVisual =
+        _meta > 0 ? (_progreso / _meta).clamp(0.0, 1.0).toDouble() : 0.0;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColores.azulAgua,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  _nombreHabito.toLowerCase().contains('agua')
+                      ? Icons.water_drop_outlined
+                      : Icons.check_circle_outline,
+                  color: AppColores.azulTexto,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _nombreHabito,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColores.textoOscuro,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$_categoria · Misión diaria',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColores.textoGris,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progresoVisual,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFFEDEFF3),
+                    valueColor: const AlwaysStoppedAnimation(
+                      AppColores.azulTexto,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$_progreso / $_meta',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColores.azulTexto,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Al guardar, el progreso avanzará una unidad.',
+              style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTituloSeccion(String titulo, String subtitulo) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          titulo,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColores.textoOscuro,
+          ),
+        ),
+        Text(
+          subtitulo,
+          style: const TextStyle(fontSize: 13, color: AppColores.textoGris),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFotografia() {
+    final tieneImagen = _bytesImagen != null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColores.verdePrincipal.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          if (tieneImagen) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.memory(
+                _bytesImagen!,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: AppColores.verdePrincipal,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Imagen seleccionada',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColores.textoOscuro,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _guardando ? null : _quitarImagen,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Quitar'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                ),
+              ],
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                color: AppColores.verdeMenta,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.camera_alt_outlined,
+                color: AppColores.verdePrincipal,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Añadir fotografía',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColores.textoOscuro,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Adjunta una imagen para respaldar tu registro.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColores.textoGris),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed:
+                      _guardando
+                          ? null
+                          : () => _seleccionarImagen(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt, size: 18),
+                  label: const Text(
+                    'Tomar fotografía',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColores.verdePrincipal,
+                    backgroundColor: AppColores.verdeMenta,
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed:
+                      _guardando
+                          ? null
+                          : () => _seleccionarImagen(ImageSource.gallery),
+                  icon: const Icon(Icons.image_outlined, size: 18),
+                  label: const Text(
+                    'Elegir de galería',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColores.textoOscuro,
+                    side: const BorderSide(color: AppColores.bordeGris),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'Registrar con evidencia',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text(
+              tieneImagen
+                  ? 'La imagen se guardará temporalmente durante 24 horas.'
+                  : 'Selecciona una imagen para activar la evidencia.',
+              style: const TextStyle(fontSize: 11),
+            ),
+            value: tieneImagen,
+            activeColor: AppColores.verdePrincipal,
+            onChanged:
+                _guardando
+                    ? null
+                    : (value) {
+                      if (!value) {
+                        _quitarImagen();
+                      } else {
+                        _seleccionarImagen(ImageSource.gallery);
+                      }
+                    },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTarjetasXP() {
+    return Row(
+      children: [
+        Expanded(
+          child: _tarjetaXP(
+            titulo: 'Registro normal',
+            xp: '+10 XP',
+            descripcion: 'Sin evidencia',
+            color: Colors.white,
+            colorTexto: AppColores.textoOscuro,
+            borde: AppColores.bordeGris,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _tarjetaXP(
+            titulo: 'Con evidencia',
+            xp: '+15 XP',
+            descripcion: 'Total del registro',
+            color: AppColores.verdeMenta,
+            colorTexto: AppColores.verdePrincipal,
+            borde: AppColores.verdePrincipal.withOpacity(0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tarjetaXP({
+    required String titulo,
+    required String xp,
+    required String descripcion,
+    required Color color,
+    required Color colorTexto,
+    required Color borde,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.bolt, color: colorTexto, size: 20),
+              Flexible(
+                child: Text(
+                  xp,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: colorTexto,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            descripcion,
+            style: const TextStyle(fontSize: 11, color: AppColores.textoGris),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivacidad() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_outline, size: 18, color: AppColores.textoOscuro),
+              SizedBox(width: 8),
+              Text(
+                'Tu privacidad importa',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            'La evidencia se utiliza para respaldar este registro y '
+            'se manejará según tus preferencias de privacidad.',
+            style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMrHealthy() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Image.asset(
+          'assets/mascot/healthy.png',
+          width: 40,
+          height: 40,
+          errorBuilder:
+              (context, error, stackTrace) => const Icon(Icons.eco, size: 40),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mr. Healthy',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: AppColores.verdePrincipal,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'La evidencia es opcional. Obtienes XP al registrar '
+                'tu hábito; los Healthy Coins se obtienen al completar '
+                'una misión, no por cada registro.',
+                style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

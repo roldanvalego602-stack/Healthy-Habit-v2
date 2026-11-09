@@ -211,7 +211,19 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                               CatalogoDetalleScreen(item: item),
                                     ),
                                   ),
-                              child: Padding(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                    child: Image.asset(
+                                      item.imagen,
+                                      height: 138,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const SizedBox(height: 138, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 48, color: _verde))),
+                                    ),
+                                  ),
+                                  Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
@@ -270,6 +282,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                     ),
                                   ],
                                 ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

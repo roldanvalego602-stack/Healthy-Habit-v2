@@ -5,6 +5,7 @@ class CatalogoItem {
   final String categoria;
   final String dificultad;
   final String icono;
+  final String imagen;
   final List<String> etiquetas;
   final List<String> beneficios;
   final List<String> pasos;
@@ -21,6 +22,7 @@ class CatalogoItem {
     required this.categoria,
     required this.dificultad,
     required this.icono,
+    required this.imagen,
     required this.etiquetas,
     required this.beneficios,
     required this.pasos,

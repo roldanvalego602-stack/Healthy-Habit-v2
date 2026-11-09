@@ -1,3 +1,4 @@
+import '../niveles/levels_system.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -61,7 +62,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   bool get _tieneEvidencia => _imagenSeleccionada != null;
   bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
-  bool get _puedeGuardar => !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
+  bool get _puedeGuardar =>
+      !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
   @override
   void initState() {
     super.initState();
@@ -144,18 +146,29 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       _progreso = _leerEntero(datosAttempt['progress'], _progreso);
       // El objetivo interactivo es por sesión; no altera la meta del intento.
       final rawInteraction = datosHabito['interaction'];
-      final interaction = rawInteraction is Map ? rawInteraction : <String, dynamic>{};
+      final interaction =
+          rawInteraction is Map ? rawInteraction : <String, dynamic>{};
       final configuredType = (interaction['type'] ?? '').toString();
       final text = '$_nombreHabito $_categoria'.toLowerCase();
-      final fallbackType = text.contains('agua') || text.contains('vaso')
-          ? 'counter' : text.contains('caminar') || text.contains('correr') ||
-              text.contains('ejercicio') ? 'stopwatch' : 'manual';
+      final fallbackType =
+          text.contains('agua') || text.contains('vaso')
+              ? 'counter'
+              : text.contains('caminar') ||
+                  text.contains('correr') ||
+                  text.contains('ejercicio')
+              ? 'stopwatch'
+              : 'manual';
       final type = configuredType.isEmpty ? fallbackType : configuredType;
-      _interactionType = ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
-      _interactionTarget = _leerEntero(interaction['target'],
-          _interactionType == 'counter' ? 1 : 60).clamp(1, 86400);
-      _interactionUnit = (interaction['unit'] ??
-          (_interactionType == 'counter' ? 'vaso' : 'segundos')).toString();
+      _interactionType =
+          ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+      _interactionTarget = _leerEntero(
+        interaction['target'],
+        _interactionType == 'counter' ? 1 : 60,
+      ).clamp(1, 86400);
+      _interactionUnit =
+          (interaction['unit'] ??
+                  (_interactionType == 'counter' ? 'vaso' : 'segundos'))
+              .toString();
       _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
       if (_meta < 1) _meta = 1;
@@ -252,7 +265,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       // al documento principal del hábito.
       final registroRef = attemptRef.collection('logs').doc();
       final nota = _notaController.text.trim();
-      if (!_interactionComplete) throw Exception('Completa la actividad interactiva.');
+      if (!_interactionComplete)
+        throw Exception('Completa la actividad interactiva.');
       final interactionType = _interactionType;
       final interactionValue = _interactionValue;
       final interactionUnit = _interactionUnit;
@@ -318,7 +332,60 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 : 1;
         final nuevoRecord =
             nuevaRacha > recordAnterior ? nuevaRacha : recordAnterior;
-        final xpActual = _leerEntero(datosUsuario['xp'], 0);
+
+        // HEALTHY_HABIT_LEVEL_REWARDS_V2
+        final xpActual =
+            _leerEntero(
+              datosUsuario['xp'] ?? datosUsuario['currentXp'],
+              0,
+            ).clamp(0, 1000000000).toInt();
+
+        final xpNuevo = xpActual + xpGanado;
+        final nivelAnterior = LevelSystem.fromXp(xpActual).number;
+        final nivelNuevo = LevelSystem.fromXp(xpNuevo).number;
+
+        const recompensas = <int, int>{
+          2: 25,
+          3: 25,
+          4: 25,
+          5: 50,
+          6: 50,
+          7: 50,
+          8: 50,
+          9: 75,
+          10: 75,
+          11: 75,
+          12: 75,
+          13: 100,
+          14: 100,
+          15: 100,
+          16: 100,
+          17: 150,
+          18: 150,
+          19: 150,
+          20: 300,
+        };
+
+        final reclamados = <int>{
+          for (final valor
+              in (datosUsuario['claimedLevelRewards'] is List
+                  ? datosUsuario['claimedLevelRewards'] as List
+                  : <dynamic>[]))
+            if (_leerEntero(valor, 0) >= 2) _leerEntero(valor, 0),
+        };
+
+        var monedasGanadas = 0;
+
+        for (var numero = nivelAnterior + 1; numero <= nivelNuevo; numero++) {
+          if (reclamados.add(numero)) {
+            monedasGanadas += recompensas[numero] ?? 0;
+          }
+        }
+
+        final monedasActuales = _leerEntero(datosUsuario['habitCoins'], 0);
+
+        final monedasNuevas = monedasActuales + monedasGanadas;
+
         final xpHabito = _leerEntero(datosAttempt['xpEarned'], 0);
         final nuevoProgreso = progresoActual + 1;
         final completado = nuevoProgreso >= metaSegura;
@@ -341,7 +408,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
         transaction.set(usuarioRef, {
-          'xp': xpActual + xpGanado,
+          'xp': xpNuevo,
+          'level': nivelNuevo,
+          'habitCoins': monedasNuevas,
+          'claimedLevelRewards': reclamados.toList()..sort(),
           'currentStreak': nuevaRacha,
           'streakDays': nuevaRacha,
           'longestStreak': nuevoRecord,

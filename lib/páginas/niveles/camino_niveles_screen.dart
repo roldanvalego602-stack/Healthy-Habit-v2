@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'levels_system.dart';
 
 class CaminoNivelesScreen extends StatelessWidget {
@@ -8,8 +11,12 @@ class CaminoNivelesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final current = LevelSystem.fromXp(xp);
-    final next = LevelSystem.nextLevel(xp);
+    // RECOMPENSAS_NIVELES_V2
+    final usuario = FirebaseAuth.instance.currentUser;
+    final db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: 'default',
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8F6),
@@ -20,49 +27,126 @@ class CaminoNivelesScreen extends StatelessWidget {
         ),
         backgroundColor: const Color(0xFFF5F8F6),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          _summary(current, next),
-          const SizedBox(height: 24),
-          const Text(
-            'Tu camino de crecimiento',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF193344),
-            ),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'Descubre tus próximos niveles y recompensas.',
-            style: TextStyle(color: Color(0xFF71879A)),
-          ),
-          const SizedBox(height: 20),
-          ...LevelSystem.levels.map((level) {
-            final completed = xp >= level.requiredXp;
-            final isCurrent = level.number == current.number;
+      body:
+          usuario == null
+              ? const Center(child: Text('Inicia sesión para ver tus niveles.'))
+              : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: db.collection('users').doc(usuario.uid).snapshots(),
+                builder: (context, snapshot) {
+                  final datos = snapshot.data?.data() ?? <String, dynamic>{};
 
-            return _levelNode(
-              level,
-              completed: completed,
-              isCurrent: isCurrent,
-              isLast: level.number == LevelSystem.levels.length,
-            );
-          }),
-          const SizedBox(height: 20),
-          const Text(
-            'Las recompensas se muestran como vista previa. '
-            'Su entrega automática se activará en una próxima etapa.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF71879A), fontSize: 12),
-          ),
-        ],
-      ),
+                  int leerNumero(dynamic valor, int defecto) {
+                    if (valor is num) return valor.toInt();
+                    return int.tryParse(valor?.toString() ?? '') ?? defecto;
+                  }
+
+                  final xpActual = leerNumero(
+                    datos['xp'] ?? datos['currentXp'],
+                    xp,
+                  );
+                  final current = LevelSystem.fromXp(xpActual);
+                  final next = LevelSystem.nextLevel(xpActual);
+                  final monedas = leerNumero(datos['habitCoins'], 0);
+
+                  final reclamados = <int>{
+                    for (final valor
+                        in (datos['claimedLevelRewards'] is List
+                            ? datos['claimedLevelRewards'] as List
+                            : <dynamic>[]))
+                      if (leerNumero(valor, 0) >= 2) leerNumero(valor, 0),
+                  };
+
+                  return ListView(
+                    padding: const EdgeInsets.all(18),
+                    children: [
+                      _summary(current, next, xpActual),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.monetization_on_outlined,
+                              color: Color(0xFFB68B26),
+                              size: 32,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Tu saldo de Habit Coins',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF71879A),
+                                    ),
+                                  ),
+                                  Text(
+                                    '$monedas monedas',
+                                    style: const TextStyle(
+                                      fontSize: 23,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF193344),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Tu camino de crecimiento',
+                        style: TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF193344),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        'Descubre tus próximos niveles y recompensas.',
+                        style: TextStyle(color: Color(0xFF71879A)),
+                      ),
+                      const SizedBox(height: 20),
+                      ...LevelSystem.levels.map((level) {
+                        final completed = xpActual >= level.requiredXp;
+                        final isCurrent = level.number == current.number;
+
+                        return _levelNode(
+                          level,
+                          completed: completed,
+                          rewardClaimed: reclamados.contains(level.number),
+                          isCurrent: isCurrent,
+                          isLast: level.number == LevelSystem.levels.length,
+                        );
+                      }),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Las recompensas se entregan automáticamente al '
+                        'subir de nivel mediante registros de hábitos. '
+                        'Los niveles alcanzados anteriormente pueden '
+                        'mostrar recompensas pendientes.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF71879A),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
     );
   }
 
-  Widget _summary(HealthyLevel current, HealthyLevel? next) {
+  Widget _summary(HealthyLevel current, HealthyLevel? next, int xpActual) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -117,7 +201,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$xp XP acumulados',
+                      '$xpActual XP acumulados',
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -129,7 +213,7 @@ class CaminoNivelesScreen extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: LevelSystem.progress(xp),
+              value: LevelSystem.progress(xpActual),
               minHeight: 10,
               backgroundColor: Colors.white24,
               valueColor: const AlwaysStoppedAnimation(Color(0xFF08B889)),
@@ -139,7 +223,7 @@ class CaminoNivelesScreen extends StatelessWidget {
           Text(
             next == null
                 ? '¡Has alcanzado el último nivel disponible!'
-                : 'Faltan ${LevelSystem.remainingXp(xp)} XP '
+                : 'Faltan ${LevelSystem.remainingXp(xpActual)} XP '
                     'para ${next.name}',
             style: const TextStyle(
               color: Colors.white,
@@ -165,6 +249,7 @@ class CaminoNivelesScreen extends StatelessWidget {
   Widget _levelNode(
     HealthyLevel level, {
     required bool completed,
+    required bool rewardClaimed,
     required bool isCurrent,
     required bool isLast,
   }) {
@@ -289,6 +374,24 @@ class CaminoNivelesScreen extends StatelessWidget {
                                     : const Color(0xFF8B6B19),
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                      if (level.rewardCoins > 0) ...[
+                        const SizedBox(height: 7),
+                        Text(
+                          rewardClaimed
+                              ? '✓ RECOMPENSA ENTREGADA'
+                              : completed
+                              ? '◷ RECOMPENSA PENDIENTE'
+                              : 'RECOMPENSA BLOQUEADA',
+                          style: TextStyle(
+                            color:
+                                rewardClaimed
+                                    ? const Color(0xFF08B889)
+                                    : foreground,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],

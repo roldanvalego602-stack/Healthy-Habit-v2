@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
@@ -68,8 +67,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
   late final FirebaseFirestore _db;
 
-  bool _procesandoTruco = false;
-
   @override
   void initState() {
     super.initState();
@@ -80,191 +77,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
     );
   }
 
-  void _mostrarMensaje(String mensaje) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(mensaje)));
-  }
-
-  // --------------------------------------------------
-  // BOTÓN MÁGICO: SUBIR DE NIVEL MEDIANTE XP
-  // --------------------------------------------------
-
-  Future<void> _subirNivelMagico() async {
-    if (!kDebugMode || _procesandoTruco) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    setState(() => _procesandoTruco = true);
-
-    try {
-      final userRef = _db.collection('users').doc(user.uid);
-
-      final resultado = await _db.runTransaction<({int nivel, int xp})>((
-        transaction,
-      ) async {
-        final snapshot = await transaction.get(userRef);
-
-        if (!snapshot.exists) {
-          throw StateError('No se encontró tu perfil en Firebase.');
-        }
-
-        final datos = snapshot.data() ?? <String, dynamic>{};
-
-        final xpActual =
-            _number(
-              datos['xp'] ?? datos['currentXp'],
-            ).clamp(0, 1000000000).toInt();
-
-        final nivelActual = LevelSystem.fromXp(xpActual);
-
-        final siguiente = LevelSystem.nextLevel(xpActual);
-
-        if (siguiente == null) {
-          // Ya alcanzó el último nivel configurado.
-          // Sincronizamos el nivel guardado si fuera necesario.
-          if (_number(datos['level'], 1) != nivelActual.number) {
-            transaction.update(userRef, {'level': nivelActual.number});
-          }
-
-          return (nivel: nivelActual.number, xp: xpActual);
-        }
-
-        // La XP llega exactamente al umbral del
-        // siguiente nivel.
-        final xpNueva = siguiente.requiredXp;
-
-        transaction.update(userRef, {'xp': xpNueva, 'level': siguiente.number});
-
-        return (nivel: siguiente.number, xp: xpNueva);
-      });
-
-      _mostrarMensaje(
-        resultado.nivel >= LevelSystem.levels.last.number
-            ? '🪄 Nivel ${resultado.nivel}. '
-                'Has alcanzado el último nivel disponible.'
-            : '🪄 ¡Ahora eres nivel ${resultado.nivel}! '
-                'Tienes ${resultado.xp} XP.',
-      );
-    } catch (e) {
-      _mostrarMensaje('Error al subir de nivel: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _procesandoTruco = false);
-      }
-    }
-  }
-
-  // --------------------------------------------------
-  // BOTÓN MÁGICO: RECIBIR 500 HABIT COINS
-  // --------------------------------------------------
-
-  Future<void> _recibirMonedasMagicas() async {
-    if (!kDebugMode || _procesandoTruco) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    setState(() => _procesandoTruco = true);
-
-    try {
-      final userRef = _db.collection('users').doc(user.uid);
-
-      final nuevoSaldo = await _db.runTransaction<int>((transaction) async {
-        final snapshot = await transaction.get(userRef);
-
-        if (!snapshot.exists) {
-          throw StateError('No se encontró tu perfil en Firebase.');
-        }
-
-        final datos = snapshot.data() ?? <String, dynamic>{};
-
-        final saldoActual = _number(datos['habitCoins']);
-
-        final saldoNuevo = saldoActual + 500;
-
-        transaction.update(userRef, {'habitCoins': saldoNuevo});
-
-        return saldoNuevo;
-      });
-
-      _mostrarMensaje(
-        '🪙 ¡Recibiste 500 Habit Coins! '
-        'Saldo actual: $nuevoSaldo',
-      );
-    } catch (e) {
-      _mostrarMensaje('Error al recibir monedas: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _procesandoTruco = false);
-      }
-    }
-  }
-
-  // --------------------------------------------------
-  // REPARACIÓN TEMPORAL DEL NIVEL 6 DE PRUEBA
-  // --------------------------------------------------
-
-  Future<void> _repararNivelDePrueba() async {
-    if (!kDebugMode || _procesandoTruco) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    setState(() => _procesandoTruco = true);
-
-    try {
-      final userRef = _db.collection('users').doc(user.uid);
-
-      final resultado = await _db.runTransaction<({int nivel, int xp})>((
-        transaction,
-      ) async {
-        final snapshot = await transaction.get(userRef);
-
-        if (!snapshot.exists) {
-          throw StateError('No se encontró tu perfil en Firebase.');
-        }
-
-        final datos = snapshot.data() ?? <String, dynamic>{};
-
-        final xpActual =
-            _number(
-              datos['xp'] ?? datos['currentXp'],
-            ).clamp(0, 1000000000).toInt();
-
-        final xpNivelSeis =
-            LevelSystem.levels
-                .firstWhere((nivel) => nivel.number == 6)
-                .requiredXp;
-
-        // Nunca quitamos XP.
-        // Si ya tiene más de 1,000, se conserva.
-        final xpFinal = xpActual < xpNivelSeis ? xpNivelSeis : xpActual;
-
-        final nivelFinal = LevelSystem.fromXp(xpFinal).number;
-
-        transaction.update(userRef, {'xp': xpFinal, 'level': nivelFinal});
-
-        return (nivel: nivelFinal, xp: xpFinal);
-      });
-
-      _mostrarMensaje(
-        '✅ XP y nivel sincronizados. '
-        'Nivel ${resultado.nivel} · ${resultado.xp} XP.',
-      );
-    } catch (e) {
-      _mostrarMensaje('Error al sincronizar nivel: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _procesandoTruco = false);
-      }
-    }
-  }
-
-  // --------------------------------------------------
   // NAVEGACIÓN PRINCIPAL
   // --------------------------------------------------
 
@@ -412,10 +224,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
               habits: habits.data!.docs,
               userRef: userRef,
               coins: _number(data['habitCoins']),
-              procesandoTruco: _procesandoTruco,
-              onSubirNivelMagico: _subirNivelMagico,
-              onRecibirMonedasMagicas: _recibirMonedasMagicas,
-              onRepararNivelDePrueba: _repararNivelDePrueba,
               onHabits: () {
                 setState(() {
                   _selectedIndex = 1;
@@ -457,10 +265,6 @@ class _HomeContent extends StatelessWidget {
     required this.coins,
     required this.onProfile,
     required this.onStore,
-    required this.procesandoTruco,
-    required this.onSubirNivelMagico,
-    required this.onRecibirMonedasMagicas,
-    required this.onRepararNivelDePrueba,
   });
 
   final String name;
@@ -471,17 +275,11 @@ class _HomeContent extends StatelessWidget {
   final int streak;
   final int coins;
 
-  final bool procesandoTruco;
-
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> habits;
 
   final VoidCallback onHabits;
   final VoidCallback onProfile;
   final VoidCallback onStore;
-
-  final VoidCallback onSubirNivelMagico;
-  final VoidCallback onRecibirMonedasMagicas;
-  final VoidCallback onRepararNivelDePrueba;
 
   final DocumentReference<Map<String, dynamic>> userRef;
 
@@ -633,9 +431,6 @@ class _HomeContent extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
-          // HERRAMIENTAS DE PRUEBA
-          if (kDebugMode) ...[_debugTools(), const SizedBox(height: 16)],
 
           // ESTADÍSTICAS RÁPIDAS
           Row(
@@ -872,105 +667,6 @@ class _HomeContent extends StatelessWidget {
   // --------------------------------------------------
   // HERRAMIENTAS DE DESARROLLO
   // --------------------------------------------------
-
-  Widget _debugTools() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Herramientas de prueba',
-                  style: TextStyle(
-                    color: AppColors.textDark,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-
-          const Text(
-            'Solo visibles en modo depuración. '
-            'Utilízalas con una cuenta de prueba.',
-            style: TextStyle(color: AppColors.textGrey, fontSize: 12),
-          ),
-
-          const SizedBox(height: 14),
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed:
-                  procesandoTruco || LevelSystem.nextLevel(xp) == null
-                      ? null
-                      : onSubirNivelMagico,
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('🪄 Subir 1 nivel con XP'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.darkGreenCard,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: procesandoTruco ? null : onRecibirMonedasMagicas,
-              icon: const Icon(Icons.monetization_on_rounded),
-              label: const Text('Recibir 500 Habit Coins'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: procesandoTruco ? null : onRepararNivelDePrueba,
-              icon: const Icon(Icons.sync_rounded),
-              label: const Text('Sincronizar mi nivel 6 de prueba'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkGreenCard,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 7),
-
-          const Text(
-            'La sincronización conserva la XP existente '
-            'y la eleva a 1,000 solo si es menor.',
-            style: TextStyle(color: AppColors.textGrey, fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
 
   // --------------------------------------------------
   // TARJETAS DE ESTADÍSTICAS
