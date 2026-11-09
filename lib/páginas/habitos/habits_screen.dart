@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'catalogo.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
+import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -96,9 +97,16 @@ class _HabitsScreenState extends State<HabitsScreen> {
       final userSnapshot = results[0] as DocumentSnapshot<Map<String, dynamic>>;
       final habitsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
       final userData = userSnapshot.data() ?? {};
-      final loadedXp = (userData['xp'] as num?)?.toInt() ?? 0;
+      final rawXp = userData['xp'] ?? userData['currentXp'];
+
+      final loadedXp =
+          rawXp is num
+              ? rawXp.toInt().clamp(0, 1000000000).toInt()
+              : (int.tryParse('$rawXp') ?? 0).clamp(0, 1000000000).toInt();
+
       final loadedCoins = (userData['habitCoins'] as num?)?.toInt() ?? 0;
-      final loadedLevel = (userData['level'] as num?)?.toInt() ?? 1;
+
+      final loadedLevel = LevelSystem.fromXp(loadedXp).number;
       final loadedSlots =
           (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
       final List<_ActiveHabitEntry> loadedActive = [];
@@ -434,6 +442,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   bool _isUnlocked(Habit habit) {
     final unlockType = habit.unlockType.trim().toLowerCase();
+    final level = LevelSystem.fromXp(xp).number;
 
     switch (unlockType) {
       case 'none':
