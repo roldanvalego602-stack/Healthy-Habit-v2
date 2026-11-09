@@ -13,6 +13,7 @@ import 'páginas/splash_screen.dart';
 import 'páginas/notifications_screen.dart';
 import 'páginas/habitos/registrar_habito_screen.dart';
 import 'páginas/chatbot/nutrichat.dart';
+import 'páginas/perfil/feed_amigos_screen.dart';
 
 // Instancia compartida de Firestore.
 late final FirebaseFirestore firestoreDb;
@@ -235,56 +236,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.mintCard,
-              backgroundImage:
-                  user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-              child:
-                  user?.photoURL == null
-                      ? const Icon(
-                        Icons.person,
-                        color: AppColors.primaryGreen,
-                        size: 40,
-                      )
-                      : null,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              user?.displayName ?? 'Usuario',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
-            if (user?.email != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                user!.email!,
-                style: const TextStyle(color: AppColors.textGrey),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ---------- Top Bar ----------
 class _TopBar extends StatelessWidget {
   final String? photoUrl;
@@ -316,6 +267,32 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const Spacer(),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+            ],
+          ),
+          child: TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedAmigosScreen(),
+                ),
+              );
+            },
+            child: const Icon(
+              Icons.dynamic_feed_rounded,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
         Container(
           width: 42,
           height: 42,
