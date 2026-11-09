@@ -23,8 +23,10 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
   String _terminoBusqueda = '';
 
   Set<String> _siguiendo = {};
+  Set<String> _pendientes = {};
   final Set<String> _ocupados = {};
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _siguiendoSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _enviadasSub;
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -38,6 +40,10 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
       _siguiendoSub = AmigosServicio.siguiendo(miUid).listen((snap) {
         if (!mounted) return;
         setState(() => _siguiendo = snap.docs.map((d) => d.id).toSet());
+      });
+      _enviadasSub = AmigosServicio.solicitudesEnviadas(miUid).listen((snap) {
+        if (!mounted) return;
+        setState(() => _pendientes = snap.docs.map((d) => d.id).toSet());
       });
     }
 
@@ -53,6 +59,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
   @override
   void dispose() {
     _siguiendoSub?.cancel();
+    _enviadasSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -88,26 +95,31 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
         usernameConArroba.contains(_terminoBusqueda);
   }
 
+  /// Envía o cancela una solicitud; si ya se sigue a la persona, deja de
+  /// seguirla directamente (sin necesidad de solicitud para dejar de seguir).
   Future<void> _alternarSeguir(String uid, String nombre) async {
     if (_ocupados.contains(uid)) return;
 
     final yaSigue = _siguiendo.contains(uid);
+    final pendiente = _pendientes.contains(uid);
     setState(() => _ocupados.add(uid));
 
     try {
+      String mensaje;
       if (yaSigue) {
         await AmigosServicio.dejarDeSeguir(uid);
+        mensaje = 'Dejaste de seguir a $nombre';
+      } else if (pendiente) {
+        await AmigosServicio.cancelarSolicitud(uid);
+        mensaje = 'Cancelaste la solicitud a $nombre';
       } else {
-        await AmigosServicio.seguir(uid);
+        await AmigosServicio.enviarSolicitud(uid);
+        mensaje = 'Solicitud enviada a $nombre';
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            yaSigue ? 'Dejaste de seguir a $nombre' : 'Ahora sigues a $nombre',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensaje)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,18 +132,31 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
 
   Widget _botonSeguir(String uid, String nombre) {
     final siguiendo = _siguiendo.contains(uid);
+    final pendiente = _pendientes.contains(uid);
     final ocupado = _ocupados.contains(uid);
+
+    final String etiqueta =
+        siguiendo ? 'Siguiendo' : (pendiente ? 'Pendiente' : 'Seguir');
+    final Color colorTexto =
+        siguiendo
+            ? AppColores.verdePrincipal
+            : (pendiente ? const Color(0xFFB8860B) : AppColores.verdeOscuro);
+    final Color colorBorde =
+        siguiendo
+            ? AppColores.verdePrincipal
+            : (pendiente ? const Color(0xFFD5A33E) : AppColores.verdeMenta);
 
     return GestureDetector(
       onTap: () => _alternarSeguir(uid, nombre),
       child: Container(
         height: 36,
-        constraints: const BoxConstraints(minWidth: 88),
+        constraints: const BoxConstraints(minWidth: 92),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: siguiendo ? Colors.white : AppColores.verdeMenta,
+          color: (siguiendo || pendiente) ? Colors.white : AppColores.verdeMenta,
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colorBorde, width: 1.4),
           border: Border.all(
             color:
                 siguiendo ? AppColores.verdePrincipal : AppColores.verdeMenta,
@@ -149,14 +174,11 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                   ),
                 )
                 : Text(
-                  siguiendo ? 'Siguiendo' : 'Seguir',
+                  etiqueta,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color:
-                        siguiendo
-                            ? AppColores.verdePrincipal
-                            : AppColores.verdeOscuro,
+                    color: colorTexto,
                   ),
                 ),
       ),

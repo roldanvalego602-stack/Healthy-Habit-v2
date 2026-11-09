@@ -21,7 +21,8 @@ dependencies:
   shared_preferences: ^2.5.3
   image_picker: ^1.2.1
   firebase_storage: ^12.4.10
-  url_launcher: ^6.3.2
+  draggable_fab: ^0.1.4
+  push: ^3.3.3
 
 dev_dependencies:
   flutter_test:
