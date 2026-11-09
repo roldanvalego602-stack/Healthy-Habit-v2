@@ -15,10 +15,8 @@ import 'páginas/habitos/registrar_habito_screen.dart';
 import 'páginas/chatbot/nutrichat.dart';
 import 'páginas/perfil/feed_amigos_screen.dart';
 
-
 // Instancia compartida de Firestore.
 late final FirebaseFirestore firestoreDb;
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -276,7 +274,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             if (user?.email != null) ...[
               const SizedBox(height: 4),
-              Text(user!.email!, style: const TextStyle(color: AppColors.textGrey)),
+              Text(
+                user!.email!,
+                style: const TextStyle(color: AppColors.textGrey),
+              ),
             ],
           ],
         ),

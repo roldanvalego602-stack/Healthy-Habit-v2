@@ -16,16 +16,13 @@ class EditarPerfilScreen extends StatefulWidget {
 
 class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  late final TextEditingController _nombreController;
-  late final TextEditingController _usuarioController;
-  late final TextEditingController _fraseController;
-
+  final _nombreController = TextEditingController();
+  final _usuarioController = TextEditingController();
+  final _fraseController = TextEditingController();
   bool _cargando = true;
   bool _guardando = false;
   String? _errorCarga;
-
-  User? get _user => FirebaseAuth.instance.currentUser;
+  int _cargaActual = 0;
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -33,63 +30,52 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   @override
   void initState() {
     super.initState();
-
-    _nombreController = TextEditingController();
-    _usuarioController = TextEditingController();
-    _fraseController = TextEditingController();
-
     _cargarPerfil();
   }
 
   @override
   void dispose() {
+    _cargaActual++;
     _nombreController.dispose();
     _usuarioController.dispose();
     _fraseController.dispose();
     super.dispose();
   }
 
+  String _texto(dynamic value, String fallback) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : fallback;
+
+  String _usuario(String value) =>
+      value.trim().replaceFirst(RegExp(r'^@+'), '');
+
   Future<void> _cargarPerfil() async {
-    final user = _user;
-
+    final carga = ++_cargaActual;
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (!mounted) return;
-
+      if (!mounted || carga != _cargaActual) return;
       setState(() {
         _cargando = false;
-        _errorCarga = 'No hay una sesión activa. Inicia sesión nuevamente.';
+        _errorCarga = 'No hay una sesión activa.';
       });
       return;
     }
-
     try {
-      final documento = await _db.collection('users').doc(user.uid).get();
-
-      final data = documento.data() ?? <String, dynamic>{};
-
-      _nombreController.text = _valorTexto(
-        data['name'],
-        user.displayName ?? '',
-      );
-
-      _usuarioController.text = _normalizarUsuario(
-        _valorTexto(data['username'], ''),
-      );
-
-      _fraseController.text = _valorTexto(
+      final snapshot = await _db.collection('users').doc(user.uid).get();
+      // IMPORTANTE: comprobar mounted ANTES de escribir en controladores.
+      if (!mounted || carga != _cargaActual) return;
+      final data = snapshot.data() ?? <String, dynamic>{};
+      _nombreController.text = _texto(data['name'], user.displayName ?? '');
+      _usuarioController.text = _usuario(_texto(data['username'], ''));
+      _fraseController.text = _texto(
         data['bio'],
         'Pequeños pasos, raíces fuertes.',
       );
-
-      if (!mounted) return;
-
       setState(() {
         _cargando = false;
         _errorCarga = null;
       });
-    } catch (e) {
-      if (!mounted) return;
-
+    } catch (_) {
+      if (!mounted || carga != _cargaActual) return;
       setState(() {
         _cargando = false;
         _errorCarga = 'No se pudo cargar el perfil. Inténtalo de nuevo.';
@@ -97,78 +83,63 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     }
   }
 
-  String _valorTexto(dynamic value, String fallback) {
-    if (value is String && value.trim().isNotEmpty) {
-      return value.trim();
-    }
-    return fallback;
-  }
-
-  String _normalizarUsuario(String value) {
-    return value.trim().replaceFirst(RegExp(r'^@+'), '');
-  }
-
   Future<void> _guardarCambios() async {
     if (_guardando || _cargando) return;
-
-    final user = _user;
-
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      _mostrarMensaje('Tu sesión ha terminado. Inicia sesión nuevamente.');
+      _mensaje('Tu sesión ha terminado. Inicia sesión nuevamente.');
       return;
     }
-
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _guardando = true;
-    });
-
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
     final nombre = _nombreController.text.trim();
-    final usuario = _normalizarUsuario(_usuarioController.text);
+    final usuario = _usuario(_usuarioController.text);
     final bio = _fraseController.text.trim();
-
+    setState(() => _guardando = true);
+    var firestoreGuardado = false;
     try {
       await _db.collection('users').doc(user.uid).set({
         'uid': user.uid,
         'name': nombre,
         'username': usuario,
         'bio': bio,
-        'email': user.email,
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-
-      // Actualiza también el nombre de Firebase Authentication.
-      await user.updateDisplayName(nombre);
-
+      firestoreGuardado = true;
+      try {
+        await user.updateDisplayName(nombre);
+      } catch (_) {
+        // Los datos de perfil ya se guardaron en Firestore.
+        // No indicar que toda la operación falló por este paso secundario.
+      }
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
+      // Mensaje en la pantalla anterior: no depende del contexto que se elimina.
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop(true);
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Perfil actualizado correctamente.'),
           backgroundColor: AppColores.verdePrincipal,
         ),
       );
-
-      Navigator.pop(context, true);
-    } catch (e) {
+      return;
+    } catch (_) {
       if (!mounted) return;
-
-      _mostrarMensaje(
-        'No se pudieron guardar los cambios. Verifica tu conexión e inténtalo de nuevo.',
+      _mensaje(
+        firestoreGuardado
+            ? 'Los datos se guardaron, pero no se pudo sincronizar la cuenta.'
+            : 'No se pudieron guardar los cambios. Revisa tu conexión.',
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _guardando = false;
-        });
-      }
+      if (mounted) setState(() => _guardando = false);
     }
   }
 
-  void _mostrarMensaje(String mensaje) {
+  void _mensaje(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(mensaje)));
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -181,7 +152,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
-          onPressed: _guardando ? null : () => Navigator.pop(context),
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'Editar Perfil',
@@ -279,50 +250,41 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildCampoTexto(
-                              label: 'Nombre completo',
-                              controller: _nombreController,
-                              icon: Icons.person_outline,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Escribe tu nombre.';
-                                }
-                                return null;
-                              },
+                            _campo(
+                              'Nombre completo',
+                              _nombreController,
+                              Icons.person_outline,
+                              (v) =>
+                                  (v ?? '').trim().isEmpty
+                                      ? 'Escribe tu nombre.'
+                                      : null,
                             ),
                             const SizedBox(height: 16),
-                            _buildCampoTexto(
-                              label: 'Nombre de usuario',
-                              controller: _usuarioController,
-                              icon: Icons.alternate_email,
-                              validator: (value) {
-                                final usuario = _normalizarUsuario(value ?? '');
-
-                                if (usuario.isEmpty) {
-                                  return 'Escribe un nombre de usuario.';
-                                }
-
+                            _campo(
+                              'Nombre de usuario',
+                              _usuarioController,
+                              Icons.alternate_email,
+                              (v) {
+                                final value = _usuario(v ?? '');
+                                if (value.isEmpty) return 'Escribe un usuario.';
                                 if (!RegExp(
                                   r'^[a-zA-Z0-9._]{3,20}$',
-                                ).hasMatch(usuario)) {
-                                  return 'Usa entre 3 y 20 caracteres: letras, números, puntos o guiones bajos.';
+                                ).hasMatch(value)) {
+                                  return 'Usa de 3 a 20 caracteres: letras, números, . o _.';
                                 }
-
                                 return null;
                               },
                             ),
                             const SizedBox(height: 16),
-                            _buildCampoTexto(
-                              label: 'Frase motivacional / Bio',
-                              controller: _fraseController,
-                              icon: Icons.edit_note,
+                            _campo(
+                              'Frase motivacional / Bio',
+                              _fraseController,
+                              Icons.edit_note,
+                              (v) =>
+                                  (v ?? '').trim().length > 160
+                                      ? 'Máximo 160 caracteres.'
+                                      : null,
                               maxLines: 2,
-                              validator: (value) {
-                                if ((value ?? '').trim().length > 160) {
-                                  return 'La frase no puede superar 160 caracteres.';
-                                }
-                                return null;
-                              },
                             ),
                           ],
                         ),
@@ -352,12 +314,12 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     );
   }
 
-  Widget _buildCampoTexto({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
+  Widget _campo(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+    String? Function(String?) validator, {
     int maxLines = 1,
-    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +338,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
           maxLines: maxLines,
           maxLength: maxLines > 1 ? 160 : null,
           validator: validator,
-          textCapitalization: TextCapitalization.sentences,
+          textCapitalization:
+              maxLines > 1 || label == 'Nombre completo'
+                  ? TextCapitalization.sentences
+                  : TextCapitalization.none,
+          autocorrect: label != 'Nombre de usuario',
           style: const TextStyle(fontSize: 14, color: AppColores.textoOscuro),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColores.textoGris, size: 20),

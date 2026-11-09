@@ -315,7 +315,7 @@ class AchievementScreen extends StatelessWidget {
                                   errorBuilder:
                                       (context, error, stackTrace) =>
                                           const Icon(
-                                            Icons.monetization_on_rounded,
+                                            Icons.image_not_supported_outlined,
                                             color: Color(0xFFB58A26),
                                             size: 30,
                                           ),

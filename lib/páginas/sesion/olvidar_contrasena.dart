@@ -100,7 +100,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/mascot/healthy.png',
+              'assets/logo/logo.png',
               width: 24,
               height: 24,
               errorBuilder:

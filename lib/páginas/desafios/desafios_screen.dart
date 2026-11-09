@@ -319,7 +319,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                       height: 20,
                       errorBuilder:
                           (_, __, ___) => const Icon(
-                            Icons.monetization_on,
+                            Icons.image_not_supported_outlined,
                             size: 18,
                             color: Colors.amber,
                           ),

@@ -157,6 +157,11 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
           color: (siguiendo || pendiente) ? Colors.white : AppColores.verdeMenta,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: colorBorde, width: 1.4),
+          border: Border.all(
+            color:
+                siguiendo ? AppColores.verdePrincipal : AppColores.verdeMenta,
+            width: 1.4,
+          ),
         ),
         child:
             ocupado

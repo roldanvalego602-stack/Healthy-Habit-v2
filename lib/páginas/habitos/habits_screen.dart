@@ -2,14 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
+import 'catalogo.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
+import '../niveles/levels_system.dart';
 
-/// Pantalla de hábitos. La barra inferior se conserva en main.dart.
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
-
   @override
   State<HabitsScreen> createState() => _HabitsScreenState();
 }
@@ -17,7 +16,6 @@ class HabitsScreen extends StatefulWidget {
 class _ActiveHabitEntry {
   final Habit habit;
   final UserHabit attempt;
-
   const _ActiveHabitEntry({required this.habit, required this.attempt});
 }
 
@@ -28,28 +26,22 @@ class _HabitsScreenState extends State<HabitsScreen> {
   static const background = Color(0xFFF5F8F6);
   static const muted = Color(0xFF71879A);
   static const border = Color(0xFFDCE8E3);
-
   static const int initialHabitSlots = 3;
-
-  final searchController = TextEditingController();
-
+  static const int maxDifficultCancellationFee = 25;
+  final TextEditingController searchController = TextEditingController();
   String selectedCategory = 'Todos';
+  String selectedDifficulty = 'Todos';
   bool searching = false;
   bool loading = true;
   bool saving = false;
-
   int xp = 0;
   int coins = 0;
   int level = 1;
   int habitSlots = initialHabitSlots;
-
   List<_ActiveHabitEntry> active = [];
-
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
-
   User? get _user => FirebaseAuth.instance.currentUser;
-
   DocumentReference<Map<String, dynamic>>? get _userDoc {
     final user = _user;
     if (user == null) return null;
@@ -62,74 +54,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return userDoc.collection('user_habits');
   }
 
-  final List<Habit> recommendations = const [
-    Habit(
-      id: 'vegetable_lunch',
-      title: 'Añade una verdura al almuerzo',
-      category: 'Alimentación',
-      difficulty: 'Sencillo',
-      subtitle: '1 porción al día',
-      xp: 10,
-      target: 1,
-      unlockType: 'none',
-      coinCost: 0,
-      repeatable: true,
-      cooldownDays: 0,
-    ),
-    Habit(
-      id: 'breakfast_9',
-      title: 'Desayuna antes de las 9:00',
-      category: 'Energía',
-      difficulty: 'Moderado',
-      subtitle: '5 días por semana',
-      xp: 10,
-      target: 5,
-      unlockType: 'none',
-      coinCost: 0,
-      repeatable: true,
-      cooldownDays: 0,
-    ),
-    Habit(
-      id: 'sleep_9',
-      title: 'Duerme 9 horas al día',
-      category: 'Bienestar',
-      difficulty: 'Difícil',
-      subtitle: 'Todos los días',
-      xp: 15,
-      target: 1,
-      unlockType: 'level',
-      requiredLevel: 2,
-      coinCost: 0,
-      repeatable: true,
-      cooldownDays: 0,
-    ),
-    Habit(
-      id: 'fruit',
-      title: 'Comer una fruta',
-      category: 'Alimentación',
-      difficulty: 'Sencillo',
-      subtitle: '1 fruta al día',
-      xp: 10,
-      target: 1,
-      unlockType: 'none',
-      coinCost: 0,
-      repeatable: true,
-      cooldownDays: 0,
-    ),
-    Habit(
-      id: 'water',
-      title: 'Toma 6 vasos de agua',
-      category: 'Hidratación',
-      difficulty: 'Moderado',
-      subtitle: '6 vasos al día',
-      xp: 10,
-      target: 6,
-      unlockType: 'none',
-      coinCost: 0,
-      repeatable: true,
-      cooldownDays: 0,
-    ),
-  ];
+  /// Convierte el catálogo local en objetos Habit.*
+  List<Habit> get recommendations {
+    return habitCatalog.map((data) {
+      return Habit.fromMap(
+        Map<String, dynamic>.from(data),
+        data['id'] as String,
+      );
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -144,58 +77,62 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Future<void> _load() async {
+    if (mounted) setState(() => loading = true);
     try {
       final userDoc = _userDoc;
       final collection = _habitsCollection;
-
       if (userDoc == null || collection == null) {
         if (!mounted) return;
-
         setState(() {
           active = [];
           xp = 0;
+          coins = 0;
+          level = 1;
+          habitSlots = initialHabitSlots;
           loading = false;
         });
         return;
       }
-
       final results = await Future.wait([userDoc.get(), collection.get()]);
-
       final userSnapshot = results[0] as DocumentSnapshot<Map<String, dynamic>>;
-
       final habitsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
-
       final userData = userSnapshot.data() ?? {};
+      final rawXp = userData['xp'] ?? userData['currentXp'];
 
-      final loadedXp = (userData['xp'] as num?)?.toInt() ?? 0;
-      final loadedCoins = (userData['coins'] as num?)?.toInt() ?? 0;
-      final loadedLevel = (userData['level'] as num?)?.toInt() ?? 1;
+      final loadedXp =
+          rawXp is num
+              ? rawXp.toInt().clamp(0, 1000000000).toInt()
+              : (int.tryParse('$rawXp') ?? 0).clamp(0, 1000000000).toInt();
+
+      final loadedCoins = (userData['habitCoins'] as num?)?.toInt() ?? 0;
+
+      final loadedLevel = LevelSystem.fromXp(loadedXp).number;
       final loadedSlots =
           (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
-
       final List<_ActiveHabitEntry> loadedActive = [];
-
-      for (final habitDoc in habitsSnapshot.docs) {
-        final habitData = habitDoc.data();
-        final habit = Habit.fromMap(habitData, habitDoc.id);
-
-        final attemptsSnapshot =
-            await habitDoc.reference
-                .collection('attempts')
-                .where('status', isEqualTo: 'inProgress')
-                .get();
-
-        for (final attemptDoc in attemptsSnapshot.docs) {
-          final attempt = UserHabit.fromMap(attemptDoc.data(), attemptDoc.id);
-
-          if (attempt.isInProgress) {
-            loadedActive.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
-          }
-        }
+      final groups = await Future.wait(
+        habitsSnapshot.docs.map((habitDoc) async {
+          final habit = Habit.fromMap(habitDoc.data(), habitDoc.id);
+          final attemptsSnapshot =
+              await habitDoc.reference
+                  .collection('attempts')
+                  .where('status', isEqualTo: 'inProgress')
+                  .get();
+          return attemptsSnapshot.docs
+              .map(
+                (doc) => _ActiveHabitEntry(
+                  habit: habit,
+                  attempt: UserHabit.fromMap(doc.data(), doc.id),
+                ),
+              )
+              .where((entry) => entry.attempt.isInProgress)
+              .toList();
+        }),
+      );
+      for (final group in groups) {
+        loadedActive.addAll(group);
       }
-
       if (!mounted) return;
-
       setState(() {
         active = loadedActive;
         xp = loadedXp;
@@ -204,15 +141,13 @@ class _HabitsScreenState extends State<HabitsScreen> {
         habitSlots = loadedSlots;
         loading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error cargando hábitos: $e');
-
+      debugPrint('$stackTrace');
       if (!mounted) return;
-
       setState(() {
         loading = false;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -224,21 +159,180 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
+  Future<void> _confirmAddHabit(Habit habit) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Text(habit.title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dificultad: ${habit.difficulty}'),
+                const SizedBox(height: 8),
+                Text('Sesiones necesarias: ${habit.target}'),
+                const SizedBox(height: 8),
+                Text('Recompensa: ${habit.xp} XP'),
+                if (habit.coinCost > 0) ...[
+                  const SizedBox(height: 8),
+                  Text('Costo para adquirirlo: ${habit.coinCost} Habit Coins'),
+                ],
+                if (_isDifficult(habit)) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Si lo abandonas, la penalización será de hasta 25 Habit Coins.',
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Volver'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Aceptar hábito'),
+              ),
+            ],
+          ),
+    );
+    if (accepted == true && mounted) await addHabit(habit);
+  }
+
+  bool _isDifficult(Habit habit) {
+    final difficulty = habit.difficulty.trim().toLowerCase();
+    return difficulty == 'difícil' || difficulty == 'dificil';
+  }
+
+  Future<void> _confirmCancelHabit(_ActiveHabitEntry entry) async {
+    if (saving) return;
+    final fee =
+        _isDifficult(entry.habit)
+            ? (coins < maxDifficultCancellationFee
+                ? coins
+                : maxDifficultCancellationFee)
+            : 0;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('¿Abandonar hábito?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.habit.title),
+                const SizedBox(height: 10),
+                Text(
+                  'Sesiones realizadas: ${entry.attempt.progress} de ${entry.attempt.target}',
+                ),
+                const SizedBox(height: 8),
+                Text('Penalización estimada: $fee Habit Coins'),
+                const SizedBox(height: 8),
+                const Text(
+                  'Se conservarán tus sesiones anteriores y el XP obtenido.',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Conservar hábito'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red.shade700,
+                ),
+                child: const Text('Abandonar'),
+              ),
+            ],
+          ),
+    );
+    if (accepted == true && mounted) await _cancelHabit(entry);
+  }
+
+  Future<void> _cancelHabit(_ActiveHabitEntry entry) async {
+    final userDoc = _userDoc;
+    final collection = _habitsCollection;
+    if (userDoc == null || collection == null || saving) return;
+    setState(() => saving = true);
+    try {
+      final habitRef = collection.doc(entry.habit.id);
+      final attemptRef = habitRef.collection('attempts').doc(entry.attempt.id);
+      final deducted = await _db.runTransaction<int>((transaction) async {
+        final attemptSnap = await transaction.get(attemptRef);
+        final habitSnap = await transaction.get(habitRef);
+        final userSnap = await transaction.get(userDoc);
+        if (!attemptSnap.exists ||
+            attemptSnap.data()?['status'] != 'inProgress' ||
+            habitSnap.data()?['lastAttemptId'] != entry.attempt.id) {
+          throw StateError(
+            'Este hábito ya no está activo. Actualiza la pantalla.',
+          );
+        }
+        final rawBalance =
+            (userSnap.data()?['habitCoins'] as num?)?.toInt() ?? 0;
+        final balance = rawBalance < 0 ? 0 : rawBalance;
+        final penalty =
+            _isDifficult(entry.habit)
+                ? (balance < maxDifficultCancellationFee
+                    ? balance
+                    : maxDifficultCancellationFee)
+                : 0;
+        transaction.update(attemptRef, {
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'cancellationPenalty': penalty,
+        });
+        transaction.update(habitRef, {
+          'lastStatus': 'cancelled',
+          'latestStatus': 'cancelled',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        if (penalty > 0) {
+          transaction.update(userDoc, {'habitCoins': balance - penalty});
+        }
+        return penalty;
+      });
+      if (!mounted) return;
+      setState(() {
+        active.removeWhere(
+          (item) =>
+              item.attempt.id == entry.attempt.id &&
+              item.habit.id == entry.habit.id,
+        );
+        coins = (coins - deducted).clamp(0, 2147483647);
+      });
+      _showMessage(
+        deducted == 0
+            ? 'Hábito abandonado. Tu historial se conserva.'
+            : 'Hábito abandonado. Se descontaron $deducted Habit Coins.',
+      );
+      await _load();
+    } catch (e, stackTrace) {
+      debugPrint('Error al abandonar hábito: $e\n$stackTrace');
+      if (mounted) _showMessage('No se pudo abandonar el hábito: $e');
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
   Future<void> addHabit(Habit habit) async {
     final collection = _habitsCollection;
-
-    if (collection == null) {
+    final user = _user;
+    final userDoc = _userDoc;
+    if (collection == null || user == null || userDoc == null) {
       _showMessage('Inicia sesión para guardar tus hábitos.');
       return;
     }
-
     if (saving) return;
-
     if (active.any((entry) => entry.habit.id == habit.id)) {
       _showMessage('Este hábito ya está en progreso.');
       return;
     }
-
     if (active.length >= habitSlots) {
       _showMessage(
         'Ya ocupaste tus $habitSlots espacios disponibles. '
@@ -246,29 +340,22 @@ class _HabitsScreenState extends State<HabitsScreen> {
       );
       return;
     }
-
     if (!_isUnlocked(habit)) {
       _showMessage('Todavía no cumples los requisitos para desbloquearlo.');
       return;
     }
-
     if (habit.coinCost > 0 && coins < habit.coinCost) {
       _showMessage('No tienes suficientes monedas para adquirirlo.');
       return;
     }
-
     setState(() => saving = true);
-
     try {
       final habitRef = collection.doc(habit.id);
       final attemptsRef = habitRef.collection('attempts');
-
       final previousAttempts = await attemptsRef.get();
       final attemptNumber = previousAttempts.docs.length + 1;
       final attemptRef = attemptsRef.doc();
-
       final now = DateTime.now();
-
       final attempt = UserHabit(
         id: attemptRef.id,
         habitId: habit.id,
@@ -278,39 +365,66 @@ class _HabitsScreenState extends State<HabitsScreen> {
         attemptNumber: attemptNumber,
         xpEarned: 0,
         acquiredAt: now,
+        frequencyType: habit.frequencyType,
+        registrationsPerPeriod: habit.registrationsPerPeriod,
+        durationPeriods: habit.durationPeriods,
+        gracePeriods: habit.gracePeriods,
+        streakEnabled: habit.streakEnabled,
+        periodProgress: 0,
+        streak: 0,
+        longestStreak: 0,
+        missedPeriods: 0,
         completedAt: null,
         cancelledAt: null,
         availableAgainAt: null,
       );
-
-      final batch = _db.batch();
-
-      batch.set(habitRef, {
-        ...habit.toMap(),
-        'acquiredAt': FieldValue.serverTimestamp(),
-        'lastAttemptId': attemptRef.id,
-      }, SetOptions(merge: true));
-
-      batch.set(attemptRef, attempt.toMap());
-
-      batch.set(_userDoc!, {
-        'uid': _user!.uid,
-        'habitSlots': habitSlots,
-      }, SetOptions(merge: true));
-
-      await batch.commit();
-
+      if (habit.coinCost > 0) {
+        await _db.runTransaction((transaction) async {
+          final userSnapshot = await transaction.get(userDoc);
+          final balance =
+              (userSnapshot.data()?['habitCoins'] as num?)?.toInt() ?? 0;
+          if (balance < habit.coinCost) {
+            throw StateError('No tienes suficientes monedas.');
+          }
+          transaction.set(userDoc, {
+            'uid': user.uid,
+            'habitSlots': habitSlots,
+            'habitCoins': balance - habit.coinCost,
+          }, SetOptions(merge: true));
+          transaction.set(habitRef, {
+            ...habit.toMap(),
+            'acquiredAt': FieldValue.serverTimestamp(),
+            'lastAttemptId': attemptRef.id,
+            'lastStatus': 'inProgress',
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          transaction.set(attemptRef, attempt.toMap());
+        });
+      } else {
+        final batch = _db.batch();
+        batch.set(habitRef, {
+          ...habit.toMap(),
+          'acquiredAt': FieldValue.serverTimestamp(),
+          'lastAttemptId': attemptRef.id,
+          'lastStatus': 'inProgress',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        batch.set(attemptRef, attempt.toMap());
+        batch.set(userDoc, {
+          'uid': user.uid,
+          'habitSlots': habitSlots,
+        }, SetOptions(merge: true));
+        await batch.commit();
+      }
       if (!mounted) return;
-
       setState(() {
         active.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
+        if (habit.coinCost > 0) coins -= habit.coinCost;
       });
-
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
     } catch (e, stackTrace) {
       debugPrint('ERROR AL GUARDAR HÁBITO: $e');
       debugPrint('DETALLES: $stackTrace');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -327,8 +441,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   bool _isUnlocked(Habit habit) {
-    switch (habit.unlockType) {
+    final unlockType = habit.unlockType.trim().toLowerCase();
+    final level = LevelSystem.fromXp(xp).number;
+
+    switch (unlockType) {
       case 'none':
+      case 'free':
         return true;
 
       case 'level':
@@ -343,7 +461,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
       case 'combined':
         final levelOk = level >= (habit.requiredLevel ?? 1);
         final coinsOk = coins >= habit.coinCost;
-
         final habitOk =
             habit.requiredHabitId == null ||
             active.any((entry) => entry.habit.id == habit.requiredHabitId);
@@ -351,6 +468,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
         return levelOk && coinsOk && habitOk;
 
       default:
+        debugPrint(
+          'Tipo de desbloqueo desconocido: '
+          '${habit.unlockType} (${habit.id})',
+        );
         return false;
     }
   }
@@ -364,7 +485,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Future<void> _abrirRegistroHabito(_ActiveHabitEntry entry) async {
     final habit = entry.habit;
     final attempt = entry.attempt;
-
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -379,7 +499,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
       ),
     );
-
     if (mounted) {
       await _load();
     }
@@ -433,26 +552,28 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool matches(Habit habit) {
     final categoryOk =
         selectedCategory == 'Todos' || habit.category == selectedCategory;
-
+    final difficultyOk =
+        selectedDifficulty == 'Todos' || habit.difficulty == selectedDifficulty;
     final query = searchController.text.trim().toLowerCase();
-
-    return categoryOk &&
-        (query.isEmpty ||
-            habit.title.toLowerCase().contains(query) ||
-            habit.category.toLowerCase().contains(query));
+    final searchOk =
+        query.isEmpty ||
+        habit.title.toLowerCase().contains(query) ||
+        habit.category.toLowerCase().contains(query) ||
+        habit.difficulty.toLowerCase().contains(query) ||
+        habit.subtitle.toLowerCase().contains(query);
+    return categoryOk && difficultyOk && searchOk;
   }
 
-  List<_ActiveHabitEntry> get visibleActive =>
-      active.where((entry) => matches(entry.habit)).toList();
+  List<_ActiveHabitEntry> get visibleActive {
+    return active.where((entry) => matches(entry.habit)).toList();
+  }
 
-  List<Habit> get visibleRecommendations =>
-      recommendations
-          .where(
-            (habit) =>
-                !active.any((entry) => entry.habit.id == habit.id) &&
-                matches(habit),
-          )
-          .toList();
+  List<Habit> get visibleRecommendations {
+    return recommendations.where((habit) {
+      final alreadyActive = active.any((entry) => entry.habit.id == habit.id);
+      return !alreadyActive && matches(habit);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -490,6 +611,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           ),
                           const SizedBox(height: 20),
                           _categoryGrid(),
+                          const SizedBox(height: 18),
+                          _difficultyFilter(),
                           const SizedBox(height: 28),
                           _sectionHeader(
                             'Mis hábitos activos',
@@ -521,8 +644,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           const SizedBox(height: 14),
                           if (visibleRecommendations.isEmpty)
                             _empty(
-                              'No hay recomendaciones pendientes '
-                              'en esta categoría.',
+                              'No hay hábitos disponibles con estos filtros.',
                             )
                           else
                             ...visibleRecommendations.map(
@@ -610,7 +732,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
       ('Energía', Icons.bolt_rounded),
       ('Bienestar', Icons.favorite_rounded),
     ];
-
     return Column(
       children: [
         Row(
@@ -647,7 +768,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _categoryButton(String category, IconData icon) {
     final selected = selectedCategory == category;
     final color = categoryInk(category);
-
     return InkWell(
       borderRadius: BorderRadius.circular(17),
       onTap: () {
@@ -691,6 +811,52 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
+  Widget _difficultyFilter() {
+    const difficulties = ['Todos', 'Sencillo', 'Moderado', 'Difícil'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Dificultad',
+          style: TextStyle(
+            color: navy,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              difficulties.map((difficulty) {
+                final selected = selectedDifficulty == difficulty;
+                return ChoiceChip(
+                  label: Text(difficulty),
+                  selected: selected,
+                  onSelected: (_) {
+                    setState(() {
+                      selectedDifficulty = difficulty;
+                    });
+                  },
+                  selectedColor: const Color(0xFFDDF5EB),
+                  backgroundColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: selected ? greenDark : muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  side: BorderSide(color: selected ? green : border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                );
+              }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _sectionHeader(String title, String trailing) {
     return Row(
       children: [
@@ -720,21 +886,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _activeCard(_ActiveHabitEntry entry) {
     final habit = entry.habit;
     final attempt = entry.attempt;
-
     final color = categoryInk(habit.category);
-    final progress =
-        attempt.target > 0
-            ? (attempt.progress / attempt.target).clamp(0.0, 1.0)
-            : 0.0;
-
     final done = attempt.hasReachedGoal;
-    final isWater = habit.category == 'Hidratación' && habit.id == 'water';
-
     final remaining = (attempt.target - attempt.progress).clamp(
       0,
       attempt.target,
     );
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
@@ -798,23 +955,23 @@ class _HabitsScreenState extends State<HabitsScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            habit.subtitle,
+            style: const TextStyle(color: muted, fontSize: 12),
+          ),
           const SizedBox(height: 15),
-
-          if (isWater)
-            _waterProgress(attempt.progress, attempt.target)
-          else
-            _generalProgress(
-              attempt.progress,
-              attempt.target,
-              color,
-              habit.category,
-            ),
-
+          _generalProgress(
+            attempt.progress,
+            attempt.target,
+            color,
+            habit.category,
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               Text(
-                '${attempt.progress} de ${attempt.target}',
+                '${attempt.progress} de ${attempt.target} sesiones',
                 style: const TextStyle(
                   color: navy,
                   fontSize: 13,
@@ -824,11 +981,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               const Spacer(),
               Flexible(
                 child: Text(
-                  done
-                      ? '¡Meta alcanzada!'
-                      : isWater
-                      ? 'Solo faltan $remaining vasos'
-                      : 'Sigue avanzando',
+                  done ? '¡Meta alcanzada!' : 'Faltan $remaining sesiones',
                   textAlign: TextAlign.right,
                   style: const TextStyle(color: muted, fontSize: 12),
                 ),
@@ -846,7 +999,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 size: 21,
               ),
               label: Text(
-                done ? 'Hábito completado' : 'Registrar avance',
+                done ? 'Hábito completado' : 'Registrar sesión',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -864,45 +1017,23 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: saving ? null : () => _confirmCancelHabit(entry),
+              icon: const Icon(Icons.cancel_outlined, size: 17),
+              label: const Text('Abandonar hábito'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFAD5151),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Indicador de vasos para el hábito de hidratación.
-  Widget _waterProgress(int progress, int target) {
-    final safeTarget = target.clamp(1, 10);
-
-    return Wrap(
-      spacing: 9,
-      runSpacing: 9,
-      children: List.generate(safeTarget, (index) {
-        final completed = index < progress;
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 43,
-          height: 49,
-          decoration: BoxDecoration(
-            color:
-                completed ? Colors.white : Colors.white.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: completed ? Colors.white : const Color(0xFFB7DCE9),
-            ),
-          ),
-          child: Icon(
-            completed ? Icons.water_drop_rounded : Icons.local_drink_outlined,
-            color:
-                completed ? const Color(0xFF36A9D6) : const Color(0xFF9BC7D8),
-            size: 27,
-          ),
-        );
-      }),
-    );
-  }
-
-  /// Indicador genérico para otros tipos de hábitos.
   Widget _generalProgress(
     int progress,
     int target,
@@ -910,13 +1041,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
     String category,
   ) {
     final safeTarget = target.clamp(1, 10);
-
     return Column(
       children: [
         Row(
           children: List.generate(safeTarget, (index) {
             final completed = index < progress;
-
             return Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -967,7 +1096,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final unlocked = _isUnlocked(habit);
     final hasSlot = active.length < habitSlots;
     final canAdd = unlocked && hasSlot && !saving;
-
     final buttonText =
         !unlocked
             ? 'Bloqueado'
@@ -976,7 +1104,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
             : saving
             ? 'Guardando'
             : 'Agregar';
-
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -1031,6 +1158,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   style: const TextStyle(color: muted, fontSize: 11),
                 ),
                 const SizedBox(height: 5),
+                Text(
+                  '${habit.target} sesiones para completar',
+                  style: const TextStyle(
+                    color: navy,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 5),
                 Row(
                   children: [
                     const Icon(
@@ -1065,7 +1201,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           SizedBox(
             height: 36,
             child: ElevatedButton(
-              onPressed: canAdd ? () => addHabit(habit) : null,
+              onPressed: canAdd ? () => _confirmAddHabit(habit) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: green,
                 foregroundColor: Colors.white,
