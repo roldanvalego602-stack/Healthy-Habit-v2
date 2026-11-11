@@ -43,13 +43,7 @@ class NutriCalculatorService {
   ];
 
   static const String _preguntaSexo =
-      'Primero elige tu sexo (toca una opción o escríbela):\n'
-      '1. Hombre\n'
-      '2. Mujer\n'
-      '3. No binario\n'
-      '4. Intersexual\n'
-      '5. Otro\n'
-      '6. Prefiero no decirlo';
+      'Primero elige tu sexo en las opciones de abajo.';
 
   static const List<String> _opcionesSexo = [
     'Hombre',
