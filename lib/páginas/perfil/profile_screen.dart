@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'package:healthy_habit/p%C3%A1ginas/habitos/habits_screen.dart';
 import '../../servicios/autenticacion_servicio.dart';
 import 'buscar_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
@@ -193,7 +192,38 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: Colors.redAccent.withOpacity(0.3),
+                          color: Colors.redAccent.withValues(alpha: 0.3),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        _showDeleteAccountDialog(context);
+                      },
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      label: const Text(
+                        'Borrar cuenta',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.redAccent.withValues(alpha: 0.3),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -290,7 +320,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.05),
+            color: navy.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
@@ -785,7 +815,7 @@ class ProfileScreen extends StatelessWidget {
               width: 62,
               height: 70,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 border: Border.all(color: color, width: 1.8),
                 borderRadius: BorderRadius.circular(22),
               ),
@@ -1240,7 +1270,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.04),
+            color: navy.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -1349,5 +1379,204 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
     );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isEmailProvider =
+        user?.providerData.any(
+          (provider) => provider.providerId == 'password',
+        ) ??
+        false;
+
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text(
+              'Borrar cuenta',
+              style: TextStyle(color: navy, fontWeight: FontWeight.w900),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '¿Estás seguro de que deseas borrar tu cuenta? Esta acción es irreversible y perderás todos tus datos, hábitos y progreso. No podrás iniciar sesión con este correo electrónico nuevamente.',
+                  style: TextStyle(color: Color(0xFF8496A0)),
+                ),
+                if (isEmailProvider) ...[
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Ingresa tu contraseña para confirmar:',
+                    style: TextStyle(
+                      color: navy,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Tu contraseña',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  passwordController.dispose();
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _deleteAccount(
+                    context,
+                    isEmailProvider ? passwordController.text : '',
+                  );
+                  passwordController.dispose();
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text(
+                  'Eliminar',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteAccount(BuildContext context, String password) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tu sesión ha terminado.')));
+      return;
+    }
+
+    final isEmailProvider = user.providerData.any(
+      (provider) => provider.providerId == 'password',
+    );
+
+    if (isEmailProvider && password.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ingresa tu contraseña.')));
+      return;
+    }
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (ctx) => const Dialog(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(color: green),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Eliminando tu cuenta...',
+                      style: TextStyle(
+                        color: navy,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      );
+
+      debugPrint('Iniciando eliminación de cuenta...');
+      debugPrint('UID: ${user.uid}');
+      debugPrint('Email: ${user.email}');
+      debugPrint('Provider de email/password: $isEmailProvider');
+
+      await AuthService().deleteAccount(
+        uid: user.uid,
+        email: user.email ?? '',
+        password: password,
+      );
+
+      debugPrint('Cuenta eliminada exitosamente');
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tu cuenta ha sido eliminada correctamente.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!context.mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    } on FirebaseAuthException catch (e) {
+      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      String mensaje = 'Error al eliminar la cuenta';
+      if (e.code == 'wrong-password') {
+        mensaje = 'La contraseña es incorrecta.';
+      } else if (e.code == 'requires-recent-login') {
+        mensaje =
+            'Por seguridad, cierra sesión e inicia nuevamente antes de borrar la cuenta.';
+      } else if (e.code == 'user-not-found') {
+        mensaje = 'La cuenta no fue encontrada.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error general: $e');
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }

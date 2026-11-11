@@ -623,7 +623,7 @@ class _SeasonBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -707,12 +707,12 @@ class _ChallengeCard extends StatelessWidget {
         border: Border.all(
           color:
               isCompleted
-                  ? const Color(0xFF00C88C).withOpacity(0.35)
+                  ? const Color(0xFF00C88C).withValues(alpha: 0.35)
                   : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -730,7 +730,7 @@ class _ChallengeCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -751,7 +751,7 @@ class _ChallengeCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFDE89D).withOpacity(0.5),
+                    color: const Color(0xFFFDE89D).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -962,7 +962,7 @@ class _ChallengeCard extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: background,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: background.withOpacity(0.5),
+          disabledBackgroundColor: background.withValues(alpha: 0.5),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),

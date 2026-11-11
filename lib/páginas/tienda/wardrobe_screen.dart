@@ -326,7 +326,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(22)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(22)),
                   child: const Text('Cuidado con Mr. Healthy, tiene +999 de Aura', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF26735F), fontWeight: FontWeight.w700, fontSize: 12)),
                 ),
               ),
@@ -344,7 +344,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 if (hasAura)
                   Positioned.fill(
                     child: Container(
-                      decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [BoxShadow(color: _green.withOpacity(0.65), blurRadius: 42, spreadRadius: 12)]),
+                      decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.65), blurRadius: 42, spreadRadius: 12)]),
                     ),
                   ),
                 if (hasCape)

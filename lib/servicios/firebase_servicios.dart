@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+// Base de datos Firestore con ID "default" (distinta de "(default)").
+FirebaseFirestore get appFirestore =>
+    FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
+
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
     app: Firebase.app(),

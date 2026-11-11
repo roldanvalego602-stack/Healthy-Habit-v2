@@ -218,7 +218,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       onPressed: _enviando ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
-                        disabledBackgroundColor: green.withOpacity(0.6),
+                        disabledBackgroundColor: green.withValues(alpha: 0.6),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -267,7 +267,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   width: 140,
                   height: 180,
                   decoration: BoxDecoration(
-                    color: greenLight.withOpacity(0.5),
+                    color: greenLight.withValues(alpha: 0.5),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(140),
                       bottomLeft: Radius.circular(40),

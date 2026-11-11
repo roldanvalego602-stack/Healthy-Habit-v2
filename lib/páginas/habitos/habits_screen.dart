@@ -722,11 +722,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final attempt = entry.attempt;
 
     final color = categoryInk(habit.category);
-    final progress =
-        attempt.target > 0
-            ? (attempt.progress / attempt.target).clamp(0.0, 1.0)
-            : 0.0;
-
     final done = attempt.hasReachedGoal;
     final isWater = habit.category == 'Hidratación' && habit.id == 'water';
 
