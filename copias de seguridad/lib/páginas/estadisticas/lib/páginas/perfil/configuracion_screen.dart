@@ -463,12 +463,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = auth.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(
         body: Center(child: Text('Inicia sesión para configurar tu cuenta.')),
       );
-    if (loading)
+    }
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final selected = (settings['categoriasInteres'] as List?)?.join(', ') ?? '';
     return Scaffold(
       backgroundColor: bg,
@@ -652,11 +654,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
                 ),
               );
-              if (time != null)
+              if (time != null) {
                 await _save(
                   'horarioRecordatorio',
                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
                 );
+              }
             }, value: _str('horarioRecordatorio')),
             _toggle('recordatorioHabito', 'Recordatorios por hábito'),
             _toggle('recordatorioRacha', 'Recordatorio de racha'),

@@ -38,7 +38,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Uint8List? _bytesImagen;
   bool _guardando = false;
   bool _cargando = true;
-  bool _subiendoImagen = false;
+  final bool _subiendoImagen = false;
   String _interactionType = 'manual';
   int _interactionTarget = 1;
   String _interactionUnit = 'vez';
@@ -114,10 +114,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final habitoRef = _habitos.doc(widget.habitId);
       final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
       final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
-      final habitoSnapshot =
-          resultados[0] as DocumentSnapshot<Map<String, dynamic>>;
-      final attemptSnapshot =
-          resultados[1] as DocumentSnapshot<Map<String, dynamic>>;
+      final habitoSnapshot = resultados[0];
+      final attemptSnapshot = resultados[1];
       if (!habitoSnapshot.exists) {
         throw Exception('No se encontró el hábito seleccionado.');
       }
@@ -160,14 +158,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               : 'manual';
       final type = configuredType.isEmpty ? fallbackType : configuredType;
       _interactionType =
-          ['counter', 'stopwatch', 'timer', 'steps', 'breathing', 'pomodoro', 'hydration'].contains(type) ? type : 'manual';
+          [
+                'counter',
+                'stopwatch',
+                'timer',
+                'steps',
+                'breathing',
+                'pomodoro',
+                'hydration',
+              ].contains(type)
+              ? type
+              : 'manual';
       _interactionTarget = _leerEntero(
         interaction['target'],
         ['counter', 'hydration', 'steps'].contains(_interactionType) ? 1 : 60,
       ).clamp(1, 86400);
       _interactionUnit =
           (interaction['unit'] ??
-                  (_interactionType == 'counter' ? 'vaso' : _interactionType == 'hydration' ? 'ml' : _interactionType == 'steps' ? 'pasos' : 'segundos'))
+                  (_interactionType == 'counter'
+                      ? 'vaso'
+                      : _interactionType == 'hydration'
+                      ? 'ml'
+                      : _interactionType == 'steps'
+                      ? 'pasos'
+                      : 'segundos'))
               .toString();
       _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
@@ -265,8 +279,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       // al documento principal del hábito.
       final registroRef = attemptRef.collection('logs').doc();
       final nota = _notaController.text.trim();
-      if (!_interactionComplete)
+      if (!_interactionComplete) {
         throw Exception('Completa la actividad interactiva.');
+      }
       final interactionType = _interactionType;
       final interactionValue = _interactionValue;
       final interactionUnit = _interactionUnit;
@@ -275,7 +290,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final tieneEvidenciaReal =
           _imagenSeleccionada != null && bytesEvidencia != null;
       if (tieneEvidenciaReal &&
-          bytesEvidencia!.lengthInBytes >
+          bytesEvidencia.lengthInBytes >
               TemporaryEvidenceService.maxImageBytes) {
         throw Exception('La fotografía supera el límite de 250 KB.');
       }
@@ -424,7 +439,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             'habitId': habitoRef.id,
             'attemptId': attemptRef.id,
             'logId': registroRef.id,
-            'imageBase64': base64Encode(bytesEvidencia!),
+            'imageBase64': base64Encode(bytesEvidencia),
             'contentType': imagenTipo,
             'createdAt': FieldValue.serverTimestamp(),
             'expiresAt': Timestamp.fromDate(expira),
@@ -605,7 +620,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
+                  color: Colors.red.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -667,8 +682,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColores.verdePrincipal,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColores.verdePrincipal
-                      .withOpacity(0.6),
+                  disabledBackgroundColor: AppColores.verdePrincipal.withValues(
+                    alpha: 0.6,
+                  ),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -708,7 +724,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -826,7 +842,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColores.verdePrincipal.withOpacity(0.3),
+          color: AppColores.verdePrincipal.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -998,7 +1014,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             descripcion: 'Total del registro',
             color: AppColores.verdeMenta,
             colorTexto: AppColores.verdePrincipal,
-            borde: AppColores.verdePrincipal.withOpacity(0.5),
+            borde: AppColores.verdePrincipal.withValues(alpha: 0.5),
           ),
         ),
       ],

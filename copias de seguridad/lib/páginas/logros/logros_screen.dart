@@ -12,10 +12,11 @@ class LogrosScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(
         body: Center(child: Text('Inicia sesión para consultar tus logros.')),
       );
+    }
     final db = FirebaseFirestore.instanceFor(
       app: Firebase.app(),
       databaseId: 'default',
@@ -45,26 +46,30 @@ class LogrosScreen extends StatelessWidget {
                   StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                     stream: ref.snapshots(),
                     builder: (context, profile) {
-                      if (profile.hasError)
+                      if (profile.hasError) {
                         return const Center(
                           child: Text('No se pudo consultar tu perfil.'),
                         );
-                      if (!profile.hasData)
+                      }
+                      if (!profile.hasData) {
                         return const Center(child: CircularProgressIndicator());
+                      }
                       final data = profile.data!.data() ?? <String, dynamic>{};
                       return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                         stream: ref.collection('user_habits').snapshots(),
                         builder: (context, habits) {
-                          if (habits.hasError)
+                          if (habits.hasError) {
                             return const Center(
                               child: Text(
                                 'No se pudieron consultar los hábitos.',
                               ),
                             );
-                          if (!habits.hasData)
+                          }
+                          if (!habits.hasData) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
+                          }
                           final docs = habits.data!.docs;
                           final completados =
                               docs
@@ -78,16 +83,18 @@ class LogrosScreen extends StatelessWidget {
                           >(
                             stream: ref.collection('achievements').snapshots(),
                             builder: (context, achievements) {
-                              if (achievements.hasError)
+                              if (achievements.hasError) {
                                 return const Center(
                                   child: Text(
                                     'No se pudieron consultar las medallas.',
                                   ),
                                 );
-                              if (!achievements.hasData)
+                              }
+                              if (!achievements.hasData) {
                                 return const Center(
                                   child: CircularProgressIndicator(),
                                 );
+                              }
                               final ids =
                                   achievements.data!.docs
                                       .map((d) => d.id)

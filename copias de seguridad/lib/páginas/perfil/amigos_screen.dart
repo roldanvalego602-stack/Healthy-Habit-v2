@@ -361,7 +361,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(19),
         boxShadow: [
-          BoxShadow(color: _C.navy.withOpacity(0.05), blurRadius: 12),
+          BoxShadow(color: _C.navy.withValues(alpha: 0.05), blurRadius: 12),
         ],
       ),
       child: Row(
@@ -379,7 +379,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
         ],
       ),
       child: TextField(

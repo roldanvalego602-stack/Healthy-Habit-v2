@@ -227,16 +227,18 @@ class NutriRespuestasService {
       final coins = perfil['habitCoins'];
       final streak = perfil['currentStreak'];
       if (n is String && n.trim().isNotEmpty) datos.add('Nombre: ${n.trim()}');
-      if (username is String && username.trim().isNotEmpty)
+      if (username is String && username.trim().isNotEmpty) {
         datos.add(
           'Usuario: @${username.trim().replaceFirst(RegExp(r'^@+'), '')}',
         );
+      }
       if (level is num) datos.add('Nivel: ${level.toInt()}');
       if (xp is num) datos.add('XP: ${xp.toInt()}');
       if (coins is num) datos.add('Habit Coins: ${coins.toInt()}');
       if (streak is num) datos.add('Racha registrada: ${streak.toInt()} días');
-      if (datos.isEmpty)
+      if (datos.isEmpty) {
         return 'No pude consultar tus estadísticas de perfil ahora mismo. Comprueba tu conexión y vuelve a intentarlo. No quiero inventarte monedas ni XP.';
+      }
       return '¡Aquí va tu tarjeta de progreso$saludo! 📊\n\n${datos.join('\n')}\n\nEstos son los valores guardados en tu perfil, no una estimación. ¿Quieres una idea para seguir avanzando?';
     }
     if (contiene(text, ['mision', 'desafio', 'reto de hoy', 'misiones'])) {

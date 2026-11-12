@@ -195,8 +195,9 @@ class ShopService {
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
   User get _user {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       throw const ShopException('Inicia sesión para acceder a la tienda.');
+    }
     return user;
   }
 
@@ -206,15 +207,17 @@ class ShopService {
       _userRef.snapshots().map((doc) => ShopState.fromMap(doc.data() ?? {}));
 
   Future<void> buy(ShopItem item) async {
-    if (shopItemById(item.id) == null)
+    if (shopItemById(item.id) == null) {
       throw const ShopException('Objeto desconocido.');
+    }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {
       final doc = await transaction.get(ref);
       if (!doc.exists) throw const ShopException('No se encontró tu perfil.');
       final state = ShopState.fromMap(doc.data() ?? {});
-      if (state.owns(item.id))
+      if (state.owns(item.id)) {
         throw const ShopException('Ya tienes este objeto.');
+      }
       if (state.coins < item.price) {
         throw ShopException(
           'Te faltan ${item.price - state.coins} Habit Coins.',
@@ -228,15 +231,17 @@ class ShopService {
   }
 
   Future<void> equip(ShopItem item, {bool remove = false}) async {
-    if (item.slot == null)
+    if (item.slot == null) {
       throw const ShopException('Este artículo no se puede equipar.');
+    }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {
       final doc = await transaction.get(ref);
       if (!doc.exists) throw const ShopException('No se encontró tu perfil.');
       final state = ShopState.fromMap(doc.data() ?? {});
-      if (!state.owns(item.id))
+      if (!state.owns(item.id)) {
         throw const ShopException('Primero debes comprar el objeto.');
+      }
       final equipped = Map<String, String>.from(state.equipped);
       if (remove || equipped[item.slot] == item.id) {
         equipped.remove(item.slot);

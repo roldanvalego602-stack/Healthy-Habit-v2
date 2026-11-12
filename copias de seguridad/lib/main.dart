@@ -7,7 +7,6 @@ import 'firebase_options.dart';
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
 import 'páginas/tienda/store_screen.dart';
-import 'páginas/perfil/profile_screen.dart';
 import 'páginas/desafios/desafios_screen.dart';
 import 'páginas/splash_screen.dart';
 import 'páginas/notifications_screen.dart';
@@ -323,7 +322,7 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
             ],
           ),
           child: TextButton(
@@ -408,7 +407,7 @@ class _LevelCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.3),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
@@ -565,7 +564,7 @@ class _StatsRow extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: habitProgress,
                     strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withOpacity(0.15),
+                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
                     valueColor: const AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),

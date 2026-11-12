@@ -209,7 +209,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: Colors.redAccent.withOpacity(0.3),
+                          color: Colors.redAccent.withValues(alpha: 0.3),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -289,7 +289,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.05),
+            color: navy.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
@@ -490,7 +490,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.05),
+            color: navy.withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -1330,7 +1330,7 @@ class ProfileScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(25),
       boxShadow: [
         BoxShadow(
-          color: navy.withOpacity(0.04),
+          color: navy.withValues(alpha: 0.04),
           blurRadius: 12,
           offset: const Offset(0, 5),
         ),
@@ -1603,10 +1603,11 @@ class ProfileScreen extends StatelessWidget {
           }, SetOptions(merge: true));
           if (context.mounted) Navigator.pop(context);
         } catch (e) {
-          if (context.mounted)
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('No se pudo personalizar: $e')),
             );
+          }
         }
       },
     );
