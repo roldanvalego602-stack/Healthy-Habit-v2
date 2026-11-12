@@ -160,14 +160,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               : 'manual';
       final type = configuredType.isEmpty ? fallbackType : configuredType;
       _interactionType =
-          ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+          ['counter', 'stopwatch', 'timer', 'steps', 'breathing', 'pomodoro', 'hydration'].contains(type) ? type : 'manual';
       _interactionTarget = _leerEntero(
         interaction['target'],
-        _interactionType == 'counter' ? 1 : 60,
+        ['counter', 'hydration', 'steps'].contains(_interactionType) ? 1 : 60,
       ).clamp(1, 86400);
       _interactionUnit =
           (interaction['unit'] ??
-                  (_interactionType == 'counter' ? 'vaso' : 'segundos'))
+                  (_interactionType == 'counter' ? 'vaso' : _interactionType == 'hydration' ? 'ml' : _interactionType == 'steps' ? 'pasos' : 'segundos'))
               .toString();
       _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
