@@ -160,45 +160,186 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Future<void> _confirmAddHabit(Habit habit) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(habit.title),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Dificultad: ${habit.difficulty}'),
-                const SizedBox(height: 8),
-                Text('Sesiones necesarias: ${habit.target}'),
-                const SizedBox(height: 8),
-                Text('Recompensa: ${habit.xp} XP'),
-                if (habit.coinCost > 0) ...[
-                  const SizedBox(height: 8),
-                  Text('Costo para adquirirlo: ${habit.coinCost} Habit Coins'),
-                ],
-                if (_isDifficult(habit)) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Si lo abandonas, la penalización será de hasta 25 Habit Coins.',
+    String selectedType = 'manual';
+    String selectedUnit = 'vasos';
+    final targetController = TextEditingController(text: '1');
+    try {
+      final configuration = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder:
+            (dialogContext) => StatefulBuilder(
+              builder: (context, updateDialog) {
+                final isTimed =
+                    selectedType == 'stopwatch' || selectedType == 'timer';
+                final isCounter = selectedType == 'counter';
+                final amount = int.tryParse(targetController.text.trim());
+                final valid =
+                    selectedType == 'manual' ||
+                    (amount != null &&
+                        amount >= 1 &&
+                        amount <= (isTimed ? 1440 : 86400));
+                return AlertDialog(
+                  title: Text(habit.title),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Dificultad: ${habit.difficulty}'),
+                        const SizedBox(height: 6),
+                        Text('Sesiones necesarias: ${habit.target}'),
+                        const SizedBox(height: 6),
+                        Text('Recompensa indicada: ${habit.xp} XP'),
+                        if (habit.coinCost > 0) ...[
+                          const SizedBox(height: 6),
+                          Text('Costo: ${habit.coinCost} Habit Coins'),
+                        ],
+                        if (_isDifficult(habit)) ...[
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Al abandonarlo, la penalización será de hasta 25 Habit Coins.',
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        const Text(
+                          '¿Cómo registrarás cada sesión?',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: selectedType,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Herramienta',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'manual',
+                              child: Text('Registro tradicional'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'counter',
+                              child: Text('Contador manual'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'stopwatch',
+                              child: Text('Cronómetro'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'timer',
+                              child: Text('Temporizador'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            updateDialog(() {
+                              selectedType = value;
+                              targetController.text =
+                                  value == 'manual'
+                                      ? '1'
+                                      : value == 'counter'
+                                      ? '6'
+                                      : '10';
+                              selectedUnit = 'vasos';
+                            });
+                          },
+                        ),
+                        if (selectedType != 'manual') ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: targetController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText:
+                                  isTimed
+                                      ? 'Duración por sesión (minutos)'
+                                      : 'Cantidad por sesión',
+                              helperText:
+                                  isTimed
+                                      ? 'Entre 1 y 1440 minutos'
+                                      : 'Entre 1 y 86400 unidades',
+                              border: const OutlineInputBorder(),
+                            ),
+                            onChanged: (_) => updateDialog(() {}),
+                          ),
+                        ],
+                        if (isCounter) ...[
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: selectedUnit,
+                            decoration: const InputDecoration(
+                              labelText: 'Unidad',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'vasos',
+                                child: Text('Vasos'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'pasos',
+                                child: Text('Pasos manuales'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'repeticiones',
+                                child: Text('Repeticiones'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'unidades',
+                                child: Text('Unidades'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null)
+                                updateDialog(() => selectedUnit = value);
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        const Text(
+                          'La meta interactiva corresponde a una sesión; no modifica el número de sesiones del hábito.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ],
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Volver'),
+                    ),
+                    FilledButton(
+                      onPressed:
+                          valid
+                              ? () {
+                                final target =
+                                    selectedType == 'manual' ? 1 : amount!;
+                                Navigator.pop(dialogContext, <String, dynamic>{
+                                  'type': selectedType,
+                                  'target': isTimed ? target * 60 : target,
+                                  'unit':
+                                      isTimed
+                                          ? 'segundos'
+                                          : isCounter
+                                          ? selectedUnit
+                                          : 'vez',
+                                });
+                              }
+                              : null,
+                      child: const Text('Aceptar hábito'),
+                    ),
+                  ],
+                );
+              },
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Volver'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Aceptar hábito'),
-              ),
-            ],
-          ),
-    );
-    if (accepted == true && mounted) await addHabit(habit);
+      );
+      if (configuration != null && mounted) {
+        await addHabit(habit, interaction: configuration);
+      }
+    } finally {
+      targetController.dispose();
+    }
   }
 
   bool _isDifficult(Habit habit) {
@@ -320,7 +461,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
-  Future<void> addHabit(Habit habit) async {
+  Future<void> addHabit(
+    Habit habit, {
+    Map<String, dynamic>? interaction,
+  }) async {
     final collection = _habitsCollection;
     final user = _user;
     final userDoc = _userDoc;
@@ -393,6 +537,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           }, SetOptions(merge: true));
           transaction.set(habitRef, {
             ...habit.toMap(),
+            if (interaction != null) 'interaction': interaction,
             'acquiredAt': FieldValue.serverTimestamp(),
             'lastAttemptId': attemptRef.id,
             'lastStatus': 'inProgress',
@@ -404,6 +549,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         final batch = _db.batch();
         batch.set(habitRef, {
           ...habit.toMap(),
+          if (interaction != null) 'interaction': interaction,
           'acquiredAt': FieldValue.serverTimestamp(),
           'lastAttemptId': attemptRef.id,
           'lastStatus': 'inProgress',
