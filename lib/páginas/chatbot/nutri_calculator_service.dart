@@ -48,14 +48,12 @@ class NutriCalculatorService {
   static const List<String> _opcionesSexo = [
     'Hombre',
     'Mujer',
-    'No binario',
-    'Intersexual',
-    'Otro',
     'Prefiero no decirlo',
   ];
 
   /// Opciones que el chat muestra como botones según el paso actual.
   List<String> get opcionesRapidas {
+    if (_confirmandoSalida) return ['Sí, seguir', 'No, salir'];
     switch (pasoGET) {
       case 1:
       case 8:
@@ -63,6 +61,7 @@ class NutriCalculatorService {
       case 11:
         return _opcionesSexo;
       case 10:
+      case 12:
         return ['Sí, es correcto', 'No, corregir'];
       case 5:
         return ['Muy sedentaria', 'Sedentaria', 'Moderada', 'Activa'];
@@ -94,7 +93,7 @@ class NutriCalculatorService {
 
   // Estados para GET
   int pasoGET = 0;
-  String? sexoGET; // 'hombre', 'mujer' u 'otro'
+  String? sexoGET; // 'hombre', 'mujer' u 'otro' (prefiero no decirlo)
   String? sexoEtiquetaGET;
   double? pesoGET;
   bool pesoGETEnLibras = false;
@@ -134,7 +133,137 @@ class NutriCalculatorService {
     _notaAltura = null;
   }
 
+  static const String _preguntaActividad =
+      'Ahora dime tu nivel de actividad física:\n\n'
+      '1. Muy sedentaria (poco o nada de ejercicio) → TA 30%\n'
+      '2. Sedentaria (ejercicio ligero) → TA 50%\n'
+      '3. Moderada (3-5 días por semana) → TA 75%\n'
+      '4. Activa (6-7 días por semana) → TA 100%\n\n'
+      'Responde con el número o la palabra.';
+
+  static const String _preguntaDistribucion =
+      '¿Qué tipo de distribución prefieres?\n'
+      '1. Balanceada (50% HC / 30% Lípidos / 20% Proteínas)\n'
+      '2. Estándar (60% HC / 25% Lípidos / 15% Proteínas)\n'
+      '3. Baja en carbohidratos (40% / 35% / 25%)\n'
+      '4. Alta en proteínas (45% / 25% / 30%)\n'
+      'Responde con el número.';
+
+  static const List<String> _palabrasSalir = [
+    'salir',
+    'cancelar',
+    'terminar',
+    'detener',
+  ];
+
+  // Verdadero mientras se espera que el usuario confirme si quiere salir.
+  bool _confirmandoSalida = false;
+
+  bool get _enCalculo => pasoGET > 0 || pasoIMC > 0;
+
+  /// Procesa el mensaje del usuario. Si en medio de un cálculo escribe algo
+  /// fuera de tema, pregunta si quiere salir en lugar de insistir con el dato.
   String procesarMensaje(String input) {
+    if (_confirmandoSalida) return _resolverSalida(input);
+
+    final texto = normalizeText(input);
+    if (_enCalculo && _containsAny(texto, _palabrasSalir)) {
+      return _salirDelCalculo();
+    }
+
+    final pasoGETAntes = pasoGET;
+    final pasoIMCAntes = pasoIMC;
+    final respuesta = _procesarFlujo(input);
+
+    if (_enCalculo && _noEntendido(respuesta) && _pareceFueraDeTema(texto)) {
+      // Se conserva el paso en el que estaba para poder retomarlo.
+      pasoGET = pasoGETAntes;
+      pasoIMC = pasoIMCAntes;
+      _confirmandoSalida = true;
+      final calculo = pasoGET > 0 ? 'el GET' : 'el IMC';
+      return 'Eso no corresponde al cálculo de $calculo. '
+          '¿Quieres seguir con la conversación del cálculo?\n\n'
+          'Elige "sí" para continuar o "no" para salir.';
+    }
+    return respuesta;
+  }
+
+  bool _noEntendido(String respuesta) =>
+      respuesta.startsWith('No entendí') ||
+      respuesta.startsWith('No identifiqué') ||
+      respuesta.startsWith('Responde');
+
+  /// Una pregunta, o un texto sin números, no es un dato del cálculo.
+  bool _pareceFueraDeTema(String texto) =>
+      texto.contains('?') || !RegExp(r'\d').hasMatch(texto);
+
+  String _resolverSalida(String input) {
+    final texto = normalizeText(input);
+    if (_containsAny(texto, _negativos) ||
+        _containsAny(texto, _palabrasSalir)) {
+      return _salirDelCalculo();
+    }
+    if (_containsAny(texto, _afirmativos) ||
+        _containsAny(texto, ['continuar', 'seguir'])) {
+      _confirmandoSalida = false;
+      return 'Perfecto, continuemos.\n\n${_preguntaActual()}';
+    }
+    return 'Responde "sí" para seguir con el cálculo o "no" para salir.';
+  }
+
+  String _salirDelCalculo() {
+    _confirmandoSalida = false;
+    resetGET();
+    resetIMC();
+    return 'Listo, salí del cálculo. Cuando quieras retomarlo, pídeme calcular '
+        'tu GET o tu IMC. ¿En qué más puedo ayudarte?';
+  }
+
+  /// Repite la pregunta del paso actual al retomar el cálculo.
+  String _preguntaActual() {
+    switch (pasoGET) {
+      case 1:
+        return '¿Quieres calcular tu Gasto Energético Total (GET)? '
+            'Responde "sí".';
+      case 11:
+        return _preguntaSexo;
+      case 2:
+        return '¿Cuál es tu peso? Puedes escribirlo en kg (por ejemplo: 70 kg) '
+            'o en libras (por ejemplo: 150 lb).';
+      case 3:
+        return 'Dime tu altura en metros, centímetros o pies '
+            '(por ejemplo: 1.70 m, 170 cm o 5 pies 10 pulgadas).';
+      case 4:
+        return 'Dime tu edad en años, por ejemplo: 25 años';
+      case 10:
+      case 12:
+        return '¿Es correcto lo que entendí? Responde "sí" para continuar o '
+            '"no" para volver a ingresar tus datos.';
+      case 5:
+        return _preguntaActividad;
+      case 8:
+        return '¿Quieres ver la distribución de macronutrientes? '
+            '(Responde "sí" o "no")';
+      case 9:
+        return _preguntaDistribucion;
+    }
+    switch (pasoIMC) {
+      case 1:
+        return '¿Quieres calcular tu IMC? Responde "sí".';
+      case 2:
+        return '¿Cuál es tu peso? Puedes escribirlo en kg (por ejemplo: 65 kg) '
+            'o en libras (por ejemplo: 150 lb).';
+      case 3:
+        return 'Dime tu altura en metros, centímetros o pies '
+            '(por ejemplo: 1.70 m, 170 cm o 5 pies 10 pulgadas).';
+      case 4:
+        return '¿Es correcto lo que entendí? Responde "sí" para calcular tu '
+            'IMC o "no" para volver a ingresar tus datos.';
+    }
+    return '';
+  }
+
+  String _procesarFlujo(String input) {
     final text = input.toLowerCase();
 
     // ==========================================
@@ -148,8 +277,9 @@ class NutriCalculatorService {
         pasoGET = 2;
         final aviso =
             sexo.clave == 'otro'
-                ? 'Gracias. Para el cálculo usaré el promedio de las fórmulas '
-                    'masculina y femenina, así que el resultado es aproximado.\n\n'
+                ? 'Gracias. Para tu cálculo usaré un valor específico que '
+                    'promedia las fórmulas masculina y femenina, así que el '
+                    'resultado es aproximado.\n\n'
                 : 'Perfecto. ';
         return '$aviso¿Cuál es tu peso? Puedes escribirlo en kilogramos '
             '(por ejemplo: 65 kg) o en libras (por ejemplo: 150 lb).';
@@ -176,11 +306,7 @@ class NutriCalculatorService {
       pesoGETEnLibras = _weightWasEnteredInPounds(text);
 
       final alturaEnFrase = _findHeightInPhrase(normalizeText(text));
-      if (alturaEnFrase != null) {
-        alturaGET = alturaEnFrase;
-        pasoGET = 4;
-        return 'Gracias. Ahora dime tu edad en años, por ejemplo: 25 años';
-      }
+      if (alturaEnFrase != null) return _continuarTrasAlturaGET(alturaEnFrase);
 
       pasoGET = 3;
       return 'Gracias. Ahora dime tu altura en metros, centímetros o pies '
@@ -193,9 +319,26 @@ class NutriCalculatorService {
         return 'No entendí tu altura. Escríbela como 1.70 m, 170 cm o '
             '5 pies 10 pulgadas.';
       }
-      alturaGET = altura;
-      pasoGET = 4;
-      return 'Gracias. Ahora dime tu edad en años, por ejemplo: 25 años';
+      return _continuarTrasAlturaGET(altura);
+    }
+
+    // Confirmación de una altura que se interpretó con duda (ej. "174 f").
+    if (pasoGET == 12) {
+      if (_containsAny(text, _negativos)) {
+        pasoGET = 2;
+        alturaGET = null;
+        _notaAltura = null;
+        return 'Sin problema, volvamos a ingresar tus datos. ¿Cuál es tu peso? '
+            'Puedes escribirlo en kg (por ejemplo: 70 kg) o en libras '
+            '(por ejemplo: 150 lb), y también tu altura si quieres.';
+      }
+      if (_containsAny(text, _afirmativos)) {
+        pasoGET = 4;
+        _notaAltura = null;
+        return 'Gracias. Ahora dime tu edad en años, por ejemplo: 25 años';
+      }
+      return 'Responde "sí" si los datos son correctos o "no" para '
+          'ingresarlos de nuevo.';
     }
 
     if (pasoGET == 4) {
@@ -225,12 +368,7 @@ class NutriCalculatorService {
       }
       if (_containsAny(text, _afirmativos)) {
         pasoGET = 5;
-        return 'Ahora dime tu nivel de actividad física:\n\n'
-            '1. Muy sedentaria (poco o nada de ejercicio) → TA 30%\n'
-            '2. Sedentaria (ejercicio ligero) → TA 50%\n'
-            '3. Moderada (3-5 días por semana) → TA 75%\n'
-            '4. Activa (6-7 días por semana) → TA 100%\n\n'
-            'Responde con el número o la palabra.';
+        return _preguntaActividad;
       }
       return 'Responde "sí" si los datos son correctos o "no" para '
           'ingresarlos de nuevo.';
@@ -276,7 +414,7 @@ class NutriCalculatorService {
       final peso = pesoGET ?? 0;
       final alturaCm = (alturaGET ?? 0) * 100;
       final edad = edadGET ?? 0;
-      // Mifflin-St Jeor: +5 hombre, -161 mujer y -78 (promedio) en otros casos.
+      // Mifflin-St Jeor: +5 hombre, -161 mujer y -78 (promedio) para "prefiero no decirlo".
       final constanteSexo = switch (sexoGET) {
         'hombre' => 5,
         'mujer' => -161,
@@ -301,7 +439,7 @@ class NutriCalculatorService {
     if (pasoGET == 8) {
       if (_containsAny(text, _afirmativos)) {
         pasoGET = 9;
-        return '¿Qué tipo de distribución prefieres?\n1. Balanceada (50% HC / 30% Lípidos / 20% Proteínas)\n2. Estándar (60% HC / 25% Lípidos / 15% Proteínas)\n3. Baja en carbohidratos (40% / 35% / 25%)\n4. Alta en proteínas (45% / 25% / 30%)\nResponde con el número.';
+        return _preguntaDistribucion;
       }
       resetGET();
       return '¡Entendido!';
@@ -422,6 +560,22 @@ class NutriCalculatorService {
     return '';
   }
 
+  /// Pasa a la edad; si la altura se interpretó con duda, pide confirmarla antes.
+  String _continuarTrasAlturaGET(double altura) {
+    alturaGET = altura;
+    if (_notaAltura == null) {
+      pasoGET = 4;
+      return 'Gracias. Ahora dime tu edad en años, por ejemplo: 25 años';
+    }
+    pasoGET = 12;
+    return 'Esto es lo que entendí:\n'
+        '• Peso: ${_describirPeso(pesoGET ?? 0, pesoGETEnLibras)}\n'
+        '• Altura: ${_describirAltura(altura)}\n'
+        '\n⚠️ $_notaAltura\n'
+        '\n¿Es correcto? Responde "sí" para continuar o "no" para '
+        'volver a ingresar tus datos.';
+  }
+
   /// Muestra la conversión de unidades y pide confirmar antes de calcular.
   String _validarIMC(double altura) {
     alturaIMC = altura;
@@ -453,25 +607,15 @@ class NutriCalculatorService {
   }
 
   ({String clave, String etiqueta})? _detectarSexo(String text) {
-    // Primero los textos más específicos: "no binario" y "prefiero no decirlo"
-    // contienen la palabra "no".
+    // Primero "prefiero no decirlo", que contiene la palabra "no".
     if (_containsAny(text, [
-      '6',
+      '3',
       'prefiero no*',
       'no decir*',
       'no quiero decir*',
       'privado',
     ])) {
       return (clave: 'otro', etiqueta: 'Prefiero no decirlo');
-    }
-    if (_containsAny(text, ['3', 'no binario', 'no binaria', 'nobinario'])) {
-      return (clave: 'otro', etiqueta: 'No binario');
-    }
-    if (_containsAny(text, ['4', 'intersexual', 'intersex'])) {
-      return (clave: 'otro', etiqueta: 'Intersexual');
-    }
-    if (_containsAny(text, ['5', 'otro', 'otra', 'otre'])) {
-      return (clave: 'otro', etiqueta: 'Otro');
     }
     if (_containsAny(text, ['2', 'mujer', 'femenino', 'chica', 'female'])) {
       return (clave: 'mujer', etiqueta: 'Mujer');
