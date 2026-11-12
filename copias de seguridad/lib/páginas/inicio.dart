@@ -140,16 +140,19 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
   Widget _home() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Center(child: Text('No se encontró sesión de usuario.'));
+    }
     final userRef = _db.collection('users').doc(user.uid);
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userRef.snapshots(),
       builder: (context, profile) {
-        if (profile.hasError)
+        if (profile.hasError) {
           return const Center(child: Text('No se pudo cargar tu perfil.'));
-        if (!profile.hasData)
+        }
+        if (!profile.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final data = profile.data?.data() ?? <String, dynamic>{};
         final name = (data['name'] ?? user.displayName ?? 'Usuario').toString();
         final photo = (data['photoUrl'] ?? user.photoURL)?.toString();
@@ -159,12 +162,14 @@ class _HomeScreen2State extends State<HomeScreen2> {
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
           builder: (context, habits) {
-            if (habits.hasError)
+            if (habits.hasError) {
               return const Center(
                 child: Text('No se pudieron cargar tus hábitos.'),
               );
-            if (!habits.hasData)
+            }
+            if (!habits.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
             final docs = habits.data!.docs;
             // La pantalla escucha cada colección de intentos. No se necesita FutureBuilder
             // ni lecturas repetidas durante cada reconstrucción de la interfaz.
@@ -391,7 +396,7 @@ class _HomeContent extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(.25),
+                  color: AppColors.primaryGreen.withValues(alpha: .25),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Text(
@@ -477,7 +482,7 @@ class _HomeContent extends StatelessWidget {
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>>? habit,
   ) {
-    if (habit == null)
+    if (habit == null) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(22),
@@ -505,6 +510,7 @@ class _HomeContent extends StatelessWidget {
           ],
         ),
       );
+    }
     final data = habit.data();
     final title = (data['title'] ?? data['name'] ?? 'Hábito').toString();
     final category = (data['category'] ?? 'Bienestar').toString();
@@ -593,15 +599,17 @@ class _HomeContent extends StatelessWidget {
   ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
     stream: userRef.collection('achievements').snapshots(),
     builder: (context, snapshot) {
-      if (snapshot.hasError)
+      if (snapshot.hasError) {
         return const Card(
           child: Padding(
             padding: EdgeInsets.all(16),
             child: Text('No se pudieron consultar los logros.'),
           ),
         );
-      if (!snapshot.hasData)
+      }
+      if (!snapshot.hasData) {
         return const Center(child: CircularProgressIndicator());
+      }
       final ids = snapshot.data!.docs.map((d) => d.id).toSet();
       final perfil = <String, dynamic>{
         'xp': xp,

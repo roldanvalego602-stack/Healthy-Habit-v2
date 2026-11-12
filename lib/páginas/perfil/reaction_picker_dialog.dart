@@ -7,11 +7,11 @@ class ReactionPickerDialog extends StatefulWidget {
   final String friendName;
 
   const ReactionPickerDialog({
-    Key? key,
+    super.key,
     required this.fromUid,
     required this.toUid,
     required this.friendName,
-  }) : super(key: key);
+  });
 
   @override
   State<ReactionPickerDialog> createState() => _ReactionPickerDialogState();

@@ -245,7 +245,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: navy.withOpacity(0.05),
+            color: navy.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
@@ -585,7 +585,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           width: 58,
           height: 64,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.10),
+            color: color.withValues(alpha: 0.10),
             border: Border.all(color: color, width: 1.8),
             borderRadius: BorderRadius.circular(20),
           ),

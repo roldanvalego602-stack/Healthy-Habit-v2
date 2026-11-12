@@ -424,7 +424,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                         activo
                             ? Colors.white24
                             : (resaltar && total > 0
-                                ? Colors.redAccent.withOpacity(0.15)
+                                ? Colors.redAccent.withValues(alpha: 0.15)
                                 : _C.mintSoft),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -455,7 +455,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(19),
         boxShadow: [
-          BoxShadow(color: _C.navy.withOpacity(0.05), blurRadius: 12),
+          BoxShadow(color: _C.navy.withValues(alpha: 0.05), blurRadius: 12),
         ],
       ),
       child: Row(
@@ -474,7 +474,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
         ],
       ),
       child: TextField(
@@ -693,7 +693,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                       showDialog(
                         context: context,
                         builder: (_) => ReactionPickerDialog(
-                          fromUid: _uid!, // Tu ID
+                          fromUid: _uid, // Tu ID
                           toUid: uid, // El ID del amigo
                           friendName: nombre,
                         ),

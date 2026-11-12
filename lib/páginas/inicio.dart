@@ -568,7 +568,7 @@ class _HomeContent extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.25),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(

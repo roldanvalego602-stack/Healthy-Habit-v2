@@ -324,7 +324,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                   isCurrent
                       ? [
                         BoxShadow(
-                          color: const Color(0xFF08B889).withOpacity(0.15),
+                          color: const Color(0xFF08B889).withValues(alpha: 0.15),
                           blurRadius: 12,
                         ),
                       ]
@@ -343,7 +343,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          color: foreground.withOpacity(0.75),
+                          color: foreground.withValues(alpha: 0.75),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -359,7 +359,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                       Text(
                         '${level.requiredXp} XP requeridos',
                         style: TextStyle(
-                          color: foreground.withOpacity(0.85),
+                          color: foreground.withValues(alpha: 0.85),
                           fontSize: 12,
                         ),
                       ),

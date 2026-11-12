@@ -165,8 +165,9 @@ class LogrosService {
       if (!obtenido(
         logro,
         progreso(logro, perfil, habitos, completados, desbloqueados),
-      ))
+      )) {
         return logro;
+      }
     }
     return null;
   }
