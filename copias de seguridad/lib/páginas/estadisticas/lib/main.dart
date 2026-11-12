@@ -235,56 +235,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.mintCard,
-              backgroundImage:
-                  user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-              child:
-                  user?.photoURL == null
-                      ? const Icon(
-                        Icons.person,
-                        color: AppColors.primaryGreen,
-                        size: 40,
-                      )
-                      : null,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              user?.displayName ?? 'Usuario',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
-            if (user?.email != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                user!.email!,
-                style: const TextStyle(color: AppColors.textGrey),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ---------- Top Bar ----------
 class _TopBar extends StatelessWidget {
   final String? photoUrl;
@@ -295,14 +245,24 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: AssetImage('assets/mascot/healthy.png'),
-              fit: BoxFit.cover,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 42,
+            height: 42,
+            // El JPEG trae mucho margen negro: se amplía para que el logo se vea.
+            child: Transform.scale(
+              scale: 1.7,
+              child: Image.asset(
+                'assets/logo/MrHealty.png',
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (context, error, stackTrace) => const Icon(
+                      Icons.eco_rounded,
+                      color: AppColors.primaryGreen,
+                      size: 32,
+                    ),
+              ),
             ),
           ),
         ),
@@ -323,7 +283,7 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
             ],
           ),
           child: TextButton(
@@ -408,7 +368,7 @@ class _LevelCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.3),
+                  color: AppColors.primaryGreen.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
@@ -565,7 +525,7 @@ class _StatsRow extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: habitProgress,
                     strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withOpacity(0.15),
+                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
                     valueColor: const AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),

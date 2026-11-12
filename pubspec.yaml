@@ -39,6 +39,7 @@ flutter:
 
   assets:
     - assets/logo/logo.png
+    - assets/logo/MrHealty.png
     - assets/mascot/healthy.png
     - "assets/monedas/h coin.png"
     - "assets/monedas/h coin premium.png"

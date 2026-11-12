@@ -155,7 +155,7 @@ BoxDecoration _cardDecoration() {
     border: Border.all(color: Colors.grey.shade200),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.025),
+        color: Colors.black.withValues(alpha: 0.025),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
@@ -231,7 +231,7 @@ class _HeaderBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -273,7 +273,7 @@ class _InfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(

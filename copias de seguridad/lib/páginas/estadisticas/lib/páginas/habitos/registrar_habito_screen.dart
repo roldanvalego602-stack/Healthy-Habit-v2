@@ -36,7 +36,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Uint8List? _bytesImagen;
   bool _guardando = false;
   bool _cargando = true;
-  bool _subiendoImagen = false;
+  final bool _subiendoImagen = false;
   String? _error;
   String _nombreHabito = 'Tomar 6 vasos de agua';
   String _categoria = 'Hidratación';
@@ -107,9 +107,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
       final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
       final habitoSnapshot =
-          resultados[0] as DocumentSnapshot<Map<String, dynamic>>;
+          resultados[0];
       final attemptSnapshot =
-          resultados[1] as DocumentSnapshot<Map<String, dynamic>>;
+          resultados[1];
       if (!habitoSnapshot.exists) {
         throw Exception('No se encontró el hábito seleccionado.');
       }
@@ -236,7 +236,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final tieneEvidenciaReal =
           _imagenSeleccionada != null && bytesEvidencia != null;
       if (tieneEvidenciaReal &&
-          bytesEvidencia!.lengthInBytes >
+          bytesEvidencia.lengthInBytes >
               TemporaryEvidenceService.maxImageBytes) {
         throw Exception('La fotografía supera el límite de 250 KB.');
       }
@@ -329,7 +329,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             'habitId': habitoRef.id,
             'attemptId': attemptRef.id,
             'logId': registroRef.id,
-            'imageBase64': base64Encode(bytesEvidencia!),
+            'imageBase64': base64Encode(bytesEvidencia),
             'contentType': imagenTipo,
             'createdAt': FieldValue.serverTimestamp(),
             'expiresAt': Timestamp.fromDate(expira),
@@ -491,7 +491,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
+                  color: Colors.red.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -554,7 +554,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   backgroundColor: AppColores.verdePrincipal,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: AppColores.verdePrincipal
-                      .withOpacity(0.6),
+                      .withValues(alpha: 0.6),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -594,7 +594,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -712,7 +712,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColores.verdePrincipal.withOpacity(0.3),
+          color: AppColores.verdePrincipal.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -846,7 +846,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeColor: AppColores.verdePrincipal,
+            activeThumbColor: AppColores.verdePrincipal,
             onChanged:
                 _guardando
                     ? null
@@ -884,7 +884,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             descripcion: 'Total del registro',
             color: AppColores.verdeMenta,
             colorTexto: AppColores.verdePrincipal,
-            borde: AppColores.verdePrincipal.withOpacity(0.5),
+            borde: AppColores.verdePrincipal.withValues(alpha: 0.5),
           ),
         ),
       ],
