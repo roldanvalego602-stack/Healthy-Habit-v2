@@ -152,3 +152,23 @@ exports.adjustHabitCoins = onCall(
     });
   }
 );
+
+
+const { classifyIntent } = require("./intent_classifier");
+// Solo interpreta texto: no modifica XP, monedas ni habitos.
+exports.interpretMrHealthyIntent = onCall(
+  {region:"us-central1", enforceAppCheck:false, maxInstances:10},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Inicia sesion para usar Mr. Healthy.");
+    }
+    try {
+      return classifyIntent(request.data?.text);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new HttpsError("invalid-argument", error.message);
+      }
+      throw error;
+    }
+  }
+);

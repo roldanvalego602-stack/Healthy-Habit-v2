@@ -424,6 +424,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         }, SetOptions(merge: true));
         transaction.set(usuarioRef, {
           'xp': xpNuevo,
+          'currentXp': xpNuevo,
           'level': nivelNuevo,
           'habitCoins': monedasNuevas,
           'claimedLevelRewards': reclamados.toList()..sort(),
