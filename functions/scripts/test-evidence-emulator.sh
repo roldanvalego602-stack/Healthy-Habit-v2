@@ -5,7 +5,8 @@ PROJECT="demo-healthy-habit"
 HOST="127.0.0.1"
 AUTH="http://$HOST:9099"
 FUNCTIONS="http://$HOST:5001/$PROJECT/us-central1"
-STORE="http://$HOST:8080/v1/projects/$PROJECT/databases/(default)/documents"
+# El backend usa getFirestore("default"): base con nombre "default", NO "(default)".
+STORE="http://$HOST:8080/v1/projects/$PROJECT/databases/default/documents"
 command -v python3 >/dev/null || { echo "Necesitas python3"; exit 1; }
 command -v curl >/dev/null || { echo "Necesitas curl"; exit 1; }
 
@@ -24,10 +25,12 @@ curl -fsS -X PATCH "$STORE/users/$UID_TEST/user_habits/water/attempts/attempt1" 
   -d '{"fields":{"status":{"stringValue":"inProgress"}}}' >/dev/null
 
 echo "Solicitando desafío de prueba..."
-creation=$(curl -fsS -X POST "$FUNCTIONS/startEvidenceChallenge" \
+creation=$(curl -sS -X POST "$FUNCTIONS/startEvidenceChallenge" \
   -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
   -d '{"data":{"habitId":"water","attemptId":"attempt1","objectId":"spoon"}}')
 echo "$creation" | python3 -m json.tool
+# Si el backend rechaza la solicitud, mostrar el motivo antes de continuar.
+printf '%s' "$creation" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "result" in d, "La función devolvió un error: " + str(d.get("error"))'
 CHALLENGE_ID=$(printf '%s' "$creation" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["challengeId"])')
 CODE=$(printf '%s' "$creation" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["code"])')
 export CHALLENGE_ID CODE
