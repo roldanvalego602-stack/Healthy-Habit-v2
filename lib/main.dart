@@ -126,10 +126,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
         final String levelTitle =
             userData['title'] as String? ?? 'Cultivador Constante';
-        final int currentXp = (userData['currentXp'] as num?)?.toInt() ?? 0;
+        final int currentXp = (userData['xp'] as num?)?.toInt() ??
+            (userData['currentXp'] as num?)?.toInt() ??
+            0;
         final int nextLevelXp =
             (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
-        final int streakDays = (userData['streakDays'] as num?)?.toInt() ?? 0;
+        final int streakDays = (userData['currentStreak'] as num?)?.toInt() ??
+            (userData['streakDays'] as num?)?.toInt() ??
+            0;
         final String nextAchievement =
             userData['nextAchievementTitle'] as String? ??
             'Insignia Ritmo firme';
