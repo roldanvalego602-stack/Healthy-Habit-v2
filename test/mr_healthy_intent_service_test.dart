@@ -58,7 +58,7 @@ void main() {
       },
     );
     await expectLater(service.interpret('   '), throwsArgumentError);
-    await expectLater(service.interpret('a' * 501), throwsArgumentError);
+    await expectLater(service.interpret(List<String>.filled(501, 'a').join()), throwsArgumentError);
     expect(calls, 0);
   });
 
