@@ -50,7 +50,7 @@ echo "$response" | python3 -m json.tool
 printf '%s' "$response" | python3 -c 'import json,sys; r=json.load(sys.stdin)["result"]; assert r["codeMatched"] and not r["imageVerified"] and r["xpAwarded"] == 0'
 
 echo "Comprobando que reutilizar el desafío sea rechazado..."
-replay=$(curl -fsS -X POST "$FUNCTIONS/checkEvidenceChallengeCode" \
+replay=$(curl -sS -X POST "$FUNCTIONS/checkEvidenceChallengeCode" \
   -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
   -d "$body")
 echo "$replay" | python3 -m json.tool
