@@ -79,3 +79,48 @@ Referencias técnicas:
 - https://docs.cloud.google.com/vision/docs/object-localizer
 - https://firebase.google.com/docs/firestore/ttl
 - https://firebase.google.com/docs/app-check/cloud-functions
+
+
+## Fase 2 — Desafíos temporales (código implementado, pruebas de usuario pendientes)
+
+Archivos:
+
+- `functions/evidence_challenge.js`: generación criptográfica, TTL de cinco minutos, hash con sal, binding `uid/habitId/attemptId`, transacciones, uso único y bloqueo tras tres fallos.
+- `functions/index.js`: dos callables `startEvidenceChallenge` y `checkEvidenceChallengeCode`.
+- `functions/tests/evidence_challenge.test.js`: diez nuevas pruebas unitarias.
+- `functions/scripts/test-evidence-emulator.sh`: prueba E2E con usuario ficticio, hábito ficticio y Firestore Emulator.
+
+**Ambas callables están expresamente deshabilitadas fuera del emulador**. No habilitarlas en producción hasta implementar revisión de acceso, control de frecuencia, análisis OCR real de la fotografía y reglas de Firestore. `checkEvidenceChallengeCode` solo valida un código **escrito por el cliente**; no acredita foto, autoría ni cumplimiento. Nunca usar ese resultado para desbloquear XP.
+
+El desafío requiere un intento `status: inProgress` existente en:
+`users/{uid}/user_habits/{habitId}/attempts/{attemptId}`.
+Se emite uno activo por combinación y se almacena en:
+`users/{uid}/evidence_challenges/{sha256([habitId,attemptId])}`.
+
+### Prueba local segura
+
+1. Desde la **raíz del repositorio**, instalar y configurar por separado **Firestore Emulator** en `firebase init emulators` si aún no está seleccionado. Puertos recomendados: Auth 9099, Functions 5001, Firestore 8080, Emulator UI 4000. Atención: `firebase.json` está modificado localmente; conservarlo y revisar el diff antes de hacer commit.
+2. Iniciar los tres emuladores (no mezclar Firestore real con Auth demo):
+
+```bash
+firebase emulators:start --only auth,functions,firestore --project demo-healthy-habit
+```
+
+3. En **otra terminal**, desde la raíz:
+
+```bash
+cd functions
+npm test
+bash scripts/test-evidence-emulator.sh
+```
+
+La prueba de extremo a extremo crea un usuario anónimo y dos documentos **solo en el emulador Firestore**. Obtiene un desafío, comprueba el código una vez, espera rechazo al segundo uso y comprueba que no se otorgó XP. No guarda credenciales ni accede a producción. El código del desafío puede aparecer en salida porque pertenece a la demostración local.
+
+### Limitaciones pendientes
+
+- La prueba de extremo a extremo aún debe ser ejecutada en la computadora del desarrollador; los archivos en GitHub no garantizan que el entorno local tenga todos los emuladores configurados.
+- Todavía no se ha ejecutado OCR ni reconocimiento real de imágenes.
+- El código es visible para el usuario y puede escribirse manualmente: **no constituye prueba visual**.
+- Reintentos/renovaciones deben contar con cuotas/cooldown por usuario antes de permitir producción.
+- Los registros de `evidence_challenges` requieren políticas de retención y reglas que impidan lectura/escritura directa desde clientes antes de producirse un despliegue.
+- El emulador prueba semántica local, pero no sustituye pruebas de seguridad o carga.
