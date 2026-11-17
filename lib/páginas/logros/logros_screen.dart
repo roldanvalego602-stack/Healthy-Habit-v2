@@ -26,8 +26,8 @@ class LogrosScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F8F6),
       appBar: AppBar(
         title: const Text(
-          'Mis logros',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          'Logros y desafíos',
+          style: TextStyle(fontWeight: FontWeight.w800, color: _navy),
         ),
         backgroundColor: const Color(0xFFF5F8F6),
       ),

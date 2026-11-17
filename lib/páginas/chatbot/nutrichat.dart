@@ -4,14 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import 'nutri_respuestas_service.dart';
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final String time;
-
-  ChatMessage({required this.text, required this.isUser, required this.time});
-}
+import 'chat_historial.dart';
 
 class NutriChatPage extends StatefulWidget {
   const NutriChatPage({super.key});
@@ -37,14 +30,21 @@ class _NutriChatPageState extends State<NutriChatPage> {
   bool isTyping = false;
   bool _hasSentMessage = false;
 
-  final List<ChatMessage> messages = [
-    ChatMessage(
+  late final ChatSession _session;
+  late final List<ChatMessage> messages;
+
+  void _iniciarSesion() {
+    _session = ChatHistoryStore.instance.startSession(
+      FirebaseAuth.instance.currentUser?.uid,
+    );
+    messages = _session.messages;
+    messages.add(ChatMessage(
       text:
           '¡Hola! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
       isUser: false,
       time: _timeNow(),
-    ),
-  ];
+    ));
+  }
 
   final List<String> quickOptions = const [
     '¿Cómo mejorar mi racha?',
@@ -64,6 +64,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void initState() {
     super.initState();
+    _iniciarSesion();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
   }
@@ -189,6 +190,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
           'gasto energetico',
           'calorias diarias',
           'calcular mi get',
+          'gasto calorico',
+          'calorias necesito',
+          'metabolismo basal',
+          'tmb',
         ]);
         final calcResponse =
             (activeCalculator || calculatorIntent)
@@ -232,6 +237,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   void dispose() {
+    ChatHistoryStore.instance.discardIfEmpty(_session);
     _inputFocus.removeListener(_onFocusChange);
     _inputFocus.dispose();
     messageController.dispose();
@@ -271,6 +277,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Historial',
+            icon: const Icon(Icons.history_rounded, color: _navy),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => ChatHistoryPage(activeSessionId: _session.id),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Image.asset(
@@ -326,6 +342,23 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 },
               ),
             ),
+            if (_calculatorService.opcionesRapidas.isNotEmpty && !isTyping)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: _calculatorService.opcionesRapidas.map((option) =>
+                      ActionChip(
+                        label: Text(option),
+                        onPressed: () => sendMessage(option),
+                      ),
+                    ).toList(),
+                  ),
+                ),
+              ),
             _buildComposer(keyboardVisible),
           ],
         ),

@@ -846,7 +846,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeThumbColor: AppColores.verdePrincipal,
+            activeColor: AppColores.verdePrincipal,
             onChanged:
                 _guardando
                     ? null

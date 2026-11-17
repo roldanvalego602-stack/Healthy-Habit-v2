@@ -114,10 +114,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final habitoRef = _habitos.doc(widget.habitId);
       final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
       final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
-      final habitoSnapshot =
-          resultados[0];
-      final attemptSnapshot =
-          resultados[1];
+      final habitoSnapshot = resultados[0];
+      final attemptSnapshot = resultados[1];
       if (!habitoSnapshot.exists) {
         throw Exception('No se encontró el hábito seleccionado.');
       }
@@ -160,14 +158,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               : 'manual';
       final type = configuredType.isEmpty ? fallbackType : configuredType;
       _interactionType =
-          ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+          [
+                'counter',
+                'stopwatch',
+                'timer',
+                'steps',
+                'breathing',
+                'pomodoro',
+                'hydration',
+              ].contains(type)
+              ? type
+              : 'manual';
       _interactionTarget = _leerEntero(
         interaction['target'],
-        _interactionType == 'counter' ? 1 : 60,
+        ['counter', 'hydration', 'steps'].contains(_interactionType) ? 1 : 60,
       ).clamp(1, 86400);
       _interactionUnit =
           (interaction['unit'] ??
-                  (_interactionType == 'counter' ? 'vaso' : 'segundos'))
+                  (_interactionType == 'counter'
+                      ? 'vaso'
+                      : _interactionType == 'hydration'
+                      ? 'ml'
+                      : _interactionType == 'steps'
+                      ? 'pasos'
+                      : 'segundos'))
               .toString();
       _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
@@ -668,8 +682,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColores.verdePrincipal,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColores.verdePrincipal
-                      .withValues(alpha: 0.6),
+                  disabledBackgroundColor: AppColores.verdePrincipal.withValues(
+                    alpha: 0.6,
+                  ),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -961,7 +976,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeThumbColor: AppColores.verdePrincipal,
+            activeColor: AppColores.verdePrincipal,
             onChanged:
                 _guardando
                     ? null
