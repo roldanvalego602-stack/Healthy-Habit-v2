@@ -172,3 +172,50 @@ exports.interpretMrHealthyIntent = onCall(
     }
   }
 );
+
+
+// Desafíos de evidencia: solo gestionan códigos de sesión.
+// No verifican fotografías ni modifican XP o Habit Coins.
+const {
+  ChallengeError,
+  startEvidenceChallenge,
+  checkEvidenceChallengeCode,
+} = require("./evidence_challenge");
+
+function challengeHandler(operation) {
+  return async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Inicia sesión para continuar.");
+    }
+    try {
+      return await operation({
+        db,
+        uid: request.auth.uid,
+        ...{
+          habitId: request.data?.habitId,
+          attemptId: request.data?.attemptId,
+          objectId: request.data?.objectId,
+          challengeId: request.data?.challengeId,
+          code: request.data?.code,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ChallengeError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  };
+}
+
+exports.startEvidenceChallenge = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 10},
+  challengeHandler(startEvidenceChallenge),
+);
+
+// Exclusivamente para comprobar el ciclo de vida en el emulador.
+// No se acepta como prueba visual ni concede recompensas.
+exports.checkEvidenceChallengeCode = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 10},
+  challengeHandler(checkEvidenceChallengeCode),
+);
