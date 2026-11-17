@@ -184,6 +184,13 @@ const {
 
 function challengeHandler(operation) {
   return async (request) => {
+    // Endpoints experimentales: no publicarlos como verificadores de evidencia.
+    if (process.env.FUNCTIONS_EMULATOR !== "true") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Los desafíos de prueba solo están habilitados en el emulador.",
+      );
+    }
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Inicia sesión para continuar.");
     }
