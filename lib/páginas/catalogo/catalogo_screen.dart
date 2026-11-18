@@ -148,7 +148,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                           onPressed: () => setState(_buscador.clear),
                         ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: HealthyAdaptive.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -171,8 +171,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                   label: Text(f),
                   selected: activo,
                   onSelected: (_) => setState(() => _filtro = f),
-                  selectedColor: const Color(0xFFDDF7EB),
-                  backgroundColor: Colors.white,
+                  selectedColor: HealthyAdaptive.mint,
+                  backgroundColor: HealthyAdaptive.surface,
                   labelStyle: TextStyle(
                     color: activo ? const Color(0xFF078765) : _oscuro,
                     fontWeight: activo ? FontWeight.w800 : FontWeight.w500,
