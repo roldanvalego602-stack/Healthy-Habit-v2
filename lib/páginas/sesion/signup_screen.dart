@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
@@ -11,9 +12,9 @@ class AppColors {
   static const primaryGreen = Color(0xFF00C88C);
   static const green = Color(0xFF34C77B);
   static const greenDark = Color(0xFF1FA866);
-  static const textDark = Color(0xFF0E1A30);
-  static const textGrey = Color(0xFF7A869A);
-  static const fieldBorder = Color(0xFFE7E8EC);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get fieldBorder => HealthyAdaptive.border;
 }
 
 class SignUpScreen extends StatefulWidget {
@@ -170,7 +171,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: HealthyAdaptive.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -194,7 +195,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Crea tu cuenta',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -204,7 +205,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Empieza a construir tus hábitos hoy',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: AppColors.textGrey),
@@ -298,7 +299,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'o',
@@ -317,15 +318,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: OutlinedButton(
                   onPressed: _isLoading ? null : _handleGoogleSignup,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.fieldBorder),
+                    backgroundColor: HealthyAdaptive.surface,
+                    side: BorderSide(color: AppColors.fieldBorder),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       GoogleG(),
                       SizedBox(width: 10),
                       Text(
@@ -345,7 +346,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Center(
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textGrey,
                     ),
