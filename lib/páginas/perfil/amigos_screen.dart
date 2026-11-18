@@ -411,14 +411,14 @@ class _AmigosScreenState extends State<AmigosScreen> {
                     style: TextStyle(
                       color: activo ? Colors.white : _C.grey,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                      fontSize: 11,
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 3),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
+                    horizontal: 5,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
@@ -680,27 +680,23 @@ class _AmigosScreenState extends State<AmigosScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Botón de reacción (solo si ya sigues a esta persona)
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
               if (siguiendo && _uid != null)
-                Material(
-                  color: Colors.transparent,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.add_reaction_outlined,
-                      color: _C.grey,
+                IconButton(
+                  icon: Icon(Icons.add_reaction_outlined, color: _C.grey),
+                  tooltip: 'Enviar reacción',
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (_) => ReactionPickerDialog(
+                      fromUid: _uid,
+                      toUid: uid,
+                      friendName: nombre,
                     ),
-                    tooltip: 'Enviar reacción',
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => ReactionPickerDialog(
-                          fromUid: _uid, // Tu ID
-                          toUid: uid, // El ID del amigo
-                          friendName: nombre,
-                        ),
-                      );
-                    },
                   ),
                 ),
               _botonSeguir(uid, nombre, siguiendo, pendiente, ocupado),
@@ -718,55 +714,17 @@ class _AmigosScreenState extends State<AmigosScreen> {
     bool pendiente,
     bool ocupado,
   ) {
-    final IconData icono =
-        siguiendo
-            ? Icons.check_rounded
-            : (pendiente ? Icons.schedule_rounded : Icons.add_rounded);
-    final String etiqueta =
-        siguiendo ? 'Siguiendo' : (pendiente ? 'Pendiente' : 'Seguir');
-    final Color colorTexto =
-        siguiendo ? _C.green : (pendiente ? _C.gold : _C.navy);
-
-    final child =
-        ocupado
-            ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: _C.green),
-            )
-            : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icono, size: 16, color: colorTexto),
-                const SizedBox(width: 4),
-                Text(
-                  etiqueta,
-                  style: TextStyle(
-                    color: colorTexto,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            );
-
-    final Color colorBorde =
-        siguiendo ? _C.green : (pendiente ? _C.gold : _C.mint);
-
-    return GestureDetector(
-      onTap: () => _toggle(uid, nombre, siguiendo, pendiente),
-      child: Container(
-        height: 36,
-        constraints: const BoxConstraints(minWidth: 96),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: (siguiendo || pendiente) ? Colors.white : _C.mint,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: colorBorde, width: 1.4),
-        ),
-        child: child,
-      ),
+    return SocialActionButton(
+      compact: true,
+      label: siguiendo ? 'Siguiendo' : pendiente ? 'Pendiente' : 'Seguir',
+      icon: siguiendo
+          ? Icons.check_rounded
+          : pendiente ? Icons.schedule_rounded : Icons.person_add_alt_1_rounded,
+      outlined: siguiendo || pendiente,
+      busy: ocupado,
+      onPressed: ocupado
+          ? null
+          : () => _toggle(uid, nombre, siguiendo, pendiente),
     );
   }
 
