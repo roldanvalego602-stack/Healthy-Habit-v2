@@ -344,7 +344,9 @@ class _StoreScreenState extends State<StoreScreen> {
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: HealthyAdaptive.isDark
+                                    ? const Color(0xFF273745)
+                                    : Colors.white.withValues(alpha: 0.85),
                                 borderRadius: BorderRadius.circular(9),
                               ),
                               child: Text(
@@ -426,8 +428,12 @@ class _StoreScreenState extends State<StoreScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: _green,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFB6C6C0),
-                    disabledForegroundColor: _ink,
+                    disabledBackgroundColor: HealthyAdaptive.isDark
+                        ? const Color(0xFF334652)
+                        : const Color(0xFFB6C6C0),
+                    disabledForegroundColor: HealthyAdaptive.isDark
+                        ? const Color(0xFFCED7DC)
+                        : _ink,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 15,
                       vertical: 12,
@@ -480,7 +486,27 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
+  // Colores de las recompensas: el modo oscuro utiliza pigmentos profundos,
+  // no pasteles luminosos con texto casi blanco.
   List<Color> _palette(String category) {
+    if (HealthyAdaptive.isDark) {
+      switch (category) {
+        case 'Ropa':
+        case 'Personalización':
+          return const [Color(0xFF403159), Color(0xFF2C253E)];
+        case 'Cabeza':
+        case 'Avatares':
+          return const [Color(0xFF214963), Color(0xFF192F47)];
+        case 'Insignias':
+          return const [Color(0xFF59472D), Color(0xFF352E28)];
+        case 'Accesorios':
+          return const [Color(0xFF59354A), Color(0xFF382A3B)];
+        case 'Especiales':
+          return const [Color(0xFF28503C), Color(0xFF1D3D39)];
+        default:
+          return const [Color(0xFF285046), Color(0xFF1C383B)];
+      }
+    }
     switch (category) {
       case 'Ropa':
       case 'Personalización':
