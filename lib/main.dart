@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'tema/healthy_theme.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -20,6 +21,7 @@ late final FirebaseFirestore firestoreDb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await HealthyThemeController.instance.load();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firestore = FirebaseFirestore.instanceFor(
@@ -49,15 +51,16 @@ class HabitTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Healthy Habit',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF7F9F8),
-        useMaterial3: true,
+    return AnimatedBuilder(
+      animation: HealthyThemeController.instance,
+      builder: (context, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Healthy Habit',
+        theme: HealthyThemes.light(),
+        darkTheme: HealthyThemes.dark(),
+        themeMode: HealthyThemeController.instance.mode,
+        home: const SplashScreen(),
       ),
-      home: const SplashScreen(),
     );
   }
 }
