@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 import '../../Contenido_del_tema/colores.dart';
 import '../../Contenido_del_tema/boton_principal.dart';
@@ -145,19 +146,19 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColores.fondoClaro,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+          icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
           onPressed: _guardando ? null : () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Editar Perfil',
           style: TextStyle(
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
             fontWeight: FontWeight.w800,
             fontSize: 20,
           ),
@@ -326,10 +327,10 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
           ),
         ),
         const SizedBox(height: 6),
@@ -343,11 +344,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                   ? TextCapitalization.sentences
                   : TextCapitalization.none,
           autocorrect: label != 'Nombre de usuario',
-          style: const TextStyle(fontSize: 14, color: AppColores.textoOscuro),
+          style: TextStyle(fontSize: 14, color: HealthyAdaptive.text),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColores.textoGris, size: 20),
+            prefixIcon: Icon(icon, color: HealthyAdaptive.muted, size: 20),
             filled: true,
-            fillColor: AppColores.fondoClaro,
+            fillColor: HealthyAdaptive.background,
             contentPadding: const EdgeInsets.symmetric(
               vertical: 12,
               horizontal: 16,
