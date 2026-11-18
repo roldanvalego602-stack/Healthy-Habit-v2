@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,6 +30,7 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
   bool _ready = false;
   String? _error;
   String? _feedback;
+  String _step = 'Sin iniciar';
   DemoChallenge? _challenge;
   Uint8List? _photo;
 
@@ -50,26 +52,45 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
       _error = null;
     });
     try {
-      await task();
+      await task().timeout(const Duration(seconds: 25));
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Authentication (${e.code}): ${e.message ?? "Sin detalle"}');
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'Firebase: ${e.code}. ${e.message ?? "Sin detalle"}';
       });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() => _error = 'Tiempo agotado en: $_step. Revisa adb reverse y los emuladores.');
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = 'Error en $_step: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  void _updateStep(String message) {
+    debugPrint('[EvidenceDemo] $message');
+    if (mounted) setState(() => _step = message);
+  }
+
   Future<void> _connect() => _execute(() async {
-    await widget.auth.signInAnonymously();
-    await _service.prepareDemoHabit();
+    _updateStep('Autenticando con Firebase local (9099)...');
+    final credential = await widget.auth.signInAnonymously()
+        .timeout(const Duration(seconds: 12));
+    if (credential.user == null) {
+      throw StateError('El emulador no devolvió un usuario.');
+    }
+    _updateStep('Creando hábito ficticio mediante Functions (5001)...');
+    await _service.prepareDemoHabit()
+        .timeout(const Duration(seconds: 12));
     if (!mounted) return;
     setState(() {
       _ready = true;
+      _step = 'Conexión completada';
       _feedback = 'Sesión de prueba y hábito ficticio preparados.';
     });
   });
@@ -132,6 +153,8 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
             'No modifica tu cuenta, progreso, hábitos ni monedas.',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 12),
+          Text('Estado: $_step', style: const TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: _busy || _ready ? null : _connect,
