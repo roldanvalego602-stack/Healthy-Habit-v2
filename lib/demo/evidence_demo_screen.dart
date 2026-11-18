@@ -143,7 +143,7 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: _objectId,
+            value: _objectId,
             decoration: const InputDecoration(
               labelText: 'Objeto accesible para el desafío',
               border: OutlineInputBorder(),
