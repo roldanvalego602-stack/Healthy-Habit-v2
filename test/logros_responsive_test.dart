@@ -46,9 +46,20 @@ void main() {
       (tester) async {
     await show(tester, const Size(320, 640), 1.4);
     expect(find.byKey(const Key('logros-resumen')), findsOneWidget);
-    expect(find.byKey(const ValueKey('logro-done')), findsOneWidget);
-    expect(find.byKey(const ValueKey('logro-pending')), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    // ListView construye elementos bajo demanda: a 320 px, el resumen
+    // puede ocupar la zona visible y las tarjetas aún no existir en el árbol.
+    // Desplazarse permite verificar cada logro y sus textos sin falsos fallos.
+    final scrollable = find.byType(Scrollable).first;
+    for (final id in ['done', 'pending']) {
+      await tester.scrollUntilVisible(
+        find.byKey(ValueKey('logro-$id')),
+        120,
+        scrollable: scrollable,
+      );
+      await tester.pump();
+      expect(find.byKey(ValueKey('logro-$id')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('filtros cambian entre conseguidos y pendientes',
