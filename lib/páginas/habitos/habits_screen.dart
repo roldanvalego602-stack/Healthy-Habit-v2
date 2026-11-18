@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'catalogo.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
@@ -20,12 +21,12 @@ class _ActiveHabitEntry {
 }
 
 class _HabitsScreenState extends State<HabitsScreen> {
-  static const navy = Color(0xFF193344);
-  static const green = Color(0xFF08B889);
-  static const greenDark = Color(0xFF078765);
-  static const background = Color(0xFFF5F8F6);
-  static const muted = Color(0xFF71879A);
-  static const border = Color(0xFFDCE8E3);
+  Color get navy => HealthyAdaptive.text;
+  Color get green => HealthyAdaptive.accent;
+  Color get greenDark => HealthyAdaptive.accent;
+  Color get background => HealthyAdaptive.background;
+  Color get muted => HealthyAdaptive.muted;
+  Color get border => HealthyAdaptive.border;
   static const int initialHabitSlots = 3;
   static const int maxDifficultCancellationFee = 25;
   final TextEditingController searchController = TextEditingController();
@@ -688,7 +689,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     },
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: HealthyAdaptive.surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
@@ -709,7 +710,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             ),
             Material(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               shape: const CircleBorder(),
               child: IconButton(
                 tooltip: 'Buscar hábitos',
@@ -840,7 +841,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     });
                   },
                   selectedColor: const Color(0xFFDDF5EB),
-                  backgroundColor: Colors.white,
+                  backgroundColor: HealthyAdaptive.surface,
                   labelStyle: TextStyle(
                     color: selected ? greenDark : muted,
                     fontSize: 12,
@@ -1107,7 +1108,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(21),
         border: Border.all(color: border),
         boxShadow: [
@@ -1228,7 +1229,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(19),
         border: Border.all(color: border),
       ),
