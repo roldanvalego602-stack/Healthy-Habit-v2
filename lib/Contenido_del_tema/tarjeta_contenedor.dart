@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'colores.dart';
+import '../tema/healthy_theme.dart';
 
 class TarjetaContenedor extends StatelessWidget {
   final Widget child;
@@ -15,15 +16,17 @@ class TarjetaContenedor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final standard = colorFondo == AppColores.blanco;
+    final actual = standard ? HealthyAdaptive.surface : colorFondo;
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: colorFondo,
+        color: actual,
         borderRadius: BorderRadius.circular(24),
         border:
-            colorFondo == AppColores.blanco
-                ? Border.all(color: AppColores.bordeGris, width: 1)
+            standard
+                ? Border.all(color: HealthyAdaptive.border, width: 1)
                 : null,
       ),
       child: child,
