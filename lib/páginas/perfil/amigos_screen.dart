@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'social_action_button.dart';
 import 'reaction_picker_dialog.dart';
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -265,7 +266,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
     return Row(
       children: [
         Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(16),
           child: IconButton(
             tooltip: 'Volver',
@@ -285,7 +286,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
           ),
         ),
         Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(16),
           child: IconButton(
             tooltip: 'Buscar amigos',
