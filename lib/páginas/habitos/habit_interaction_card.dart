@@ -65,7 +65,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
             backgroundColor: HealthyAdaptive.surface, color: green)),
           Column(children: [
             Text(_timed ? _clock(display) : '$_count / $_target',
-              style: const TextStyle(color: ink, fontSize: 34, fontWeight: FontWeight.w900)),
+              style: TextStyle(color: ink, fontSize: 34, fontWeight: FontWeight.w900)),
             Text(_timed ? 'Meta ${_clock(_target)}' : widget.unit,
               style: TextStyle(color: HealthyAdaptive.muted)),
           ]),
@@ -88,7 +88,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
         ]),
         const SizedBox(height: 12),
         Text(_done ? '¡Actividad lista! Guarda tu registro.' : 'Completa la actividad para guardar.',
-          textAlign: TextAlign.center, style: const TextStyle(color: ink)),
+          textAlign: TextAlign.center, style: TextStyle(color: ink)),
       ]),
     );
   }
