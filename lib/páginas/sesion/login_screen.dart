@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
@@ -11,7 +12,7 @@ import 'sobre_nosotros_screen.dart';
 
 // ---------- Palette (shared across both auth screens) ----------
 class AppColors {
-  static const navy = Color(0xFF0E1A30);
+  static Color get navy => HealthyAdaptive.text;
   static const green = Color(0xFF34C77B);
   static const greenDark = Color(0xFF1FA866);
   static const yellowBg = Color(0xFFFCEEB5);
@@ -19,9 +20,9 @@ class AppColors {
   static const purpleText = Color(0xFF8B5CF6);
   static const mintBg = Color(0xFFCFF3DD);
   static const blue = Color(0xFF3B82F6);
-  static const textDark = Color(0xFF14171F);
-  static const textGrey = Color(0xFF8A8F98);
-  static const fieldBorder = Color(0xFFE7E8EC);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get fieldBorder => HealthyAdaptive.border;
 }
 
 // =====================================================================
@@ -161,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: HealthyAdaptive.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -181,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     errorBuilder: (context, error, stackTrace) {
                       debugPrint('Error al cargar el logo: $error');
 
-                      return const Icon(
+                      return Icon(
                         Icons.image_not_supported_outlined,
                         size: 40,
                         color: AppColors.textGrey,
@@ -193,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Healthy Habit',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -205,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 6),
 
-              const Text(
+              Text(
                 'Qué bueno verte de nuevo',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: AppColors.textGrey),
@@ -293,11 +294,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child:
                       _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: HealthyAdaptive.surface,
                               strokeWidth: 2.5,
                             ),
                           )
@@ -315,17 +316,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'o',
                       style: TextStyle(color: AppColors.textGrey),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Divider(color: AppColors.fieldBorder, height: 1),
                   ),
                 ],
@@ -338,15 +339,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: OutlinedButton(
                   onPressed: _isLoading ? null : _handleGoogleLogin,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.fieldBorder),
+                    backgroundColor: HealthyAdaptive.surface,
+                    side: BorderSide(color: AppColors.fieldBorder),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       GoogleG(),
                       SizedBox(width: 10),
                       Text(
@@ -367,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textGrey,
                     ),
@@ -438,7 +439,7 @@ class _LegalLinks extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text(
+        Text(
           'Al continuar aceptas nuestros',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 12, color: AppColors.textGrey),
@@ -453,7 +454,7 @@ class _LegalLinks extends StatelessWidget {
               'Términos y condiciones',
               const TerminosCondicionesScreen(),
             ),
-            const Text(
+            Text(
               '·',
               style: TextStyle(fontSize: 14, color: AppColors.textGrey),
             ),
@@ -478,7 +479,7 @@ class FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         color: AppColors.textDark,
@@ -507,17 +508,17 @@ class AuthTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.fieldBorder),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        style: const TextStyle(fontSize: 15, color: AppColors.textDark),
+        style: TextStyle(fontSize: 15, color: AppColors.textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 15),
+          hintStyle: TextStyle(color: AppColors.textGrey, fontSize: 15),
           prefixIcon: Icon(icon, color: AppColors.textGrey, size: 20),
           suffixIcon: suffix,
           border: InputBorder.none,
