@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
@@ -28,26 +29,24 @@ class HabitTrackerApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Healthy Habit',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.page,
-        useMaterial3: true,
-      ),
+      theme: HealthyThemes.light(),
+      darkTheme: HealthyThemes.dark(),
+      themeMode: HealthyThemeController.instance.mode,
       home: const HomeScreen2(),
     );
   }
 }
 
 class AppColors {
-  static const primaryGreen = Color(0xFF08B889);
-  static const darkGreenCard = Color(0xFF143834);
-  static const textDark = Color(0xFF193344);
-  static const textGrey = Color(0xFF71879A);
-  static const yellowCard = Color(0xFFFDE89D);
-  static const blueWaterCard = Color(0xFFE8F6FC);
-  static const purpleCard = Color(0xFFF0EBFC);
-  static const mintCard = Color(0xFFE2F7ED);
-  static const page = Color(0xFFF5F8F6);
+  static Color get primaryGreen => HealthyAdaptive.accent;
+  static Color get darkGreenCard => HealthyAdaptive.isDark ? const Color(0xFF19453A) : const Color(0xFF143834);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get yellowCard => HealthyAdaptive.yellow;
+  static Color get blueWaterCard => HealthyAdaptive.water;
+  static Color get purpleCard => HealthyAdaptive.lavender;
+  static Color get mintCard => HealthyAdaptive.mint;
+  static Color get page => HealthyAdaptive.background;
 }
 
 int _number(dynamic value, [int fallback = 0]) {
@@ -106,8 +105,8 @@ class _HomeScreen2State extends State<HomeScreen2> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: HealthyAdaptive.surface,
             border: Border(top: BorderSide(color: Color(0xFFE5ECE9))),
           ),
           child: Row(
@@ -315,10 +314,10 @@ class _HomeContent extends StatelessWidget {
                 height: 38,
                 errorBuilder:
                     (_, __, ___) =>
-                        const Icon(Icons.eco, color: AppColors.primaryGreen),
+                        Icon(Icons.eco, color: AppColors.primaryGreen),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Healthy Habit',
                   style: TextStyle(
@@ -351,7 +350,7 @@ class _HomeContent extends StatelessWidget {
                         photoUrl != null && photoUrl!.isNotEmpty
                             ? NetworkImage(photoUrl!)
                             : null,
-                    child: const Icon(
+                    child: Icon(
                       Icons.person,
                       color: AppColors.primaryGreen,
                     ),
@@ -365,14 +364,14 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             '¡Hola, $name!',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w900,
               color: AppColors.textDark,
             ),
           ),
 
-          const Text(
+          Text(
             'Continúa con tus hábitos de hoy.',
             style: TextStyle(color: AppColors.textGrey),
           ),
@@ -471,7 +470,7 @@ class _HomeContent extends StatelessWidget {
               label: const Text('Ver mis estadísticas y progreso'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.darkGreenCard,
-                side: const BorderSide(color: AppColors.primaryGreen),
+                side: BorderSide(color: AppColors.primaryGreen),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -510,7 +509,7 @@ class _HomeContent extends StatelessWidget {
           // MISIÓN DEL DÍA
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Tu misión de hoy',
                   style: TextStyle(
@@ -633,7 +632,7 @@ class _HomeContent extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
 
@@ -686,7 +685,7 @@ class _HomeContent extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textDark,
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -694,7 +693,7 @@ class _HomeContent extends StatelessWidget {
           ),
           Text(
             caption,
-            style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
+            style: TextStyle(color: AppColors.textGrey, fontSize: 11),
           ),
         ],
       ),
@@ -714,12 +713,12 @@ class _HomeContent extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.flag_outlined,
               color: AppColors.primaryGreen,
               size: 40,
@@ -764,7 +763,7 @@ class _HomeContent extends StatelessWidget {
         children: [
           Text(
             category.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.primaryGreen,
               fontWeight: FontWeight.w800,
               fontSize: 11,
@@ -775,7 +774,7 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textDark,
               fontWeight: FontWeight.w900,
               fontSize: 21,
@@ -790,7 +789,7 @@ class _HomeContent extends StatelessWidget {
               value: fraction,
               minHeight: 8,
               backgroundColor: Colors.white,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
 
@@ -798,7 +797,7 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             '$progress de $target sesiones',
-            style: const TextStyle(color: AppColors.textGrey),
+            style: TextStyle(color: AppColors.textGrey),
           ),
 
           const SizedBox(height: 14),
@@ -906,7 +905,7 @@ class _HomeContent extends StatelessWidget {
                   Container(
                     width: 46,
                     height: 46,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.yellowCard,
                       shape: BoxShape.circle,
                     ),
@@ -939,7 +938,7 @@ class _HomeContent extends StatelessWidget {
 
                         Text(
                           siguiente?.nombre ?? '¡Todos los logros conseguidos!',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textDark,
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
@@ -954,7 +953,7 @@ class _HomeContent extends StatelessWidget {
                               : '${siguiente.descripcion} · '
                                   '${progreso.clamp(0, siguiente.meta)} '
                                   '/ ${siguiente.meta}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textGrey,
                             fontSize: 11,
                           ),
@@ -974,7 +973,7 @@ class _HomeContent extends StatelessWidget {
                     ),
                   ),
 
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.textGrey,
                   ),
@@ -1004,7 +1003,7 @@ class _HomeContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'MR. HEALTHY',
                   style: TextStyle(
                     color: AppColors.primaryGreen,
@@ -1014,7 +1013,7 @@ class _HomeContent extends StatelessWidget {
 
                 const SizedBox(height: 7),
 
-                const Text(
+                Text(
                   'Cada pequeño paso cuenta.',
                   style: TextStyle(color: AppColors.textDark),
                 ),
