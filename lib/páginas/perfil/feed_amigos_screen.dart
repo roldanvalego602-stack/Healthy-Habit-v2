@@ -74,7 +74,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
     return Row(
       children: [
         Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(16),
           child: IconButton(
             tooltip: 'Volver',
@@ -193,7 +193,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _C.mint,
-                    foregroundColor: _C.navy,
+                    foregroundColor: const Color(0xFF14382E),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     shape: RoundedRectangleBorder(
@@ -275,7 +275,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                 _C.avatars.length];
 
         return Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(22),
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
@@ -351,8 +351,8 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                   ),
                                   child: Text(
                                     'Nivel $nivel',
-                                    style: const TextStyle(
-                                      color: _C.green,
+                                    style: TextStyle(
+                                      color: HealthyAdaptive.accent,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
                                     ),
