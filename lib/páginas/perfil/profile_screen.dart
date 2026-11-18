@@ -35,7 +35,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: background,
         body: Center(child: Text('Inicia sesión para ver tu perfil.')),
       );
@@ -59,7 +59,7 @@ class ProfileScreen extends StatelessWidget {
                       color: green,
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'No se pudo cargar tu perfil.',
                       style: TextStyle(
                         color: navy,
@@ -90,7 +90,7 @@ class ProfileScreen extends StatelessWidget {
           );
         }
         if (!snapshot.hasData) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: background,
             body: Center(child: CircularProgressIndicator(color: green)),
           );
@@ -235,7 +235,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _header(BuildContext context) => Row(
     children: [
-      const Expanded(
+      Expanded(
         child: Text(
           'Perfil',
           style: TextStyle(
@@ -382,7 +382,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
@@ -392,7 +392,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   username.isNotEmpty ? '@$username' : email,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: muted, fontSize: 13),
+                  style: TextStyle(color: muted, fontSize: 13),
                 ),
                 const SizedBox(height: 9),
                 Container(
@@ -414,7 +414,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 9),
-                const Text(
+                Text(
                   'Pequeños pasos, raíces fuertes.',
                   style: TextStyle(color: muted, fontSize: 13),
                 ),
@@ -511,7 +511,7 @@ class ProfileScreen extends StatelessWidget {
                 child: const Icon(Icons.groups_rounded, color: green, size: 20),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Amigos',
                   style: TextStyle(
@@ -631,7 +631,7 @@ class ProfileScreen extends StatelessWidget {
                 builder:
                     (context, snap) => Text(
                       snap.hasError ? '—' : '${snap.data ?? 0}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: navy,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -639,7 +639,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 3),
-              Text(label, style: const TextStyle(color: muted, fontSize: 12)),
+              Text(label, style: TextStyle(color: muted, fontSize: 12)),
             ],
           ),
         ),
@@ -859,7 +859,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 21,
             fontWeight: FontWeight.w900,
@@ -869,7 +869,7 @@ class ProfileScreen extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: muted, fontSize: 10),
+          style: TextStyle(color: muted, fontSize: 10),
         ),
       ],
     ),
@@ -881,7 +881,7 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 21,
                 fontWeight: FontWeight.w900,
@@ -926,7 +926,7 @@ class ProfileScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'ESTANTE · MIS LOGROS',
                       style: TextStyle(
                         color: muted,
@@ -978,7 +978,7 @@ class ProfileScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Primer paso',
                             style: TextStyle(
                               color: navy,
@@ -991,7 +991,7 @@ class ProfileScreen extends StatelessWidget {
                             unlocked
                                 ? '¡Logro desbloqueado!'
                                 : 'Registra tu primer hábito',
-                            style: const TextStyle(color: muted, fontSize: 12),
+                            style: TextStyle(color: muted, fontSize: 12),
                           ),
                           const SizedBox(height: 5),
                           const Text(
@@ -1005,7 +1005,7 @@ class ProfileScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: muted),
+                    Icon(Icons.chevron_right, color: muted),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -1019,7 +1019,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Toca para ver todos los logros y desafíos.',
                   style: TextStyle(color: muted, fontSize: 11),
                 ),
@@ -1094,7 +1094,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 12,
             fontWeight: FontWeight.w900,
@@ -1103,7 +1103,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 7),
         Text(
           description,
-          style: const TextStyle(color: muted, fontSize: 10, height: 1.4),
+          style: TextStyle(color: muted, fontSize: 10, height: 1.4),
         ),
         const SizedBox(height: 12),
         ClipRRect(
@@ -1131,26 +1131,26 @@ class ProfileScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 _monthLabel(DateTime.now()),
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-            const Icon(Icons.calendar_month_rounded, color: muted),
+            Icon(Icons.calendar_month_rounded, color: muted),
           ],
         ),
         const SizedBox(height: 20),
         const Icon(Icons.insights_outlined, color: green, size: 42),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Resumen mensual pendiente de integración',
           textAlign: TextAlign.center,
           style: TextStyle(color: navy, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Aquí se mostrarán tus registros reales cuando conectemos las estadísticas.',
           textAlign: TextAlign.center,
           style: TextStyle(color: muted, fontSize: 11),
@@ -1179,7 +1179,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _customizationCard(Map<String, dynamic> data) => Column(
     children: [
-      const Row(
+      Row(
         children: [
           Icon(Icons.palette_outlined, color: green, size: 16),
           SizedBox(width: 7),
@@ -1272,11 +1272,11 @@ class ProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title, style: const TextStyle(color: muted, fontSize: 9)),
+              Text(title, style: TextStyle(color: muted, fontSize: 9)),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -1331,7 +1331,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 9),
               Text(
                 '¡$streak días cultivando tu mejor versión!',
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -1391,7 +1391,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1423,7 +1423,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         IconButton(
           onPressed: () => _open(context, const ProfesionalesScreen()),
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_forward_ios_rounded,
             color: navy,
             size: 18,
@@ -1456,7 +1456,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1476,7 +1476,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: navy),
+            Icon(Icons.chevron_right_rounded, color: navy),
           ],
         ),
       ),
@@ -1537,7 +1537,7 @@ class ProfileScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Personaliza tu perfil',
                       style: TextStyle(
                         fontSize: 21,
@@ -1546,7 +1546,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Selecciona un estilo. Los cambios se guardan en tu cuenta.',
                       style: TextStyle(color: muted, fontSize: 12),
                     ),
