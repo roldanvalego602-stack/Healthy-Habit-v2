@@ -69,9 +69,12 @@ class RankingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text(
-          'Ranking de Healthy Habit',
-          style: TextStyle(fontWeight: FontWeight.w800),
+        title: Text(
+          'Ranking',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: ink,
+          ),
         ),
         backgroundColor: background,
       ),
@@ -136,21 +139,42 @@ class RankingScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (users.length > 1)
-                      Expanded(child: _podium(users[1], 2, 118))
-                    else
-                      const Expanded(child: SizedBox()),
-                    const SizedBox(width: 8),
-                    Expanded(child: _podium(users[0], 1, 140)),
-                    const SizedBox(width: 8),
-                    if (users.length > 2)
-                      Expanded(child: _podium(users[2], 3, 105))
-                    else
-                      const Expanded(child: SizedBox()),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // En móviles estrechos, una lista evita la compresión
+                    // de nombres largos y los RenderFlex overflow.
+                    if (constraints.maxWidth < 540) {
+                      return Column(
+                        children: [
+                          _podium(users[0], 1, compact: true),
+                          if (users.length > 1) ...[
+                            const SizedBox(height: 9),
+                            _podium(users[1], 2, compact: true),
+                          ],
+                          if (users.length > 2) ...[
+                            const SizedBox(height: 9),
+                            _podium(users[2], 3, compact: true),
+                          ],
+                        ],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (users.length > 1)
+                          Expanded(child: _podium(users[1], 2))
+                        else
+                          const Expanded(child: SizedBox()),
+                        const SizedBox(width: 10),
+                        Expanded(child: _podium(users[0], 1)),
+                        const SizedBox(width: 10),
+                        if (users.length > 2)
+                          Expanded(child: _podium(users[2], 3))
+                        else
+                          const Expanded(child: SizedBox()),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 22),
               ],
@@ -216,7 +240,7 @@ class RankingScreen extends StatelessWidget {
                 child: Text(
                   inRanking ? '#${myIndex + 1}' : 'Fuera del top 100',
                   style: TextStyle(
-                    color: HealthyAdaptive.surface,
+                    color: Colors.white,
                     fontSize: 27,
                     fontWeight: FontWeight.w900,
                   ),
@@ -250,87 +274,16 @@ class RankingScreen extends StatelessWidget {
 
   Widget _podium(
     QueryDocumentSnapshot<Map<String, dynamic>> user,
-    int rank,
-    double height,
-  ) {
+    int rank, {
+    bool compact = false,
+  }) {
     final data = user.data();
-    final xp = _xp(data);
-    final level = LevelSystem.fromXp(xp);
-    final name = _name(data);
-
-    final isFirst = rank == 1;
-    final podiumColor = isFirst ? const Color(0xFFFDE89D) : Colors.white;
-
-    return Container(
-      height: height + 115,
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 12),
-      decoration: BoxDecoration(
-        color: podiumColor,
-        borderRadius: BorderRadius.circular(18),
-        border:
-            isFirst
-                ? Border.all(color: const Color(0xFFE5C55D), width: 1.5)
-                : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isFirst ? Icons.emoji_events_rounded : Icons.military_tech_rounded,
-            color: isFirst ? const Color(0xFFB88500) : green,
-            size: 29,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '#$rank',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: ink,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _levelBadge(xp, size: 43),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: ink,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Nivel ${level.number}',
-            style: TextStyle(
-              color: ink,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            level.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: muted, fontSize: 10),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            '$xp XP',
-            style: TextStyle(
-              color: ink,
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+    return RankingPodiumCard(
+      key: ValueKey('ranking-top-$rank'),
+      rank: rank,
+      name: _name(data),
+      xp: _xp(data),
+      compact: compact,
     );
   }
 
@@ -351,12 +304,12 @@ class RankingScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
-        color: isMe ? const Color(0xFFE2F7ED) : Colors.white,
+        color: isMe ? HealthyAdaptive.mint : HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(16),
         border:
             isMe
                 ? Border.all(color: green, width: 1.5)
-                : Border.all(color: const Color(0xFFE6EFEB)),
+                : Border.all(color: HealthyAdaptive.border),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -375,7 +328,7 @@ class RankingScreen extends StatelessWidget {
             ),
             CircleAvatar(
               radius: 19,
-              backgroundColor: const Color(0xFFE2F7ED),
+              backgroundColor: HealthyAdaptive.mint,
               backgroundImage: hasPhoto ? NetworkImage(photo) : null,
               child:
                   hasPhoto
@@ -451,6 +404,142 @@ class RankingScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+@visibleForTesting
+class RankingPodiumCard extends StatelessWidget {
+  const RankingPodiumCard({
+    super.key,
+    required this.rank,
+    required this.name,
+    required this.xp,
+    this.compact = false,
+  });
+
+  final int rank;
+  final String name;
+  final int xp;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = LevelSystem.fromXp(xp);
+    final first = rank == 1;
+    final dark = HealthyAdaptive.isDark;
+    // Cada tarjeta define su propio par fondo/texto: nunca texto blanco
+    // sobre dorado claro o plata clara.
+    final bg = first
+        ? (dark ? const Color(0xFF4B3B24) : const Color(0xFFFFF0BD))
+        : rank == 2
+            ? (dark ? const Color(0xFF253746) : const Color(0xFFEAF0F4))
+            : (dark ? const Color(0xFF36312D) : const Color(0xFFF4E8DF));
+    final fg = dark ? const Color(0xFFF1F5F6) : const Color(0xFF24303A);
+    final secondary = dark
+        ? const Color(0xFFB8C6CF)
+        : const Color(0xFF52626F);
+    final accent = first
+        ? (dark ? const Color(0xFFFFD477) : const Color(0xFF956413))
+        : rank == 2
+            ? (dark ? const Color(0xFFB9DAEC) : const Color(0xFF53758C))
+            : (dark ? const Color(0xFFE5B89B) : const Color(0xFF956E57));
+
+    final badge = Container(
+      width: compact ? 46 : 54,
+      height: compact ? 46 : 54,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.13),
+        shape: BoxShape.circle,
+        border: Border.all(color: accent.withValues(alpha: 0.5)),
+      ),
+      child: Icon(level.icon, color: accent, size: compact ? 26 : 29),
+    );
+
+    final mainInfo = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: compact
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        Text(
+          name,
+          maxLines: compact ? 2 : 3,
+          overflow: TextOverflow.ellipsis,
+          textAlign: compact ? TextAlign.start : TextAlign.center,
+          style: TextStyle(
+            color: fg,
+            fontWeight: FontWeight.w800,
+            fontSize: compact ? 15 : 14,
+            height: 1.22,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'Nivel ${level.number} · ${level.name}',
+          maxLines: compact ? 2 : 3,
+          overflow: TextOverflow.ellipsis,
+          textAlign: compact ? TextAlign.start : TextAlign.center,
+          style: TextStyle(color: secondary, fontSize: 12, height: 1.3),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$xp XP',
+          style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 13),
+        ),
+      ],
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.65), width: 1.3),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 10,
+        vertical: compact ? 12 : 18,
+      ),
+      child: compact
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  first ? Icons.emoji_events_rounded : Icons.military_tech_rounded,
+                  color: accent,
+                  size: 26,
+                ),
+                const SizedBox(width: 9),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '#$rank',
+                    style: TextStyle(color: fg, fontSize: 19,
+                      fontWeight: FontWeight.w900),
+                  ),
+                ),
+                badge,
+                const SizedBox(width: 12),
+                Expanded(child: mainInfo),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  first ? Icons.emoji_events_rounded : Icons.military_tech_rounded,
+                  color: accent,
+                  size: 29,
+                ),
+                const SizedBox(height: 6),
+                Text('#$rank', style: TextStyle(
+                  color: fg, fontSize: 22, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                badge,
+                const SizedBox(height: 12),
+                mainInfo,
+              ],
+            ),
     );
   }
 }
