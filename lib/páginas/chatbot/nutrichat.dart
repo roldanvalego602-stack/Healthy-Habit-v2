@@ -441,7 +441,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     padding: EdgeInsets.fromLTRB(14, 8, 14, keyboardVisible ? 8 : 12),
     decoration: BoxDecoration(
       color: _background,
-      border: Border(top: BorderSide(color: Color(0xFFE5EEE9))),
+      border: Border(top: BorderSide(color: HealthyAdaptive.border)),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -451,7 +451,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           decoration: BoxDecoration(
             color: HealthyAdaptive.surface,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFDDE8E2)),
+            border: Border.all(color: HealthyAdaptive.border),
           ),
           child: Row(
             children: [
@@ -483,7 +483,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 style: IconButton.styleFrom(
                   backgroundColor: const Color(0xFF8DE0C0),
                   foregroundColor: _navy,
-                  disabledBackgroundColor: const Color(0xFFE5EEE9),
+                  disabledBackgroundColor: HealthyAdaptive.border,
                 ),
               ),
             ],
@@ -516,7 +516,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser ? _navy : const Color(0xFFE2F7ED),
+          color: isUser ? _navy : HealthyAdaptive.mint,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
