@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'reaction_picker_dialog.dart';
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -8,12 +9,12 @@ import 'perfil_muestra.dart';
 class _C {
   static const green = Color(0xFF198568);
   static const mint = Color(0xFF8DE0C0);
-  static const navy = Color(0xFF173544);
-  static const background = Color(0xFFF4F8F5);
+  static Color get navy => HealthyAdaptive.text;
+  static Color get background => HealthyAdaptive.background;
   static const gold = Color(0xFFD5A33E);
-  static const grey = Color(0xFF8496A0);
-  static const border = Color(0xFFE3ECE7);
-  static const mintSoft = Color(0xFFE2F4EB);
+  static Color get grey => HealthyAdaptive.muted;
+  static Color get border => HealthyAdaptive.border;
+  static Color get mintSoft => HealthyAdaptive.mint;
 
   static const avatars = [
     Color(0xFF198568),
@@ -121,18 +122,18 @@ class _AmigosScreenState extends State<AmigosScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22),
             ),
-            title: const Text(
+            title: Text(
               'Dejar de seguir',
               style: TextStyle(color: _C.navy, fontWeight: FontWeight.w900),
             ),
             content: Text(
               '¿Quieres dejar de seguir a $nombre?',
-              style: const TextStyle(color: _C.grey, height: 1.4),
+              style: TextStyle(color: _C.grey, height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancelar', style: TextStyle(color: _C.grey)),
+                child: Text('Cancelar', style: TextStyle(color: _C.grey)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
@@ -269,11 +270,11 @@ class _AmigosScreenState extends State<AmigosScreen> {
           child: IconButton(
             tooltip: 'Volver',
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_rounded, color: _C.navy),
+            icon: Icon(Icons.arrow_back_rounded, color: _C.navy),
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Text(
             'Amigos',
             style: TextStyle(
@@ -289,7 +290,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
           child: IconButton(
             tooltip: 'Buscar amigos',
             onPressed: _abrirBuscar,
-            icon: const Icon(Icons.person_add_alt_1_rounded, color: _C.navy),
+            icon: Icon(Icons.person_add_alt_1_rounded, color: _C.navy),
           ),
         ),
       ],
@@ -484,13 +485,13 @@ class _AmigosScreenState extends State<AmigosScreen> {
               _tab == 0
                   ? 'Buscar entre quienes sigues...'
                   : 'Buscar seguidor...',
-          hintStyle: const TextStyle(color: _C.grey, fontSize: 14),
-          prefixIcon: const Icon(Icons.search, color: _C.grey),
+          hintStyle: TextStyle(color: _C.grey, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: _C.grey),
           suffixIcon:
               _q.isEmpty
                   ? null
                   : IconButton(
-                    icon: const Icon(Icons.close_rounded, color: _C.grey),
+                    icon: Icon(Icons.close_rounded, color: _C.grey),
                     onPressed: _search.clear,
                   ),
           border: InputBorder.none,
@@ -630,7 +631,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                       nombre,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _C.navy,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -641,7 +642,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                         user,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: _C.grey, fontSize: 12),
+                        style: TextStyle(color: _C.grey, fontSize: 12),
                       ),
                     const SizedBox(height: 5),
                     Row(
@@ -667,7 +668,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                         const SizedBox(width: 8),
                         Text(
                           '$racha días 🔥',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _C.navy,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -684,7 +685,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                 Material(
                   color: Colors.transparent,
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.add_reaction_outlined,
                       color: _C.grey,
                     ),
@@ -859,7 +860,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                   nombre,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _C.navy,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -870,7 +871,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                     user,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: _C.grey, fontSize: 12),
+                    style: TextStyle(color: _C.grey, fontSize: 12),
                   ),
                 const SizedBox(height: 5),
                 Container(
@@ -910,7 +911,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
               child: IconButton(
                 tooltip: 'Rechazar',
                 onPressed: () => _rechazar(uid, nombre),
-                icon: const Icon(Icons.close_rounded, color: _C.grey),
+                icon: Icon(Icons.close_rounded, color: _C.grey),
               ),
             ),
             Material(
@@ -944,7 +945,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             Container(
               width: 76,
               height: 76,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: _C.mintSoft,
                 shape: BoxShape.circle,
               ),
@@ -954,7 +955,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _C.navy,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
@@ -964,7 +965,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             Text(
               detalle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
+              style: TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
             ),
             if (accion != null && onAccion != null) ...[
               const SizedBox(height: 18),
