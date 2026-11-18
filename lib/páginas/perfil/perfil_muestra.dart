@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -32,8 +33,8 @@ class PublicProfileScreen extends StatefulWidget {
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   static const Color green = Color(0xFF198568);
   static const Color mint = Color(0xFF8DE0C0);
-  static const Color navy = Color(0xFF173544);
-  static const Color background = Color(0xFFF4F8F5);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
   static const Color gold = Color(0xFFD5A33E);
   bool _isLoading = false;
 
@@ -163,12 +164,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             elevation: 0,
             scrolledUnderElevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: navy),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: navy),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
               username,
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -291,7 +292,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: mint, width: 2),
                   ),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     backgroundColor: Color(0xFFE6F1EC),
                     child: Icon(Icons.person_rounded, size: 50, color: green),
                   ),
@@ -300,7 +301,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -524,7 +525,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 20,
               fontWeight: FontWeight.w900,
@@ -544,7 +545,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: navy,
         fontSize: 20,
         fontWeight: FontWeight.w900,
@@ -594,7 +595,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         const SizedBox(height: 8),
         Text(
           name,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 11,
             fontWeight: FontWeight.w800,
@@ -618,7 +619,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           Expanded(
             child: Text(
               '¡Acompaña a $name a mantener sus hábitos saludables!',
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
