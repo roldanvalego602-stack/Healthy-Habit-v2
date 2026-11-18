@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 class NotificationItem {
   final String id;
@@ -36,10 +37,10 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   // Paleta de colores oficial
   static const Color green = Color(0xFF198568);
-  static const Color navy = Color(0xFF172B36);
-  static const Color background = Color(0xFFF7F9F8);
-  static const Color textMuted = Color(0xFF7A869A);
-  static const Color borderCard = Color(0xFFE5EEE9);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
+  Color get textMuted => HealthyAdaptive.muted;
+  Color get borderCard => HealthyAdaptive.border;
 
   // Lista de notificaciones mapeada a la imagen
   final List<NotificationItem> todayNotifications = [
@@ -161,10 +162,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: navy),
+          icon: Icon(Icons.arrow_back, color: navy),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Notificaciones',
           style: TextStyle(
             color: navy,
@@ -186,7 +187,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.notifications_none_rounded,
                         color: navy,
                         size: 22,
@@ -194,7 +195,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '$totalUnread sin leer',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: navy,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -253,7 +254,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ],
 
               // Pie de página descriptivo
-              const Center(
+              Center(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: 20),
                   child: Text(
@@ -276,7 +277,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.w900,
         color: navy,
@@ -289,7 +290,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: borderCard, width: 1),
       ),
@@ -340,7 +341,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         Expanded(
                           child: Text(
                             item.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: navy,
@@ -363,7 +364,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       item.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         color: textMuted,
                         height: 1.35,
@@ -380,7 +381,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // Tiempo transcurrido
           Text(
             item.timeText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               color: textMuted,
               fontWeight: FontWeight.w500,
