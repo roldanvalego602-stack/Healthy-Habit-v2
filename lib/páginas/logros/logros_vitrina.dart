@@ -24,8 +24,11 @@ class VitrinaRarezas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final mainText = dark ? Colors.white : const Color(0xFF183341);
+    final secondaryText = dark ? const Color(0xFFAFBBC4) : const Color(0xFF50636C);
     return Material(
-      color: const Color(0xFF101923),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         top: false,
         child: ListView(
@@ -34,27 +37,27 @@ class VitrinaRarezas extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Expanded(child: Text(
+                Expanded(child: Text(
                   'JERARQUÍA DE INSIGNIAS',
-                  style: TextStyle(color: Colors.white, fontSize: 15,
+                  style: TextStyle(color: mainText, fontSize: 15,
                     letterSpacing: 1.1, fontWeight: FontWeight.bold),
                 )),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   tooltip: 'Cerrar',
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  icon: Icon(Icons.close_rounded, color: mainText),
                 ),
               ],
             ),
-            const Text('Vista previa de los efectos. No desbloquea logros ni da recompensas.',
-              style: TextStyle(color: Color(0xFFAFBBC4), fontSize: 12)),
+            Text('Vista previa de los efectos. No desbloquea logros ni da recompensas.',
+              style: TextStyle(color: secondaryText, fontSize: 12)),
             const SizedBox(height: 14),
             for (var i = 0; i < RarezaLogro.values.length; i++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B2935),
+                    color: dark ? const Color(0xFF1B2935) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: colorRareza(RarezaLogro.values[i]).withOpacity(0.65),
@@ -85,8 +88,8 @@ class VitrinaRarezas extends StatelessWidget {
                             const SizedBox(height: 6),
                             Text(descriptions[i],
                               softWrap: true,
-                              style: const TextStyle(
-                                color: Color(0xFFDAE2E8),
+                              style: TextStyle(
+                                color: mainText,
                                 height: 1.35, fontSize: 12.5),
                             ),
                           ],
