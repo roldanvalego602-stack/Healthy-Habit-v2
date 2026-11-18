@@ -227,7 +227,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 label: const Text('Armario'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _ink,
-                  backgroundColor: Colors.white,
+                  backgroundColor: HealthyAdaptive.surface,
                   side: const BorderSide(color: Color(0xFFB8DCD0)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -258,7 +258,7 @@ class _StoreScreenState extends State<StoreScreen> {
             onSelected: (_) => setState(() => _filter = category),
             showCheckmark: false,
             selectedColor: _green,
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             side: BorderSide(
               color: selected ? _green : const Color(0xFFB8DCD0),
             ),
@@ -405,7 +405,7 @@ class _StoreScreenState extends State<StoreScreen> {
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
-            color: Colors.white.withValues(alpha: 0.88),
+            color: HealthyAdaptive.surface.withValues(alpha: 0.93),
             child: Row(
               children: [
                 _coinIcon(size: 25),
