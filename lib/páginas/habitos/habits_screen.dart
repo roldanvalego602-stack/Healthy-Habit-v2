@@ -899,7 +899,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       decoration: BoxDecoration(
         color: categoryBg(habit.category),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: HealthyAdaptive.border, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.08),
@@ -1084,7 +1084,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           child: LinearProgressIndicator(
             value: target > 0 ? (progress / target).clamp(0.0, 1.0) : 0,
             minHeight: 7,
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
