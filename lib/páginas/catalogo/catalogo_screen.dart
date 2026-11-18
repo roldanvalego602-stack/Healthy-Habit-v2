@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'datos/catalogo_datos.dart';
 import 'detalles/catalogo_detalle_screen.dart';
 import 'modelos/catalogo_item.dart';
@@ -12,10 +13,10 @@ class CatalogoScreen extends StatefulWidget {
 
 class _CatalogoScreenState extends State<CatalogoScreen>
     with SingleTickerProviderStateMixin {
-  static const _verde = Color(0xFF08B889);
-  static const _oscuro = Color(0xFF193344);
-  static const _fondo = Color(0xFFF5F8F6);
-  static const _gris = Color(0xFF71879A);
+  Color get _verde => HealthyAdaptive.accent;
+  Color get _oscuro => HealthyAdaptive.text;
+  Color get _fondo => HealthyAdaptive.background;
+  Color get _gris => HealthyAdaptive.muted;
   late final TabController _tabs;
   final _buscador = TextEditingController();
   String _filtro = 'Todos';
@@ -98,7 +99,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         backgroundColor: _fondo,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Catálogo',
           style: TextStyle(
             fontWeight: FontWeight.w900,
@@ -106,7 +107,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             color: _oscuro,
           ),
         ),
-        actions: const [
+        actions: [
           Padding(
             padding: EdgeInsets.only(right: 20),
             child: Icon(Icons.menu_book_outlined, color: _verde),
@@ -138,7 +139,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               decoration: InputDecoration(
                 hintText:
                     'Buscar en ${['alimentos', 'ejercicios', 'consejos'][_tabs.index]}...',
-                prefixIcon: const Icon(Icons.search, color: _gris),
+                prefixIcon: Icon(Icons.search, color: _gris),
                 suffixIcon:
                     _buscador.text.isEmpty
                         ? null
@@ -185,7 +186,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
           Expanded(
             child:
                 resultados.isEmpty
-                    ? const Center(
+                    ? Center(
                       child: Text(
                         'No se encontraron resultados.',
                         style: TextStyle(color: _gris),
@@ -199,7 +200,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Material(
-                            color: Colors.white,
+                            color: HealthyAdaptive.surface,
                             borderRadius: BorderRadius.circular(20),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(20),
@@ -220,7 +221,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                       item.imagen,
                                       height: 138,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const SizedBox(height: 138, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 48, color: _verde))),
+                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 48, color: _verde))),
                                     ),
                                   ),
                                   Padding(
@@ -248,7 +249,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                         children: [
                                           Text(
                                             item.titulo,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: _oscuro,
                                               fontWeight: FontWeight.w800,
                                               fontSize: 16,
@@ -259,7 +260,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                             item.descripcion,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               color: _gris,
                                               fontSize: 12,
                                             ),
@@ -276,7 +277,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                         ],
                                       ),
                                     ),
-                                    const Icon(
+                                    Icon(
                                       Icons.chevron_right,
                                       color: _gris,
                                     ),
