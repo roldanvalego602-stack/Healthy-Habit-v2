@@ -14,9 +14,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   static const green = Color(0xFF198568);
-  static const navy = Color(0xFF172B36);
-  static const muted = Color(0xFF7A869A);
-  static const bg = Color(0xFFF7F9F8);
+  Color get navy => Theme.of(context).colorScheme.onSurface;
+  Color get muted => Theme.of(context).colorScheme.onSurfaceVariant;
+  Color get bg => Theme.of(context).scaffoldBackgroundColor;
+  Color get panel => Theme.of(context).colorScheme.surface;
+  Color get panelBorder => Theme.of(context).colorScheme.outlineVariant;
   static const categories = [
     'Alimentación',
     'Hidratación',
@@ -407,15 +409,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: panel,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5EEE9)),
+                border: Border.all(color: panelBorder),
               ),
               child: Column(
                 children: [
                   for (var i = 0; i < children.length; i++) ...[
                     if (i > 0)
-                      const Divider(height: 1, color: Color(0xFFF2F5F3)),
+                      Divider(height: 1, color: panelBorder),
                     children[i],
                   ],
                 ],
@@ -435,7 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     dense: true,
     title: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: navy,
         fontSize: 13.5,
         fontWeight: FontWeight.w700,
@@ -451,7 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               value,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: muted),
+              style: TextStyle(fontSize: 12, color: muted),
             ),
           ),
         const Icon(Icons.chevron_right, color: muted, size: 19),
@@ -466,7 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         dense: true,
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
@@ -477,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? null
                 : Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 11, color: muted),
+                  style: TextStyle(fontSize: 11, color: muted),
                 ),
         value: _bool(key),
         activeTrackColor: green,
@@ -500,7 +502,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: bg,
-        title: const Text(
+        title: Text(
           'Configuración',
           style: TextStyle(color: navy, fontWeight: FontWeight.w900),
         ),
@@ -698,8 +700,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _toggle('efectosRecompensa', 'Efectos visuales de recompensa'),
             _toggle('modoDiscreto', 'Modo discreto'),
           ]),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 14),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
             child: Text(
               'Los ajustes de visualización, funciones sociales, IA y avisos se guardan en tu cuenta. Para aplicarlos en todas las pantallas, cada módulo debe leer estas preferencias.',
               style: TextStyle(color: muted, fontSize: 12),
