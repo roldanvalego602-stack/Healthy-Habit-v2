@@ -448,7 +448,7 @@ class _HomeContent extends StatelessWidget {
                   Icons.check_circle_outline,
                   '$completed / $total',
                   'Hábitos completados',
-                  Colors.white,
+                  HealthyAdaptive.surfaceAlt,
                 ),
               ),
             ],
@@ -469,7 +469,7 @@ class _HomeContent extends StatelessWidget {
               icon: const Icon(Icons.insights_rounded),
               label: const Text('Ver mis estadísticas y progreso'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkGreenCard,
+                foregroundColor: AppColors.primaryGreen,
                 side: BorderSide(color: AppColors.primaryGreen),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
