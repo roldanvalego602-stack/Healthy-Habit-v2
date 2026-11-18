@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../Contenido_del_tema/colores.dart';
@@ -168,19 +169,19 @@ class ProfesionalesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColores.fondoClaro,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+          icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Orientación profesional',
           style: TextStyle(
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
             fontWeight: FontWeight.w900,
             fontSize: 22,
           ),
@@ -192,20 +193,20 @@ class ProfesionalesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Contactos',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColores.textoOscuro,
+                color: HealthyAdaptive.text,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Habla con profesionales de la salud para obtener resultados óptimos y saludables.',
               style: TextStyle(
                 fontSize: 13,
-                color: AppColores.textoGris,
+                color: HealthyAdaptive.muted,
                 height: 1.3,
               ),
             ),
@@ -222,7 +223,7 @@ class ProfesionalesScreen extends StatelessWidget {
                 color: const Color(0xFFF0EBFC),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
@@ -236,7 +237,7 @@ class ProfesionalesScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      color: AppColores.textoOscuro,
+                      color: HealthyAdaptive.text,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -244,7 +245,7 @@ class ProfesionalesScreen extends StatelessWidget {
                     'Mr. Healthy ofrece información general y no sustituye a un profesional de salud. Estos contactos externos son para orientación individual.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColores.textoGris,
+                      color: HealthyAdaptive.muted,
                       height: 1.4,
                     ),
                   ),
@@ -267,7 +268,7 @@ class ProfesionalesScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColores.bordeGris, width: 1),
+        border: Border.all(color: HealthyAdaptive.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,13 +278,13 @@ class ProfesionalesScreen extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
-                  color: AppColores.verdeMenta,
+                decoration: BoxDecoration(
+                  color: HealthyAdaptive.mint,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_outline_rounded,
-                  color: AppColores.verdeOscuro,
+                  color: HealthyAdaptive.accent,
                   size: 24,
                 ),
               ),
@@ -294,18 +295,18 @@ class ProfesionalesScreen extends StatelessWidget {
                   children: [
                     Text(
                       profesional.nombre,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: AppColores.textoOscuro,
+                        color: HealthyAdaptive.text,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       profesional.especialidad,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColores.textoGris,
+                        color: HealthyAdaptive.muted,
                       ),
                     ),
                   ],
@@ -322,18 +323,18 @@ class ProfesionalesScreen extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.call_outlined,
                     size: 17,
-                    color: AppColores.verdeOscuro,
+                    color: HealthyAdaptive.accent,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Tel. ${profesional.telefono}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColores.verdeOscuro,
+                      color: HealthyAdaptive.accent,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -344,7 +345,7 @@ class ProfesionalesScreen extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             profesional.horario,
-            style: const TextStyle(fontSize: 12, color: AppColores.textoGris),
+            style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
           ),
           const SizedBox(height: 16),
           Row(
@@ -363,8 +364,8 @@ class ProfesionalesScreen extends StatelessWidget {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColores.verdeMenta,
-                      foregroundColor: AppColores.verdeOscuro,
+                      backgroundColor: HealthyAdaptive.mint,
+                      foregroundColor: HealthyAdaptive.accent,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       shape: RoundedRectangleBorder(
@@ -389,8 +390,8 @@ class ProfesionalesScreen extends StatelessWidget {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColores.textoOscuro,
-                      side: const BorderSide(color: AppColores.bordeGris),
+                      foregroundColor: HealthyAdaptive.text,
+                      side: BorderSide(color: HealthyAdaptive.border),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
