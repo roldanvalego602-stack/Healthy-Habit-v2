@@ -151,7 +151,7 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
                 const SizedBox(height: 5),
                 Container(height: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily,
                   margin: const EdgeInsets.symmetric(horizontal: 5),
-                  decoration: BoxDecoration(color: (daily[_key(day)] ?? 0) == 0 ? const Color(0xFFE6ECE9) : mint,
+                  decoration: BoxDecoration(color: (daily[_key(day)] ?? 0) == 0 ? HealthyAdaptive.border : mint,
                     borderRadius: BorderRadius.circular(7))),
                 const SizedBox(height: 6),
                 Text(['L','M','X','J','V','S','D'][day.weekday-1], style: TextStyle(fontSize: 12, color: ink)),
