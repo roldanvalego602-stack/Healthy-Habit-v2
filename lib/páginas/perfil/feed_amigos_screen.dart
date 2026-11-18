@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -9,11 +10,11 @@ import 'perfil_muestra.dart';
 class _C {
   static const green = Color(0xFF198568);
   static const mint = Color(0xFF8DE0C0);
-  static const navy = Color(0xFF173544);
-  static const background = Color(0xFFF4F8F5);
-  static const grey = Color(0xFF8496A0);
-  static const border = Color(0xFFE3ECE7);
-  static const mintSoft = Color(0xFFE2F4EB);
+  static Color get navy => HealthyAdaptive.text;
+  static Color get background => HealthyAdaptive.background;
+  static Color get grey => HealthyAdaptive.muted;
+  static Color get border => HealthyAdaptive.border;
+  static Color get mintSoft => HealthyAdaptive.mint;
   static const gold = Color(0xFFD5A33E);
 
   static const avatars = [
@@ -78,11 +79,11 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
           child: IconButton(
             tooltip: 'Volver',
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_rounded, color: _C.navy),
+            icon: Icon(Icons.arrow_back_rounded, color: _C.navy),
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Text(
             'Feed de progreso',
             style: TextStyle(
@@ -157,7 +158,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Container(
               width: 76,
               height: 76,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: _C.mintSoft,
                 shape: BoxShape.circle,
               ),
@@ -167,7 +168,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _C.navy,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
@@ -177,7 +178,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Text(
               detalle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
+              style: TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
             ),
             if (accion != null && onAccion != null) ...[
               const SizedBox(height: 18),
@@ -331,7 +332,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                               nombre,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _C.navy,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
@@ -360,7 +361,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Text(
                                   '$racha días 🔥',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: _C.navy,
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -377,7 +378,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Progreso de nivel',
                         style: TextStyle(
                           color: _C.grey,
@@ -387,7 +388,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       ),
                       Text(
                         '$xpActual / $xpSiguiente XP',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _C.navy,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
@@ -415,7 +416,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                             '🏅 $logro',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: _C.navy,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
