@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../tema/healthy_theme.dart';
 import '../modelos/catalogo_item.dart';
 
@@ -52,12 +53,13 @@ class CatalogoDetalleScreen extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Image.asset(
+            child: SvgPicture.asset(
               item.imagen,
+              semanticsLabel: 'Ilustración de ${item.titulo}',
               height: 190,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => SizedBox(height: 190, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 56, color: _verde))),
+              errorBuilder: (_, __, ___) => SizedBox(height: 190, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(_icono, size: 56, color: _verde))),
             ),
           ),
           const SizedBox(height: 14),
@@ -73,7 +75,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE4F7EF),
+                    color: HealthyAdaptive.mint,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(_icono, size: 36, color: _verde),
@@ -229,7 +231,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
   Widget _chip(String s) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
     decoration: BoxDecoration(
-      color: const Color(0xFFE4F7EF),
+      color: HealthyAdaptive.mint,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
@@ -280,7 +282,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                         numerada
                             ? CircleAvatar(
                               radius: 12,
-                              backgroundColor: const Color(0xFFE4F7EF),
+                              backgroundColor: HealthyAdaptive.mint,
                               child: Text(
                                 '${e.key + 1}',
                                 style: TextStyle(
