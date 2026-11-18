@@ -118,7 +118,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22),
             ),
@@ -453,7 +453,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(19),
         boxShadow: [
           BoxShadow(color: _C.navy.withValues(alpha: 0.05), blurRadius: 12),
@@ -472,7 +472,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
   Widget _buscador() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
@@ -597,7 +597,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
             _C.avatars.length];
 
     return Material(
-      color: Colors.white,
+      color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
@@ -833,7 +833,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _C.border),
       ),
