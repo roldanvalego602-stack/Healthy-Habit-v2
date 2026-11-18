@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'logros_service.dart';
 import 'logro_insignia.dart';
 import 'logros_vitrina.dart';
+import '../../tema/healthy_theme.dart';
 
 class LogrosScreen extends StatelessWidget {
   const LogrosScreen({super.key});
@@ -20,8 +21,8 @@ class LogrosScreen extends StatelessWidget {
       backgroundColor: _Palette.bg,
       appBar: AppBar(
         backgroundColor: _Palette.bg,
-        foregroundColor: Colors.white,
-        title: const Text('Logros', style: TextStyle(fontWeight: FontWeight.w800)),
+        foregroundColor: _Palette.white,
+        title: Text('Logros', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
@@ -64,18 +65,26 @@ class _Status extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(padding: const EdgeInsets.all(24),
-      child: Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70))),
+      child: Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.white70))),
   );
 }
 class _Palette {
-  static const bg = Color(0xFF101923);
-  static const panel = Color(0xFF1B2935);
-  static const border = Color(0xFF344553);
-  static const green = Color(0xFF6CD3A1);
-  static const white = Color(0xFFF1F5F6);
-  static const secondary = Color(0xFFAFBBC4);
-  static const gold = Color(0xFFEBC77A);
-  static const muted = Color(0xFF748393);
+  static bool get dark {
+    final selected = HealthyThemeController.instance.mode;
+    if (selected == ThemeMode.dark) return true;
+    if (selected == ThemeMode.light) return false;
+    return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
+  }
+
+  static Color get bg => dark ? const Color(0xFF101923) : const Color(0xFFF4F8F7);
+  static Color get panel => dark ? const Color(0xFF1B2935) : Colors.white;
+  static Color get border => dark ? const Color(0xFF344553) : const Color(0xFFD5E2E0);
+  static Color get green => dark ? const Color(0xFF6CD3A1) : const Color(0xFF087D61);
+  static Color get white => dark ? const Color(0xFFF1F5F6) : const Color(0xFF183341);
+  static Color get secondary => dark ? const Color(0xFFAFBBC4) : const Color(0xFF50636C);
+  static Color get gold => dark ? const Color(0xFFEBC77A) : const Color(0xFF98712F);
+  static Color get muted => dark ? const Color(0xFF748393) : const Color(0xFF66818D);
 }
 class LogroVista {
   const LogroVista({required this.definicion, required this.progreso});
@@ -117,14 +126,16 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
               key: const Key('logros-resumen'),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF243E48), Color(0xFF17252F)]),
+                gradient: LinearGradient(colors: _Palette.dark
+                  ? const [Color(0xFF243E48), Color(0xFF17252F)]
+                  : const [Color(0xFFE4F4ED), Color(0xFFF9FCFA)]),
                 border: Border.all(color: _Palette.border),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(children: [
+                  Row(children: [
                     Icon(Icons.emoji_events_outlined, size: 20, color: _Palette.gold),
                     SizedBox(width: 8),
                     Flexible(child: Text('VITRINA DE LOGROS',
@@ -134,19 +145,19 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
                   const SizedBox(height: 12),
                   Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 10, runSpacing: 6,
                     children: [
-                      Text('${unlocked} / ${total}', style: const TextStyle(
+                      Text('${unlocked} / ${total}', style: TextStyle(
                         color: _Palette.white, fontSize: 30, fontWeight: FontWeight.w900)),
-                      const Text('insignias conseguidas',
+                      Text('insignias conseguidas',
                         style: TextStyle(color: _Palette.secondary, fontSize: 13)),
                     ]),
                   const SizedBox(height: 12),
                   ClipRRect(borderRadius: BorderRadius.circular(5),
                     child: LinearProgressIndicator(
                       value: ratio, minHeight: 7, backgroundColor: _Palette.bg,
-                      valueColor: const AlwaysStoppedAnimation<Color>(_Palette.green))),
+                      valueColor: AlwaysStoppedAnimation<Color>(_Palette.green))),
                   const SizedBox(height: 8),
                   Text('${(ratio * 100).round()}% de la colección',
-                    style: const TextStyle(color: _Palette.secondary, fontSize: 12)),
+                    style: TextStyle(color: _Palette.secondary, fontSize: 12)),
                 ],
               ),
             ),
@@ -159,25 +170,25 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
                   context: context,
                   isScrollControlled: true,
                   useSafeArea: true,
-                  backgroundColor: const Color(0xFF101923),
+                  backgroundColor: _Palette.bg,
                   builder: (_) => const FractionallySizedBox(
                     heightFactor: 0.82,
                     child: VitrinaRarezas(),
                   ),
                 ),
-                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
-                label: const Text('Explorar las cinco rarezas'),
+                icon: Icon(Icons.auto_awesome_rounded, size: 17),
+                label: Text('Explorar las cinco rarezas'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFBBDAD2),
-                  side: const BorderSide(color: Color(0xFF4C6C6A)),
+                  foregroundColor: _Palette.green,
+                  side: BorderSide(color: _Palette.border),
                 ),
               ),
             ),
             const SizedBox(height: 15),
-            const Text('TU COLECCIÓN', style: TextStyle(color: _Palette.white,
+            Text('TU COLECCIÓN', style: TextStyle(color: _Palette.white,
               letterSpacing: 1.5, fontSize: 13, fontWeight: FontWeight.w800)),
             const SizedBox(height: 5),
-            const Text('Cada insignia refleja una meta alcanzada.',
+            Text('Cada insignia refleja una meta alcanzada.',
               style: TextStyle(color: _Palette.secondary, fontSize: 13)),
             const SizedBox(height: 13),
             Wrap(key: const Key('logros-filtros'), spacing: 8, runSpacing: 8,
@@ -194,14 +205,14 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
               Container(padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(color: _Palette.panel,
                   borderRadius: BorderRadius.circular(12)),
-                child: const Text('Todavía no hay logros en esta sección.',
+                child: Text('Todavía no hay logros en esta sección.',
                   textAlign: TextAlign.center, style: TextStyle(color: _Palette.secondary)))
             else
               ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: LogroSteamCard(item: item))),
             const SizedBox(height: 8),
-            const Text('Las insignias muestran progreso, sin generar XP ni monedas adicionales.',
+            Text('Las insignias muestran progreso, sin generar XP ni monedas adicionales.',
               style: TextStyle(color: _Palette.secondary, fontSize: 12)),
           ],
         ),
@@ -256,7 +267,7 @@ class LogroSteamCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(achievement.nombre, softWrap: true,
-              style: const TextStyle(color: _Palette.white,
+              style: TextStyle(color: _Palette.white,
                 fontSize: 15, fontWeight: FontWeight.w800, height: 1.25)),
             const SizedBox(height: 5),
             Text(
@@ -270,18 +281,18 @@ class LogroSteamCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(achievement.descripcion, softWrap: true,
-              style: const TextStyle(color: _Palette.secondary,
+              style: TextStyle(color: _Palette.secondary,
                 fontSize: 12.5, height: 1.3)),
             const SizedBox(height: 10),
             if (unlocked)
               Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.check_circle_rounded, size: 15, color: _Palette.green),
+                Icon(Icons.check_circle_rounded, size: 15, color: _Palette.green),
                 const SizedBox(width: 6),
                 Flexible(child: Text(
                   achievement.id == LogrosService.primerPasoId
                     ? 'Desbloqueado · recompensa inicial existente'
                     : 'Logro desbloqueado',
-                  softWrap: true, style: const TextStyle(color: _Palette.green,
+                  softWrap: true, style: TextStyle(color: _Palette.green,
                     fontSize: 11.5, fontWeight: FontWeight.w700))),
               ])
             else ...[
@@ -289,10 +300,10 @@ class LogroSteamCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: item.proporcion, minHeight: 5,
                   backgroundColor: _Palette.bg,
-                  valueColor: const AlwaysStoppedAnimation<Color>(_Palette.muted))),
+                  valueColor: AlwaysStoppedAnimation<Color>(_Palette.muted))),
               const SizedBox(height: 6),
               Text('${item.progreso.clamp(0, achievement.meta)} de ${achievement.meta}',
-                style: const TextStyle(color: _Palette.secondary,
+                style: TextStyle(color: _Palette.secondary,
                   fontSize: 11.5, fontWeight: FontWeight.w600)),
             ],
           ],
