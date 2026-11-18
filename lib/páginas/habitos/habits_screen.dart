@@ -506,17 +506,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Color categoryBg(String category) {
+    if (HealthyAdaptive.isDark) {
+      switch (category) {
+        case 'Alimentación': return const Color(0xFF48302F);
+        case 'Hidratación': return HealthyAdaptive.water;
+        case 'Energía': return HealthyAdaptive.yellow;
+        case 'Bienestar': return HealthyAdaptive.lavender;
+        default: return HealthyAdaptive.surface;
+      }
+    }
     switch (category) {
-      case 'Alimentación':
-        return const Color(0xFFFFEFEC);
-      case 'Hidratación':
-        return const Color(0xFFE4F5FB);
-      case 'Energía':
-        return const Color(0xFFFFF5D9);
-      case 'Bienestar':
-        return const Color(0xFFF2ECFC);
-      default:
-        return Colors.white;
+      case 'Alimentación': return const Color(0xFFFFEFEC);
+      case 'Hidratación': return const Color(0xFFE4F5FB);
+      case 'Energía': return const Color(0xFFFFF5D9);
+      case 'Bienestar': return const Color(0xFFF2ECFC);
+      default: return HealthyAdaptive.surface;
     }
   }
 
