@@ -67,14 +67,14 @@ class HabitTrackerApp extends StatelessWidget {
 
 // ---------- Paleta de Colores ----------
 class AppColors {
-  static const primaryGreen = Color(0xFF00C88C);
-  static const darkGreenCard = Color(0xFF143834);
-  static const textDark = Color(0xFF0E1A30);
-  static const textGrey = Color(0xFF7A869A);
-  static const yellowCard = Color(0xFFFDE89D);
-  static const blueWaterCard = Color(0xFFE8F6FC);
-  static const purpleCard = Color(0xFFF0EBFC);
-  static const mintCard = Color(0xFFE2F7ED);
+  static Color get primaryGreen => HealthyAdaptive.accent;
+  static Color get darkGreenCard => HealthyAdaptive.isDark ? const Color(0xFF19453A) : const Color(0xFF143834);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get yellowCard => HealthyAdaptive.yellow;
+  static Color get blueWaterCard => HealthyAdaptive.water;
+  static Color get purpleCard => HealthyAdaptive.lavender;
+  static Color get mintCard => HealthyAdaptive.mint;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       stream: firestoreDb.collection('users').doc(currentUser.uid).snapshots(),
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
             child: CircularProgressIndicator(color: AppColors.primaryGreen),
           );
         }
@@ -183,14 +183,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   Text(
                     '¡Hola, $name!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                       color: AppColors.textDark,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Continúa con tus hábitos de hoy.',
                     style: TextStyle(
                       fontSize: 14,
@@ -265,7 +265,7 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        const Text(
+        Text(
           'Healthy Habit',
           style: TextStyle(
             fontSize: 18,
@@ -293,7 +293,7 @@ class _TopBar extends StatelessWidget {
                 ),
               );
             },
-            child: const Icon(
+            child: Icon(
               Icons.dynamic_feed_rounded,
               color: AppColors.textDark,
             ),
@@ -319,7 +319,7 @@ class _TopBar extends StatelessWidget {
                 ),
               );
             },
-            child: const Icon(
+            child: Icon(
               Icons.notifications_none_rounded,
               color: AppColors.textDark,
             ),
@@ -343,7 +343,7 @@ class _TopBar extends StatelessWidget {
           ),
           child:
               photoUrl == null
-                  ? const Icon(Icons.person, color: AppColors.primaryGreen)
+                  ? Icon(Icons.person, color: AppColors.primaryGreen)
                   : null,
         ),
       ],
@@ -413,7 +413,7 @@ class _LevelCard extends StatelessWidget {
                   children: [
                     Text(
                       'NIVEL $level',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.primaryGreen,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -463,7 +463,7 @@ class _LevelCard extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
           const SizedBox(height: 10),
@@ -515,7 +515,7 @@ class _StatsRow extends StatelessWidget {
                         '$streakDays días',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
@@ -525,7 +525,7 @@ class _StatsRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Racha actual',
                   style: TextStyle(fontSize: 11, color: AppColors.textGrey),
                 ),
@@ -550,7 +550,7 @@ class _StatsRow extends StatelessWidget {
                     value: habitProgress,
                     strokeWidth: 4,
                     backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-                    valueColor: const AlwaysStoppedAnimation(
+                    valueColor: AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),
                   ),
@@ -562,13 +562,13 @@ class _StatsRow extends StatelessWidget {
                     children: [
                       Text(
                         '$completedHabits / $totalHabits',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
                         ),
                       ),
-                      const Text(
+                      Text(
                         'Completados',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -599,7 +599,7 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
+        Text(
           'Tu misión de hoy',
           style: TextStyle(
             fontSize: 20,
@@ -609,7 +609,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         GestureDetector(
           onTap: onTapViewHabits,
-          child: const Text(
+          child: Text(
             'Ver hábitos',
             style: TextStyle(
               fontSize: 14,
@@ -681,7 +681,7 @@ class _MissionCard extends StatelessWidget {
                 ),
                 child: Text(
                   '+$xpBonus XP',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textDark,
                     fontWeight: FontWeight.w800,
                     fontSize: 11,
@@ -693,7 +693,7 @@ class _MissionCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: AppColors.textDark,
@@ -740,14 +740,14 @@ class _MissionCard extends StatelessWidget {
             children: [
               Text(
                 '$currentVal de $targetVal',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                 ),
               ),
               Text(
                 'Solo faltan ${(targetVal - currentVal).clamp(0, targetVal)} vasos',
-                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 12),
               ),
             ],
           ),
@@ -806,7 +806,7 @@ class _NextAchievementCard extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.yellowCard,
               shape: BoxShape.circle,
             ),
@@ -831,7 +831,7 @@ class _NextAchievementCard extends StatelessWidget {
                 ),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
@@ -839,7 +839,7 @@ class _NextAchievementCard extends StatelessWidget {
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textGrey,
                   ),
@@ -847,7 +847,7 @@ class _NextAchievementCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textGrey),
+          Icon(Icons.chevron_right_rounded, color: AppColors.textGrey),
         ],
       ),
     );
@@ -873,7 +873,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'MR. HEALTHY',
                   style: TextStyle(
                     fontSize: 11,
@@ -883,7 +883,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Un vaso con tu almuerzo mantiene tu racha fácil.',
                   style: TextStyle(
                     fontSize: 13,
@@ -902,7 +902,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
                     );
                   },
                   borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -936,7 +936,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
               'assets/mascot/healthy.png',
               fit: BoxFit.contain,
               errorBuilder:
-                  (context, error, stackTrace) => const Icon(
+                  (context, error, stackTrace) => Icon(
                     Icons.eco_rounded,
                     color: AppColors.primaryGreen,
                     size: 50,
