@@ -236,8 +236,8 @@ class CatalogoDetalleScreen extends StatelessWidget {
     ),
     child: Text(
       s,
-      style: const TextStyle(
-        color: Color(0xFF078765),
+      style: TextStyle(
+        color: _verde,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
