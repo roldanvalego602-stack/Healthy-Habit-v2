@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'logros_service.dart';
+import 'logro_insignia.dart';
 
 class LogrosScreen extends StatelessWidget {
   const LogrosScreen({super.key});
@@ -209,29 +210,21 @@ class LogroSteamCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final achievement = item.definicion;
     final unlocked = item.obtenido;
-    final tone = unlocked ? _Palette.gold : _Palette.muted;
+    final tone = colorRareza(achievement.rareza);
     return Container(
       key: ValueKey('logro-${achievement.id}'),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _Palette.panel, borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: unlocked ? const Color(0xFF3C776C) : _Palette.border),
+        border: Border.all(color: unlocked ? tone.withOpacity(0.65) : _Palette.border),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 60, height: 60,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: unlocked
-              ? const [Color(0xFF645637), Color(0xFF2A3D47)]
-              : const [Color(0xFF303E4A), Color(0xFF192630)]),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: tone.withOpacity(0.55))),
-          child: Stack(alignment: Alignment.center, children: [
-            Icon(achievement.icono, size: 30, color: tone),
-            if (!unlocked)
-              const Positioned(right: 3, bottom: 3,
-                child: Icon(Icons.lock_rounded, size: 13, color: _Palette.secondary)),
-          ]),
+        LogroInsignia(
+          key: ValueKey('insignia-${achievement.id}'),
+          rareza: achievement.rareza,
+          icono: achievement.icono,
+          desbloqueado: unlocked,
+          size: 78,
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(
@@ -242,6 +235,16 @@ class LogroSteamCard extends StatelessWidget {
               style: const TextStyle(color: _Palette.white,
                 fontSize: 15, fontWeight: FontWeight.w800, height: 1.25)),
             const SizedBox(height: 5),
+            Text(
+              achievement.rareza.etiqueta.toUpperCase(),
+              style: TextStyle(
+                color: tone,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
+                fontSize: 10.5,
+              ),
+            ),
+            const SizedBox(height: 6),
             Text(achievement.descripcion, softWrap: true,
               style: const TextStyle(color: _Palette.secondary,
                 fontSize: 12.5, height: 1.3)),
