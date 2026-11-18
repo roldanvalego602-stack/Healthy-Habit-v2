@@ -65,7 +65,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: HealthyAdaptive.surface,
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(
@@ -80,19 +80,19 @@ class CaminoNivelesScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Tu saldo de Habit Coins',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF71879A),
+                                      color: HealthyAdaptive.muted,
                                     ),
                                   ),
                                   Text(
                                     '$monedas monedas',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 23,
                                       fontWeight: FontWeight.w900,
-                                      color: Color(0xFF193344),
+                                      color: HealthyAdaptive.text,
                                     ),
                                   ),
                                 ],
@@ -102,18 +102,18 @@ class CaminoNivelesScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'Tu camino de crecimiento',
                         style: TextStyle(
                           fontSize: 21,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF193344),
+                          color: HealthyAdaptive.text,
                         ),
                       ),
                       const SizedBox(height: 5),
-                      const Text(
+                      Text(
                         'Descubre tus próximos niveles y recompensas.',
-                        style: TextStyle(color: Color(0xFF71879A)),
+                        style: TextStyle(color: HealthyAdaptive.muted),
                       ),
                       const SizedBox(height: 20),
                       ...LevelSystem.levels.map((level) {
@@ -254,7 +254,11 @@ class CaminoNivelesScreen extends StatelessWidget {
     required bool isCurrent,
     required bool isLast,
   }) {
-    final foreground = level.dark ? Colors.white : HealthyAdaptive.text;
+    final darkSurface = HealthyAdaptive.isDark || level.dark;
+    final foreground = darkSurface ? const Color(0xFFF1F5F6) : const Color(0xFF193344);
+    final accent = darkSurface && !level.dark
+        ? const Color(0xFF85DDB6)
+        : level.accentColor;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +318,9 @@ class CaminoNivelesScreen extends StatelessWidget {
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [level.startColor, level.endColor],
+                colors: HealthyAdaptive.isDark && !level.dark
+                    ? const [Color(0xFF213A42), Color(0xFF182A35)]
+                    : [level.startColor, level.endColor],
               ),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
@@ -333,7 +339,7 @@ class CaminoNivelesScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(level.icon, size: 30, color: level.accentColor),
+                Icon(level.icon, size: 30, color: accent),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -370,7 +376,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                           '🪙 ${level.rewardCoins} Habit Coins',
                           style: TextStyle(
                             color:
-                                level.dark
+                                darkSurface
                                     ? const Color(0xFFFFE49A)
                                     : const Color(0xFF8B6B19),
                             fontSize: 12,
@@ -389,7 +395,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                           style: TextStyle(
                             color:
                                 rewardClaimed
-                                    ? const Color(0xFF08B889)
+                                    ? accent
                                     : foreground,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -411,7 +417,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                         Text(
                           '✓ DESBLOQUEADO',
                           style: TextStyle(
-                            color: level.accentColor,
+                            color: accent,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                           ),
