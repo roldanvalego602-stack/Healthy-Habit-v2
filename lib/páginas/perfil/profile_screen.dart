@@ -353,7 +353,7 @@ class ProfileScreen extends StatelessWidget {
                   height: 94,
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: HealthyAdaptive.surface,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: _frameColor(
