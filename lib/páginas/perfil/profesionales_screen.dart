@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../Contenido_del_tema/colores.dart';
 
 class ProfesionalesScreen extends StatelessWidget {
   const ProfesionalesScreen({super.key});
@@ -155,7 +154,7 @@ class ProfesionalesScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Healthy Habit no verifica automáticamente la disponibilidad de estos contactos. Confirma sus credenciales antes de contratar una consulta.',
                     style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
                   ),
