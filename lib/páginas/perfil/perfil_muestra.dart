@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'social_action_button.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -242,7 +243,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -288,12 +289,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   height: 88,
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: HealthyAdaptive.surfaceAlt,
                     shape: BoxShape.circle,
                     border: Border.all(color: mint, width: 2),
                   ),
                   child: CircleAvatar(
-                    backgroundColor: Color(0xFFE6F1EC),
+                    backgroundColor: HealthyAdaptive.mint,
                     child: Icon(Icons.person_rounded, size: 50, color: green),
                   ),
                 ),
@@ -310,8 +311,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   username,
-                  style: const TextStyle(
-                    color: Color(0xFF8496A0),
+                  style: TextStyle(
+                    color: HealthyAdaptive.muted,
                     fontSize: 13,
                   ),
                 ),
@@ -323,13 +324,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF2D2),
+                      color: HealthyAdaptive.isDark
+                          ? const Color(0xFF473A26)
+                          : const Color(0xFFFFF2D2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '✦ $title',
-                      style: const TextStyle(
-                        color: gold,
+                      style: TextStyle(
+                        color: HealthyAdaptive.isDark
+                            ? const Color(0xFFF7D58D) : gold,
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                       ),
@@ -509,7 +513,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -535,7 +539,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF8496A0), fontSize: 11),
+            style: TextStyle(color: HealthyAdaptive.muted, fontSize: 11),
           ),
         ],
       ),
@@ -557,7 +561,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
       ),
       child: Row(
@@ -609,7 +613,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2F3E7),
+        color: HealthyAdaptive.mint,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
