@@ -936,7 +936,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF2C8),
+                  color: HealthyAdaptive.yellow,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1210,7 +1210,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: green,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFE5ECE9),
+                disabledBackgroundColor: HealthyAdaptive.border,
                 disabledForegroundColor: muted,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1255,7 +1255,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE1F6ED),
+        color: HealthyAdaptive.mint,
         borderRadius: BorderRadius.circular(19),
       ),
       child: Row(
