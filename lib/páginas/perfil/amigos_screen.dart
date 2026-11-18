@@ -846,8 +846,8 @@ class _AmigosScreenState extends State<AmigosScreen> {
                   ),
                   child: Text(
                     'Nivel $nivel',
-                    style: const TextStyle(
-                      color: _C.green,
+                    style: TextStyle(
+                      color: HealthyAdaptive.accent,
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                     ),
