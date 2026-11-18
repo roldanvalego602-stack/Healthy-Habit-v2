@@ -175,7 +175,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                   selectedColor: HealthyAdaptive.mint,
                   backgroundColor: HealthyAdaptive.surface,
                   labelStyle: TextStyle(
-                    color: activo ? const Color(0xFF078765) : _oscuro,
+                    color: activo ? _verde : _oscuro,
                     fontWeight: activo ? FontWeight.w800 : FontWeight.w500,
                   ),
                   side: BorderSide.none,
@@ -270,8 +270,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                           const SizedBox(height: 6),
                                           Text(
                                             item.etiquetas.take(2).join(' · '),
-                                            style: const TextStyle(
-                                              color: Color(0xFF078765),
+                                            style: TextStyle(
+                                              color: _verde,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
                                             ),
