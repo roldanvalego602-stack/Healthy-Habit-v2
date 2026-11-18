@@ -668,7 +668,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HealthyAdaptive.accent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF10392F),
                   disabledBackgroundColor: HealthyAdaptive.accent
                       .withValues(alpha: 0.6),
                   elevation: 0,
