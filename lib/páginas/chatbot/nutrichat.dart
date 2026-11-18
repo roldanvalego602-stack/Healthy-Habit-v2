@@ -516,7 +516,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser ? _navy : HealthyAdaptive.mint,
+          color: isUser
+              ? (HealthyAdaptive.isDark ? const Color(0xFF284B56) : const Color(0xFF174F48))
+              : HealthyAdaptive.mint,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
@@ -530,7 +532,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
             Text(
               message.text,
               style: TextStyle(
-                color: isUser ? Colors.white : _navy,
+                color: isUser ? Colors.white : HealthyAdaptive.text,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -539,7 +541,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
             Text(
               '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
-                color: isUser ? Colors.white70 : _green,
+                color: isUser ? Colors.white70 : HealthyAdaptive.muted,
                 fontSize: 10,
               ),
             ),
