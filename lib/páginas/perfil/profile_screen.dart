@@ -842,8 +842,8 @@ class ProfileScreen extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 128),
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(22),
     ),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -917,8 +917,8 @@ class ProfileScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
+              color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(25),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1121,8 +1121,8 @@ class ProfileScreen extends StatelessWidget {
   Widget _monthlyProgress() => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(26),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(26),
     ),
     child: Column(
       children: [
@@ -1253,8 +1253,8 @@ class ProfileScreen extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 85),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(18),
     ),
     child: Row(
       children: [
@@ -1366,8 +1366,8 @@ class ProfileScreen extends StatelessWidget {
   Widget _professionalsCard(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(25),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(25),
       boxShadow: [
         BoxShadow(
           color: navy.withValues(alpha: 0.04),
