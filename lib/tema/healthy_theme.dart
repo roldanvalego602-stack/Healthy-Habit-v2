@@ -113,6 +113,8 @@ class HealthyAdaptive {
   /// dejar texto oscuro sobre un panel oscuro.
   static Color get water =>
       isDark ? const Color(0xFF183E4F) : const Color(0xFFE8F6FC);
+  static Color get waterInk =>
+      isDark ? const Color(0xFF8FC9FF) : const Color(0xFF2B7FD1);
   static Color get lavender =>
       isDark ? const Color(0xFF35294A) : const Color(0xFFF0EBFC);
   static Color get mint =>
