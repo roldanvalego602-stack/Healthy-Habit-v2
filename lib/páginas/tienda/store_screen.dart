@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 import 'shop_service.dart';
 import 'wardrobe_screen.dart';
@@ -22,10 +23,10 @@ class StoreScreen extends StatefulWidget {
 }
 
 class _StoreScreenState extends State<StoreScreen> {
-  static const _green = Color(0xFF07865F);
-  static const _ink = Color(0xFF113B36);
-  static const _muted = Color(0xFF607A76);
-  static const _background = Color(0xFFF4FAF7);
+  Color get _green => HealthyAdaptive.accent;
+  Color get _ink => HealthyAdaptive.text;
+  Color get _muted => HealthyAdaptive.muted;
+  Color get _background => HealthyAdaptive.background;
 
   static const _categories = <String>[
     'Todos',
@@ -168,7 +169,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 onPressed: _back,
                 icon: const Icon(Icons.arrow_back_rounded),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: HealthyAdaptive.surface,
                   foregroundColor: _ink,
                 ),
               ),
@@ -454,7 +455,7 @@ class _StoreScreenState extends State<StoreScreen> {
           if (state != null && !owned && !affordable)
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 9),
               child: Text(
                 'Te faltan ${item.price - state.coins} H. Coins',
