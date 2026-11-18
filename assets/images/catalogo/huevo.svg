@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D6E9E0"/><stop offset="1" stop-color="#98C5AA"/></linearGradient><radialGradient id="shine"><stop stop-color="#ffffff" stop-opacity=".40"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>
+<rect width="800" height="450" fill="url(#bg)"/><circle cx="690" cy="30" r="230" fill="url(#shine)"/><circle cx="95" cy="420" r="245" fill="#ffffff" opacity=".07"/><path d="M0 390 Q200 340 400 393 T800 370 V450 H0Z" fill="#111827" opacity=".08"/>
+<ellipse cx="405" cy="352" rx="249" ry="39" fill="#47665B" opacity=".22"/><ellipse cx="400" cy="232" rx="247" ry="132" fill="#E8EBE2"/><ellipse cx="400" cy="222" rx="228" ry="116" fill="#FDFDF4"/>
+<path d="M210 227 C205 164 271 128 335 150 C392 170 390 241 341 269 C285 304 208 283 210 227Z" fill="#FFFFFF"/><circle cx="299" cy="209" r="48" fill="#EDB940"/><circle cx="288" cy="199" r="15" fill="#F8D76A"/>
+<path d="M405 216 C398 154 469 121 527 146 C584 168 584 239 530 270 C482 298 413 276 405 216Z" fill="#FFFFFF"/><circle cx="498" cy="204" r="48" fill="#E7A72E"/><circle cx="487" cy="190" r="13" fill="#F8DA7C"/>
+<g fill="#6C9A69"><ellipse cx="365" cy="171" rx="19" ry="36" transform="rotate(42 365 171)"/><ellipse cx="375" cy="271" rx="17" ry="38" transform="rotate(108 375 271)"/><ellipse cx="568" cy="265" rx="19" ry="39" transform="rotate(31 568 265)"/></g><g fill="#D76742"><circle cx="366" cy="211" r="8"/><circle cx="392" cy="248" r="6"/><circle cx="549" cy="176" r="8"/></g>
+</svg>
