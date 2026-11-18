@@ -249,8 +249,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE8F7EF), Color(0xFFDDEFE6)],
+        gradient: LinearGradient(
+          colors: HealthyAdaptive.isDark
+              ? const [Color(0xFF223E39), Color(0xFF1A3138)]
+              : const [Color(0xFFE8F7EF), Color(0xFFDDEFE6)],
         ),
         borderRadius: BorderRadius.circular(28),
       ),
@@ -380,7 +382,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: equipped ? green : const Color(0xFFE2EAE5),
+              color: equipped ? green : HealthyAdaptive.border,
               width: equipped ? 2 : 1,
             ),
           ),
@@ -392,7 +394,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   width: double.infinity,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5F7EF),
+                    color: HealthyAdaptive.isDark
+                        ? const Color(0xFF304941)
+                        : const Color(0xFFE5F7EF),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(item.emoji, style: const TextStyle(fontSize: 45)),
@@ -421,7 +425,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     : 'Saldo insuficiente',
                 maxLines: 2,
                 style: TextStyle(
-                  color: equipped ? const Color(0xFF16866B) : muted,
+                  color: equipped ? green : muted,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                 ),
