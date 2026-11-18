@@ -99,7 +99,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => loading = false);
+      setState(() {
+        settings['tema'] = HealthyThemeController.label(HealthyThemeController.instance.mode);
+        loading = false;
+      });
       _message('No se pudieron cargar tus preferencias: $e');
     }
   }
@@ -456,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontSize: 12, color: muted),
             ),
           ),
-        const Icon(Icons.chevron_right, color: muted, size: 19),
+        Icon(Icons.chevron_right, color: muted, size: 19),
       ],
     ),
     onTap: onTap,
