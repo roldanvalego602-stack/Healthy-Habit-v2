@@ -64,7 +64,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -245,7 +245,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
   Widget _seccion(String titulo, Widget contenido) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Column(
