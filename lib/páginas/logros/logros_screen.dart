@@ -6,281 +6,271 @@ import 'logros_service.dart';
 
 class LogrosScreen extends StatelessWidget {
   const LogrosScreen({super.key});
-  static const _green = Color(0xFF08B889);
-  static const _navy = Color(0xFF193344);
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Inicia sesión para consultar tus logros.')),
-      );
+      return const Scaffold(body: Center(child: Text('Inicia sesión para consultar tus logros.')));
     }
-    final db = FirebaseFirestore.instanceFor(
-      app: Firebase.app(),
-      databaseId: 'default',
-    );
+    final db = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
     final ref = db.collection('users').doc(user.uid);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F6),
+      backgroundColor: _Palette.bg,
       appBar: AppBar(
-        title: const Text(
-          'Mis logros',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        backgroundColor: const Color(0xFFF5F8F6),
+        backgroundColor: _Palette.bg,
+        foregroundColor: Colors.white,
+        title: const Text('Logros', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            const TabBar(
-              labelColor: _green,
-              indicatorColor: _green,
-              tabs: [Tab(text: 'Logros'), Tab(text: 'Desafíos')],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                    stream: ref.snapshots(),
-                    builder: (context, profile) {
-                      if (profile.hasError) {
-                        return const Center(
-                          child: Text('No se pudo consultar tu perfil.'),
-                        );
-                      }
-                      if (!profile.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final data = profile.data!.data() ?? <String, dynamic>{};
-                      return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: ref.collection('user_habits').snapshots(),
-                        builder: (context, habits) {
-                          if (habits.hasError) {
-                            return const Center(
-                              child: Text(
-                                'No se pudieron consultar los hábitos.',
-                              ),
-                            );
-                          }
-                          if (!habits.hasData) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          final docs = habits.data!.docs;
-                          final completados =
-                              docs
-                                  .where(
-                                    (d) =>
-                                        d.data()['latestStatus'] == 'completed',
-                                  )
-                                  .length;
-                          return StreamBuilder<
-                            QuerySnapshot<Map<String, dynamic>>
-                          >(
-                            stream: ref.collection('achievements').snapshots(),
-                            builder: (context, achievements) {
-                              if (achievements.hasError) {
-                                return const Center(
-                                  child: Text(
-                                    'No se pudieron consultar las medallas.',
-                                  ),
-                                );
-                              }
-                              if (!achievements.hasData) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
-                              final ids =
-                                  achievements.data!.docs
-                                      .map((d) => d.id)
-                                      .toSet();
-                              final obtenidos =
-                                  LogrosService.catalogo
-                                      .where(
-                                        (l) => LogrosService.obtenido(
-                                          l,
-                                          LogrosService.progreso(
-                                            l,
-                                            data,
-                                            docs.length,
-                                            completados,
-                                            ids,
-                                          ),
-                                        ),
-                                      )
-                                      .length;
-                              return ListView(
-                                padding: const EdgeInsets.all(18),
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Tu colección de medallas',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 18,
-                                            color: _navy,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '$obtenidos de ${LogrosService.catalogo.length} logros conseguidos',
-                                        ),
-                                        const SizedBox(height: 10),
-                                        LinearProgressIndicator(
-                                          value:
-                                              obtenidos /
-                                              LogrosService.catalogo.length,
-                                          minHeight: 8,
-                                          color: _green,
-                                          backgroundColor: const Color(
-                                            0xFFE6EEE9,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'Las medallas nuevas se calculan con tu progreso actual. No otorgan recompensas adicionales.',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  ...LogrosService.catalogo.map((logro) {
-                                    final progreso = LogrosService.progreso(
-                                      logro,
-                                      data,
-                                      docs.length,
-                                      completados,
-                                      ids,
-                                    );
-                                    final obtenido = LogrosService.obtenido(
-                                      logro,
-                                      progreso,
-                                    );
-                                    return Card(
-                                      color: Colors.white,
-                                      elevation: 0,
-                                      margin: const EdgeInsets.only(bottom: 10),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Row(
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 26,
-                                              backgroundColor:
-                                                  obtenido
-                                                      ? const Color(0xFFDDF8EC)
-                                                      : const Color(0xFFF0F2F3),
-                                              child: Icon(
-                                                obtenido
-                                                    ? logro.icono
-                                                    : Icons
-                                                        .lock_outline_rounded,
-                                                color:
-                                                    obtenido
-                                                        ? _green
-                                                        : Colors.grey,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    logro.nombre,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color: _navy,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  Text(
-                                                    obtenido
-                                                        ? '¡Conseguido! ${logro.descripcion}'
-                                                        : logro.descripcion,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  LinearProgressIndicator(
-                                                    value: (progreso /
-                                                            logro.meta)
-                                                        .clamp(0.0, 1.0),
-                                                    minHeight: 5,
-                                                    color: _green,
-                                                    backgroundColor:
-                                                        const Color(0xFFE8EEEE),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    obtenido
-                                                        ? (logro.id ==
-                                                                LogrosService
-                                                                    .primerPasoId
-                                                            ? '+25 XP · +10 Habit Coins (recompensa existente)'
-                                                            : 'Medalla desbloqueada')
-                                                        : '${progreso.clamp(0, logro.meta)} / ${logro.meta}',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color:
-                                                          obtenido
-                                                              ? _green
-                                                              : Colors.black54,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'Los desafíos se incorporarán más adelante.',
-                        textAlign: TextAlign.center,
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: ref.snapshots(),
+        builder: (context, profile) {
+          if (profile.hasError) return const _Status('No se pudo cargar tu perfil.');
+          if (!profile.hasData) return const Center(child: CircularProgressIndicator());
+          final data = profile.data!.data() ?? <String, dynamic>{};
+          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: ref.collection('user_habits').snapshots(),
+            builder: (context, habits) {
+              if (habits.hasError) return const _Status('No se pudieron cargar los hábitos.');
+              if (!habits.hasData) return const Center(child: CircularProgressIndicator());
+              final docs = habits.data!.docs;
+              final completed = docs.where((d) => d.data()['latestStatus'] == 'completed').length;
+              return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: ref.collection('achievements').snapshots(),
+                builder: (context, achievements) {
+                  if (achievements.hasError) return const _Status('No se pudieron cargar las medallas.');
+                  if (!achievements.hasData) return const Center(child: CircularProgressIndicator());
+                  final ids = achievements.data!.docs.map((d) => d.id).toSet();
+                  return LogrosColeccion(items: [
+                    for (final def in LogrosService.catalogo)
+                      LogroVista(
+                        definicion: def,
+                        progreso: LogrosService.progreso(def, data, docs.length, completed, ids),
                       ),
-                    ),
-                  ),
+                  ]);
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+class _Status extends StatelessWidget {
+  const _Status(this.message);
+  final String message;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(padding: const EdgeInsets.all(24),
+      child: Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70))),
+  );
+}
+class _Palette {
+  static const bg = Color(0xFF101923);
+  static const panel = Color(0xFF1B2935);
+  static const border = Color(0xFF344553);
+  static const green = Color(0xFF6CD3A1);
+  static const white = Color(0xFFF1F5F6);
+  static const secondary = Color(0xFFAFBBC4);
+  static const gold = Color(0xFFEBC77A);
+  static const muted = Color(0xFF748393);
+}
+class LogroVista {
+  const LogroVista({required this.definicion, required this.progreso});
+  final LogroDefinicion definicion;
+  final int progreso;
+  bool get obtenido => LogrosService.obtenido(definicion, progreso);
+  double get proporcion => definicion.meta <= 0
+      ? 0.0 : (progreso / definicion.meta).clamp(0.0, 1.0);
+}
+enum _Filtro { todos, conseguidos, pendientes }
+
+/// UI independiente de Firebase para facilitar tests de tamaños Android.
+class LogrosColeccion extends StatefulWidget {
+  const LogrosColeccion({super.key, required this.items});
+  final List<LogroVista> items;
+  @override
+  State<LogrosColeccion> createState() => _LogrosColeccionState();
+}
+class _LogrosColeccionState extends State<LogrosColeccion> {
+  _Filtro _filtro = _Filtro.todos;
+  @override
+  Widget build(BuildContext context) {
+    final unlocked = widget.items.where((i) => i.obtenido).length;
+    final total = widget.items.length;
+    final ratio = total == 0 ? 0.0 : unlocked / total;
+    final items = widget.items.where((i) =>
+      _filtro == _Filtro.todos ||
+      (_filtro == _Filtro.conseguidos && i.obtenido) ||
+      (_filtro == _Filtro.pendientes && !i.obtenido)).toList();
+    return SafeArea(
+      top: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          key: const Key('logros-lista'),
+          padding: EdgeInsets.fromLTRB(constraints.maxWidth < 370 ? 12 : 18, 10,
+            constraints.maxWidth < 370 ? 12 : 18, 28),
+          children: [
+            Container(
+              key: const Key('logros-resumen'),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF243E48), Color(0xFF17252F)]),
+                border: Border.all(color: _Palette.border),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(children: [
+                    Icon(Icons.emoji_events_outlined, size: 20, color: _Palette.gold),
+                    SizedBox(width: 8),
+                    Flexible(child: Text('VITRINA DE LOGROS',
+                      style: TextStyle(color: _Palette.gold, fontSize: 12,
+                        letterSpacing: 1.3, fontWeight: FontWeight.w800))),
+                  ]),
+                  const SizedBox(height: 12),
+                  Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 10, runSpacing: 6,
+                    children: [
+                      Text('${unlocked} / ${total}', style: const TextStyle(
+                        color: _Palette.white, fontSize: 30, fontWeight: FontWeight.w900)),
+                      const Text('insignias conseguidas',
+                        style: TextStyle(color: _Palette.secondary, fontSize: 13)),
+                    ]),
+                  const SizedBox(height: 12),
+                  ClipRRect(borderRadius: BorderRadius.circular(5),
+                    child: LinearProgressIndicator(
+                      value: ratio, minHeight: 7, backgroundColor: _Palette.bg,
+                      valueColor: const AlwaysStoppedAnimation<Color>(_Palette.green))),
+                  const SizedBox(height: 8),
+                  Text('${(ratio * 100).round()}% de la colección',
+                    style: const TextStyle(color: _Palette.secondary, fontSize: 12)),
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            const Text('TU COLECCIÓN', style: TextStyle(color: _Palette.white,
+              letterSpacing: 1.5, fontSize: 13, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 5),
+            const Text('Cada insignia refleja una meta alcanzada.',
+              style: TextStyle(color: _Palette.secondary, fontSize: 13)),
+            const SizedBox(height: 13),
+            Wrap(key: const Key('logros-filtros'), spacing: 8, runSpacing: 8,
+              children: [
+                _Chip('Todos', _filtro == _Filtro.todos,
+                  () => setState(() => _filtro = _Filtro.todos)),
+                _Chip('Conseguidos', _filtro == _Filtro.conseguidos,
+                  () => setState(() => _filtro = _Filtro.conseguidos)),
+                _Chip('Pendientes', _filtro == _Filtro.pendientes,
+                  () => setState(() => _filtro = _Filtro.pendientes)),
+              ]),
+            const SizedBox(height: 15),
+            if (items.isEmpty)
+              Container(padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(color: _Palette.panel,
+                  borderRadius: BorderRadius.circular(12)),
+                child: const Text('Todavía no hay logros en esta sección.',
+                  textAlign: TextAlign.center, style: TextStyle(color: _Palette.secondary)))
+            else
+              ...items.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: LogroSteamCard(item: item))),
+            const SizedBox(height: 8),
+            const Text('Las insignias muestran progreso, sin generar XP ni monedas adicionales.',
+              style: TextStyle(color: _Palette.secondary, fontSize: 12)),
           ],
         ),
       ),
+    );
+  }
+}
+class _Chip extends StatelessWidget {
+  const _Chip(this.label, this.selected, this.onTap);
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: selected ? _Palette.green : _Palette.panel,
+    borderRadius: BorderRadius.circular(6),
+    child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(6),
+      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        child: Text(label, style: TextStyle(
+          color: selected ? _Palette.bg : _Palette.white,
+          fontSize: 12, fontWeight: FontWeight.w700)))),
+  );
+}
+
+/// Steam-style: medalla grande y texto de altura flexible, nunca grid fijo.
+class LogroSteamCard extends StatelessWidget {
+  const LogroSteamCard({super.key, required this.item});
+  final LogroVista item;
+  @override
+  Widget build(BuildContext context) {
+    final achievement = item.definicion;
+    final unlocked = item.obtenido;
+    final tone = unlocked ? _Palette.gold : _Palette.muted;
+    return Container(
+      key: ValueKey('logro-${achievement.id}'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _Palette.panel, borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: unlocked ? const Color(0xFF3C776C) : _Palette.border),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 60, height: 60,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: unlocked
+              ? const [Color(0xFF645637), Color(0xFF2A3D47)]
+              : const [Color(0xFF303E4A), Color(0xFF192630)]),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: tone.withOpacity(0.55))),
+          child: Stack(alignment: Alignment.center, children: [
+            Icon(achievement.icono, size: 30, color: tone),
+            if (!unlocked)
+              const Positioned(right: 3, bottom: 3,
+                child: Icon(Icons.lock_rounded, size: 13, color: _Palette.secondary)),
+          ]),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(achievement.nombre, softWrap: true,
+              style: const TextStyle(color: _Palette.white,
+                fontSize: 15, fontWeight: FontWeight.w800, height: 1.25)),
+            const SizedBox(height: 5),
+            Text(achievement.descripcion, softWrap: true,
+              style: const TextStyle(color: _Palette.secondary,
+                fontSize: 12.5, height: 1.3)),
+            const SizedBox(height: 10),
+            if (unlocked)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.check_circle_rounded, size: 15, color: _Palette.green),
+                const SizedBox(width: 6),
+                Flexible(child: Text(
+                  achievement.id == LogrosService.primerPasoId
+                    ? 'Desbloqueado · recompensa inicial existente'
+                    : 'Logro desbloqueado',
+                  softWrap: true, style: const TextStyle(color: _Palette.green,
+                    fontSize: 11.5, fontWeight: FontWeight.w700))),
+              ])
+            else ...[
+              ClipRRect(borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: item.proporcion, minHeight: 5,
+                  backgroundColor: _Palette.bg,
+                  valueColor: const AlwaysStoppedAnimation<Color>(_Palette.muted))),
+              const SizedBox(height: 6),
+              Text('${item.progreso.clamp(0, achievement.meta)} de ${achievement.meta}',
+                style: const TextStyle(color: _Palette.secondary,
+                  fontSize: 11.5, fontWeight: FontWeight.w600)),
+            ],
+          ],
+        )),
+      ]),
     );
   }
 }
