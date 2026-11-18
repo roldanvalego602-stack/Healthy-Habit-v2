@@ -107,7 +107,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
         child: Container(
           decoration: BoxDecoration(
             color: HealthyAdaptive.surface,
-            border: Border(top: BorderSide(color: Color(0xFFE5ECE9))),
+            border: Border(top: BorderSide(color: HealthyAdaptive.border)),
           ),
           child: Row(
             children: List.generate(
