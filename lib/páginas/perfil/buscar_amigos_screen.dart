@@ -136,49 +136,14 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     final siguiendo = _siguiendo.contains(uid);
     final pendiente = _pendientes.contains(uid);
     final ocupado = _ocupados.contains(uid);
-
-    final String etiqueta =
-        siguiendo ? 'Siguiendo' : (pendiente ? 'Pendiente' : 'Seguir');
-    final Color colorTexto =
-        siguiendo
-            ? AppColores.verdePrincipal
-            : (pendiente ? const Color(0xFFB8860B) : HealthyAdaptive.accent);
-    final Color colorBorde =
-        siguiendo
-            ? AppColores.verdePrincipal
-            : (pendiente ? const Color(0xFFD5A33E) : HealthyAdaptive.mint);
-
-    return GestureDetector(
-      onTap: () => _alternarSeguir(uid, nombre),
-      child: Container(
-        height: 36,
-        constraints: const BoxConstraints(minWidth: 92),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: (siguiendo || pendiente) ? Colors.white : HealthyAdaptive.mint,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: colorBorde, width: 1.4),
-        ),
-        child:
-            ocupado
-                ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColores.verdePrincipal,
-                  ),
-                )
-                : Text(
-                  etiqueta,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: colorTexto,
-                  ),
-                ),
-      ),
+    return SocialActionButton(
+      compact: true,
+      label: siguiendo ? 'Siguiendo' : pendiente ? 'Pendiente' : 'Seguir',
+      icon: siguiendo ? Icons.check_rounded
+          : pendiente ? Icons.schedule_rounded : Icons.person_add_alt_1_rounded,
+      outlined: siguiendo || pendiente,
+      busy: ocupado,
+      onPressed: ocupado ? null : () => _alternarSeguir(uid, nombre),
     );
   }
 
@@ -350,8 +315,11 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                     width: 1,
                                   ),
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
+                                    Row(
+                                      children: [
                                     CircleAvatar(
                                       radius: 24,
                                       backgroundColor: HealthyAdaptive.mint,
@@ -420,7 +388,13 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                         color: HealthyAdaptive.muted,
                                       ),
                                     ),
-                                    _botonSeguir(uid, nombre),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: _botonSeguir(uid, nombre),
+                                    ),
                                   ],
                                 ),
                               );
