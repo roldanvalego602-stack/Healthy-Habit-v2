@@ -4,10 +4,7 @@ import 'package:flutter/services.dart';
 class VerifyCodeScreen extends StatefulWidget {
   final String emailMasked;
 
-  const VerifyCodeScreen({
-    super.key,
-    this.emailMasked = 'd••••@correo.com',
-  });
+  const VerifyCodeScreen({super.key, this.emailMasked = 'd••••@correo.com'});
 
   @override
   State<VerifyCodeScreen> createState() => _VerifyCodeScreenState();
@@ -23,8 +20,10 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   static const Color borderCard = Color(0xFFE5E7EB);
 
   // 6 controladores para las casillas de OTP
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
@@ -93,11 +92,12 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/mascot/healthy.png',
+              'assets/logo/logo.png',
               width: 24,
               height: 24,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.eco_rounded, color: green, size: 22),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const Icon(Icons.eco_rounded, color: green, size: 22),
             ),
             const SizedBox(width: 8),
             const Text(

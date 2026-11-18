@@ -13,6 +13,7 @@ import 'páginas/splash_screen.dart';
 import 'páginas/notifications_screen.dart';
 import 'páginas/habitos/registrar_habito_screen.dart';
 import 'páginas/chatbot/nutrichat.dart';
+import 'páginas/perfil/feed_amigos_screen.dart';
 
 // Instancia compartida de Firestore.
 late final FirebaseFirestore firestoreDb;
@@ -130,10 +131,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
         final String levelTitle =
             userData['title'] as String? ?? 'Cultivador Constante';
-        final int currentXp = (userData['currentXp'] as num?)?.toInt() ?? 0;
+        final int currentXp = (userData['xp'] as num?)?.toInt() ??
+            (userData['currentXp'] as num?)?.toInt() ??
+            0;
         final int nextLevelXp =
             (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
-        final int streakDays = (userData['streakDays'] as num?)?.toInt() ?? 0;
+        final int streakDays = (userData['currentStreak'] as num?)?.toInt() ??
+            (userData['streakDays'] as num?)?.toInt() ??
+            0;
         final String nextAchievement =
             userData['nextAchievementTitle'] as String? ??
             'Insignia Ritmo firme';
@@ -279,6 +284,35 @@ class _TopBar extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+<<<<<<< HEAD
+=======
+            ],
+          ),
+          child: TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedAmigosScreen(),
+                ),
+              );
+            },
+            child: const Icon(
+              Icons.dynamic_feed_rounded,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+>>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
             ],
           ),
           child: TextButton(

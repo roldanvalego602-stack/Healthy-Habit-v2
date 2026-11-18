@@ -1,6 +1,9 @@
 import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import 'texto_chatbot.dart';
 import 'chat_historial.dart';
@@ -24,8 +27,14 @@ class NutriChatPage extends StatefulWidget {
 }
 
 class _NutriChatPageState extends State<NutriChatPage> {
+  static const _background = Color(0xFFF7F9F8);
+  static const _navy = Color(0xFF172B36);
+  static const _muted = Color(0xFF7A869A);
+  static const _green = Color(0xFF198568);
+
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
+  final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
   final ClimaServicio _climaServicio = ClimaServicio();
   final List<String> offensiveWords = [
@@ -160,7 +169,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     return 'Usuario';
   }
 
-  final List<String> quickOptions = [
+  final List<String> quickOptions = const [
     '¿Cómo mejorar mi racha?',
     '¿Qué misión tengo hoy?',
     'Quiero mejorar mi hidratación',
@@ -168,24 +177,72 @@ class _NutriChatPageState extends State<NutriChatPage> {
     '¿Cómo está el clima hoy?',
   ];
 
-  String _getFormattedTime() {
+  static String _timeNow() {
     final now = DateTime.now();
-    final hour = now.hour.toString().padLeft(2, '0');
-    final minute = now.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
-  void sendMessage([String? predefinedText]) {
-    final text = (predefinedText ?? messageController.text).trim();
+  @override
+  void initState() {
+    super.initState();
+    _iniciarSesion();
+    _inputFocus.addListener(_onFocusChange);
+    _cargarSaludoPersonalizado();
+  }
 
-    if (text.isEmpty || isTyping) return;
+  Future<void> _cargarSaludoPersonalizado() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // El nombre guardado en el perfil tiene prioridad sobre el de Auth.
+    String nombre = (user.displayName ?? '').trim();
+    try {
+      final db = FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'default',
+      );
+      final snapshot = await db.collection('users').doc(user.uid).get();
+      final data = snapshot.data() ?? <String, dynamic>{};
+      if (!mounted) return;
+      _perfil = data;
+      final storedName = data['name'];
+      if (storedName is String && storedName.trim().isNotEmpty) {
+        nombre = storedName.trim();
+      }
+    } catch (_) {
+      // Sin conexión o sin permisos: usar el nombre de Auth si existe.
+    }
+
+    if (!mounted) return;
+    _primerNombre = nombre.isEmpty ? '' : nombre.split(RegExp(r'\s+')).first;
+    if (_hasSentMessage || nombre.isEmpty) return;
+    final primerNombre = _primerNombre;
+    setState(() {
+      messages[0] = ChatMessage(
+        text:
+            '¡Hola, $primerNombre! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
+        isUser: false,
+        time: messages[0].time,
+      );
+    });
+  }
+
+  void _onFocusChange() {
+    if (_inputFocus.hasFocus) {
+      // Espera al ajuste de tamaño causado por el teclado.
+      Future<void>.delayed(const Duration(milliseconds: 250), _scrollToBottom);
+    }
+  }
+
+  Future<void> sendMessage([String? predefinedText]) async {
+    if (!mounted || isTyping) return;
+    final text = (predefinedText ?? messageController.text).trim();
+    if (text.isEmpty) return;
 
     messageController.clear();
-
-    final currentTime = _getFormattedTime();
-
     setState(() {
-      messages.add(ChatMessage(text: text, isUser: true, time: currentTime));
+      _hasSentMessage = true;
+      messages.add(ChatMessage(text: text, isUser: true, time: _timeNow()));
       isTyping = true;
     });
 
@@ -264,6 +321,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
       scrollToBottom();
     });
+    _scrollToBottom();
   }
 
   static const List<String> _climaKeywords = [
@@ -303,11 +361,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
   void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !scrollController.hasClients) return;
-
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
       );
     });
   }
@@ -1503,35 +1560,32 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: _background,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9F8),
+        backgroundColor: _background,
         elevation: 0,
-        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF172B36)),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: _navy),
+          onPressed: () => Navigator.maybePop(context),
         ),
+        titleSpacing: 0,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Mr. Healthy',
               style: TextStyle(
-                color: Color(0xFF172B36),
-                fontSize: 20,
+                color: _navy,
+                fontSize: 19,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            SizedBox(height: 2),
             Text(
               'Asistente de Healthy Habit',
-              style: TextStyle(
-                color: Color(0xFF7A869A),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: _muted, fontSize: 11),
             ),
           ],
         ),
@@ -1555,8 +1609,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView.builder(
                 controller: scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -1818,16 +1874,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF172B36) : const Color(0xFFE2F7ED),
+          color: isUser ? _navy : const Color(0xFFE2F7ED),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(22),
-            topRight: const Radius.circular(22),
-            bottomLeft: Radius.circular(isUser ? 22 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 22),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isUser ? 18 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
         ),
         child: Column(
@@ -1836,19 +1892,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
             Text(
               message.text,
               style: TextStyle(
-                color: isUser ? Colors.white : const Color(0xFF172B36),
+                color: isUser ? Colors.white : _navy,
                 fontSize: 14,
                 height: 1.4,
-                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              isUser ? 'Tú · ${message.time}' : 'Mr. Healthy · ${message.time}',
+              '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
-                color: isUser ? Colors.white60 : const Color(0xFF198568),
+                color: isUser ? Colors.white70 : _green,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ],

@@ -6,6 +6,8 @@ import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
 import 'package:healthy_habit/servicios/autenticacion_servicio.dart';
 
 import 'signup_screen.dart';
+import 'terminos_condiciones_screen.dart';
+import 'sobre_nosotros_screen.dart';
 
 // ---------- Palette (shared across both auth screens) ----------
 class AppColors {
@@ -174,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 100,
                   height: 100,
                   child: Image.asset(
-                    'assets/logo/logo.png',
+                    'assets/logo/MrHealty.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       debugPrint('Error al cargar el logo: $error');
@@ -391,10 +393,74 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              // Enlaces legales / informativos
+              const _LegalLinks(),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// =====================================================================
+// Enlaces: Términos y condiciones · Sobre nosotros
+// =====================================================================
+class _LegalLinks extends StatelessWidget {
+  const _LegalLinks();
+
+  Widget _link(BuildContext context, String label, Widget page) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.greenDark,
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.greenDark,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Text(
+          'Al continuar aceptas nuestros',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: AppColors.textGrey),
+        ),
+        const SizedBox(height: 2),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _link(
+              context,
+              'Términos y condiciones',
+              const TerminosCondicionesScreen(),
+            ),
+            const Text(
+              '·',
+              style: TextStyle(fontSize: 14, color: AppColors.textGrey),
+            ),
+            _link(context, 'Sobre nosotros', const SobreNosotrosScreen()),
+          ],
+        ),
+      ],
     );
   }
 }

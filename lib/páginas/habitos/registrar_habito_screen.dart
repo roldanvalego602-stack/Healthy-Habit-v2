@@ -1,13 +1,14 @@
+import '../niveles/levels_system.dart';
+import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../../Contenido_del_tema/colores.dart';
+import 'temporary_evidence_service.dart';
+import 'habit_interaction_card.dart';
 
 class RegistrarHabitoScreen extends StatefulWidget {
   final String? habitId;
@@ -16,7 +17,6 @@ class RegistrarHabitoScreen extends StatefulWidget {
   final String? category;
   final int? currentProgress;
   final int? goal;
-
   const RegistrarHabitoScreen({
     super.key,
     this.habitId,
@@ -26,36 +26,31 @@ class RegistrarHabitoScreen extends StatefulWidget {
     this.currentProgress,
     this.goal,
   });
-
   @override
   State<RegistrarHabitoScreen> createState() => _RegistrarHabitoScreenState();
 }
 
 class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   late final FirebaseFirestore _db;
-
   final TextEditingController _notaController = TextEditingController();
-
   final ImagePicker _imagePicker = ImagePicker();
-
   XFile? _imagenSeleccionada;
   Uint8List? _bytesImagen;
-
   bool _guardando = false;
   bool _cargando = true;
-  bool _subiendoImagen = false;
-
+  final bool _subiendoImagen = false;
+  String _interactionType = 'manual';
+  int _interactionTarget = 1;
+  String _interactionUnit = 'vez';
+  bool _interactionComplete = true;
+  int _interactionValue = 0;
   String? _error;
-
   String _nombreHabito = 'Tomar 6 vasos de agua';
   String _categoria = 'Hidratación';
-
   int _progreso = 0;
   int _meta = 6;
-
   DocumentReference<Map<String, dynamic>>? _habitoRef;
   DocumentReference<Map<String, dynamic>>? _attemptRef;
-
   DocumentReference<Map<String, dynamic>> get _userDoc {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return _db.collection('users').doc(uid);
@@ -66,26 +61,22 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   }
 
   bool get _tieneEvidencia => _imagenSeleccionada != null;
-
   bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
-
-  bool get _puedeGuardar => !_guardando && !_cargando && !_metaCompletada;
-
+  bool get _puedeGuardar =>
+      !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
   @override
   void initState() {
     super.initState();
-
     _db = FirebaseFirestore.instanceFor(
       app: Firebase.app(),
       databaseId: 'default',
     );
-
     _nombreHabito = widget.habitTitle ?? _nombreHabito;
     _categoria = widget.category ?? _categoria;
     _progreso = widget.currentProgress ?? 0;
     _meta = widget.goal ?? 6;
-
     _cargarHabito();
+    TemporaryEvidenceService.cleanExpiredForCurrentUser().catchError((_) {});
   }
 
   @override
@@ -97,13 +88,11 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   int _leerEntero(dynamic value, int fallback) {
     if (value is int) return value;
     if (value is num) return value.toInt();
-
     return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
   Future<void> _cargarHabito() async {
     final usuario = FirebaseAuth.instance.currentUser;
-
     if (usuario == null) {
       if (mounted) {
         setState(() {
@@ -113,7 +102,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       }
       return;
     }
-
     try {
       if (widget.habitId == null ||
           widget.habitId!.isEmpty ||
@@ -123,11 +111,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'No se recibió el identificador del hábito y su intento.',
         );
       }
-
       final habitoRef = _habitos.doc(widget.habitId);
       final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
-
       final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
+<<<<<<< HEAD
 
       final habitoSnapshot =
           resultados[0];
@@ -135,45 +122,80 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final attemptSnapshot =
           resultados[1];
 
+=======
+      final habitoSnapshot = resultados[0];
+      final attemptSnapshot = resultados[1];
+>>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
       if (!habitoSnapshot.exists) {
         throw Exception('No se encontró el hábito seleccionado.');
       }
-
       if (!attemptSnapshot.exists) {
         throw Exception('No se encontró el intento del hábito.');
       }
-
       final datosHabito = habitoSnapshot.data()!;
       final datosAttempt = attemptSnapshot.data()!;
-
       final estado = (datosAttempt['status'] ?? '').toString();
-
       if (estado != 'inProgress') {
         throw Exception(
           'Este intento ya no está activo y no admite registros.',
         );
       }
-
       _habitoRef = habitoRef;
       _attemptRef = attemptRef;
-
       _nombreHabito =
           (datosHabito['title'] ??
                   datosHabito['name'] ??
                   datosHabito['nombre'] ??
                   _nombreHabito)
               .toString();
-
       _categoria =
           (datosHabito['category'] ?? datosHabito['categoria'] ?? _categoria)
               .toString();
-
       _progreso = _leerEntero(datosAttempt['progress'], _progreso);
-
+      // El objetivo interactivo es por sesión; no altera la meta del intento.
+      final rawInteraction = datosHabito['interaction'];
+      final interaction =
+          rawInteraction is Map ? rawInteraction : <String, dynamic>{};
+      final configuredType = (interaction['type'] ?? '').toString();
+      final text = '$_nombreHabito $_categoria'.toLowerCase();
+      final fallbackType =
+          text.contains('agua') || text.contains('vaso')
+              ? 'counter'
+              : text.contains('caminar') ||
+                  text.contains('correr') ||
+                  text.contains('ejercicio')
+              ? 'stopwatch'
+              : 'manual';
+      final type = configuredType.isEmpty ? fallbackType : configuredType;
+      _interactionType =
+          [
+                'counter',
+                'stopwatch',
+                'timer',
+                'steps',
+                'breathing',
+                'pomodoro',
+                'hydration',
+              ].contains(type)
+              ? type
+              : 'manual';
+      _interactionTarget = _leerEntero(
+        interaction['target'],
+        ['counter', 'hydration', 'steps'].contains(_interactionType) ? 1 : 60,
+      ).clamp(1, 86400);
+      _interactionUnit =
+          (interaction['unit'] ??
+                  (_interactionType == 'counter'
+                      ? 'vaso'
+                      : _interactionType == 'hydration'
+                      ? 'ml'
+                      : _interactionType == 'steps'
+                      ? 'pasos'
+                      : 'segundos'))
+              .toString();
+      _interactionComplete = _interactionType == 'manual';
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
-
       if (_meta < 1) _meta = 1;
-
       if (mounted) {
         setState(() {
           _cargando = false;
@@ -192,21 +214,22 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   Future<void> _seleccionarImagen(ImageSource origen) async {
     if (_guardando || _cargando) return;
-
     try {
       final XFile? imagen = await _imagePicker.pickImage(
         source: origen,
-        imageQuality: 80,
-        maxWidth: 1600,
-        maxHeight: 1600,
+        imageQuality: 35,
+        maxWidth: 640,
+        maxHeight: 640,
       );
-
       if (!mounted || imagen == null) return;
-
       final bytes = await imagen.readAsBytes();
-
       if (!mounted) return;
-
+      if (bytes.lengthInBytes > TemporaryEvidenceService.maxImageBytes) {
+        _mostrarMensaje(
+          'La imagen supera 250 KB. Selecciona otra más pequeña.',
+        );
+        return;
+      }
       setState(() {
         _imagenSeleccionada = imagen;
         _bytesImagen = bytes;
@@ -222,184 +245,193 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   void _quitarImagen() {
     if (_guardando) return;
-
     setState(() {
       _imagenSeleccionada = null;
       _bytesImagen = null;
     });
   }
 
-  String _extensionImagen(String nombre) {
-    final partes = nombre.toLowerCase().split('.');
+  // Fecha civil local, independiente de los cambios de horario de verano.
+  String _fechaLocal(DateTime fecha) =>
+      '${fecha.year.toString().padLeft(4, '0')}-'
+      '${fecha.month.toString().padLeft(2, '0')}-'
+      '${fecha.day.toString().padLeft(2, '0')}';
 
-    if (partes.length < 2) return 'jpg';
-
-    final extension = partes.last;
-
-    const permitidas = ['jpg', 'jpeg', 'png', 'webp'];
-
-    return permitidas.contains(extension) ? extension : 'jpg';
-  }
-
-  String _tipoContenido(String extension) {
-    switch (extension) {
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'jpg':
-      case 'jpeg':
-      default:
-        return 'image/jpeg';
-    }
-  }
-
-  Future<String?> _subirImagen({
-    required String uid,
-    required String registroId,
-    required String habitId,
-  }) async {
-    final imagen = _imagenSeleccionada;
-    final bytes = _bytesImagen;
-
-    if (imagen == null || bytes == null) return null;
-
-    if (mounted) {
-      setState(() => _subiendoImagen = true);
-    }
-
-    final extension = _extensionImagen(imagen.name);
-
-    final referencia = FirebaseStorage.instance.ref().child(
-      'users/$uid/habit_evidence/$registroId.$extension',
-    );
-
-    try {
-      final metadata = SettableMetadata(
-        contentType: _tipoContenido(extension),
-        customMetadata: {
-          'userId': uid,
-          'habitId': habitId,
-          'recordId': registroId,
-        },
-      );
-
-      await referencia.putData(bytes, metadata);
-
-      return await referencia.getDownloadURL();
-    } finally {
-      if (mounted) {
-        setState(() => _subiendoImagen = false);
-      }
-    }
+  int? _diasEntreFechas(String anterior, String actual) {
+    final a = DateTime.tryParse(anterior);
+    final b = DateTime.tryParse(actual);
+    if (a == null || b == null) return null;
+    final diaA = DateTime.utc(a.year, a.month, a.day);
+    final diaB = DateTime.utc(b.year, b.month, b.day);
+    return diaB.difference(diaA).inDays;
   }
 
   Future<void> _guardarRegistro() async {
     if (!_puedeGuardar) return;
-
     final usuario = FirebaseAuth.instance.currentUser;
-
     if (usuario == null) {
       _mostrarMensaje('Debes iniciar sesión para guardar el registro.');
       return;
     }
-
     final habitoRef = _habitoRef;
     final attemptRef = _attemptRef;
-
     if (habitoRef == null || attemptRef == null) {
       _mostrarMensaje('No se pudo identificar el intento del hábito.');
       return;
     }
-
     setState(() {
       _guardando = true;
       _error = null;
     });
-
-    Reference? referenciaImagenSubida;
-
     try {
       final usuarioRef = _userDoc;
-
       // Los registros pertenecen al intento, no directamente
       // al documento principal del hábito.
       final registroRef = attemptRef.collection('logs').doc();
-
       final nota = _notaController.text.trim();
-      final uid = usuario.uid;
-
-      String? imagenUrl;
-
-      if (_imagenSeleccionada != null) {
-        final extension = _extensionImagen(_imagenSeleccionada!.name);
-
-        referenciaImagenSubida = FirebaseStorage.instance.ref().child(
-          'users/$uid/habit_evidence/'
-          '${registroRef.id}.$extension',
-        );
-
-        imagenUrl = await _subirImagen(
-          uid: uid,
-          registroId: registroRef.id,
-          habitId: habitoRef.id,
-        );
+      if (!_interactionComplete) {
+        throw Exception('Completa la actividad interactiva.');
       }
-
-      final tieneEvidenciaReal = imagenUrl != null;
+      final interactionType = _interactionType;
+      final interactionValue = _interactionValue;
+      final interactionUnit = _interactionUnit;
+      final uid = usuario.uid;
+      final bytesEvidencia = _bytesImagen;
+      final tieneEvidenciaReal =
+          _imagenSeleccionada != null && bytesEvidencia != null;
+      if (tieneEvidenciaReal &&
+          bytesEvidencia.lengthInBytes >
+              TemporaryEvidenceService.maxImageBytes) {
+        throw Exception('La fotografía supera el límite de 250 KB.');
+      }
       final xpGanado = tieneEvidenciaReal ? 15 : 10;
+      final evidenciaRef = _userDoc
+          .collection('temporary_habit_evidence')
+          .doc(registroRef.id);
+      final ahora = DateTime.now().toUtc();
+      final expira = ahora.add(const Duration(hours: 24));
+      final extension =
+          (_imagenSeleccionada?.name.split('.').last ?? 'jpg').toLowerCase();
+      final imagenTipo =
+          extension == 'png'
+              ? 'image/png'
+              : extension == 'webp'
+              ? 'image/webp'
+              : 'image/jpeg';
 
       await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
+<<<<<<< HEAD
 
+=======
+        final habitoSnapshot = await transaction.get(habitoRef);
+>>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
         final usuarioSnapshot = await transaction.get(usuarioRef);
-
         if (!attemptSnapshot.exists) {
           throw Exception('El intento ya no existe.');
         }
-
         final datosAttempt = attemptSnapshot.data()!;
+<<<<<<< HEAD
 
+=======
+        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
+>>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
         final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
-
         // Comprobar el estado dentro de la transacción
         // evita guardar registros en intentos cancelados
         // o completados.
         final estado = (datosAttempt['status'] ?? '').toString();
-
         if (estado != 'inProgress') {
           throw Exception('El intento ya no está activo.');
         }
-
         final progresoActual = _leerEntero(datosAttempt['progress'], 0);
-
         final metaActual = _leerEntero(datosAttempt['target'], _meta);
-
         final metaSegura = metaActual < 1 ? 1 : metaActual;
-
         if (progresoActual >= metaSegura) {
           throw Exception('La meta de este hábito ya fue completada.');
         }
+        // La racha se actualiza una sola vez por fecha local, dentro
+        // de la misma transacción que crea el registro.
+        final fechaHoy = _fechaLocal(DateTime.now().toLocal());
+        final ultimaFecha = (datosUsuario['lastStreakDate'] ?? '').toString();
+        final diferencia = _diasEntreFechas(ultimaFecha, fechaHoy);
+        final rachaAnterior = _leerEntero(datosUsuario['currentStreak'], 0);
+        final recordAnterior = _leerEntero(datosUsuario['longestStreak'], 0);
+        final nuevaRacha =
+            diferencia == 0
+                ? (rachaAnterior > 0 ? rachaAnterior : 1)
+                : diferencia == 1
+                ? rachaAnterior + 1
+                : 1;
+        final nuevoRecord =
+            nuevaRacha > recordAnterior ? nuevaRacha : recordAnterior;
 
-        final xpActual = _leerEntero(datosUsuario['xp'], 0);
+        // HEALTHY_HABIT_LEVEL_REWARDS_V2
+        final xpActual =
+            _leerEntero(
+              datosUsuario['xp'] ?? datosUsuario['currentXp'],
+              0,
+            ).clamp(0, 1000000000).toInt();
+
+        final xpNuevo = xpActual + xpGanado;
+        final nivelAnterior = LevelSystem.fromXp(xpActual).number;
+        final nivelNuevo = LevelSystem.fromXp(xpNuevo).number;
+
+        const recompensas = <int, int>{
+          2: 25,
+          3: 25,
+          4: 25,
+          5: 50,
+          6: 50,
+          7: 50,
+          8: 50,
+          9: 75,
+          10: 75,
+          11: 75,
+          12: 75,
+          13: 100,
+          14: 100,
+          15: 100,
+          16: 100,
+          17: 150,
+          18: 150,
+          19: 150,
+          20: 300,
+        };
+
+        final reclamados = <int>{
+          for (final valor
+              in (datosUsuario['claimedLevelRewards'] is List
+                  ? datosUsuario['claimedLevelRewards'] as List
+                  : <dynamic>[]))
+            if (_leerEntero(valor, 0) >= 2) _leerEntero(valor, 0),
+        };
+
+        var monedasGanadas = 0;
+
+        for (var numero = nivelAnterior + 1; numero <= nivelNuevo; numero++) {
+          if (reclamados.add(numero)) {
+            monedasGanadas += recompensas[numero] ?? 0;
+          }
+        }
+
+        final monedasActuales = _leerEntero(datosUsuario['habitCoins'], 0);
+
+        final monedasNuevas = monedasActuales + monedasGanadas;
 
         final xpHabito = _leerEntero(datosAttempt['xpEarned'], 0);
-
         final nuevoProgreso = progresoActual + 1;
         final completado = nuevoProgreso >= metaSegura;
-
         final datosActualizacion = <String, dynamic>{
           'progress': nuevoProgreso,
           'target': metaSegura,
           'xpEarned': xpHabito + xpGanado,
           'updatedAt': FieldValue.serverTimestamp(),
         };
-
         if (completado) {
           datosActualizacion['status'] = 'completed';
           datosActualizacion['completedAt'] = FieldValue.serverTimestamp();
         }
-
         transaction.update(attemptRef, datosActualizacion);
         transaction.set(habitoRef, {
           'latestAttemptId': attemptRef.id,
@@ -408,11 +440,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'latestStatus': completado ? 'completed' : 'inProgress',
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-
         transaction.set(usuarioRef, {
-          'xp': xpActual + xpGanado,
+          'xp': xpNuevo,
+          'currentXp': xpNuevo,
+          'level': nivelNuevo,
+          'habitCoins': monedasNuevas,
+          'claimedLevelRewards': reclamados.toList()..sort(),
+          'currentStreak': nuevaRacha,
+          'streakDays': nuevaRacha,
+          'longestStreak': nuevoRecord,
+          'lastStreakDate': fechaHoy,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+        if (tieneEvidenciaReal) {
+          transaction.set(evidenciaRef, {
+            'userId': uid,
+            'habitId': habitoRef.id,
+            'attemptId': attemptRef.id,
+            'logId': registroRef.id,
+            'imageBase64': base64Encode(bytesEvidencia),
+            'contentType': imagenTipo,
+            'createdAt': FieldValue.serverTimestamp(),
+            'expiresAt': Timestamp.fromDate(expira),
+          });
+        }
 
         transaction.set(registroRef, {
           'habitId': habitoRef.id,
@@ -420,8 +471,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'habitTitle': _nombreHabito,
           'category': _categoria,
           'note': nota,
+          'interactionType': interactionType,
+          'interactionValue': interactionValue,
+          'interactionUnit': interactionUnit,
           'hasEvidence': tieneEvidenciaReal,
-          'imageUrl': imagenUrl,
+          'imageUrl': null,
+          'evidenceId': tieneEvidenciaReal ? registroRef.id : null,
+          'evidenceExpiresAt':
+              tieneEvidenciaReal ? Timestamp.fromDate(expira) : null,
           'xpEarned': xpGanado,
           'progressAfter': nuevoProgreso,
           'goal': metaSegura,
@@ -430,28 +487,15 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'userId': uid,
         });
       });
-
       if (!mounted) return;
-
       Navigator.pop(context, true);
     } catch (e) {
-      // Si la imagen se subió pero el registro falló,
-      // intenta eliminar el archivo para evitar evidencias huérfanas.
-      if (referenciaImagenSubida != null) {
-        try {
-          await referenciaImagenSubida.delete();
-        } catch (_) {
-          // Se conserva el error original.
-        }
-      }
-
       if (mounted) {
         setState(() {
           _error =
               'No se pudo guardar el registro. Verifica tu conexión, '
-              'Firebase Storage y las reglas de seguridad.';
+              'Firestore y las reglas de seguridad.';
         });
-
         _mostrarMensaje('Error al guardar: $e');
       }
     } finally {
@@ -463,7 +507,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   void _mostrarMensaje(String mensaje) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(mensaje)));
@@ -485,7 +528,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-
     return Scaffold(
       backgroundColor: AppColores.fondoClaro,
       appBar: AppBar(
@@ -524,14 +566,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTarjetaHabito(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+            if (_interactionType != 'manual') ...[
+              HabitInteractionCard(
+                type: _interactionType,
+                target: _interactionTarget,
+                unit: _interactionUnit,
+                enabled: !_guardando && !_metaCompletada,
+                onChanged: (complete, value) {
+                  if (!mounted) return;
+                  setState(() {
+                    _interactionComplete = complete;
+                    _interactionValue = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildTituloSeccion('Fotografía', 'Opcional'),
             const SizedBox(height: 12),
             _buildFotografia(),
             const SizedBox(height: 8),
             const Text(
-              'Puedes adjuntar una fotografía como evidencia '
-              'de tu hábito. Es opcional.',
+              'Puedes adjuntar una fotografía como evidencia. '
+              'Se eliminará después de 24 horas al ejecutar la limpieza.',
               style: TextStyle(fontSize: 12, color: AppColores.textoGris),
             ),
             const SizedBox(height: 24),
@@ -630,7 +688,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 label: Text(
                   _guardando
                       ? (_subiendoImagen
-                          ? 'Subiendo imagen...'
+                          ? 'Preparando imagen...'
                           : 'Guardando...')
                       : _metaCompletada
                       ? 'Meta completada'
@@ -643,8 +701,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColores.verdePrincipal,
                   foregroundColor: Colors.white,
+<<<<<<< HEAD
                   disabledBackgroundColor: AppColores.verdePrincipal
                       .withValues(alpha: 0.6),
+=======
+                  disabledBackgroundColor: AppColores.verdePrincipal.withValues(
+                    alpha: 0.6,
+                  ),
+>>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -677,7 +741,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Widget _buildTarjetaHabito() {
     final progresoVisual =
         _meta > 0 ? (_progreso / _meta).clamp(0.0, 1.0).toDouble() : 0.0;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -796,7 +859,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   Widget _buildFotografia() {
     final tieneImagen = _bytesImagen != null;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -933,7 +995,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             ),
             subtitle: Text(
               tieneImagen
-                  ? 'La imagen se subirá al guardar el registro.'
+                  ? 'La imagen se guardará temporalmente durante 24 horas.'
                   : 'Selecciona una imagen para activar la evidencia.',
               style: const TextStyle(fontSize: 11),
             ),

@@ -21,7 +21,9 @@ class _TermsScreenState extends State<TermsScreen> {
     if (!_hasAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, marca la casilla de aceptación para continuar.'),
+          content: Text(
+            'Por favor, marca la casilla de aceptación para continuar.',
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -52,11 +54,12 @@ class _TermsScreenState extends State<TermsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/mascot/healthy.png',
+              'assets/logo/logo.png',
               width: 24,
               height: 24,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.eco_rounded, color: green, size: 22),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const Icon(Icons.eco_rounded, color: green, size: 22),
             ),
             const SizedBox(width: 8),
             const Text(
@@ -91,8 +94,11 @@ class _TermsScreenState extends State<TermsScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: const [
-                      Icon(Icons.calendar_today_outlined,
-                          size: 13, color: textMuted),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 13,
+                        color: textMuted,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Última actualización: 23 de octubre de 2026',
@@ -143,14 +149,30 @@ class _TermsScreenState extends State<TermsScreen> {
                         _buildParagraph(
                           'Healthy-Habit es una aplicación diseñada para ayudar a los usuarios a organizar, registrar y dar seguimiento a sus hábitos y actividades cotidianas.',
                         ),
-                        _buildParagraph('Entre sus funcionalidades se pueden incluir:'),
-                        _buildBulletPoint('Registro y seguimiento de hábitos personales.'),
-                        _buildBulletPoint('Visualización del progreso y cumplimiento de objetivos.'),
-                        _buildBulletPoint('Seguimiento de rachas y estadísticas de actividad.'),
-                        _buildBulletPoint('Obtención de experiencia (XP), niveles, logros e insignias.'),
-                        _buildBulletPoint('Acumulación y utilización de monedas virtuales, como Habit Coins.'),
-                        _buildBulletPoint('Acceso a una tienda virtual y opciones de personalización del perfil.'),
-                        _buildBulletPoint('Visualización de recomendaciones, mensajes motivacionales y otros recursos relacionados con la formación de hábitos.'),
+                        _buildParagraph(
+                          'Entre sus funcionalidades se pueden incluir:',
+                        ),
+                        _buildBulletPoint(
+                          'Registro y seguimiento de hábitos personales.',
+                        ),
+                        _buildBulletPoint(
+                          'Visualización del progreso y cumplimiento de objetivos.',
+                        ),
+                        _buildBulletPoint(
+                          'Seguimiento de rachas y estadísticas de actividad.',
+                        ),
+                        _buildBulletPoint(
+                          'Obtención de experiencia (XP), niveles, logros e insignias.',
+                        ),
+                        _buildBulletPoint(
+                          'Acumulación y utilización de monedas virtuales, como Habit Coins.',
+                        ),
+                        _buildBulletPoint(
+                          'Acceso a una tienda virtual y opciones de personalización del perfil.',
+                        ),
+                        _buildBulletPoint(
+                          'Visualización de recomendaciones, mensajes motivacionales y otros recursos relacionados con la formación de hábitos.',
+                        ),
                         _buildParagraph(
                           'Las funciones disponibles podrán variar según la versión de la Aplicación.',
                         ),
@@ -171,17 +193,31 @@ class _TermsScreenState extends State<TermsScreen> {
                           'El usuario se compromete a utilizar Healthy-Habit de manera responsable y conforme a la legislación aplicable.',
                         ),
                         _buildParagraph('Queda prohibido:'),
-                        _buildBulletPoint('Utilizar la Aplicación con fines ilícitos o fraudulentos.'),
-                        _buildBulletPoint('Intentar acceder sin autorización a cuentas, sistemas o información de otros usuarios.'),
-                        _buildBulletPoint('Manipular deliberadamente los registros, las recompensas o los mecanismos de progreso para obtener ventajas indebidas.'),
-                        _buildBulletPoint('Introducir código malicioso o realizar acciones que comprometan la seguridad o disponibilidad del servicio.'),
-                        _buildBulletPoint('Utilizar la Aplicación para acosar, amenazar o perjudicar a otras personas.'),
-                        _buildBulletPoint('Copiar, modificar, distribuir o explotar comercialmente los componentes protegidos de la Aplicación sin autorización, salvo cuando la ley lo permita.'),
+                        _buildBulletPoint(
+                          'Utilizar la Aplicación con fines ilícitos o fraudulentos.',
+                        ),
+                        _buildBulletPoint(
+                          'Intentar acceder sin autorización a cuentas, sistemas o información de otros usuarios.',
+                        ),
+                        _buildBulletPoint(
+                          'Manipular deliberadamente los registros, las recompensas o los mecanismos de progreso para obtener ventajas indebidas.',
+                        ),
+                        _buildBulletPoint(
+                          'Introducir código malicioso o realizar acciones que comprometan la seguridad o disponibilidad del servicio.',
+                        ),
+                        _buildBulletPoint(
+                          'Utilizar la Aplicación para acosar, amenazar o perjudicar a otras personas.',
+                        ),
+                        _buildBulletPoint(
+                          'Copiar, modificar, distribuir o explotar comercialmente los componentes protegidos de la Aplicación sin autorización, salvo cuando la ley lo permita.',
+                        ),
                         _buildParagraph(
                           'El incumplimiento podrá dar lugar a medidas proporcionales, incluida la restricción o suspensión de la cuenta, conforme a la legislación aplicable y sin perjuicio de los derechos del usuario.',
                         ),
 
-                        _buildSectionTitle('5. Hábitos, progreso y contenido motivacional'),
+                        _buildSectionTitle(
+                          '5. Hábitos, progreso y contenido motivacional',
+                        ),
                         _buildParagraph(
                           'Healthy-Habit tiene como finalidad apoyar la organización personal y la formación de hábitos. Los registros, estadísticas, rachas, niveles y recomendaciones se proporcionan como herramientas de seguimiento y motivación.',
                         ),
@@ -195,21 +231,37 @@ class _TermsScreenState extends State<TermsScreen> {
                           'El usuario deberá adaptar sus actividades a sus circunstancias y evitar prácticas que puedan poner en riesgo su salud o seguridad.',
                         ),
 
-                        _buildSectionTitle('6. XP, niveles, logros y monedas virtuales'),
+                        _buildSectionTitle(
+                          '6. XP, niveles, logros y monedas virtuales',
+                        ),
                         _buildParagraph(
                           'La experiencia (XP), los niveles, las rachas, las insignias, los logros y las monedas virtuales son elementos digitales destinados a representar el progreso y la participación dentro de Healthy-Habit.',
                         ),
-                        _buildParagraph('Salvo que se indique expresamente lo contrario:'),
-                        _buildBulletPoint('Estos elementos no representan dinero real, depósitos, inversiones ni derechos de cobro.'),
-                        _buildBulletPoint('Las monedas virtuales no son dinero electrónico ni un medio de pago de aceptación general.'),
-                        _buildBulletPoint('No pueden canjearse por dinero real ni transferirse a terceros.'),
-                        _buildBulletPoint('Su obtención y utilización dependen de las reglas y funcionalidades habilitadas en la Aplicación.'),
-                        _buildBulletPoint('Los saldos, recompensas y progresos pueden ajustarse cuando sea necesario corregir errores técnicos, prevenir fraudes o mantener el funcionamiento del servicio, respetando los derechos aplicables.'),
+                        _buildParagraph(
+                          'Salvo que se indique expresamente lo contrario:',
+                        ),
+                        _buildBulletPoint(
+                          'Estos elementos no representan dinero real, depósitos, inversiones ni derechos de cobro.',
+                        ),
+                        _buildBulletPoint(
+                          'Las monedas virtuales no son dinero electrónico ni un medio de pago de aceptación general.',
+                        ),
+                        _buildBulletPoint(
+                          'No pueden canjearse por dinero real ni transferirse a terceros.',
+                        ),
+                        _buildBulletPoint(
+                          'Su obtención y utilización dependen de las reglas y funcionalidades habilitadas en la Aplicación.',
+                        ),
+                        _buildBulletPoint(
+                          'Los saldos, recompensas y progresos pueden ajustarse cuando sea necesario corregir errores técnicos, prevenir fraudes o mantener el funcionamiento del servicio, respetando los derechos aplicables.',
+                        ),
                         _buildParagraph(
                           'Cualquier cambio relevante en las reglas de recompensas deberá comunicarse de manera adecuada cuando corresponda.',
                         ),
 
-                        _buildSectionTitle('7. Tienda virtual y personalización'),
+                        _buildSectionTitle(
+                          '7. Tienda virtual y personalización',
+                        ),
                         _buildParagraph(
                           'La tienda de Healthy-Habit puede ofrecer elementos digitales, como marcos, banners, títulos, insignias u otras opciones de personalización.',
                         ),
@@ -231,7 +283,9 @@ class _TermsScreenState extends State<TermsScreen> {
                           'El responsable podrá adoptar medidas razonables para proteger las cuentas, investigar actividades sospechosas y mantener la integridad del servicio.',
                         ),
 
-                        _buildSectionTitle('9. Privacidad y protección de datos personales'),
+                        _buildSectionTitle(
+                          '9. Privacidad y protección de datos personales',
+                        ),
                         _buildParagraph(
                           'Healthy-Habit deberá tratar los datos personales de acuerdo con la legislación de protección de datos aplicable y con su Aviso de Privacidad.',
                         ),
@@ -262,7 +316,9 @@ class _TermsScreenState extends State<TermsScreen> {
                           'Los materiales de terceros utilizados en la Aplicación podrán estar sujetos a sus propias licencias y condiciones.',
                         ),
 
-                        _buildSectionTitle('11. Disponibilidad y modificaciones del servicio'),
+                        _buildSectionTitle(
+                          '11. Disponibilidad y modificaciones del servicio',
+                        ),
                         _buildParagraph(
                           'Healthy-Habit podrá recibir actualizaciones, mejoras, cambios de diseño o modificaciones funcionales.',
                         ),
@@ -276,7 +332,9 @@ class _TermsScreenState extends State<TermsScreen> {
                           'Cuando sea viable y corresponda, se procurará informar de las interrupciones relevantes.',
                         ),
 
-                        _buildSectionTitle('12. Suspensión y cancelación de cuentas'),
+                        _buildSectionTitle(
+                          '12. Suspensión y cancelación de cuentas',
+                        ),
                         _buildParagraph(
                           'El usuario podrá dejar de utilizar la Aplicación y solicitar la cancelación de su cuenta mediante los mecanismos que se habiliten.',
                         ),
@@ -315,7 +373,9 @@ class _TermsScreenState extends State<TermsScreen> {
                           'La fecha de actualización se indicará al inicio del documento.',
                         ),
 
-                        _buildSectionTitle('15. Legislación aplicable y resolución de controversias'),
+                        _buildSectionTitle(
+                          '15. Legislación aplicable y resolución de controversias',
+                        ),
                         _buildParagraph(
                           'Estos términos se interpretarán conforme a la legislación aplicable en México, sin perjuicio de las normas imperativas que correspondan al domicilio del usuario y de los derechos que le reconozca la ley.',
                         ),
@@ -330,10 +390,18 @@ class _TermsScreenState extends State<TermsScreen> {
                         _buildParagraph(
                           'Para consultas, reportes o solicitudes relacionadas con estos términos, el usuario podrá comunicarse con el responsable de Healthy-Habit mediante los siguientes datos:',
                         ),
-                        _buildBulletPoint('Responsable o titular del proyecto: Equipo Healthy Habit'),
-                        _buildBulletPoint('Correo electrónico de contacto: soporte@healthyhabit.com'),
-                        _buildBulletPoint('Domicilio o medio de contacto legal: Durango, México'),
-                        _buildBulletPoint('Aviso de Privacidad: Disponible en Ajustes → Privacidad'),
+                        _buildBulletPoint(
+                          'Responsable o titular del proyecto: Equipo Healthy Habit',
+                        ),
+                        _buildBulletPoint(
+                          'Correo electrónico de contacto: soporte@healthyhabit.com',
+                        ),
+                        _buildBulletPoint(
+                          'Domicilio o medio de contacto legal: Durango, México',
+                        ),
+                        _buildBulletPoint(
+                          'Aviso de Privacidad: Disponible en Ajustes → Privacidad',
+                        ),
 
                         _buildSectionTitle('17. Declaración de aceptación'),
                         _buildParagraph(
@@ -392,7 +460,9 @@ class _TermsScreenState extends State<TermsScreen> {
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Dirigiéndose al Aviso de Privacidad...'),
+                          content: Text(
+                            'Dirigiéndose al Aviso de Privacidad...',
+                          ),
                         ),
                       );
                     },
@@ -477,7 +547,14 @@ class _TermsScreenState extends State<TermsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(color: green, fontWeight: FontWeight.bold, fontSize: 14)),
+          const Text(
+            '• ',
+            style: TextStyle(
+              color: green,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
           Expanded(
             child: Text(
               text,

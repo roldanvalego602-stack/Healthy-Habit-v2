@@ -178,20 +178,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 12),
-              // Logo
+              // Logotipo oficial de Healthy Habit.
               Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.green,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.eco_rounded,
-                    color: Colors.white,
-                    size: 36,
-                  ),
+                child: Image.asset(
+                  'assets/logo/logo.png',
+                  width: 84,
+                  height: 84,
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (_, __, ___) => const Icon(
+                        Icons.eco_rounded,
+                        color: AppColors.green,
+                        size: 60,
+                      ),
                 ),
               ),
               const SizedBox(height: 16),
