@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 class HabitInteractionCard extends StatefulWidget {
   const HabitInteractionCard({super.key, required this.type, required this.target,
@@ -47,26 +48,26 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF08B889), ink = Color(0xFF193344);
+    final green = HealthyAdaptive.accent, ink = HealthyAdaptive.text;
     final display = widget.type == 'timer' ? (_target - _seconds).clamp(0, _target) : _seconds;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFFE2F7ED), borderRadius: BorderRadius.circular(26)),
+      decoration: BoxDecoration(color: HealthyAdaptive.mint, borderRadius: BorderRadius.circular(26)),
       child: Column(children: [
         Row(children: [Icon(_timed ? Icons.timer_outlined : Icons.water_drop_outlined, color: green),
           const SizedBox(width: 8), Text(_timed ? 'Tiempo de actividad' : 'Contador de actividad',
-            style: const TextStyle(color: ink, fontSize: 17, fontWeight: FontWeight.w900))]),
+            style: TextStyle(color: ink, fontSize: 17, fontWeight: FontWeight.w900))]),
         const SizedBox(height: 20),
         Stack(alignment: Alignment.center, children: [
           SizedBox(width: 176, height: 176, child: CircularProgressIndicator(
             value: (_value / _target).clamp(0.0, 1.0), strokeWidth: 12,
-            backgroundColor: Colors.white, color: green)),
+            backgroundColor: HealthyAdaptive.surface, color: green)),
           Column(children: [
             Text(_timed ? _clock(display) : '$_count / $_target',
               style: const TextStyle(color: ink, fontSize: 34, fontWeight: FontWeight.w900)),
             Text(_timed ? 'Meta ${_clock(_target)}' : widget.unit,
-              style: const TextStyle(color: Color(0xFF71879A))),
+              style: TextStyle(color: HealthyAdaptive.muted)),
           ]),
         ]),
         const SizedBox(height: 20),
