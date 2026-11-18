@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../../tema/healthy_theme.dart';
 import '../modelos/catalogo_item.dart';
 
 class CatalogoDetalleScreen extends StatelessWidget {
   final CatalogoItem item;
   const CatalogoDetalleScreen({super.key, required this.item});
 
-  static const _verde = Color(0xFF08B889);
-  static const _oscuro = Color(0xFF193344);
-  static const _fondo = Color(0xFFF5F8F6);
-  static const _gris = Color(0xFF71879A);
+  Color get _verde => HealthyAdaptive.accent;
+  Color get _oscuro => HealthyAdaptive.text;
+  Color get _fondo => HealthyAdaptive.background;
+  Color get _gris => HealthyAdaptive.muted;
 
   IconData get _icono {
     switch (item.icono) {
@@ -56,7 +57,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
               height: 190,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 190, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 56, color: _verde))),
+              errorBuilder: (_, __, ___) => SizedBox(height: 190, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 56, color: _verde))),
             ),
           ),
           const SizedBox(height: 14),
@@ -80,7 +81,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   item.titulo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     color: _oscuro,
@@ -89,7 +90,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   item.descripcion,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     color: _gris,
                     height: 1.5,
@@ -123,14 +124,14 @@ class CatalogoDetalleScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     e.key,
-                                    style: const TextStyle(color: _gris),
+                                    style: TextStyle(color: _gris),
                                   ),
                                 ),
                                 Expanded(
                                   child: Text(
                                     e.value,
                                     textAlign: TextAlign.right,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: _oscuro,
                                     ),
@@ -174,19 +175,19 @@ class CatalogoDetalleScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
                       children: [
-                        const Icon(Icons.link, color: _verde, size: 18),
+                        Icon(Icons.link, color: _verde, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             h,
-                            style: const TextStyle(color: _oscuro),
+                            style: TextStyle(color: _oscuro),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const Text(
+                Text(
                   'Vinculación informativa. No activa hábitos ni concede XP.',
                   style: TextStyle(color: _gris, fontSize: 12),
                 ),
@@ -201,7 +202,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
               children: [
                 Text(
                   item.fuente,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: _oscuro,
                   ),
@@ -209,10 +210,10 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 SelectableText(
                   item.fuenteUrl,
-                  style: const TextStyle(color: _verde, fontSize: 12),
+                  style: TextStyle(color: _verde, fontSize: 12),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Contenido educativo general; no sustituye asesoramiento médico o nutricional individualizado.',
                   style: TextStyle(color: _gris, fontSize: 12),
                 ),
@@ -252,7 +253,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
       children: [
         Text(
           titulo,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
             color: _oscuro,
@@ -282,7 +283,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                               backgroundColor: const Color(0xFFE4F7EF),
                               child: Text(
                                 '${e.key + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: _verde,
                                 ),
@@ -293,7 +294,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             e.value,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               height: 1.4,
                               color: _oscuro,
