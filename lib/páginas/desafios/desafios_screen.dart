@@ -791,7 +791,7 @@ class _ChallengeCard extends StatelessWidget {
                   color:
                       isLocked
                           ? Colors.purple.shade50
-                          : const Color(0xFFE8F6FC),
+                          : HealthyAdaptive.water,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -852,7 +852,7 @@ class _ChallengeCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFEDEFF3),
+              backgroundColor: HealthyAdaptive.surfaceAlt,
               valueColor: AlwaysStoppedAnimation(
                 isCompleted || isClaimed
                     ? const Color(0xFF00C88C)
@@ -872,7 +872,7 @@ class _ChallengeCard extends StatelessWidget {
               ),
               _reward(
                 '+$xp XP',
-                const Color(0xFFE2F7ED),
+                HealthyAdaptive.mint,
                 const Color(0xFF00A875),
               ),
               _reward('+$hc HC', const Color(0xFFFDE89D), Colors.orange),
