@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
+import '../../tema/healthy_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -89,6 +90,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         settings = {
           ...defaults,
           if (stored is Map) ...Map<String, dynamic>.from(stored),
+          // La selección local se aplica incluso sin conexión Firebase.
+          'tema': HealthyThemeController.label(HealthyThemeController.instance.mode),
         };
         loading = false;
       });
@@ -100,6 +103,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save(String key, dynamic value) async {
+    // La apariencia se aplica inmediatamente y se conserva en el dispositivo.
+    // La copia en Firestore es opcional; no revierte la preferencia local.
+    if (key == 'tema') {
+      try {
+        await HealthyThemeController.instance.select(
+          HealthyThemeController.parse(value.toString()),
+        );
+      } catch (e) {
+        _message('No se pudo guardar el tema en este dispositivo: $e');
+        return;
+      }
+      if (mounted) setState(() => settings[key] = value);
+      try {
+        await userRef?.set({
+          'settings': {'tema': value},
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // El tema sigue disponible sin conexión.
+      }
+      return;
+    }
     final before = settings[key];
     setState(() {
       settings[key] = value;
