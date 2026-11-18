@@ -363,7 +363,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   child: CircleAvatar(
-                    backgroundColor: const Color(0xFFE6F1EC),
+                    backgroundColor: HealthyAdaptive.mint,
                     backgroundImage:
                         _string(data['photoUrl']).isNotEmpty
                             ? NetworkImage(_string(data['photoUrl']))
@@ -449,7 +449,7 @@ class ProfileScreen extends StatelessWidget {
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 13),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3D7),
+                          color: HealthyAdaptive.yellow,
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
@@ -505,7 +505,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2F4EB),
+                  color: HealthyAdaptive.mint,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.groups_rounded, color: green, size: 20),
@@ -808,7 +808,7 @@ class ProfileScreen extends StatelessWidget {
                         ? '${snap.data}'
                         : '…',
                 label: 'Hábitos completados',
-                color: const Color(0xFFE0F3FB),
+                color: HealthyAdaptive.water,
                 iconColor: const Color(0xFF459FCB),
               ),
         ),
@@ -824,7 +824,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           value: '$coins',
           label: 'Habit Coins',
-          color: const Color(0xFFEDE5FB),
+          color: HealthyAdaptive.lavender,
           iconColor: const Color(0xFF8C72C6),
         ),
       ),
@@ -957,8 +957,8 @@ class ProfileScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color:
                             unlocked
-                                ? const Color(0xFFE3F7EC)
-                                : const Color(0xFFF0F2F2),
+                                ? HealthyAdaptive.mint
+                                : HealthyAdaptive.surfaceAlt,
                         border: Border.all(
                           color: unlocked ? green : muted,
                           width: 1.8,
@@ -1014,7 +1014,7 @@ class ProfileScreen extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: unlocked ? 1 : 0,
                     minHeight: 5,
-                    backgroundColor: const Color(0xFFE5EEE9),
+                    backgroundColor: HealthyAdaptive.border,
                     valueColor: const AlwaysStoppedAnimation<Color>(green),
                   ),
                 ),
@@ -1039,7 +1039,7 @@ class ProfileScreen extends StatelessWidget {
           'Ritmo lunar',
           'PRÓXIMAMENTE',
           'Los logros de sueño llegarán después.',
-          const Color(0xFFF0E9FB),
+          HealthyAdaptive.lavender,
           const Color(0xFF8D77C3),
         ),
       ),
@@ -1050,7 +1050,7 @@ class ProfileScreen extends StatelessWidget {
           'Un mes floreciendo',
           'PRÓXIMAMENTE',
           'Los logros de racha llegarán después.',
-          const Color(0xFFEAF1ED),
+          HealthyAdaptive.surfaceAlt,
           const Color(0xFF80958F),
         ),
       ),
@@ -1197,7 +1197,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.landscape_rounded,
               'Banner',
               _string(data['profileBanner'], fallback: 'Amanecer'),
-              const Color(0xFFE2F4EB),
+              HealthyAdaptive.mint,
               green,
             ),
           ),
@@ -1207,7 +1207,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.circle_outlined,
               'Marco',
               _string(data['profileFrame'], fallback: 'Brote dorado'),
-              const Color(0xFFFFF1D1),
+              HealthyAdaptive.yellow,
               gold,
             ),
           ),
@@ -1221,7 +1221,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.workspace_premium_outlined,
               'Estante',
               _string(data['profileShelf'], fallback: 'Mis favoritos'),
-              const Color(0xFFE1F1FB),
+              HealthyAdaptive.water,
               const Color(0xFF459FCB),
             ),
           ),
@@ -1234,7 +1234,7 @@ class ProfileScreen extends StatelessWidget {
                 data['profileTitle'],
                 fallback: 'Cultivador de constancia',
               ),
-              const Color(0xFFF0E5FB),
+              HealthyAdaptive.lavender,
               const Color(0xFF9877C7),
             ),
           ),
@@ -1292,7 +1292,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _mascotCard({required int streak}) => Container(
     padding: const EdgeInsets.all(17),
     decoration: BoxDecoration(
-      color: const Color(0xFFE2F3E7),
+      color: HealthyAdaptive.mint,
       borderRadius: BorderRadius.circular(25),
     ),
     child: Row(
@@ -1381,7 +1381,7 @@ class ProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE2F0FB),
+            color: HealthyAdaptive.water,
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(
@@ -1446,7 +1446,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: const Color(0xFFE2F4EB),
+                color: HealthyAdaptive.mint,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Icon(
