@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
 class DesafiosScreen extends StatefulWidget {
@@ -283,17 +284,17 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9F8),
+        backgroundColor: HealthyAdaptive.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
+        title: Text(
           'Desafíos',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF0E1A30),
+            color: HealthyAdaptive.text,
           ),
         ),
         actions: [
@@ -327,10 +328,10 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                     const SizedBox(width: 6),
                     Text(
                       '$coins',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: Color(0xFF0E1A30),
+                        color: HealthyAdaptive.text,
                       ),
                     ),
                   ],
@@ -339,14 +340,14 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_none_rounded,
-              color: Color(0xFF0E1A30),
+              color: HealthyAdaptive.text,
             ),
             onPressed: () => _mensaje('No tienes notificaciones nuevas.'),
           ),
           IconButton(
-            icon: const Icon(Icons.tune_rounded, color: Color(0xFF0E1A30)),
+            icon: Icon(Icons.tune_rounded, color: HealthyAdaptive.text),
             onPressed: () => _mostrarFiltros(),
           ),
           const SizedBox(width: 8),
@@ -428,8 +429,8 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                             setState(() => _selectedFilter = filter);
                           }
                         },
-                        selectedColor: const Color(0xFF0E1A30),
-                        backgroundColor: Colors.white,
+                        selectedColor: HealthyAdaptive.accent,
+                        backgroundColor: HealthyAdaptive.surface,
                         showCheckmark: false,
                       );
                     },
@@ -702,7 +703,7 @@ class _ChallengeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isLocked ? const Color(0xFFFCFCFC) : Colors.white,
+        color: isLocked ? HealthyAdaptive.surfaceAlt : HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color:
@@ -887,7 +888,7 @@ class _ChallengeCard extends StatelessWidget {
               label: 'Aceptar desafío',
               icon: Icons.play_arrow_rounded,
               onPressed: processing ? null : onAccept,
-              background: const Color(0xFF0E1A30),
+              background: HealthyAdaptive.isDark ? const Color(0xFF285A49) : const Color(0xFF0E1A30),
             )
           else if (isCompleted)
             _actionButton(
@@ -918,7 +919,7 @@ class _ChallengeCard extends StatelessWidget {
               label: 'Ver detalles',
               icon: Icons.info_outline,
               onPressed: onDetails,
-              background: const Color(0xFF0E1A30),
+              background: HealthyAdaptive.isDark ? const Color(0xFF285A49) : const Color(0xFF0E1A30),
             ),
         ],
       ),
