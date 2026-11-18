@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'social_action_button.dart';
 import 'package:healthy_habit/p%C3%A1ginas/perfil/perfil_muestra.dart';
 
 import 'amigos_servicio.dart';
@@ -237,7 +238,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: HealthyAdaptive.surface,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -342,7 +343,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                               return Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: HealthyAdaptive.surface,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: HealthyAdaptive.border,
