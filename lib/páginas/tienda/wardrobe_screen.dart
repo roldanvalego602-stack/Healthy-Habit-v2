@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'shop_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
@@ -8,9 +9,9 @@ class WardrobeScreen extends StatefulWidget {
 }
 
 class _WardrobeScreenState extends State<WardrobeScreen> {
-  static const navy = Color(0xFF193342),
-      green = Color(0xFF42C99A),
-      muted = Color(0xFF82919A);
+  Color get navy => HealthyAdaptive.text;
+  Color get green => HealthyAdaptive.accent;
+  Color get muted => HealthyAdaptive.muted;
   String _filter = 'Todos';
   String? _busy;
   final categories = const [
@@ -98,7 +99,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF5F8F6),
+    backgroundColor: HealthyAdaptive.background,
     body: SafeArea(
       child: StreamBuilder<ShopState>(
         stream: ShopService.instance.watch(),
@@ -119,7 +120,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                       onPressed: () => Navigator.maybePop(context),
                       icon: const Icon(Icons.arrow_back_rounded),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Armario',
                         style: TextStyle(
@@ -144,7 +145,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     const SizedBox(width: 5),
                     Text(
                       state == null ? '...' : '${state.coins}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: navy,
                         fontWeight: FontWeight.w900,
                         fontSize: 18,
@@ -153,7 +154,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Tan único como tú',
                   style: TextStyle(
                     fontSize: 28,
@@ -161,7 +162,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     color: navy,
                   ),
                 ),
-                const Text(
+                Text(
                   'Personaliza a Mr. Healthy con tus objetos.',
                   style: TextStyle(color: muted),
                 ),
@@ -257,7 +258,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Vista previa de Mr. Healthy',
                   style: TextStyle(color: navy, fontWeight: FontWeight.w800),
@@ -357,7 +358,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           Text(
             names.isEmpty ? 'Sin accesorios equipados' : names,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: navy, fontWeight: FontWeight.w600),
+            style: TextStyle(color: navy, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -369,7 +370,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     final equipped = state.equippedItem(item.id);
     final affordable = state.coins >= item.price;
     return Material(
-      color: Colors.white,
+      color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
@@ -402,7 +403,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 item.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontWeight: FontWeight.w800,
                 ),
@@ -430,7 +431,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 item.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: muted, fontSize: 11),
+                style: TextStyle(color: muted, fontSize: 11),
               ),
             ],
           ),
