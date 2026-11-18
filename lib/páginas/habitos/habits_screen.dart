@@ -508,7 +508,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Color categoryBg(String category) {
     if (HealthyAdaptive.isDark) {
       switch (category) {
-        case 'Alimentación': return const Color(0xFF48302F);
+        case 'Alimentación': return const Color(0xFF302A32);
         case 'Hidratación': return HealthyAdaptive.water;
         case 'Energía': return HealthyAdaptive.yellow;
         case 'Bienestar': return HealthyAdaptive.lavender;
@@ -788,7 +788,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           color: categoryBg(category),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: selected ? color : Colors.white,
+            color: selected ? color : HealthyAdaptive.border,
             width: selected ? 2 : 1,
           ),
         ),
@@ -844,10 +844,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       selectedDifficulty = difficulty;
                     });
                   },
-                  selectedColor: const Color(0xFFDDF5EB),
+                  selectedColor: HealthyAdaptive.mint,
                   backgroundColor: HealthyAdaptive.surface,
                   labelStyle: TextStyle(
-                    color: selected ? greenDark : muted,
+                    color: selected ? HealthyAdaptive.text : muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
