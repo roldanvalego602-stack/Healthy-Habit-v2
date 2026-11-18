@@ -366,43 +366,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                             return SizedBox(
                               width: double.infinity,
-                              height: 46,
-                              child: ElevatedButton.icon(
-                                onPressed:
-                                    _isLoading || snapshot.hasError
-                                        ? null
-                                        : () => _toggleFriendship(isFriend),
-                                icon:
-                                    _isLoading
-                                        ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                        : Icon(
-                                          isFriend
-                                              ? Icons.check_circle_rounded
-                                              : Icons.person_add_rounded,
-                                          size: 18,
-                                        ),
-                                label: Text(
-                                  isFriend ? 'Amigos' : 'Agregar amigo',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isFriend ? navy : green,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
+                              child: SocialActionButton(
+                                label: isFriend ? 'Amigos' : 'Agregar amigo',
+                                icon: isFriend
+                                    ? Icons.check_circle_rounded
+                                    : Icons.person_add_rounded,
+                                outlined: isFriend,
+                                busy: _isLoading,
+                                onPressed: _isLoading || snapshot.hasError
+                                    ? null
+                                    : () => _toggleFriendship(isFriend),
                               ),
                             );
                           },
