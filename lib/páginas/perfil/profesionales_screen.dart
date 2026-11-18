@@ -157,7 +157,7 @@ class ProfesionalesScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   const Text(
                     'Healthy Habit no verifica automáticamente la disponibilidad de estos contactos. Confirma sus credenciales antes de contratar una consulta.',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
                   ),
                 ],
               ),
@@ -220,7 +220,7 @@ class ProfesionalesScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0EBFC),
+                color: HealthyAdaptive.lavender,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -266,7 +266,7 @@ class ProfesionalesScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: HealthyAdaptive.border, width: 1),
       ),
@@ -365,7 +365,7 @@ class ProfesionalesScreen extends StatelessWidget {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HealthyAdaptive.mint,
-                      foregroundColor: HealthyAdaptive.accent,
+                      foregroundColor: HealthyAdaptive.text,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       shape: RoundedRectangleBorder(
