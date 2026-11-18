@@ -21,6 +21,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
   image_picker: ^1.2.1
+  flutter_svg: ^2.0.17
   firebase_storage: ^12.4.10
   draggable_fab: ^0.1.4
   push: ^3.3.3
@@ -44,6 +45,7 @@ flutter:
     - assets/mascot/healthy.png
     - "assets/monedas/h coin.png"
     - "assets/monedas/h coin premium.png"
+    - assets/images/catalogo/
 
 flutter_launcher_icons:
   min_sdk_android: 21
