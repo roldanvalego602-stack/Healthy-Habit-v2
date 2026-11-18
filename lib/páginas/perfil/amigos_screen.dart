@@ -609,8 +609,11 @@ class _AmigosScreenState extends State<AmigosScreen> {
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: _C.border),
           ),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Row(
+                children: [
               CircleAvatar(
                 radius: 25,
                 backgroundColor: color,
@@ -680,9 +683,9 @@ class _AmigosScreenState extends State<AmigosScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
+                ],
+              ),
+              const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -699,7 +702,9 @@ class _AmigosScreenState extends State<AmigosScreen> {
                     ),
                   ),
                 ),
-              _botonSeguir(uid, nombre, siguiendo, pendiente, ocupado),
+                _botonSeguir(uid, nombre, siguiendo, pendiente, ocupado),
+              ],
+            ),
             ],
           ),
         ),
