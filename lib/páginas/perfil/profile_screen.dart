@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
@@ -18,10 +19,10 @@ class ProfileScreen extends StatelessWidget {
 
   static const Color green = Color(0xFF198568);
   static const Color mint = Color(0xFF8DE0C0);
-  static const Color navy = Color(0xFF173544);
-  static const Color background = Color(0xFFF4F8F5);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
   static const Color gold = Color(0xFFD5A33E);
-  static const Color muted = Color(0xFF8496A0);
+  Color get muted => HealthyAdaptive.muted;
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -266,7 +267,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _headerButton(String tooltip, IconData icon, VoidCallback onPressed) =>
       Material(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(16),
         child: IconButton(
           tooltip: tooltip,
@@ -286,7 +287,7 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -487,7 +488,7 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
@@ -1433,7 +1434,7 @@ class ProfileScreen extends StatelessWidget {
   );
 
   Widget _settingsCard(BuildContext context) => Material(
-    color: Colors.white,
+    color: HealthyAdaptive.surface,
     borderRadius: BorderRadius.circular(20),
     child: InkWell(
       borderRadius: BorderRadius.circular(20),
