@@ -401,13 +401,17 @@ class ProfileScreen extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF2D2),
+                    color: HealthyAdaptive.isDark
+                      ? const Color(0xFF443825)
+                      : const Color(0xFFFFF2D2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '✦ ${_string(data['profileTitle'], fallback: 'Cultivador de constancia')}',
                     style: TextStyle(
-                      color: gold,
+                      color: HealthyAdaptive.isDark
+                          ? const Color(0xFFFFD477)
+                          : const Color(0xFF977020),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
@@ -435,7 +439,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: mint,
-                              foregroundColor: navy,
+                              foregroundColor: const Color(0xFF10392F),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
