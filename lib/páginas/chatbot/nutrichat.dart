@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,9 +22,9 @@ class NutriChatPage extends StatefulWidget {
 }
 
 class _NutriChatPageState extends State<NutriChatPage> {
-  static const _background = Color(0xFFF7F9F8);
-  static const _navy = Color(0xFF172B36);
-  static const _muted = Color(0xFF7A869A);
+  Color get _background => HealthyAdaptive.background;
+  Color get _navy => HealthyAdaptive.text;
+  Color get _muted => HealthyAdaptive.muted;
   static const _green = Color(0xFF198568);
 
   final TextEditingController messageController = TextEditingController();
@@ -249,11 +250,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
         backgroundColor: _background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: _navy),
+          icon: Icon(Icons.arrow_back, color: _navy),
           onPressed: () => Navigator.maybePop(context),
         ),
         titleSpacing: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -345,7 +346,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
               (_, __, ___) => const Icon(Icons.eco, size: 45, color: _green),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -379,7 +380,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Preguntas frecuentes',
           style: TextStyle(
             color: _muted,
@@ -392,7 +393,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           (option) => Padding(
             padding: const EdgeInsets.only(bottom: 7),
             child: Material(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -405,14 +406,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5EEE9)),
+                    border: Border.all(color: HealthyAdaptive.border),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
                           option,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: _navy,
@@ -438,7 +439,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   Widget _buildComposer(bool keyboardVisible) => Container(
     padding: EdgeInsets.fromLTRB(14, 8, 14, keyboardVisible ? 8 : 12),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       color: _background,
       border: Border(top: BorderSide(color: Color(0xFFE5EEE9))),
     ),
@@ -448,7 +449,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         Container(
           padding: const EdgeInsets.only(left: 16, right: 5),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: HealthyAdaptive.surface,
             borderRadius: BorderRadius.circular(26),
             border: Border.all(color: const Color(0xFFDDE8E2)),
           ),
