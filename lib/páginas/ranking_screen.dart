@@ -2,16 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../tema/healthy_theme.dart';
 
 import 'niveles/levels_system.dart';
 
 class RankingScreen extends StatelessWidget {
   const RankingScreen({super.key});
 
-  static const green = Color(0xFF08B889);
-  static const ink = Color(0xFF193344);
-  static const background = Color(0xFFF5F8F6);
-  static const muted = Color(0xFF71879A);
+  Color get green => HealthyAdaptive.accent;
+  Color get ink => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
+  Color get muted => HealthyAdaptive.muted;
 
   int _int(dynamic value, [int fallback = 0]) {
     if (value is num) return value.toInt();
@@ -96,7 +97,7 @@ class RankingScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: green));
+            return Center(child: CircularProgressIndicator(color: green));
           }
 
           final users = snapshot.data!.docs;
@@ -105,7 +106,7 @@ class RankingScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
             children: [
-              const Text(
+              Text(
                 'Cada hábito cuenta',
                 style: TextStyle(
                   fontSize: 23,
@@ -114,7 +115,7 @@ class RankingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
+              Text(
                 'Clasificación global por experiencia acumulada. '
                 'Se muestran hasta 100 usuarios.',
                 style: TextStyle(color: muted),
@@ -126,7 +127,7 @@ class RankingScreen extends StatelessWidget {
               const SizedBox(height: 22),
 
               if (users.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Los primeros lugares',
                   style: TextStyle(
                     fontSize: 18,
@@ -154,7 +155,7 @@ class RankingScreen extends StatelessWidget {
                 const SizedBox(height: 22),
               ],
 
-              const Text(
+              Text(
                 'Clasificación',
                 style: TextStyle(
                   fontSize: 18,
@@ -214,8 +215,8 @@ class RankingScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   inRanking ? '#${myIndex + 1}' : 'Fuera del top 100',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: HealthyAdaptive.surface,
                     fontSize: 27,
                     fontWeight: FontWeight.w900,
                   ),
@@ -282,7 +283,7 @@ class RankingScreen extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             '#$rank',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: ink,
@@ -296,7 +297,7 @@ class RankingScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               color: ink,
               fontSize: 12,
@@ -305,7 +306,7 @@ class RankingScreen extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             'Nivel ${level.number}',
-            style: const TextStyle(
+            style: TextStyle(
               color: ink,
               fontWeight: FontWeight.w700,
               fontSize: 11,
@@ -317,12 +318,12 @@ class RankingScreen extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: muted, fontSize: 10),
+            style: TextStyle(color: muted, fontSize: 10),
           ),
           const SizedBox(height: 7),
           Text(
             '$xp XP',
-            style: const TextStyle(
+            style: TextStyle(
               color: ink,
               fontWeight: FontWeight.w900,
               fontSize: 12,
@@ -365,7 +366,7 @@ class RankingScreen extends StatelessWidget {
               width: 34,
               child: Text(
                 '#$position',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   color: ink,
                   fontSize: 13,
@@ -379,7 +380,7 @@ class RankingScreen extends StatelessWidget {
               child:
                   hasPhoto
                       ? null
-                      : const Icon(
+                      : Icon(
                         Icons.person_rounded,
                         color: green,
                         size: 21,
@@ -394,7 +395,7 @@ class RankingScreen extends StatelessWidget {
                     '$name${isMe ? ' (Tú)' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: ink,
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
@@ -405,7 +406,7 @@ class RankingScreen extends StatelessWidget {
                     'Nivel ${level.number} · ${level.name}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: muted, fontSize: 11),
+                    style: TextStyle(color: muted, fontSize: 11),
                   ),
                 ],
               ),
@@ -418,7 +419,7 @@ class RankingScreen extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   '$xp XP',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ink,
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
@@ -436,10 +437,10 @@ class RankingScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(Icons.emoji_events_outlined, size: 45, color: green),
           SizedBox(height: 12),
