@@ -17,6 +17,7 @@ void main() {
     required Size size,
     required ThemeMode mode,
     required bool compact,
+    double scale = 1,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -30,8 +31,13 @@ void main() {
       darkTheme: HealthyThemes.dark(),
       themeMode: mode,
       home: Scaffold(
-        body: SafeArea(
-          child: SingleChildScrollView(
+        body: MediaQuery(
+          data: MediaQueryData(
+            size: size,
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
             child: Row(
               children: [
                 Expanded(child: RankingPodiumCard(
@@ -44,6 +50,7 @@ void main() {
             ),
           ),
         ),
+        ),
       ),
     ));
     await tester.pumpAndSettle();
@@ -51,12 +58,11 @@ void main() {
 
   testWidgets('podio compacto de 320dp no produce overflow con texto grande',
       (tester) async {
-    tester.view.platformDispatcher.textScaleFactorTestValue = 1.4;
-    addTearDown(() => tester.view.platformDispatcher.clearTextScaleFactorTestValue());
     await pumpRanking(tester,
       size: const Size(320, 640),
       mode: ThemeMode.dark,
       compact: true,
+      scale: 1.4,
     );
     expect(find.textContaining('Nombre de usuario'), findsOneWidget);
     expect(tester.takeException(), isNull);
