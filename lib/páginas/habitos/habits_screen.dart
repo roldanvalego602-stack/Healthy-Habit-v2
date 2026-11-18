@@ -583,7 +583,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       body: SafeArea(
         child:
             loading
-                ? const Center(child: CircularProgressIndicator(color: green))
+                ? Center(child: CircularProgressIndicator(color: green))
                 : Column(
                   children: [
                     _header(),
@@ -591,7 +591,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                         children: [
-                          const Text(
+                          Text(
                             '¿Qué quieres mejorar?',
                             style: TextStyle(
                               color: navy,
@@ -601,7 +601,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'Pequeños cambios, grandes resultados. '
                             'Elige tu siguiente misión.',
                             style: TextStyle(
@@ -638,7 +638,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             '${visibleRecommendations.length}',
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'Encuentra una misión que se adapte a ti.',
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
@@ -699,7 +699,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             )
           else ...[
-            const Expanded(
+            Expanded(
               child: Text(
                 'Hábitos',
                 style: TextStyle(
@@ -717,7 +717,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 onPressed: () {
                   setState(() => searching = true);
                 },
-                icon: const Icon(Icons.search_rounded, color: navy, size: 25),
+                icon: Icon(Icons.search_rounded, color: navy, size: 25),
               ),
             ),
           ],
@@ -797,7 +797,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 category,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -817,7 +817,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Dificultad',
           style: TextStyle(
             color: navy,
@@ -864,7 +864,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 19,
               fontWeight: FontWeight.w800,
@@ -874,7 +874,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         if (trailing.isNotEmpty)
           Text(
             trailing,
-            style: const TextStyle(
+            style: TextStyle(
               color: greenDark,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -949,7 +949,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           const SizedBox(height: 15),
           Text(
             habit.title,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 22,
               height: 1.18,
@@ -959,7 +959,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           const SizedBox(height: 8),
           Text(
             habit.subtitle,
-            style: const TextStyle(color: muted, fontSize: 12),
+            style: TextStyle(color: muted, fontSize: 12),
           ),
           const SizedBox(height: 15),
           _generalProgress(
@@ -973,7 +973,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             children: [
               Text(
                 '${attempt.progress} de ${attempt.target} sesiones',
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -984,7 +984,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 child: Text(
                   done ? '¡Meta alcanzada!' : 'Faltan $remaining sesiones',
                   textAlign: TextAlign.right,
-                  style: const TextStyle(color: muted, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
               ),
             ],
@@ -1137,7 +1137,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               children: [
                 Text(
                   habit.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 14,
                     height: 1.25,
@@ -1156,12 +1156,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${habit.subtitle} · ${habit.difficulty}',
-                  style: const TextStyle(color: muted, fontSize: 11),
+                  style: TextStyle(color: muted, fontSize: 11),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   '${habit.target} sesiones para completar',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1178,7 +1178,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '+${habit.xp} XP',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: navy,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1192,7 +1192,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     !unlocked
                         ? 'Requisitos aún no cumplidos'
                         : 'Libera un espacio para agregarlo',
-                    style: const TextStyle(color: muted, fontSize: 10),
+                    style: TextStyle(color: muted, fontSize: 10),
                   ),
                 ],
               ],
@@ -1235,12 +1235,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.spa_outlined, color: green, size: 30),
+          Icon(Icons.spa_outlined, color: green, size: 30),
           const SizedBox(height: 9),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: muted, fontSize: 12, height: 1.45),
+            style: TextStyle(color: muted, fontSize: 12, height: 1.45),
           ),
         ],
       ),
@@ -1254,7 +1254,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         color: const Color(0xFFE1F6ED),
         borderRadius: BorderRadius.circular(19),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.spa_outlined, color: greenDark, size: 25),
