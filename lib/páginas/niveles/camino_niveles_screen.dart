@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,13 +20,13 @@ class CaminoNivelesScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F6),
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         title: const Text(
           'Mi camino',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
-        backgroundColor: const Color(0xFFF5F8F6),
+        backgroundColor: HealthyAdaptive.background,
       ),
       body:
           usuario == null
@@ -253,7 +254,7 @@ class CaminoNivelesScreen extends StatelessWidget {
     required bool isCurrent,
     required bool isLast,
   }) {
-    final foreground = level.dark ? Colors.white : const Color(0xFF193344);
+    final foreground = level.dark ? Colors.white : HealthyAdaptive.text;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
