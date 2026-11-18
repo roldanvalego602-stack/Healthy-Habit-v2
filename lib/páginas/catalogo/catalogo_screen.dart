@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../tema/healthy_theme.dart';
 import 'datos/catalogo_datos.dart';
 import 'detalles/catalogo_detalle_screen.dart';
@@ -217,11 +218,12 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                 children: [
                                   ClipRRect(
                                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                    child: Image.asset(
+                                    child: SvgPicture.asset(
                                       item.imagen,
+                                      semanticsLabel: 'Ilustración de ${item.titulo}',
                                       height: 138,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(Icons.image_outlined, size: 48, color: _verde))),
+                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(_icono(item.icono), size: 48, color: _verde))),
                                     ),
                                   ),
                                   Padding(
