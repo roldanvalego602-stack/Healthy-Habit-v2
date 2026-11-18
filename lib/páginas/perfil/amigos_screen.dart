@@ -796,8 +796,10 @@ class _AmigosScreenState extends State<AmigosScreen> {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _C.border),
       ),
-      child: Row(
+      child: Column(
         children: [
+          Row(
+            children: [
           CircleAvatar(
             radius: 25,
             backgroundColor: color,
@@ -854,35 +856,34 @@ class _AmigosScreenState extends State<AmigosScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          if (ocupado)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: _C.green,
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Flexible(
+                child: SocialActionButton(
+                  compact: true,
+                  label: 'Rechazar',
+                  icon: Icons.close_rounded,
+                  outlined: true,
+                  busy: ocupado,
+                  onPressed: ocupado ? null : () => _rechazar(uid, nombre),
+                ),
               ),
-            )
-          else ...[
-            Material(
-              color: Colors.transparent,
-              child: IconButton(
-                tooltip: 'Rechazar',
-                onPressed: () => _rechazar(uid, nombre),
-                icon: Icon(Icons.close_rounded, color: _C.grey),
+              const SizedBox(width: 8),
+              Flexible(
+                child: SocialActionButton(
+                  compact: true,
+                  label: 'Aceptar',
+                  icon: Icons.check_rounded,
+                  busy: ocupado,
+                  onPressed: ocupado ? null : () => _aceptar(uid, nombre),
+                ),
               ),
-            ),
-            Material(
-              color: _C.mintSoft,
-              borderRadius: BorderRadius.circular(12),
-              child: IconButton(
-                tooltip: 'Aceptar',
-                onPressed: () => _aceptar(uid, nombre),
-                icon: const Icon(Icons.check_rounded, color: _C.green),
-              ),
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );
