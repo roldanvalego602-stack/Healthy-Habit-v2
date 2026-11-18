@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:healthy_habit/p%C3%A1ginas/perfil/perfil_muestra.dart';
 
 import 'amigos_servicio.dart';
@@ -140,11 +141,11 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     final Color colorTexto =
         siguiendo
             ? AppColores.verdePrincipal
-            : (pendiente ? const Color(0xFFB8860B) : AppColores.verdeOscuro);
+            : (pendiente ? const Color(0xFFB8860B) : HealthyAdaptive.accent);
     final Color colorBorde =
         siguiendo
             ? AppColores.verdePrincipal
-            : (pendiente ? const Color(0xFFD5A33E) : AppColores.verdeMenta);
+            : (pendiente ? const Color(0xFFD5A33E) : HealthyAdaptive.mint);
 
     return GestureDetector(
       onTap: () => _alternarSeguir(uid, nombre),
@@ -154,7 +155,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: (siguiendo || pendiente) ? Colors.white : AppColores.verdeMenta,
+          color: (siguiendo || pendiente) ? Colors.white : HealthyAdaptive.mint,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: colorBorde, width: 1.4),
         ),
@@ -211,19 +212,19 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     final usuarioActual = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: AppColores.fondoClaro,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+          icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Buscar Amigos',
           style: TextStyle(
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
             fontWeight: FontWeight.w800,
             fontSize: 20,
           ),
@@ -247,25 +248,25 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
               ),
               child: TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Buscar por usuario o nombre...',
                   hintStyle: TextStyle(
-                    color: AppColores.textoGris,
+                    color: HealthyAdaptive.muted,
                     fontSize: 14,
                   ),
-                  prefixIcon: Icon(Icons.search, color: AppColores.textoGris),
+                  prefixIcon: Icon(Icons.search, color: HealthyAdaptive.muted),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Sugerencias de la comunidad',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColores.textoOscuro,
+                color: HealthyAdaptive.text,
               ),
             ),
             const SizedBox(height: 14),
@@ -316,8 +317,8 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                     ? 'Todavía no hay otros usuarios registrados.'
                                     : 'No se encontraron usuarios.',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: AppColores.textoGris,
+                                style: TextStyle(
+                                  color: HealthyAdaptive.muted,
                                   fontSize: 14,
                                 ),
                               ),
@@ -344,18 +345,18 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppColores.bordeGris,
+                                    color: HealthyAdaptive.border,
                                     width: 1,
                                   ),
                                 ),
                                 child: Row(
                                   children: [
-                                    const CircleAvatar(
+                                    CircleAvatar(
                                       radius: 24,
-                                      backgroundColor: AppColores.verdeMenta,
+                                      backgroundColor: HealthyAdaptive.mint,
                                       child: Icon(
                                         Icons.person_rounded,
-                                        color: AppColores.verdeOscuro,
+                                        color: HealthyAdaptive.accent,
                                         size: 28,
                                       ),
                                     ),
@@ -369,19 +370,19 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                             nombre,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w800,
                                               fontSize: 15,
-                                              color: AppColores.textoOscuro,
+                                              color: HealthyAdaptive.text,
                                             ),
                                           ),
                                           Text(
                                             username,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
-                                              color: AppColores.textoGris,
+                                              color: HealthyAdaptive.muted,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
@@ -394,9 +395,9 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                               ChipRecompensa(
                                                 texto: 'Nivel $nivel',
                                                 colorFondo:
-                                                    AppColores.verdeMenta,
+                                                    HealthyAdaptive.mint,
                                                 colorTexto:
-                                                    AppColores.verdeOscuro,
+                                                    HealthyAdaptive.accent,
                                               ),
                                               Text(
                                                 '$racha días 🔥',
@@ -413,9 +414,9 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                     IconButton(
                                       tooltip: 'Ver perfil',
                                       onPressed: () => _abrirPerfil(datos, uid),
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.account_circle_outlined,
-                                        color: AppColores.textoGris,
+                                        color: HealthyAdaptive.muted,
                                       ),
                                     ),
                                     _botonSeguir(uid, nombre),
