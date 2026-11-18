@@ -31,8 +31,12 @@ void main() {
         ),
       ),
     ));
-    await tester.pumpAndSettle();
+    // El CircularProgressIndicator es infinito: pumpAndSettle no terminaría.
+    await tester.pump(const Duration(milliseconds: 250));
     expect(find.byKey(const ValueKey('busy')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('busy')));
+    await tester.pump();
+    expect(taps, 1);
     expect(taps, 1);
     expect(tester.takeException(), isNull);
   });
