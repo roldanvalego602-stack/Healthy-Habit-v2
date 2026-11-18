@@ -116,9 +116,9 @@ class _StoreScreenState extends State<StoreScreen> {
                     delegate: SliverChildListDelegate([
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome_rounded, color: _green),
+                          Icon(Icons.auto_awesome_rounded, color: _green),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Recompensas disponibles',
                               style: TextStyle(
@@ -130,7 +130,7 @@ class _StoreScreenState extends State<StoreScreen> {
                           ),
                           Text(
                             '${items.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               color: _muted,
                             ),
@@ -174,7 +174,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Tienda',
                   style: TextStyle(
@@ -214,7 +214,7 @@ class _StoreScreenState extends State<StoreScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Convierte tus Habit Coins en recompensas.',
                   style: TextStyle(color: _muted, fontSize: 13),
@@ -351,7 +351,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                 item.category.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
                                   color: _ink,
                                   fontWeight: FontWeight.w900,
@@ -363,7 +363,7 @@ class _StoreScreenState extends State<StoreScreen> {
                               item.name,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _ink,
                                 fontSize: 21,
                                 height: 1.05,
@@ -375,7 +375,7 @@ class _StoreScreenState extends State<StoreScreen> {
                               item.description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _ink,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -413,7 +413,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 Expanded(
                   child: Text(
                     item.price == 0 ? 'Gratis' : '${item.price} H. Coins',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                       color: _ink,
@@ -459,7 +459,7 @@ class _StoreScreenState extends State<StoreScreen> {
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 9),
               child: Text(
                 'Te faltan ${item.price - state.coins} H. Coins',
-                style: const TextStyle(fontSize: 11, color: _muted),
+                style: TextStyle(fontSize: 11, color: _muted),
               ),
             ),
         ],
