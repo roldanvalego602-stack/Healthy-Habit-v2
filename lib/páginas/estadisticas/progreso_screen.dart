@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 /// Estadísticas basadas en registros reales de cada intento (attempts/logs).
 /// Un registro equivale a una actividad; completar un intento es distinto.
@@ -21,8 +22,8 @@ class _Log {
 
 class _ProgresoScreenState extends State<ProgresoScreen> {
   static const mint = Color(0xFF08B889);
-  static const ink = Color(0xFF193344);
-  static const bg = Color(0xFFF5F8F6);
+  Color get ink => HealthyAdaptive.text;
+  Color get bg => HealthyAdaptive.background;
   late final FirebaseFirestore db = FirebaseFirestore.instanceFor(
     app: Firebase.app(), databaseId: 'default');
   bool loading = true;
@@ -84,21 +85,21 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
 
   Widget _tile(String label, String value, IconData icon, Color color) => Container(
     padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+    decoration: BoxDecoration(color: HealthyAdaptive.surface, borderRadius: BorderRadius.circular(18)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, color: color), const SizedBox(height: 9),
-      Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
+      Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
       Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF71879A))),
     ]),
   );
 
   Widget _section(String text) => Padding(
     padding: const EdgeInsets.only(top: 23, bottom: 12),
-    child: Text(text, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: ink)));
+    child: Text(text, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: ink)));
 
   Widget _panel(Widget child) => Container(
     width: double.infinity, padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)), child: child);
+    decoration: BoxDecoration(color: HealthyAdaptive.surface, borderRadius: BorderRadius.circular(20)), child: child);
 
   @override
   Widget build(BuildContext context) {
@@ -142,18 +143,18 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           ]),
           _section('Actividad de los últimos 7 días'),
           _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$weekly registros · $activeDays de 7 días con actividad', style: const TextStyle(fontWeight: FontWeight.w700, color: ink)),
+            Text('$weekly registros · $activeDays de 7 días con actividad', style: TextStyle(fontWeight: FontWeight.w700, color: ink)),
             const SizedBox(height: 18),
             SizedBox(height: 145, child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               for (final day in last7) Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                Text('${daily[_key(day)] ?? 0}', style: const TextStyle(fontSize: 11, color: ink)),
+                Text('${daily[_key(day)] ?? 0}', style: TextStyle(fontSize: 11, color: ink)),
                 const SizedBox(height: 5),
                 Container(height: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily,
                   margin: const EdgeInsets.symmetric(horizontal: 5),
                   decoration: BoxDecoration(color: (daily[_key(day)] ?? 0) == 0 ? const Color(0xFFE6ECE9) : mint,
                     borderRadius: BorderRadius.circular(7))),
                 const SizedBox(height: 6),
-                Text(['L','M','X','J','V','S','D'][day.weekday-1], style: const TextStyle(fontSize: 12, color: ink)),
+                Text(['L','M','X','J','V','S','D'][day.weekday-1], style: TextStyle(fontSize: 12, color: ink)),
               ])),
             ])),
             const SizedBox(height: 8),
@@ -165,12 +166,12 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               IconButton(onPressed: () => setState(() => month = DateTime(month.year, month.month - 1)), icon: const Icon(Icons.chevron_left)),
               Text('${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][month.month-1]} ${month.year}',
-                style: const TextStyle(fontWeight: FontWeight.w800, color: ink)),
+                style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
               IconButton(onPressed: DateTime(month.year, month.month).isBefore(DateTime(today.year, today.month))
                 ? () => setState(() => month = DateTime(month.year, month.month + 1)) : null,
                 icon: const Icon(Icons.chevron_right)),
             ]),
-            Row(children: [for (final day in ['L','M','X','J','V','S','D']) Expanded(child: Center(child: Text(day, style: const TextStyle(fontWeight: FontWeight.bold, color: ink))))]),
+            Row(children: [for (final day in ['L','M','X','J','V','S','D']) Expanded(child: Center(child: Text(day, style: TextStyle(fontWeight: FontWeight.bold, color: ink))))]),
             const SizedBox(height: 8),
             GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 5, crossAxisSpacing: 5),
@@ -188,7 +189,7 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           _section('Tus hábitos en números'),
           _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${logs.length} registros en total · $completedAttempts de $attemptsCount intentos completados',
-              style: const TextStyle(color: ink, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: ink, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
             if (sortedHabits.isEmpty) const Text('Aún no hay registros. Completa una actividad para comenzar.'),
             for (final entry in sortedHabits.take(8)) Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Row(children: [
