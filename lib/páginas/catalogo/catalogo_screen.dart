@@ -221,7 +221,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                       item.imagen,
                                       height: 138,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 48, color: _verde))),
+                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(Icons.image_outlined, size: 48, color: _verde))),
                                     ),
                                   ),
                                   Padding(
@@ -232,7 +232,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                       width: 58,
                                       height: 58,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE4F7EF),
+                                        color: HealthyAdaptive.mint,
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Icon(
