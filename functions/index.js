@@ -226,3 +226,35 @@ exports.checkEvidenceChallengeCode = onCall(
   {region: "us-central1", enforceAppCheck: false, maxInstances: 10},
   challengeHandler(checkEvidenceChallengeCode),
 );
+
+
+// Datos mínimos para la demostración móvil. Solo en emulador y proyecto demo.
+// No hay acceso al perfil real ni cambios en el sistema de XP.
+exports.prepareEvidenceDemo = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 10},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition",
+        "La demostración solo está disponible en los emuladores del proyecto demo.",
+      );
+    }
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    const habitId = "demo-water";
+    const attemptId = "demo-attempt";
+    const habitRef = db.collection("users").doc(request.auth.uid)
+      .collection("user_habits").doc(habitId);
+    const attemptRef = habitRef.collection("attempts").doc(attemptId);
+    await db.runTransaction(async (tx) => {
+      const attempt = await tx.get(attemptRef);
+      if (!attempt.exists) {
+        tx.set(habitRef, {title: "Beber agua (prueba)", category: "Hidratación"});
+        tx.set(attemptRef, {status: "inProgress", progress: 0, target: 1});
+      }
+    });
+    return {habitId, attemptId, title: "Beber agua (prueba)", xpAwarded: 0};
+  },
+);
