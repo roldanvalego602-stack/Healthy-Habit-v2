@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../Contenido_del_tema/colores.dart';
+import '../../tema/healthy_theme.dart';
 import 'temporary_evidence_service.dart';
 import 'habit_interaction_card.dart';
 
@@ -484,12 +484,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Widget build(BuildContext context) {
     if (_cargando) {
       return Scaffold(
-        backgroundColor: AppColores.fondoClaro,
+        backgroundColor: HealthyAdaptive.background,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+            icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -497,21 +497,21 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       );
     }
     return Scaffold(
-      backgroundColor: AppColores.fondoClaro,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
+          icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
           onPressed: _guardando ? null : () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Registrar Hábito',
               style: TextStyle(
-                color: AppColores.textoOscuro,
+                color: HealthyAdaptive.text,
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
               ),
@@ -519,7 +519,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             Text(
               'Añade algo que acompañe tu registro.',
               style: TextStyle(
-                color: AppColores.textoGris,
+                color: HealthyAdaptive.muted,
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
               ),
@@ -555,10 +555,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             const SizedBox(height: 12),
             _buildFotografia(),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Puedes adjuntar una fotografía como evidencia. '
               'Se eliminará después de 24 horas al ejecutar la limpieza.',
-              style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+              style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
             ),
             const SizedBox(height: 24),
             _buildTituloSeccion('Añadir una nota', 'Opcional'),
@@ -570,29 +570,29 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Ej. Terminé mi botella durante el almuerzo.',
-                hintStyle: const TextStyle(
-                  color: AppColores.textoGris,
+                hintStyle: TextStyle(
+                  color: HealthyAdaptive.muted,
                   fontSize: 14,
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: HealthyAdaptive.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColores.bordeGris),
+                  borderSide: BorderSide(color: HealthyAdaptive.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColores.bordeGris),
+                  borderSide: BorderSide(color: HealthyAdaptive.border),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Tu registro suma',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColores.textoOscuro,
+                color: HealthyAdaptive.text,
               ),
             ),
             const SizedBox(height: 12),
@@ -622,14 +622,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColores.verdeMenta,
+                  color: HealthyAdaptive.mint,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
+                child: Text(
                   '¡Meta completada! Este intento ya no admite '
                   'más registros.',
                   style: TextStyle(
-                    color: AppColores.verdePrincipal,
+                    color: HealthyAdaptive.accent,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -667,9 +667,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColores.verdePrincipal,
+                  backgroundColor: HealthyAdaptive.accent,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColores.verdePrincipal
+                  disabledBackgroundColor: HealthyAdaptive.accent
                       .withValues(alpha: 0.6),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -684,12 +684,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               height: 52,
               child: TextButton(
                 onPressed: _guardando ? null : () => Navigator.pop(context),
-                child: const Text(
+                child: Text(
                   'Cancelar',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColores.verdePrincipal,
+                    color: HealthyAdaptive.accent,
                   ),
                 ),
               ),
@@ -706,7 +706,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -723,14 +723,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColores.azulAgua,
+                  color: HealthyAdaptive.water,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   _nombreHabito.toLowerCase().contains('agua')
                       ? Icons.water_drop_outlined
                       : Icons.check_circle_outline,
-                  color: AppColores.azulTexto,
+                  color: HealthyAdaptive.waterInk,
                 ),
               ),
               const SizedBox(width: 14),
@@ -740,18 +740,18 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   children: [
                     Text(
                       _nombreHabito,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: AppColores.textoOscuro,
+                        color: HealthyAdaptive.text,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$_categoria · Misión diaria',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColores.textoGris,
+                        color: HealthyAdaptive.muted,
                       ),
                     ),
                   ],
@@ -768,9 +768,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   child: LinearProgressIndicator(
                     value: progresoVisual,
                     minHeight: 6,
-                    backgroundColor: const Color(0xFFEDEFF3),
-                    valueColor: const AlwaysStoppedAnimation(
-                      AppColores.azulTexto,
+                    backgroundColor: HealthyAdaptive.border,
+                    valueColor: AlwaysStoppedAnimation(
+                      HealthyAdaptive.waterInk,
                     ),
                   ),
                 ),
@@ -778,20 +778,20 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               const SizedBox(width: 12),
               Text(
                 '$_progreso / $_meta',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: AppColores.azulTexto,
+                  color: HealthyAdaptive.waterInk,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Al guardar, el progreso avanzará una unidad.',
-              style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+              style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
             ),
           ),
         ],
@@ -805,15 +805,15 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       children: [
         Text(
           titulo,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
           ),
         ),
         Text(
           subtitulo,
-          style: const TextStyle(fontSize: 13, color: AppColores.textoGris),
+          style: TextStyle(fontSize: 13, color: HealthyAdaptive.muted),
         ),
       ],
     );
@@ -825,10 +825,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColores.verdePrincipal.withValues(alpha: 0.3),
+          color: HealthyAdaptive.accent.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -847,18 +847,18 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle,
-                  color: AppColores.verdePrincipal,
+                  color: HealthyAdaptive.accent,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Imagen seleccionada',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AppColores.textoOscuro,
+                      color: HealthyAdaptive.text,
                     ),
                   ),
                 ),
@@ -873,30 +873,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           ] else ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColores.verdeMenta,
+              decoration: BoxDecoration(
+                color: HealthyAdaptive.mint,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.camera_alt_outlined,
-                color: AppColores.verdePrincipal,
+                color: HealthyAdaptive.accent,
                 size: 28,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Añadir fotografía',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColores.textoOscuro,
+                color: HealthyAdaptive.text,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Adjunta una imagen para respaldar tu registro.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColores.textoGris),
+              style: TextStyle(fontSize: 13, color: HealthyAdaptive.muted),
             ),
           ],
           const SizedBox(height: 16),
@@ -914,8 +914,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                     style: TextStyle(fontSize: 12),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColores.verdePrincipal,
-                    backgroundColor: AppColores.verdeMenta,
+                    foregroundColor: HealthyAdaptive.accent,
+                    backgroundColor: HealthyAdaptive.mint,
                     side: BorderSide.none,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -937,8 +937,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                     style: TextStyle(fontSize: 12),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColores.textoOscuro,
-                    side: const BorderSide(color: AppColores.bordeGris),
+                    foregroundColor: HealthyAdaptive.text,
+                    side: BorderSide(color: HealthyAdaptive.border),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -962,7 +962,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeColor: AppColores.verdePrincipal,
+            activeColor: HealthyAdaptive.accent,
             onChanged:
                 _guardando
                     ? null
@@ -987,9 +987,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             titulo: 'Registro normal',
             xp: '+10 XP',
             descripcion: 'Sin evidencia',
-            color: Colors.white,
-            colorTexto: AppColores.textoOscuro,
-            borde: AppColores.bordeGris,
+            color: HealthyAdaptive.surface,
+            colorTexto: HealthyAdaptive.text,
+            borde: HealthyAdaptive.border,
           ),
         ),
         const SizedBox(width: 12),
@@ -998,9 +998,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             titulo: 'Con evidencia',
             xp: '+15 XP',
             descripcion: 'Total del registro',
-            color: AppColores.verdeMenta,
-            colorTexto: AppColores.verdePrincipal,
-            borde: AppColores.verdePrincipal.withValues(alpha: 0.5),
+            color: HealthyAdaptive.mint,
+            colorTexto: HealthyAdaptive.accent,
+            borde: HealthyAdaptive.accent.withValues(alpha: 0.5),
           ),
         ),
       ],
@@ -1048,7 +1048,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           const SizedBox(height: 4),
           Text(
             descripcion,
-            style: const TextStyle(fontSize: 11, color: AppColores.textoGris),
+            style: TextStyle(fontSize: 11, color: HealthyAdaptive.muted),
           ),
         ],
       ),
@@ -1059,15 +1059,15 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.lock_outline, size: 18, color: AppColores.textoOscuro),
+              Icon(Icons.lock_outline, size: 18, color: HealthyAdaptive.text),
               SizedBox(width: 8),
               Text(
                 'Tu privacidad importa',
@@ -1079,7 +1079,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           Text(
             'La evidencia se utiliza para respaldar este registro y '
             'se manejará según tus preferencias de privacidad.',
-            style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+            style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
           ),
         ],
       ),
@@ -1098,7 +1098,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               (context, error, stackTrace) => const Icon(Icons.eco, size: 40),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1107,7 +1107,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
-                  color: AppColores.verdePrincipal,
+                  color: HealthyAdaptive.accent,
                 ),
               ),
               SizedBox(height: 4),
@@ -1115,7 +1115,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 'La evidencia es opcional. Obtienes XP al registrar '
                 'tu hábito; los Healthy Coins se obtienen al completar '
                 'una misión, no por cada registro.',
-                style: TextStyle(fontSize: 12, color: AppColores.textoGris),
+                style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
               ),
             ],
           ),
