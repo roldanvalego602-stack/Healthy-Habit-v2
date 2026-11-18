@@ -309,8 +309,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   height: 260,
                   fit: BoxFit.contain,
                   errorBuilder:
-                      (_, __, ___) => const Icon(
-                        Icons.sentiment_satisfied,
+                      (_, __, ___) => Icon(
+                         Icons.sentiment_satisfied,
                         size: 170,
                         color: green,
                       ),
