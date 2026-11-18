@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'logros_service.dart';
 import 'logro_insignia.dart';
+import 'logros_vitrina.dart';
 
 class LogrosScreen extends StatelessWidget {
   const LogrosScreen({super.key});
@@ -149,7 +150,30 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const Key('abrir-vitrina-rarezas'),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  backgroundColor: const Color(0xFF101923),
+                  builder: (_) => const FractionallySizedBox(
+                    heightFactor: 0.82,
+                    child: VitrinaRarezas(),
+                  ),
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
+                label: const Text('Explorar las cinco rarezas'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFBBDAD2),
+                  side: const BorderSide(color: Color(0xFF4C6C6A)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
             const Text('TU COLECCIÓN', style: TextStyle(color: _Palette.white,
               letterSpacing: 1.5, fontSize: 13, fontWeight: FontWeight.w800)),
             const SizedBox(height: 5),
