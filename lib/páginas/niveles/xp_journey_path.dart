@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'levels_system.dart';
 
-/// La línea se revela desde el primer nivel hasta el nivel realmente alcanzado.
+/// La línea baja por los 20 niveles, iluminando los alcanzados y apagando los futuros.
 /// No modifica XP, recompensas ni documentos de Firebase.
 class XpJourneyPath extends StatefulWidget {
   const XpJourneyPath({
@@ -26,7 +26,7 @@ class _XpJourneyPathState extends State<XpJourneyPath>
   bool _started = false;
 
   int get _lastReached => widget.currentLevel.clamp(
-        1, LevelSystem.levels.length);
+        1, LevelSystem.levels.length).toInt();
 
   Duration get _travelDuration => Duration(
         milliseconds: math.min(4600, 640 + (LevelSystem.levels.length - 1) * 170),
@@ -227,12 +227,12 @@ class _XpJourneyStop extends StatelessWidget {
     // El nivel 1 está iluminado desde el inicio; los siguientes se activan
     // cuando la línea los alcanza, no al cargar los datos del usuario.
     final reveal = unlocked
-        ? ((position - index + 0.16) / 0.16).clamp(0.0, 1.0)
+        ? ((position - index + 0.16) / 0.16).clamp(0.0, 1.0).toDouble()
         : 0.0;
     // Las etapas futuras se oscurecen cuando la línea llega a ellas.
     final fused = unlocked
         ? 0.0
-        : ((position - index + 0.16) / 0.27).clamp(0.0, 1.0);
+        : ((position - index + 0.16) / 0.27).clamp(0.0, 1.0).toDouble();
     final activated = unlocked && reveal >= 0.999;
     final dark = Theme.of(context).brightness == Brightness.dark;
     const unlitStart = Color(0xFF26343E);
@@ -272,10 +272,10 @@ class _XpJourneyStop extends StatelessWidget {
 
     final upperFraction = first
         ? 0.0
-        : ((position - (index - 1)) * 2).clamp(0.0, 1.0);
+        : ((position - (index - 1)) * 2).clamp(0.0, 1.0).toDouble();
     final lowerFraction = last
         ? 0.0
-        : ((position - index) * 2).clamp(0.0, 1.0);
+        : ((position - index) * 2).clamp(0.0, 1.0).toDouble();
     // Los segmentos antes y hasta el nivel actual son luminosos;
     // después de él, la misma onda deja una estela oscura.
     final upperFill = unlocked ? upperFraction : 0.0;
