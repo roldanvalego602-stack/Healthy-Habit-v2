@@ -50,6 +50,21 @@ void main() {
     expect(answer, contains('tomate'));
   });
 
+  test('explica conceptos generales sin fingir datos en tiempo real', () {
+    final questions = <String, String>{
+      '¿Qué es la fotosíntesis?': 'luz',
+      'Explícame Flutter': 'Dart',
+      '¿Qué es un algoritmo?': 'instrucciones',
+      '¿Qué es una galaxia?': 'estrellas',
+      '¿Qué es la inteligencia artificial?': 'informática',
+      'Háblame de Marte': 'planeta',
+    };
+    for (final entry in questions.entries) {
+      expect(service.reply(entry.key), contains(entry.value),
+          reason: entry.key);
+    }
+  });
+
   test('no absorbe preguntas que deben manejar servicios verificables', () {
     expect(service.reply('¿Cuántas monedas tengo?'), isNull);
     expect(service.reply('Agregar el hábito de caminar'), isNull);
