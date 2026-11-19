@@ -48,6 +48,16 @@ void main() {
     expect(result.action, 'habits');
   });
 
+  test('un seguimiento pronominal reutiliza el último hábito citado', () {
+    final result = engine.resolve('Elimínalo',
+      profile: profile, habits: habits,
+      lastTopic: 'habit_add',
+      lastHabitTitle: 'Incluir una fruta');
+    expect(result.action, 'habits');
+    expect(result.actionArgument, 'Incluir una fruta');
+    expect(result.card, 'habit_remove');
+  });
+
   test('pregunta nutricional responde solo ficha con fuente', () {
     final result = engine.resolve('¿Qué nutrientes tienen las lentejas?',
       profile: profile, habits: habits);
