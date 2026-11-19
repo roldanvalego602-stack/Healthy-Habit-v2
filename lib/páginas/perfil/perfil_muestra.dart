@@ -154,6 +154,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         );
         final level = _readInt(data, 'level', widget.level);
         final streak = _readInt(data, 'currentStreak', widget.streakDays);
+        final rawSettings = data['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
         final completed = _readInt(
           data,
           'completedHabits',
@@ -219,7 +222,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           const SizedBox(height: 22),
                           _levelCard(level),
                           const SizedBox(height: 14),
-                          _statistics(streak, completed),
+                          _statistics(streak, completed,
+                            showStreak: isOwnProfile || publicStreak),
                           const SizedBox(height: 28),
                           _sectionTitle('Logros destacados'),
                           const SizedBox(height: 14),
@@ -460,10 +464,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _statistics(int streak, int completed) {
+  Widget _statistics(int streak, int completed, {required bool showStreak}) {
     return Row(
       children: [
-        Expanded(
+        if (showStreak) Expanded(
           child: _statCard(
             icon: Icons.local_fire_department_outlined,
             value: '$streak',
@@ -472,7 +476,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             iconColor: gold,
           ),
         ),
-        const SizedBox(width: 10),
+        if (showStreak) const SizedBox(width: 10),
         Expanded(
           child: _statCard(
             icon: Icons.check_circle_outline_rounded,
