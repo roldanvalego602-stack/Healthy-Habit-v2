@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
@@ -194,7 +195,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 Text('Recompensa: ${habit.xp} XP'),
                 if (habit.coinCost > 0) ...[
                   const SizedBox(height: 8),
-                  Text('Costo para adquirirlo: ${habit.coinCost} Habit Coins'),
+                  const Text('Costo para adquirirlo:'),
+                  HealthyCoinAmount(amount: '${habit.coinCost}',
+                    size: 20, suffix: ' Habit Coins'),
                 ],
                 if (_isDifficult(habit)) ...[
                   const SizedBox(height: 8),
@@ -255,7 +258,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   'Sesiones realizadas: ${entry.attempt.progress} de ${entry.attempt.target}',
                 ),
                 const SizedBox(height: 8),
-                Text('Penalización estimada: $fee Habit Coins'),
+                const Text('Penalización estimada:'),
+                HealthyCoinAmount(amount: '$fee',
+                  size: 20, suffix: ' Habit Coins'),
                 const SizedBox(height: 8),
                 const Text(
                   'Se conservarán tus sesiones anteriores y el XP obtenido.',
