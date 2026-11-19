@@ -204,6 +204,10 @@ class HabitActionService {
         }
         final coins = number(userData['habitCoins']).clamp(0, 1000000000).toInt();
         final deducted = cancellationFee(habit, coins);
+        if (deducted > preview.estimatedCost) {
+          throw StateError(
+            'Tu saldo cambió. Revisa y confirma la nueva penalización.');
+        }
         tx.update(attemptRef, {
           'status': 'cancelled',
           'cancelledAt': FieldValue.serverTimestamp(),
