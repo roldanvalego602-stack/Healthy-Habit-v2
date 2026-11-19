@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
+import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
@@ -74,6 +75,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
+  final HealthyConversationService _conversation =
+      const HealthyConversationService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
   final HealthyChatHistory _history = const HealthyChatHistory();
   String? _sessionId;
@@ -494,6 +497,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
     final text = (predefinedText ?? messageController.text).trim();
     if (text.isEmpty) return;
     final first = _sessionId == null;
+    final previousUserMessage = messages
+        .where((message) => message.isUser)
+        .map((message) => message.text)
+        .toList();
+    final lastUserPrompt = previousUserMessage.isEmpty
+        ? '' : previousUserMessage.last;
     final userMessage = ChatMessage(
       text: text, isUser: true, time: _timeNow());
 
@@ -569,8 +578,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 lastShopItemId: _lastShopItemId);
             response = intent.text.isNotEmpty
                 ? intent.text
-                : _respuestas.responder(text,
-                    nombre: _primerNombre, perfil: _perfil);
+                : _conversation.reply(
+                    text,
+                    name: _primerNombre,
+                    previousUserMessage: lastUserPrompt,
+                  ) ??
+                  _respuestas.responder(
+                    text, nombre: _primerNombre, perfil: _perfil);
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
