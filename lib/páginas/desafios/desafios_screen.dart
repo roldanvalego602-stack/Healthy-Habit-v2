@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'challenge_progress_policy.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
 class DesafiosScreen extends StatefulWidget {
@@ -64,16 +65,19 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'title': 'Hidratación constante',
           'description': 'Completa tu hábito de agua durante 7 días seguidos.',
           'category': 'Diarios',
-          'status': 'inProgress',
-          'currentProgress': 5,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 7,
           'xpReward': 80,
           'hcReward': 25,
           'difficulty': 'Baja',
           'difficultyStars': 1,
-          'timeLeft': 'Quedan 2 días',
+          'timeLeft': 'Disponible',
           'icon': 'water',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -81,32 +85,38 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'description':
               'Añade fruta a tus meriendas durante la semana de equilibrio.',
           'category': 'Especiales',
-          'status': 'inProgress',
-          'currentProgress': 2,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 4,
           'xpReward': 50,
           'hcReward': 20,
           'difficulty': 'Fácil',
           'difficultyStars': 1,
-          'timeLeft': 'Quedan 4 días',
+          'timeLeft': 'Disponible',
           'icon': 'fruit',
           'season': true,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
           'title': 'Racha de 7 días',
           'description': 'Mantén tus hábitos durante siete días.',
           'category': 'Semanales',
-          'status': 'completed',
-          'currentProgress': 7,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 7,
           'xpReward': 80,
           'hcReward': 25,
           'difficulty': 'Media',
           'difficultyStars': 2,
-          'timeLeft': 'Completado',
+          'timeLeft': 'Disponible',
           'icon': 'trophy',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -124,6 +134,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'requiredLevel': 7,
           'icon': 'lock',
           'season': true,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -140,6 +153,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'timeLeft': 'Disponible',
           'icon': 'fruit',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
       ];
@@ -212,6 +228,11 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
 
         if (status != 'completed') {
           throw Exception('Debes completar el desafío antes de reclamar.');
+        }
+        if (!ChallengeProgressPolicy.claimable(challenge)) {
+          throw Exception(
+            'Este desafío no tiene progreso verificado con hábitos reales. '
+            'No se puede reclamar su recompensa todavía.');
         }
 
         final current = _toInt(challenge['currentProgress']);
@@ -665,14 +686,15 @@ class _ChallengeCard extends StatelessWidget {
     final description = data['description']?.toString() ?? '';
     final category = data['category']?.toString() ?? 'Diarios';
     final status = data['status']?.toString() ?? 'available';
-    final current = _intValue(data['currentProgress']);
+    final current = ChallengeProgressPolicy.visibleProgress(data);
+    final verified = ChallengeProgressPolicy.verified(data);
     final total = _intValue(data['totalProgress'], 1).clamp(1, 999999);
     final xp = _intValue(data['xpReward']);
     final hc = _intValue(data['hcReward']);
     final progress = (current / total).clamp(0.0, 1.0).toDouble();
 
     final isLocked = status == 'locked';
-    final isCompleted = status == 'completed';
+    final isCompleted = status == 'completed' && verified;
     final isClaimed = status == 'claimed';
     final isAvailable = status == 'available';
 
@@ -684,7 +706,9 @@ class _ChallengeCard extends StatelessWidget {
       _ => Icons.flag_outlined,
     };
 
-    final statusText = switch (status) {
+    final statusText = !verified && status == 'completed'
+        ? 'PROGRESO SIN VERIFICAR'
+        : switch (status) {
       'inProgress' => 'EN CURSO',
       'completed' => 'COMPLETADO',
       'claimed' => 'RECOMPENSA RECLAMADA',
@@ -780,6 +804,14 @@ class _ChallengeCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!verified) ...[
+            const SizedBox(height: 9),
+            const Text(
+              'Vista previa · el progreso se mostrará cuando esté '
+              'vinculado a registros verificados de hábitos.',
+              style: TextStyle(color: Color(0xFF7A869A), fontSize: 11),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
