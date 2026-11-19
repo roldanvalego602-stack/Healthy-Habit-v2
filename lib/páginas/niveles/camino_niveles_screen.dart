@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_visual_mode.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -260,7 +261,7 @@ class CaminoNivelesScreen extends StatelessWidget {
         ? const Color(0xFF85DDB6)
         : level.accentColor;
 
-    return Row(
+    final node = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
@@ -431,6 +432,19 @@ class CaminoNivelesScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+    if (!isCurrent || !HealthyVisualEffects.enabled(context)) return node;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('current-level-${level.number}'),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) => Transform.scale(
+        alignment: Alignment.centerLeft,
+        scale: 0.97 + 0.03 * value,
+        child: child,
+      ),
+      child: node,
     );
   }
 }
