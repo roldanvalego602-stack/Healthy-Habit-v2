@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_float.dart';
+import '../../tema/healthy_motion.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -207,8 +208,9 @@ class CaminoNivelesScreen extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    Text(
-                      '$xpActual XP acumulados',
+                    HealthyCountUp(
+                      value: xpActual,
+                      suffix: ' XP acumulados',
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ],
