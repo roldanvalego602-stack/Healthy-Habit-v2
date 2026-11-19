@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_celebration.dart';
 import '../../tema/healthy_visual_mode.dart';
 
 import 'shop_service.dart';
@@ -57,7 +58,13 @@ class _StoreScreenState extends State<StoreScreen> {
     setState(() => _busy = item.id);
     try {
       await ShopService.instance.buy(item);
-      _message('¡Canjeaste ${item.name}! Ya está en tu colección.');
+      if (!mounted) return;
+      HealthyCelebration.show(
+        context,
+        title: '¡Recompensa adquirida!',
+        subtitle: '${item.name} ya está en tu colección.',
+        icon: Icons.card_giftcard_rounded,
+      );
     } catch (error) {
       _message(error is ShopException
           ? error.message
