@@ -442,17 +442,22 @@ class _StoreScreenState extends State<StoreScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    waiting
-                        ? 'Comprando...'
-                        : owned
-                            ? 'Adquirido'
-                            : state == null
-                                ? 'Cargando...'
-                                : affordable
-                                    ? 'Canjear'
-                                    : 'Sin saldo',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  child: AnimatedSwitcher(
+                    duration: HealthyVisualEffects.duration(
+                      context, const Duration(milliseconds: 180)),
+                    child: Text(
+                      waiting
+                          ? 'Comprando...'
+                          : owned
+                              ? 'Adquirido'
+                              : state == null
+                                  ? 'Cargando...'
+                                  : affordable
+                                      ? 'Canjear'
+                                      : 'Sin saldo',
+                      key: ValueKey('$waiting-$owned-$affordable'),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
               ],
