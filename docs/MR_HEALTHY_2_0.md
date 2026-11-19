@@ -36,6 +36,33 @@ flutter test test/healthy_assistant_engine_test.dart
 
 Consultar desde Mr. Healthy: "Mis desafíos", "¿Qué logros tengo?", "Quiero comprar corona", "Cómpralo" y "Cambiar mi nombre". Comprobar que los importes y barras reflejen Firestore, que cancelar una compra no cambie las monedas, y que la edición abra el formulario original.
 
+## Integración selectiva de la rama Mijo
+
+Se integraron características específicas de `Mijo` sin hacer merge completo ni reemplazar la arquitectura de Mr. Healthy 2.0:
+
+- `lib/servicios/clima_servicio.dart`: consulta meteorológica basada en el servicio aportado por `Mijo`, con fuente Open-Meteo y consejos de hábitos por clima. **Privacidad reforzada**: se solicita ubicación solo cuando el usuario pregunta por el clima; si deniega permiso, la consulta termina sin geolocalización por IP. Las coordenadas se redondean a dos decimales antes de consultar el clima y nunca se guardan en el historial.
+- `nutrichat.dart`: reconoce solicitudes como "¿Cómo está el clima hoy?" y muestra la respuesta real con indicación de ubicación aproximada. Se conserva nuestro motor de intenciones, las tarjetas, las acciones confirmadas y las sesiones de Firestore.
+- `nutri_calculator_service.dart`: se adaptó el reconocimiento de cambios claros de tema desde `Mijo`, preservando los cálculos IMC/GET actuales. Si el usuario cambia de tema durante un cálculo, puede elegir "Continuar cálculo" o "Salir del cálculo". Si sale, debe repetir su otra pregunta; no se consulta la ubicación mientras un cálculo espera confirmación.
+- Se añadieron las dependencias `geolocator` y `http`, permisos de ubicación de primer plano para Android y descripción de uso en iOS. No se incorporaron `pedometer` ni `permission_handler` porque no son necesarios para esta integración.
+- No se copió el historial local `SharedPreferences` de `Mijo`, ya que duplicaría el historial por usuario existente en Firestore. Tampoco se copió su `nutrichat.dart`, ni se mezclaron cambios de autenticación o configuración sin una auditoría propia.
+
+**Verificación local necesaria:**
+
+```bash
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/mijo_selective_integration_test.dart
+flutter test test/healthy_assistant_engine_test.dart
+flutter run
+```
+
+Pruebas manuales recomendadas:
+1. Solicitar el clima con permiso de ubicación concedido y comprobar temperatura y consejos; denegar ubicación y comprobar que no haya consulta alternativa basada en IP.
+2. Iniciar cálculo de IMC; preguntar por el clima; continuar el cálculo y completar el paso anterior sin perder datos.
+3. Repetir y elegir salir: el cálculo debe quedar cancelado sin consultar el clima hasta que el usuario vuelva a pedirlo.
+4. Abrir historial, tiendas, hábitos, desafíos y tarjetas previas; confirmar que no se hayan alterado.
+5. Ejecutar `flutter pub get` para actualizar el archivo `pubspec.lock` con las nuevas dependencias y subir ese cambio después de revisarlo.
+
 ## Reglas de seguridad de Firestore — revisión requerida
 
 No se ha localizado `firestore.rules` en la rama. Integra una regla como la siguiente **dentro del `match /users/{userId}` existente**; no sustituyas el resto de las reglas.
