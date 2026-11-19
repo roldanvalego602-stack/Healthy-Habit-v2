@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import 'challenge_progress_policy.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
@@ -489,10 +490,20 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
       builder:
           (context) => AlertDialog(
             title: Text(data['title']?.toString() ?? 'Desafío'),
-            content: Text(
-              '${data['description'] ?? ''}\n\n'
-              'Recompensa: ${data['xpReward'] ?? 0} XP y '
-              '${data['hcReward'] ?? 0} HC.',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${data['description'] ?? ''}'),
+                const SizedBox(height: 12),
+                Text('Recompensa: ${data['xpReward'] ?? 0} XP'),
+                const SizedBox(height: 6),
+                HealthyCoinAmount(
+                  amount: '${data['hcReward'] ?? 0}',
+                  suffix: ' Habit Coins',
+                  size: 21,
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -907,7 +918,21 @@ class _ChallengeCard extends StatelessWidget {
                 HealthyAdaptive.mint,
                 const Color(0xFF00A875),
               ),
-              _reward('+$hc HC', const Color(0xFFFDE89D), Colors.orange),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: HealthyAdaptive.yellow,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: HealthyCoinAmount(
+                  amount: '+$hc', size: 17,
+                  suffix: ' HC',
+                  style: const TextStyle(
+                    color: Color(0xFF9A6513),
+                    fontWeight: FontWeight.w800, fontSize: 11,
+                  ),
+                ),
+              ),
               Text(
                 'Dificultad: ${data['difficulty'] ?? 'Normal'}',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF7A869A)),
