@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 
 /// Contenido informativo editable del proyecto. No sustituye documentos legales.
 class InformacionAppScreen extends StatelessWidget {
   final String tipo;
   const InformacionAppScreen({super.key, required this.tipo});
 
-  static const _navy = Color(0xFF172B36);
-  static const _green = Color(0xFF198568);
+  Color get _text => HealthyAdaptive.text;
+  Color get _background => HealthyAdaptive.background;
+  Color get _accent => HealthyAdaptive.accent;
 
   @override
   Widget build(BuildContext context) {
     final contenido = _contenido(tipo);
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: _background,
       appBar: AppBar(
-        title: Text(contenido.$1),
-        backgroundColor: const Color(0xFFF7F9F8),
+        title: Text(contenido.$1, style: TextStyle(color: _text, fontWeight: FontWeight.w800)),
+        backgroundColor: _background,
+        foregroundColor: _text,
+        iconTheme: IconThemeData(color: _text),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -27,15 +31,15 @@ class InformacionAppScreen extends StatelessWidget {
             alignment: Alignment.centerLeft,
             errorBuilder:
                 (_, __, ___) =>
-                    const Icon(Icons.eco_rounded, color: _green, size: 55),
+                    Icon(Icons.eco_rounded, color: _accent, size: 55),
           ),
           const SizedBox(height: 18),
           Text(
             contenido.$1,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: _navy,
+              color: _text,
             ),
           ),
           const SizedBox(height: 16),
@@ -44,10 +48,10 @@ class InformacionAppScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
                 p,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.55,
-                  color: _navy,
+                  color: _text,
                 ),
               ),
             ),
