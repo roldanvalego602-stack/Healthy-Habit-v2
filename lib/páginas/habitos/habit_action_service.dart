@@ -75,6 +75,22 @@ class HabitActionService {
           ? coins.clamp(0, difficultCancellationLimit).toInt()
           : 0;
 
+  /// Solo incluye hábitos oficiales con intentos activos reales.
+  Future<List<Habit>> listActiveCatalogHabits() async {
+    final docs = await _userRef.collection('user_habits').get();
+    final results = await Future.wait(docs.docs.map((doc) =>
+        doc.reference.collection('attempts')
+            .where('status', isEqualTo: 'inProgress').limit(1).get()));
+    final active = <Habit>[];
+    for (var i = 0; i < docs.docs.length; i++) {
+      if (results[i].docs.isEmpty) continue;
+      final habit = findCatalogHabit(docs.docs[i].id);
+      if (habit != null) active.add(habit);
+    }
+    active.sort((a, b) => a.title.compareTo(b.title));
+    return active;
+  }
+
   /// Revisa los cupos y estados reales antes de pedir confirmación al usuario.
   Future<HabitActionPreview> preview(String habitId, {
     required bool remove,
