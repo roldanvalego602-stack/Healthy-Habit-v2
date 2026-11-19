@@ -27,6 +27,27 @@ elimina el objeto anterior cuando pertenece al usuario autenticado.
 La subida de una fotografía nueva también intenta limpiar la anterior.
 El nombre, biografía y usuario se guardan por separado con **Guardar cambios**.
 
+## Diagnóstico de la subida
+
+En la versión actual, la aplicación distingue el paso que falla:
+lectura de Firestore, subida a Storage, obtención de URL o guardado en
+Firestore. El SnackBar muestra un código de Firebase cuando existe.
+
+**Desde febrero de 2026, Firebase Cloud Storage exige que el proyecto esté
+en el plan Blaze.** En Spark, los buckets no son accesibles mediante la
+API y pueden producir errores HTTP 402 o 403 aunque las reglas estén bien.
+Referencia oficial:
+https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024
+
+Antes de editar reglas o pagar, comprobar en Firebase Console:
+1. Proyecto `cloud-firestore-d8c61` → **Configuración → Uso y facturación**.
+2. **Storage → Archivos**: confirmar que existe y es accesible el bucket
+   `cloud-firestore-d8c61.firebasestorage.app`.
+3. **Storage → Reglas**: permitir `create` JPEG dentro de
+   `users/{uid}/profile/` solo para el mismo usuario autenticado.
+4. Reintentar una subida en Android y anotar el **código concreto**.
+   No cambiar de plan sin revisar antes los costes y límites de facturación.
+
 ## Requisito operativo: Firebase Storage
 
 **El repositorio actualmente no define un bloque `storage` en
