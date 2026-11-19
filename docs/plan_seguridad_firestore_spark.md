@@ -1,0 +1,47 @@
+# Plan de cierre de seguridad Firestore — Healthy Habit (Spark)
+
+Estado: BORRADOR DE AUDITORÍA, NO DESPLEGADO. Fecha: 2026-11-19.
+Firebase project: `cloud-firestore-d8c61`. No Cloud Functions desplegadas (`firebase functions:list`).
+La consola tiene una regla final `match /{document=**} { allow read, write: if request.auth != null; }` que invalida de hecho las restricciones del propietario. **No publicar reglas nuevas sin pruebas de regresión.**
+
+## Hallazgos del código actual
+
+1. `lib/páginas/ranking_screen.dart` consulta `users.orderBy('xp').limit(100)`; también `AmigosServicio.perfiles` consulta directamente documentos de `users` de otras cuentas. Cualquier `allow list` de `users` expone documentos completos, incluyendo configuraciones privadas.
+2. `lib/páginas/perfil/amigos_servicio.dart` escribe en dos cuentas en un batch (`solicitudes`, `solicitudes_enviadas`, `following`, `followers`). Es necesario modelar permisos bidireccionales y comprobar transacciones de aceptación.
+3. `lib/páginas/habitos/registrar_habito_screen.dart` incrementa XP, monedas, niveles y rachas directamente desde Flutter. Por lo tanto cualquier regla que permita al propietario cambiar estos campos le permite fabricar progresos con un cliente adulterado, incluso si hay condiciones de incremento.
+4. `lib/páginas/tienda/shop_service.dart` compra desde el cliente mediante transacción que descuenta `habitCoins` y agrega `shopInventory`; también equipa `shopEquipped`.
+5. `temporary_habit_evidence` guarda una imagen base64 dentro de documentos privados de Firestore y debe ser estrictamente de propietario. El vencimiento lógico a las 24 horas no es una garantía de borrado físico.
+6. `/system/**` no debe ser escribible por cualquier usuario autenticado; deben identificarse los consumidores y decidir quién administra esos documentos.
+7. `functions/index.js` contiene `adjustHabitCoins` administrativa y otras funciones, pero no están desplegadas. En Spark solo se pueden probar con el emulador; no depender de ellas en el móvil de producción.
+
+## Arquitectura objetivo
+
+- `users/{uid}`: perfil privado (correo, preferencias, economía, inventario, datos sensibles); sólo propietario puede leer su documento, y sus escrituras requieren campos permitidos.
+- `public_profiles/{uid}`: nombre de pantalla, avatar, XP/nivel publicables. Es necesario migrar ranking, búsquedas, fichas públicas y seguidores ANTES de denegar consultas a `users`. Crear copia pública desde cliente **no garantiza que el ranking sea íntegro**: para un ranking de confianza se necesita un componente autoritativo o calificarlo como demostración.
+- Subcolecciones de hábitos, intentos, logs, chat y evidencias: sólo propietario, con validación de tamaños/tipos sensibles cuando corresponda.
+- Relaciones sociales: reglas por documento para solicitudes, seguimiento y aceptación; probar con dos cuentas. El bloqueo y las invitaciones todavía requieren modelar su esquema.
+- `system/**`: lectura específica y escritura por un rol verificable o backend; no permitir edición indiscriminada.
+- `match /{document=**}`: deny-all sin excepciones.
+
+## Plan de migración sin interrupciones
+
+1. Conservar una copia versionada de las reglas reales proporcionadas por el usuario (sin publicar) y tomar una exportación/backup adecuado de Firestore si hay datos importantes.
+2. Crear reglas candidatas y tests en emulador, con casos negativos: usuario A lee/modifica evidencia de B; escribe monedas de B; cambia `system`; consulta chat de B; añade/acepta solicitudes ilegítimas.
+3. Crear `public_profiles` y adaptar ranking, búsqueda y perfiles; definir claramente qué es público. Probar datos ausentes y compatibilidad.
+4. Adaptar las operaciones sociales y la economía a reglas validadas; ninguna excepción global de autenticados.
+5. Probar en dos cuentas de prueba la inscripción, login, hábitos, foto, compras, equipamiento, amigos y ranking.
+6. Sólo entonces publicar reglas desde consola de Firebase con vista previa de cambios y mecanismo de reversión. No ejecutar `firebase deploy --only firestore` con reglas incompletas.
+
+## Riesgo inherente en Spark
+
+No hay Cloud Functions desplegables en Spark. Por tanto **la autoridad de XP/coins derivada de acciones del cliente no puede considerarse a prueba de trampas** sólo mediante reglas de Firestore. Para una demo universitaria se puede mitigar con límites, validaciones y pruebas, pero no afirmar integridad competitiva total. La solución robusta requiere un backend confiable o funciones en Blaze; no es necesario cambiar de plan para comenzar a proteger información privada.
+
+## Comandos de inspección seguros
+
+```bash
+git status --short
+firebase use
+firebase functions:list --project cloud-firestore-d8c61
+firebase emulators:start --only firestore,auth --project demo-healthy-habit
+```
+El comando del emulador puede requerir descargas Java; usa **demo-healthy-habit** para evitar cualquier escritura a producción.
