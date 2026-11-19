@@ -1,8 +1,43 @@
 import 'dart:math';
+import 'healthy_knowledge_base.dart';
 
 /// Respuestas locales y transparentes: no consulta Internet ni inventa datos.
 class NutriRespuestasService {
   final Random _random = Random();
+  final HealthyKnowledgeBase _knowledge = const HealthyKnowledgeBase();
+
+  /// Tone is applied to everyday educational responses, never safety messages.
+  String humor = 'amigable';
+  static const moods = <String>['amigable', 'divertido', 'serio', 'motivador', 'tranquilo'];
+
+  void cambiarHumor(String nuevo) {
+    if (moods.contains(nuevo)) humor = nuevo;
+  }
+
+  String _conHumor(String respuesta) {
+    switch (humor) {
+      case 'divertido':
+        return '🌱 ¡Mr. Healthy al rescate!\n\n$respuesta';
+      case 'serio':
+        return respuesta;
+      case 'motivador':
+        return '💪 Un avance a la vez.\n\n$respuesta';
+      case 'tranquilo':
+        return '🍃 Sin prisa.\n\n$respuesta';
+      default:
+        return '🌿 $respuesta';
+    }
+  }
+
+  /// Discriminatory attacks against protected groups are handled separately
+  /// from genuine questions about identity, stigma or discrimination.
+  static bool ataqueDiscriminatorio(String input) {
+    final s = normalizar(input);
+    final grupo = RegExp(r'\\b(gays?|homosexuales?|lesbianas?|trans|negros?|indigenas?|migrantes?|musulmanes?|judios?|asiaticos?)\\b');
+    final ataque = RegExp(r'\\b(odio|matar|maten|expulsar|inferiores|asco|sucios|degenerados|desaparezcan|no merecen|son basura)\\b');
+    return grupo.hasMatch(s) && ataque.hasMatch(s);
+  }
+
   int _ultimoConsejo = -1;
   int _ultimoFallback = -1;
 
@@ -76,6 +111,9 @@ class NutriRespuestasService {
           'busca a una persona de confianza que pueda acompañarte ahora. '
           '¿Estás a salvo en este momento?';
     }
+    if (ataqueDiscriminatorio(input)) {
+      return 'No voy a respaldar ataques racistas u homofóbicos. Podemos hablar de diferencias, prejuicios y respeto sin deshumanizar a nadie. ¿Qué situación quieres entender?';
+    }
     return 'Oye$personal, podemos hablar de lo que te molesta sin groserías 🙂. '
         'No te voy a regañar, pero prefiero que nos tratemos con respeto. '
         'Cuéntame qué pasó o qué necesitas y lo resolvemos juntos.';
@@ -100,6 +138,24 @@ class NutriRespuestasService {
     required Map<String, dynamic> perfil,
   }) {
     final text = normalizar(input);
+    if (ataqueDiscriminatorio(input)) return moderar(input, nombre);
+    if (contiene(text, ['cambia tu humor', 'modo divertido', 'modo serio', 'modo motivador', 'modo tranquilo', 'modo amigable'])) {
+      for (final mood in moods) {
+        if (text.contains(mood)) {
+          cambiarHumor(mood);
+          return 'Modo $mood activado. ¿Qué te gustaría consultar?';
+        }
+      }
+      return 'Puedes elegir un estilo: amigable, divertido, serio, motivador o tranquilo.';
+    }
+    if (contiene(text, ['estoy aburrido', 'estoy aburrida', 'como estas', 'como te sientes'])) {
+      return _conHumor('Estoy aquí para ayudarte. Podemos conversar, buscar una idea sencilla para tu día o hablar sobre ejercicio y alimentación.');
+    }
+    if (contiene(text, ['calorias de', 'cuantas calorias tiene', 'tabla nutricional exacta'])) {
+      return 'No tengo una tabla validada de calorías por alimento y porción. Para un cálculo fiable hace falta cantidad, preparación y una base de composición alimentaria verificada; evita tomar una cifra inventada como dato real.';
+    }
+    final conocimiento = _knowledge.answer(text);
+    if (conocimiento != null) return _conHumor(conocimiento);
     final saludo = nombre.isEmpty ? '' : ', $nombre';
     final now = DateTime.now();
     final hora =
