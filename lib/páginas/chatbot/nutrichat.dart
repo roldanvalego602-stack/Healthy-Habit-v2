@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -247,6 +248,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
   }
 
   void _navigateFromChat(ChatMessage message) {
+    if (message.action == 'source') {
+      final uri = Uri.tryParse(message.argument);
+      if (uri != null && uri.scheme == 'https' &&
+          const {'fdc.nal.usda.gov', 'www.who.int'}.contains(uri.host)) {
+        launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _chatNotice('Fuente externa no disponible o no verificada.');
+      }
+      return;
+    }
     Widget? target;
     switch (message.action) {
       case 'habits':
@@ -725,6 +736,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && message.card == 'knowledge') ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.menu_book_rounded, size: 17,
+                  color: HealthyAdaptive.accent),
+                const SizedBox(width: 7),
+                Expanded(child: Text('Información educativa con fuente',
+                  style: TextStyle(fontSize: 11,
+                    color: HealthyAdaptive.muted))),
+              ]),
+            ],
             if (!isUser && message.card == 'profile') ...[
               const SizedBox(height: 12),
               _profileCard(),
@@ -768,6 +790,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return 'Abrir mi camino de XP';
       case 'ranking': return 'Ver clasificación';
       case 'shop': return 'Abrir Tienda';
+      case 'source': return 'Consultar fuente oficial';
       default: return 'Abrir';
     }
   }
@@ -781,6 +804,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return Icons.route_outlined;
       case 'ranking': return Icons.leaderboard_outlined;
       case 'shop': return Icons.storefront_outlined;
+      case 'source': return Icons.open_in_new_rounded;
       default: return Icons.open_in_new_rounded;
     }
   }
