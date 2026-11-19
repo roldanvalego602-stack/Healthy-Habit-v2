@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
 import 'tema/healthy_visual_mode.dart';
+import 'tema/healthy_motion.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -499,7 +500,9 @@ class _StatsRow extends StatelessWidget {
     final double habitProgress =
         totalHabits > 0 ? completedHabits / totalHabits : 0.0;
 
-    return Row(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Row(
       children: [
         Expanded(
           child: Container(
@@ -516,10 +519,9 @@ class _StatsRow extends StatelessWidget {
                     const Text('🔥', style: TextStyle(fontSize: 18)),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(
-                        '$streakDays días',
+                      child: HealthyStreakNumber(
+                        days: streakDays,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
@@ -543,7 +545,7 @@ class _StatsRow extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: HealthyAdaptive.surfaceAlt,
               borderRadius: BorderRadius.circular(22),
             ),
             child: Row(
@@ -590,6 +592,7 @@ class _StatsRow extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }
