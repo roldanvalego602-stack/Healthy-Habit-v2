@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
+import '../sesion/sobre_nosotros_screen.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
 
@@ -740,6 +741,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           _section('INFORMACIÓN Y SOPORTE', Icons.info_outline, [
+            _action('Sobre nosotros', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SobreNosotrosScreen()))),
             _action('Acerca de Healthy Habit', () => _page('acerca')),
             _action('Términos de uso', () => _page('terminos')),
             _action('Aviso de privacidad', () => _page('privacidad')),
