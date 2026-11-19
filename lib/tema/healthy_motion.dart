@@ -97,3 +97,40 @@ class HealthyStreakNumber extends StatelessWidget {
     );
   }
 }
+
+/// Cuenta visualmente hacia un valor ya confirmado. No modifica la cifra real.
+class HealthyCountUp extends StatelessWidget {
+  const HealthyCountUp({
+    super.key,
+    required this.value,
+    required this.style,
+    this.prefix = '',
+    this.suffix = '',
+    this.duration = const Duration(milliseconds: 750),
+  });
+
+  final int value;
+  final String prefix;
+  final String suffix;
+  final TextStyle style;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = (int number) => Text(
+      '$prefix$number$suffix',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    );
+    if (!HealthyVisualEffects.enabled(context)) return text(value);
+    final initial = value - (value > 200 ? 200 : value);
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('count-up-$prefix-$value-$suffix'),
+      tween: Tween<double>(begin: initial.toDouble(), end: value.toDouble()),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, progress, _) => text(progress.round()),
+    );
+  }
+}
