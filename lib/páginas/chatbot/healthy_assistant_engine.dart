@@ -1,4 +1,5 @@
 import '../habitos/catalogo.dart';
+import '../tienda/shop_service.dart';
 import '../niveles/levels_system.dart';
 import 'nutri_respuestas_service.dart';
 
@@ -149,6 +150,56 @@ class HealthyAssistantEngine {
           );
         }
       }
+    }
+
+    // Interacciones de otros módulos, ordenadas antes de perfiles/FAQ.
+    if (has(['editar mi perfil','editar perfil','cambiar mi nombre',
+        'modificar mi perfil','cambiar mi usuario','cambiar mi biografia',
+        'editar mi biografia'])) {
+      return const HealthyAssistantReply(
+        'Puedes actualizar tu nombre, usuario y biografía desde el formulario '
+        'de edición. No cambiaré tus datos sin que los revises y guardes.',
+        action: 'edit_profile', card: 'edit_profile');
+    }
+
+    if (has(['mis desafios','mis retos','desafios activos','desafios disponibles',
+        'misiones disponibles','ver desafios','aceptar desafio',
+        'reclamar desafio','reclamar recompensa de desafio',
+        'que desafios tengo'])) {
+      return const HealthyAssistantReply(
+        'Voy a consultar tus desafíos reales para mostrar el avance, '
+        'los pendientes y las recompensas. Para aceptar o reclamar '
+        'utilizaremos la pantalla de Desafíos, que valida esas operaciones.',
+        action: 'challenges', card: 'challenges');
+    }
+
+    if (has(['mis logros','mis insignias','medallas','logros desbloqueados',
+        'proximo logro','siguiente logro','ver logros','mis trofeos'])) {
+      return const HealthyAssistantReply(
+        'Revisaré tus logros y cuánto te falta para el siguiente. '
+        'No se concederán XP ni monedas al mostrar la información.',
+        action: 'achievements', card: 'achievements');
+    }
+
+    for (final item in shopCatalog) {
+      final itemName = NutriRespuestasService.normalizar(item.name);
+      if (normalized.contains(itemName) &&
+          has(['comprar','canjear','quiero','equipar','ponerme','usar',
+              'quitarme','desequipar','cuanto cuesta','precio','tengo'])) {
+        return HealthyAssistantReply(
+          'Encontré «${item.name}» en la tienda. '
+          'Consultaré tu saldo y la colección antes de ofrecer '
+          'una compra o cambio de apariencia.',
+          action: 'shop', actionArgument: item.id, card: 'shop_item');
+      }
+    }
+    if (has(['que puedo comprar','recomiendame algo de la tienda',
+        'ver productos','catalogo de tienda','articulos de tienda',
+        'comprar recompensa','comprar un accesorio','canjear monedas'])) {
+      return const HealthyAssistantReply(
+        'Puedes consultar artículos reales de la tienda, revisar '
+        'precios, adquirirlos con confirmación o equipar los que ya tienes.',
+        action: 'shop', card: 'shop_picker');
     }
 
     if (has(['profesional', 'nutriologo', 'nutriologa', 'consulta nutricional',
