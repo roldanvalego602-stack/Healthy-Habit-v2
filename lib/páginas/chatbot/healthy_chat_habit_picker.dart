@@ -52,12 +52,13 @@ class _HealthyChatHabitPickerState extends State<HealthyChatHabitPicker> {
   @override
   Widget build(BuildContext context) {
     final motion = HealthyVisualEffects.enabled(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final sheetHeight = MediaQuery.sizeOf(context).height * 0.72;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom),
+        padding: EdgeInsets.only(bottom: keyboard),
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.72,
+          height: (sheetHeight - keyboard).clamp(220.0, sheetHeight).toDouble(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
