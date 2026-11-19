@@ -232,35 +232,49 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                         Text(item.description, style: TextStyle(
                           color: HealthyAdaptive.muted, fontSize: 11)),
                         const SizedBox(height: 11),
-                        if (_working)
-                          const Center(child: CircularProgressIndicator())
-                        else if (!state.owns(item.id))
-                          FilledButton.icon(
-                            key: const Key('chat-shop-purchase'),
-                            onPressed: state.coins >= item.price
-                                ? () => _commit(item, state, purchase: true)
-                                : null,
-                            icon: const Icon(Icons.shopping_bag_outlined),
-                            label: Text(state.coins >= item.price
-                                ? 'Canjear por ${item.price} HC'
-                                : 'Saldo insuficiente'),
-                          )
-                        else if (item.slot != null)
-                          FilledButton.icon(
-                            key: const Key('chat-shop-equip'),
-                            onPressed: () => _commit(item, state,
-                              purchase: false,
-                              remove: state.equippedItem(item.id)),
-                            icon: Icon(state.equippedItem(item.id)
-                                ? Icons.check_circle_outline
-                                : Icons.checkroom_outlined),
-                            label: Text(state.equippedItem(item.id)
-                                ? 'Quitar de mi apariencia' : 'Equipar'),
-                          )
-                        else
-                          Text('✓ Ya está en tu colección',
-                            style: TextStyle(color: HealthyAdaptive.accent,
-                              fontWeight: FontWeight.w800)),
+                        AnimatedSwitcher(
+                          duration: HealthyVisualEffects.duration(
+                            context, const Duration(milliseconds: 280)),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: _working
+                            ? const Center(
+                                key: ValueKey('shop-action-working'),
+                                child: CircularProgressIndicator())
+                            : !state.owns(item.id)
+                                ? FilledButton.icon(
+                                    key: const Key('chat-shop-purchase'),
+                                    onPressed: state.coins >= item.price
+                                        ? () => _commit(
+                                            item, state, purchase: true)
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.shopping_bag_outlined),
+                                    label: Text(state.coins >= item.price
+                                        ? 'Canjear por ${item.price} HC'
+                                        : 'Saldo insuficiente'),
+                                  )
+                                : item.slot != null
+                                    ? FilledButton.icon(
+                                        key: const Key('chat-shop-equip'),
+                                        onPressed: () => _commit(
+                                          item, state, purchase: false,
+                                          remove: state.equippedItem(item.id)),
+                                        icon: Icon(state.equippedItem(item.id)
+                                            ? Icons.check_circle_outline
+                                            : Icons.checkroom_outlined),
+                                        label: Text(
+                                          state.equippedItem(item.id)
+                                            ? 'Quitar de mi apariencia'
+                                            : 'Equipar'),
+                                      )
+                                    : Text('✓ Ya está en tu colección',
+                                        key: const ValueKey(
+                                          'shop-action-owned'),
+                                        style: TextStyle(
+                                          color: HealthyAdaptive.accent,
+                                          fontWeight: FontWeight.w800)),
+                        ),
                       ],
                       const SizedBox(height: 6),
                       OutlinedButton.icon(
