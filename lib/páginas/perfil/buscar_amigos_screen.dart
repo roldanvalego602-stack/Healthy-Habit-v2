@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'profile_avatar.dart';
 import 'social_action_button.dart';
 import 'package:healthy_habit/p%C3%A1ginas/perfil/perfil_muestra.dart';
 
@@ -320,14 +321,9 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: HealthyAdaptive.mint,
-                                      child: Icon(
-                                        Icons.person_rounded,
-                                        color: HealthyAdaptive.accent,
-                                        size: 28,
-                                      ),
+                                    HealthyProfileAvatar(
+                                      photoUrl: datos['photoUrl']?.toString(),
+                                      size: 48,
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
