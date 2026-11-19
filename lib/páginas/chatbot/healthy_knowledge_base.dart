@@ -7,7 +7,7 @@ String _normalizarTexto(String value) => value
     .replaceAll(RegExp('[òóôõö]'), 'o')
     .replaceAll(RegExp('[ùúûü]'), 'u')
     .replaceAll('ñ', 'n')
-    .replaceAll(RegExp(r'\\s+'), ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
 bool _contieneTermino(String input, String term) {
