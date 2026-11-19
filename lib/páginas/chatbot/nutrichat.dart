@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
@@ -88,6 +90,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
   List<Map<String, dynamic>> _habitosPerfil = [];
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _voiceReady = false;
+  bool _listening = false;
+  bool _readAloud = false;
+  String? _voiceError;
   bool isTyping = false;
   bool _hasSentMessage = false;
 
@@ -128,7 +136,75 @@ class _NutriChatPageState extends State<NutriChatPage> {
     super.initState();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
+    _setupVoice();
     _loadRecentChat();
+  }
+
+  Future<void> _setupVoice() async {
+    try {
+      await _tts.setLanguage('es-MX');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setVolume(1.0);
+    } catch (_) {
+      // No speech engine installed: text chat continues to work.
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    try {
+      _voiceReady = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'done' || status == 'notListening') {
+            setState(() => _listening = false);
+          }
+        },
+        onError: (error) {
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _voiceError = 'No se pudo reconocer la voz. Revisa el micrófono.';
+          });
+        },
+      );
+      if (!_voiceReady) {
+        if (mounted) setState(() => _voiceError = 'El reconocimiento de voz no está disponible en este dispositivo.');
+        return;
+      }
+      await _tts.stop();
+      await _speech.listen(
+        localeId: 'es_MX',
+        listenFor: const Duration(seconds: 25),
+        pauseFor: const Duration(seconds: 3),
+        onResult: (result) {
+          if (!mounted) return;
+          messageController.value = TextEditingValue(
+            text: result.recognizedWords,
+            selection: TextSelection.collapsed(offset: result.recognizedWords.length),
+          );
+          if (result.finalResult) setState(() => _listening = false);
+        },
+      );
+      if (mounted) setState(() {
+        _listening = true;
+        _voiceError = null;
+      });
+    } catch (_) {
+      if (mounted) setState(() {
+        _listening = false;
+        _voiceError = 'No fue posible iniciar el micrófono.';
+      });
+    }
+  }
+
+  Future<void> _toggleReadAloud() async {
+    if (_readAloud) await _tts.stop();
+    if (mounted) setState(() => _readAloud = !_readAloud);
   }
 
   Future<void> _cargarSaludoPersonalizado() async {
@@ -510,6 +586,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
       text: text, isUser: true, time: _timeNow());
 
     messageController.clear();
+    if (_listening) {
+      await _speech.stop();
+      _listening = false;
+    }
+    await _tts.stop();
     setState(() {
       _hasSentMessage = true;
       messages.add(userMessage);
@@ -634,6 +715,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   void dispose() {
+    _speech.cancel();
+    _tts.stop();
     _inputFocus.removeListener(_onFocusChange);
     _inputFocus.dispose();
     messageController.dispose();
@@ -742,6 +825,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 },
               ),
             ),
+            if (_voiceError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(_voiceError!, style: const TextStyle(color: Colors.deepOrange, fontSize: 12)),
+              ),
             _buildComposer(keyboardVisible),
           ],
         ),
@@ -905,6 +993,18 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: _listening ? 'Detener dictado' : 'Dictar mensaje',
+                onPressed: isTyping ? null : _toggleListening,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    key: ValueKey(_listening),
+                    color: _listening ? Colors.deepOrange : _green,
                   ),
                 ),
               ),
