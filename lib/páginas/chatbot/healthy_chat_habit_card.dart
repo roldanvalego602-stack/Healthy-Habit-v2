@@ -11,11 +11,17 @@ class HealthyChatHabitCard extends StatefulWidget {
     required this.habitTitle,
     required this.remove,
     required this.onCompleted,
+    this.previewResolver,
+    this.executor,
   });
 
   final String habitTitle;
   final bool remove;
   final ValueChanged<HabitActionResult> onCompleted;
+  // Optional dependencies used in isolated widget tests.
+  final Future<HabitActionPreview> Function(String title, bool remove)?
+      previewResolver;
+  final Future<HabitActionResult> Function(HabitActionPreview preview)? executor;
 
   @override
   State<HealthyChatHabitCard> createState() => _HealthyChatHabitCardState();
@@ -30,7 +36,7 @@ class _HealthyChatHabitCardState extends State<HealthyChatHabitCard> {
   @override
   void initState() {
     super.initState();
-    _preview = _service.preview(widget.habitTitle, remove: widget.remove);
+    _preview = _loadPreview();
   }
 
   @override
@@ -39,8 +45,13 @@ class _HealthyChatHabitCardState extends State<HealthyChatHabitCard> {
     if (oldWidget.habitTitle != widget.habitTitle ||
         oldWidget.remove != widget.remove) {
       _done = null;
-      _preview = _service.preview(widget.habitTitle, remove: widget.remove);
+      _preview = _loadPreview();
     }
+  }
+
+  Future<HabitActionPreview> _loadPreview() {
+    return widget.previewResolver?.call(widget.habitTitle, widget.remove) ??
+        _service.preview(widget.habitTitle, remove: widget.remove);
   }
 
   void _retry() {
@@ -107,7 +118,8 @@ class _HealthyChatHabitCardState extends State<HealthyChatHabitCard> {
 
     setState(() => _working = true);
     try {
-      final result = await _service.execute(preview);
+      final result = await (widget.executor?.call(preview) ??
+          _service.execute(preview));
       if (!mounted) return;
       setState(() => _done = result);
       widget.onCompleted(result);
