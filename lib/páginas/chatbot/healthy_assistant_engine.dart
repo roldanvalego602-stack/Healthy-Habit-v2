@@ -1,4 +1,6 @@
 import '../habitos/catalogo.dart';
+import '../catalogo/datos/catalogo_datos.dart';
+import '../catalogo/modelos/catalogo_item.dart';
 import '../tienda/shop_service.dart';
 import '../niveles/levels_system.dart';
 import 'nutri_respuestas_service.dart';
@@ -59,6 +61,41 @@ class HealthyKnowledgeBase {
 /// Intenciones de alta confianza. No ejecuta cambios por cuenta del usuario.
 class HealthyAssistantEngine {
   const HealthyAssistantEngine();
+
+  static CatalogoItem? _catalogMatch(String normalized) {
+    final entries = <CatalogoItem>[
+      ...alimentosCatalogo,
+      ...ejerciciosCatalogo,
+      ...consejosCatalogo,
+    ];
+    for (final item in entries) {
+      final title = NutriRespuestasService.normalizar(item.titulo);
+      if (NutriRespuestasService.contiene(normalized, [title])) {
+        return item;
+      }
+    }
+    // Variantes habituales; todas resuelven a una ficha existente.
+    const aliases = <String, String>{
+      'sentadilla': 'sentadillas',
+      'plancha': 'plancha',
+      'lenteja': 'lentejas',
+      'huevos': 'huevo',
+      'caminar en casa': 'caminar',
+      'caminata en casa': 'caminar',
+      'dormir mejor': 'dormir_mejor',
+      'prevenir caidas': 'prevenir_caidas',
+      'pausas activas': 'pausas_activas',
+      'pausa activa': 'pausas_activas',
+    };
+    for (final entry in aliases.entries) {
+      if (NutriRespuestasService.contiene(normalized, [entry.key])) {
+        for (final item in entries) {
+          if (item.id == entry.value) return item;
+        }
+      }
+    }
+    return null;
+  }
 
   static int _number(Object? raw) =>
       raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0;
@@ -151,6 +188,42 @@ class HealthyAssistantEngine {
           );
         }
       }
+    }
+
+    // Fichas educativas del catálogo real, con imagen y fuentes propias.
+    // Nunca se deducen cifras nutricionales ni se ejecutan acciones.
+    final catalogItem = _catalogMatch(normalized);
+    final catalogQuestion = has([
+      'informacion','informame','hablame','muestrame',
+      'que sabes','beneficios','precauciones','nutrientes',
+      'como preparar','como hacer','como realizar','como se hace',
+      'cuantas proteinas','proteinas de','calorias de',
+      'datos de','explicame','ver ficha','ver catalogo',
+      'quiero saber','que contiene','para que sirve',
+      'recomiendame','dime sobre',
+    ]);
+    if (catalogQuestion && catalogItem != null) {
+      final summary = catalogItem.descripcion;
+      final benefits = catalogItem.beneficios.isEmpty
+          ? ''
+          : '\\nBeneficio: ${catalogItem.beneficios.first}';
+      final warning = catalogItem.precauciones.isEmpty
+          ? ''
+          : '\\nPrecaución: ${catalogItem.precauciones.first}';
+      return HealthyAssistantReply(
+        '${catalogItem.titulo}: $summary$benefits$warning\\n'
+        'Puedes revisar su ficha completa y su fuente en el catálogo.',
+        action: 'catalog_item', actionArgument: catalogItem.id,
+        card: 'catalog_item',
+      );
+    }
+
+    if (has(['abre el catalogo','abrir catalogo','ir al catalogo',
+             'muestra el catalogo','ver el catalogo'])) {
+      return const HealthyAssistantReply(
+        'Te llevo al catálogo educativo de Healthy Habit, '
+        'con fichas de alimentos, ejercicios y consejos.',
+        action: 'catalog', card: 'catalog');
     }
 
     // Interacciones de otros módulos, ordenadas antes de perfiles/FAQ.
