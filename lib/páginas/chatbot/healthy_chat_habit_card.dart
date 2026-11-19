@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../habitos/habit_action_service.dart';
 
@@ -81,9 +82,13 @@ class _HealthyChatHabitCardState extends State<HealthyChatHabitCard> {
               Text('Recompensa por registro: hasta ${preview.habit.xp} XP '
                 'según las reglas del hábito'),
               Text('Espacios ocupados: ${preview.activeCount}/${preview.slots}'),
-              Text('Costo de activación: ${preview.estimatedCost} Habit Coins'),
+              const Text('Costo de activación:'),
+              HealthyCoinAmount(amount: '${preview.estimatedCost}',
+                size: 20, suffix: ' Habit Coins'),
             ] else ...[
-              Text('Penalización estimada: ${preview.estimatedCost} Habit Coins'),
+              const Text('Penalización estimada:'),
+              HealthyCoinAmount(amount: '${preview.estimatedCost}',
+                size: 20, suffix: ' Habit Coins'),
               const Text('El progreso y el XP obtenido permanecerán en tu historial.'),
             ],
             if (!preview.remove &&
@@ -215,11 +220,17 @@ class _HealthyChatHabitCardState extends State<HealthyChatHabitCard> {
                         ]),
                         const SizedBox(height: 6),
                         Text(widget.remove
-                            ? 'Penalización estimada: ${preview.estimatedCost} Habit Coins'
-                            : '${preview.habit.difficulty} · ${preview.habit.target} registros'
-                              ' · ${preview.estimatedCost} Habit Coins',
+                            ? 'Penalización estimada:'
+                            : '${preview.habit.difficulty} · '
+                              '${preview.habit.target} registros · Costo:',
                           style: TextStyle(
                             color: HealthyAdaptive.muted, fontSize: 11)),
+                        HealthyCoinAmount(
+                          amount: '${preview.estimatedCost}',
+                          size: 17, suffix: ' Habit Coins',
+                          style: TextStyle(
+                            color: HealthyAdaptive.text, fontSize: 11,
+                            fontWeight: FontWeight.w700)),
                         const SizedBox(height: 10),
                         SizedBox(width: double.infinity,
                           child: FilledButton.icon(
