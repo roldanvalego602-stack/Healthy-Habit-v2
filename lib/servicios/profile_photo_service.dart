@@ -57,6 +57,35 @@ class ProfilePhotoService {
 
   /// La foto nunca se vincula a otra cuenta si cambia la sesión durante
   /// la subida. Se usa una ruta distinta para evitar cachés obsoletas.
+  /// Quita la fotografía actual; mantiene el resto del perfil sin cambios.
+  Future<void> remove() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw const ProfilePhotoException('Inicia sesión para editar tu foto.');
+    }
+    final doc = _db.collection('users').doc(user.uid);
+    try {
+      final current = await doc.get();
+      final oldPath = current.data()?['profilePhotoPath']?.toString() ?? '';
+      await doc.set({
+        'photoUrl': '',
+        'profilePhotoPath': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      try {
+        await user.updatePhotoURL(null);
+      } catch (_) {}
+      if (oldPath.startsWith('users/${user.uid}/profile/')) {
+        try {
+          await _storage.ref().child(oldPath).delete();
+        } catch (_) {}
+      }
+    } on FirebaseException catch (_) {
+      throw const ProfilePhotoException(
+        'No se pudo quitar la fotografía. Revisa la conexión y permisos.');
+    }
+  }
+
   Future<String> upload(XFile selected) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -64,6 +93,9 @@ class ProfilePhotoService {
         'Inicia sesión para cambiar tu fotografía.');
     }
     final bytes = prepareJpeg(await selected.readAsBytes());
+    final userRef = _db.collection('users').doc(user.uid);
+    final previous = await userRef.get();
+    final oldPath = previous.data()?['profilePhotoPath']?.toString() ?? '';
     final object = _storage.ref().child(
       'users/${user.uid}/profile/avatar_${DateTime.now().microsecondsSinceEpoch}.jpg',
     );
@@ -78,15 +110,30 @@ class ProfilePhotoService {
           'Cambió la sesión durante la subida. Inténtalo nuevamente.');
       }
       final url = await object.getDownloadURL();
-      await _db.collection('users').doc(user.uid).set({
-        'photoUrl': url,
-        'profilePhotoPath': object.fullPath,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      try {
+        await userRef.set({
+          'photoUrl': url,
+          'profilePhotoPath': object.fullPath,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // Una subida sin documento enlazado no debe dejar residuos.
+        try {
+          await object.delete();
+        } catch (_) {}
+        rethrow;
+      }
       // Firestore ya se actualizó. Un fallo en Auth no invalida el resultado.
       try {
         await user.updatePhotoURL(url);
       } catch (_) {}
+      if (oldPath.isNotEmpty &&
+          oldPath != object.fullPath &&
+          oldPath.startsWith('users/${user.uid}/profile/')) {
+        try {
+          await _storage.ref().child(oldPath).delete();
+        } catch (_) {}
+      }
       return url;
     } on FirebaseException catch (error) {
       if (error.code == 'unauthorized' ||
