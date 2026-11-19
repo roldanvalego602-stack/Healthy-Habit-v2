@@ -258,15 +258,25 @@ class _NutriChatPageState extends State<NutriChatPage> {
     return true;
   }
 
+  Future<void> _openOfficialSource(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' ||
+        !const {'fdc.nal.usda.gov', 'www.who.int'}.contains(uri.host)) {
+      _chatNotice('Fuente externa no disponible o no verificada.');
+      return;
+    }
+    try {
+      final opened = await launchUrl(
+        uri, mode: LaunchMode.externalApplication);
+      if (!opened) _chatNotice('No fue posible abrir la fuente.');
+    } catch (_) {
+      _chatNotice('No fue posible abrir la fuente.');
+    }
+  }
+
   void _navigateFromChat(ChatMessage message) {
     if (message.action == 'source') {
-      final uri = Uri.tryParse(message.argument);
-      if (uri != null && uri.scheme == 'https' &&
-          const {'fdc.nal.usda.gov', 'www.who.int'}.contains(uri.host)) {
-        launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        _chatNotice('Fuente externa no disponible o no verificada.');
-      }
+      _openOfficialSource(message.argument);
       return;
     }
     Widget? target;
@@ -476,7 +486,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         actions: [
           IconButton(
             key: const Key('healthy-chat-history-button'),
-            onPressed: _showChatHistory,
+            onPressed: isTyping || _historyLoading ? null : _showChatHistory,
             tooltip: 'Historial de conversaciones',
             icon: Icon(Icons.history_rounded, color: _navy),
           ),
