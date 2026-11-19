@@ -438,8 +438,20 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
+          IconButton(
+            key: const Key('healthy-chat-history-button'),
+            onPressed: _showChatHistory,
+            tooltip: 'Historial de conversaciones',
+            icon: Icon(Icons.history_rounded, color: _navy),
+          ),
+          IconButton(
+            key: const Key('healthy-chat-new-button'),
+            onPressed: isTyping ? null : _newConversation,
+            tooltip: 'Nueva conversación',
+            icon: Icon(Icons.add_comment_outlined, color: _navy),
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: Image.asset(
               'assets/mascot/healthy.png',
               width: 38,
@@ -454,6 +466,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       body: SafeArea(
         child: Column(
           children: [
+            if (_historyLoading)
+              const LinearProgressIndicator(minHeight: 2),
             Expanded(
               child: ListView.builder(
                 controller: scrollController,
@@ -703,6 +717,24 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && message.card == 'profile') ...[
+              const SizedBox(height: 12),
+              _profileCard(),
+            ],
+            if (!isUser && message.action.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                key: ValueKey('healthy-chat-action-${message.action}'),
+                onPressed: () => _navigateFromChat(message),
+                icon: Icon(_actionIcon(message.action), size: 18),
+                label: Text(_actionLabel(message)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: HealthyAdaptive.text,
+                  side: BorderSide(color: HealthyAdaptive.border),
+                  backgroundColor: HealthyAdaptive.surface,
+                ),
+              ),
+            ],
             const SizedBox(height: 6),
             Text(
               '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
@@ -716,4 +748,104 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ),
     );
   }
+  String _actionLabel(ChatMessage message) {
+    switch (message.action) {
+      case 'habits':
+        return message.argument.isEmpty
+            ? 'Abrir Hábitos'
+            : 'Buscar «${message.argument}»';
+      case 'progress': return 'Ver estadísticas y gráficas';
+      case 'professionals': return 'Ver directorio de profesionales';
+      case 'profile': return 'Abrir mi perfil';
+      case 'levels': return 'Abrir mi camino de XP';
+      case 'ranking': return 'Ver clasificación';
+      case 'shop': return 'Abrir Tienda';
+      default: return 'Abrir';
+    }
+  }
+
+  IconData _actionIcon(String action) {
+    switch (action) {
+      case 'habits': return Icons.checklist_rtl_rounded;
+      case 'progress': return Icons.bar_chart_rounded;
+      case 'professionals': return Icons.medical_services_outlined;
+      case 'profile': return Icons.person_outline_rounded;
+      case 'levels': return Icons.route_outlined;
+      case 'ranking': return Icons.leaderboard_outlined;
+      case 'shop': return Icons.storefront_outlined;
+      default: return Icons.open_in_new_rounded;
+    }
+  }
+
+  Widget _profileCard() {
+    // Tarjeta de datos actuales, obtenidos del perfil y no de la conversación.
+    if (_perfil.isEmpty) {
+      return Text('Consulta tu perfil para ver datos actualizados.',
+          style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12));
+    }
+    int number(Object? raw) =>
+        raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0;
+    final xp = number(_perfil['xp'] ?? _perfil['currentXp']);
+    final level = LevelSystem.fromXp(xp);
+    final streak = number(_perfil['currentStreak'] ?? _perfil['streakDays']);
+    final coins = number(_perfil['habitCoins']);
+    return Container(
+      key: const Key('healthy-chat-profile-card'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HealthyAdaptive.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tu progreso actual',
+            style: TextStyle(color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w900, fontSize: 13)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: _metric(Icons.rocket_launch_outlined,
+                'Nivel', '${level.number}')),
+            Expanded(child: _metric(Icons.bolt_rounded, 'XP', '$xp')),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _metric(Icons.local_fire_department_outlined,
+                'Racha', '$streak días')),
+            Expanded(child: _metric(Icons.monetization_on_rounded,
+                'Monedas', '$coins')),
+          ]),
+          const SizedBox(height: 11),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: LevelSystem.progress(xp),
+              minHeight: 7,
+              backgroundColor: HealthyAdaptive.border,
+              color: HealthyAdaptive.accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metric(IconData icon, String label, String value) {
+    return Row(children: [
+      Icon(icon, size: 18, color: HealthyAdaptive.accent),
+      const SizedBox(width: 5),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: HealthyAdaptive.muted,
+            fontSize: 10)),
+          Text(value, overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w800, fontSize: 13)),
+        ],
+      )),
+    ]);
+  }
+
 }
