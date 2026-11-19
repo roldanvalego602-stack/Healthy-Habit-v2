@@ -6,6 +6,7 @@ import '../../tema/healthy_celebration.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_coin.dart';
 
+import '../../servicios/healthy_feedback_service.dart';
 import 'shop_service.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
@@ -61,13 +62,19 @@ class _StoreScreenState extends State<StoreScreen> {
     setState(() => _busy = item.id);
     try {
       await ShopService.instance.buy(item);
+      // La compra ya fue confirmada por Firestore. Los efectos son opcionales.
+      final celebrate = await HealthyFeedbackService.onReward();
       if (!mounted) return;
-      HealthyCelebration.show(
-        context,
-        title: '¡Recompensa adquirida!',
-        subtitle: '${item.name} ya está en tu colección.',
-        icon: Icons.card_giftcard_rounded,
-      );
+      if (celebrate) {
+        HealthyCelebration.show(
+          context,
+          title: '¡Recompensa adquirida!',
+          subtitle: '${item.name} ya está en tu colección.',
+          icon: Icons.card_giftcard_rounded,
+        );
+      } else {
+        _message('${item.name} se agregó a tu colección.');
+      }
     } catch (error) {
       _message(error is ShopException
           ? error.message
