@@ -517,3 +517,162 @@ class _Divisor extends StatelessWidget {
     return Divider(height: 1, indent: 68, color: Colors.grey.shade200);
   }
 }
+
+
+/// Tarjetas con imágenes reales cuando están registradas en los assets.
+/// Las imágenes no proporcionadas muestran una indicación explícita.
+class _ImagenCard extends StatelessWidget {
+  const _ImagenCard({
+    required this.icon,
+    required this.etiqueta,
+    required this.titulo,
+    required this.texto,
+    required this.imagenes,
+    this.altura = 160,
+    this.minimoEspacios = 1,
+    this.extra,
+  });
+  final IconData icon;
+  final String etiqueta;
+  final String titulo;
+  final String texto;
+  final List<String> imagenes;
+  final double altura;
+  final int minimoEspacios;
+  final Widget? extra;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = imagenes.length > minimoEspacios ? imagenes.length : minimoEspacios;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: HealthyAdaptive.water,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(etiqueta, style: TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w800,
+              color: HealthyAdaptive.waterInk,
+            )),
+          ),
+          const SizedBox(height: 14),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: HealthyAdaptive.water,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: HealthyAdaptive.waterInk, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titulo, style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w900,
+                  color: HealthyAdaptive.text,
+                )),
+                const SizedBox(height: 4),
+                Text(texto, style: TextStyle(
+                  fontSize: 12.5, height: 1.45,
+                  color: HealthyAdaptive.muted,
+                )),
+              ],
+            )),
+          ]),
+          const SizedBox(height: 14),
+          if (count == 1)
+            _EspacioImagen(ruta: imagenes.isEmpty ? null : imagenes.first, altura: altura)
+          else LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth < 320 ? 2 : 3;
+              final width = (constraints.maxWidth - (columns - 1) * 10) / columns;
+              return Wrap(
+                spacing: 10, runSpacing: 10,
+                children: List.generate(count, (i) => SizedBox(
+                  width: width,
+                  child: _EspacioImagen(
+                    ruta: i < imagenes.length ? imagenes[i] : null,
+                    altura: altura,
+                  ),
+                )),
+              );
+            },
+          ),
+          if (extra != null) ...[const SizedBox(height: 14), extra!],
+        ],
+      ),
+    );
+  }
+}
+
+class _EspacioImagen extends StatelessWidget {
+  const _EspacioImagen({required this.ruta, required this.altura});
+  final String? ruta;
+  final double altura;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      width: double.infinity, height: altura,
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surfaceAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HealthyAdaptive.border),
+      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(Icons.add_photo_alternate_outlined, size: 28, color: HealthyAdaptive.muted),
+        const SizedBox(height: 6),
+        Text('Imagen próximamente', textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: HealthyAdaptive.muted)),
+      ]),
+    );
+    if (ruta == null || ruta!.isEmpty) return fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.asset(
+        ruta!, width: double.infinity, height: altura,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => fallback,
+      ),
+    );
+  }
+}
+
+class _PaletaColores extends StatelessWidget {
+  const _PaletaColores();
+  static const colores = <String, Color>{
+    '#0F2D38': Color(0xFF0F2D38),
+    '#2B7FD1': Color(0xFF2B7FD1),
+    '#00C88C': Color(0xFF00C88C),
+    '#FFC107': Color(0xFFFFC107),
+    '#0E1A30': Color(0xFF0E1A30),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 14, runSpacing: 10,
+      children: colores.entries.map((entry) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 40, height: 40, decoration: BoxDecoration(
+            color: entry.value, shape: BoxShape.circle,
+            border: Border.all(color: HealthyAdaptive.border),
+          )),
+          const SizedBox(height: 4),
+          Text(entry.key, style: TextStyle(
+            fontSize: 10, color: HealthyAdaptive.muted)),
+        ],
+      )).toList(),
+    );
+  }
+}
