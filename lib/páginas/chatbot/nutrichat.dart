@@ -14,6 +14,10 @@ import 'healthy_chat_habit_card.dart';
 import 'healthy_chat_store_card.dart';
 import 'healthy_chat_progress_cards.dart';
 import 'healthy_chat_profile_editor.dart';
+import 'healthy_chat_catalog_card.dart';
+import '../catalogo/catalogo_screen.dart';
+import '../catalogo/detalles/catalogo_detalle_screen.dart';
+import '../catalogo/modelos/catalogo_item.dart';
 import 'healthy_chat_habit_picker.dart';
 import '../habitos/modelo/habit.dart';
 import '../../tema/healthy_visual_mode.dart';
@@ -102,6 +106,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     'Ver mis estadísticas',
     'Hablar con un profesional',
     '¿Qué nutrientes tienen las lentejas?',
+    'Muéstrame los beneficios de la avena',
     'Quiero calcular mi GET',
     '¿Cómo está el clima hoy?',
   ];
@@ -345,6 +350,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (mounted) setState(() => isTyping = false);
   }
 
+  void _openCatalogItem(CatalogoItem item) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CatalogoDetalleScreen(item: item),
+    ));
+  }
+
   Future<void> _onShopCommitted(String detail) async {
     await _refreshAssistantData();
     if (!mounted) return;
@@ -424,6 +435,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
         break;
       case 'shop':
         target = const StoreScreen();
+        break;
+      case 'catalog':
+        target = const CatalogoScreen();
+        break;
+      case 'catalog_item':
+        final item = HealthyChatCatalogCard.findById(message.argument);
+        if (item != null) target = CatalogoDetalleScreen(item: item);
         break;
       case 'challenges':
         target = const DesafiosScreen();
@@ -1005,6 +1023,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 )),
               ]),
             ],
+            if (!isUser && message.card == 'catalog_item' &&
+                message.argument.isNotEmpty) ...[
+              HealthyChatCatalogCard(
+                itemId: message.argument,
+                onOpen: _openCatalogItem,
+              ),
+            ],
             if (!isUser && message.card == 'knowledge') ...[
               const SizedBox(height: 10),
               Row(children: [
@@ -1024,6 +1049,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 !const {
                   'habit_add', 'habit_remove', 'shop_item', 'shop_picker',
                   'challenges', 'achievements', 'edit_profile',
+                  'catalog_item',
                 }.contains(message.card)) ...[
               const SizedBox(height: 10),
               OutlinedButton.icon(
@@ -1064,6 +1090,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return 'Abrir mi camino de XP';
       case 'ranking': return 'Ver clasificación';
       case 'shop': return 'Abrir Tienda';
+      case 'catalog': return 'Ver catálogo educativo';
+      case 'catalog_item': return 'Ver ficha completa';
       case 'challenges': return 'Ver desafíos';
       case 'achievements': return 'Ver logros';
       case 'edit_profile': return 'Editar mi perfil';
@@ -1081,6 +1109,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return Icons.route_outlined;
       case 'ranking': return Icons.leaderboard_outlined;
       case 'shop': return Icons.storefront_outlined;
+      case 'catalog': return Icons.menu_book_outlined;
+      case 'catalog_item': return Icons.book_outlined;
       case 'challenges': return Icons.flag_outlined;
       case 'achievements': return Icons.workspace_premium_outlined;
       case 'edit_profile': return Icons.manage_accounts_outlined;
