@@ -81,6 +81,7 @@ void main() {
     expect(complete[19].lowerAsh, 0);
     expect(firstColor(tester, 5), isNot(lockedBefore));
     expect(firstColor(tester, 4), isNot(firstColor(tester, 5)));
+    expect(firstColor(tester, 20), const Color(0xFF26343E));
     expect(tester.takeException(), isNull);
   });
 
