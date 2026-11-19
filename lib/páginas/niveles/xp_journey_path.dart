@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_coin.dart';
 import 'levels_system.dart';
 
 /// La línea baja por los 20 niveles, iluminando los alcanzados y apagando los futuros.
@@ -419,16 +420,20 @@ class _XpJourneyStop extends StatelessWidget {
                                 )),
                             if (level.rewardCoins > 0) ...[
                               const SizedBox(height: 5),
-                              Text('🪙 ${level.rewardCoins} Habit Coins',
-                                  style: TextStyle(
-                                    color: activated
-                                        ? (dark || level.dark
-                                            ? const Color(0xFFFFE19A)
-                                            : const Color(0xFF806019))
-                                        : const Color(0xFFA0AEB6),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                  )),
+                              HealthyCoinAmount(
+                                amount: '${level.rewardCoins}',
+                                size: 17,
+                                suffix: ' Habit Coins',
+                                style: TextStyle(
+                                  color: activated
+                                      ? (dark || level.dark
+                                          ? const Color(0xFFFFE19A)
+                                          : const Color(0xFF806019))
+                                      : const Color(0xFFA0AEB6),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                               const SizedBox(height: 5),
                               Text(
                                 rewardClaimed
