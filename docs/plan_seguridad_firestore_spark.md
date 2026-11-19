@@ -45,3 +45,22 @@ firebase functions:list --project cloud-firestore-d8c61
 firebase emulators:start --only firestore,auth --project demo-healthy-habit
 ```
 El comando del emulador puede requerir descargas Java; usa **demo-healthy-habit** para evitar cualquier escritura a producción.
+
+## Prueba de la primera candidata local (sin despliegue)
+
+La rama ahora incluye `firestore.candidate.rules`, `firebase.emulator.json` y pruebas en `tests/firestore/`. **No se ha cambiado `firebase.json` ni se han desplegado reglas.** La candidata es deliberadamente incompatible con consultas públicas de ranking y relaciones cruzadas; sirve únicamente para validar el aislamiento de documentos privados antes de migrar el modelo.
+
+En una terminal, desde la raíz del repositorio:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+npm --prefix tests/firestore install
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+```
+
+Si falla por requerir Java o descargar componentes, comprobar Java 21 y conectividad. Con `emulators:exec` la instancia de prueba se inicia y se cierra automáticamente. No es necesario mantener otra terminal con los emuladores encendidos.
+
+Las pruebas esperan: propietario lee/crea sus propios documentos; usuario A no lee perfil, evidencia ni registros de B; A no modifica saldo de B; no se permite listar `users`; `system` no es editable; usuarios sin sesión no leen perfiles.
+
+**Advertencia:** Estas pruebas NO validan compras, ranking, amistades o manipulación de economía propia. Una suite que pase no autoriza desplegar las reglas; hacen falta migración de datos públicos y pruebas de las transacciones reales. La app instalada en el teléfono NO debe conectarse accidentalmente al emulador de demo.
