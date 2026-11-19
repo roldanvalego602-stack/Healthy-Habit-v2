@@ -9,10 +9,18 @@ class HealthyChatStoreCard extends StatefulWidget {
     super.key,
     this.initialItemId = '',
     required this.onCommitted,
+    this.stateStream,
+    this.purchaseAction,
+    this.equipAction,
   });
 
   final String initialItemId;
   final ValueChanged<String> onCommitted;
+  // Inyección opcional para probar autorización sin llamar a Firebase.
+  final Stream<ShopState>? stateStream;
+  final Future<void> Function(ShopItem item)? purchaseAction;
+  final Future<void> Function(ShopItem item, {required bool remove})?
+      equipAction;
 
   @override
   State<HealthyChatStoreCard> createState() => _HealthyChatStoreCardState();
@@ -21,16 +29,21 @@ class HealthyChatStoreCard extends StatefulWidget {
 class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
   String? _itemId;
   bool _working = false;
+  late Stream<ShopState> _stateStream;
 
   @override
   void initState() {
     super.initState();
     _itemId = shopItemById(widget.initialItemId)?.id;
+    _stateStream = widget.stateStream ?? ShopService.instance.watch();
   }
 
   @override
   void didUpdateWidget(covariant HealthyChatStoreCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.stateStream != widget.stateStream) {
+      _stateStream = widget.stateStream ?? ShopService.instance.watch();
+    }
     if (oldWidget.initialItemId != widget.initialItemId) {
       _itemId = shopItemById(widget.initialItemId)?.id;
     }
@@ -111,9 +124,11 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
     setState(() => _working = true);
     try {
       if (purchase) {
-        await ShopService.instance.buy(item);
+        await (widget.purchaseAction?.call(item) ??
+            ShopService.instance.buy(item));
       } else {
-        await ShopService.instance.equip(item, remove: remove);
+        await (widget.equipAction?.call(item, remove: remove) ??
+            ShopService.instance.equip(item, remove: remove));
       }
       if (!mounted) return;
       widget.onCommitted(purchase
@@ -162,7 +177,7 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
               ]),
               const SizedBox(height: 8),
               StreamBuilder<ShopState>(
-                stream: ShopService.instance.watch(),
+                stream: _stateStream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return const Text('No pude consultar tu saldo e inventario.');
