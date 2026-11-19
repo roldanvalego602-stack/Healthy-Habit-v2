@@ -120,18 +120,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final userData = userSnapshot.data?.data() ?? {};
 
-        final String name = userData['name'] as String? ?? 'Usuario';
+        final String name =
+            ((userData['name'] as String?) ?? '').trim().isNotEmpty
+                ? (userData['name'] as String).trim()
+                : ((currentUser.displayName ?? '').trim().isNotEmpty
+                    ? currentUser.displayName!.trim()
+                    : 'Usuario');
         final String? photoUrl =
             userData['photoUrl'] as String? ?? currentUser.photoURL;
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
         final String levelTitle =
             userData['title'] as String? ?? 'Cultivador Constante';
-        final int currentXp = (userData['xp'] as num?)?.toInt() ??
+        final int currentXp =
+            (userData['xp'] as num?)?.toInt() ??
             (userData['currentXp'] as num?)?.toInt() ??
             0;
         final int nextLevelXp =
             (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
-        final int streakDays = (userData['currentStreak'] as num?)?.toInt() ??
+        final int streakDays =
+            (userData['currentStreak'] as num?)?.toInt() ??
             (userData['streakDays'] as num?)?.toInt() ??
             0;
         final String nextAchievement =
@@ -278,7 +285,10 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+              ),
             ],
           ),
           child: TextButton(
@@ -304,7 +314,10 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+              ),
             ],
           ),
           child: TextButton(
@@ -546,7 +559,9 @@ class _StatsRow extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: habitProgress,
                     strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
+                    backgroundColor: AppColors.primaryGreen.withValues(
+                      alpha: 0.15,
+                    ),
                     valueColor: const AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),

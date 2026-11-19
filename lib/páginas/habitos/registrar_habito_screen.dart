@@ -311,13 +311,13 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
       await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
-        final habitoSnapshot = await transaction.get(habitoRef);
+
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (!attemptSnapshot.exists) {
           throw Exception('El intento ya no existe.');
         }
         final datosAttempt = attemptSnapshot.data()!;
-        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
+
         final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
         // Comprobar el estado dentro de la transacción
         // evita guardar registros en intentos cancelados
@@ -977,7 +977,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeColor: AppColores.verdePrincipal,
+            activeThumbColor: AppColores.verdePrincipal,
             onChanged:
                 _guardando
                     ? null

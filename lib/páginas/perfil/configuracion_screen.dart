@@ -495,7 +495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
         children: [
-          _section('CUENTA', Icons.person_outline, [
+          _section('CUENTA', Icons.person_outline_rounded, [
             _action(
               'Editar perfil',
               () => Navigator.push(
@@ -504,100 +504,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             _action(
-              'Cambiar correo electrónico',
+              'Cambiar correo',
               _editEmail,
               value: user.email ?? 'Sin correo',
             ),
-            _action('Cambiar contraseña', _resetPassword),
-            _action(
-              'Foto o avatar',
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditarPerfilScreen()),
-              ),
-              subtitle: 'Gestionar desde Editar perfil',
-            ),
-            _action(
-              'Nombre de usuario',
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditarPerfilScreen()),
-              ),
-              value: 'Editar',
-            ),
+            _action('Restablecer contraseña', _resetPassword),
           ]),
-          _section('PREFERENCIAS DE HÁBITOS', Icons.tune, [
+          _section('OBJETIVOS', Icons.flag_outlined, [
             _action(
               'Objetivo principal',
-              () => _choose('objetivoPrincipal', 'Objetivo principal', [
+              () => _choose('objetivoPrincipal', 'Objetivo principal', const [
                 'Mejorar mi bienestar',
-                'Beber más agua',
                 'Alimentarme mejor',
+                'Hidratarme más',
                 'Tener más energía',
-                'Mantener constancia',
               ]),
               value: _str('objetivoPrincipal'),
             ),
             _action('Categorías de interés', _categories, value: selected),
             _action(
-              'Nivel de dificultad',
-              () => _choose('dificultad', 'Dificultad', [
-                'Fácil',
+              'Dificultad',
+              () => _choose('dificultad', 'Dificultad', const [
+                'Suave',
                 'Moderado',
-                'Difícil',
+                'Exigente',
               ]),
               value: _str('dificultad'),
             ),
             _action(
-              'Frecuencia de hábitos',
-              () => _choose('frecuencia', 'Frecuencia', ['Diaria', 'Semanal']),
+              'Frecuencia',
+              () => _choose('frecuencia', 'Frecuencia', const [
+                'Diaria',
+                'Semanal',
+              ]),
               value: _str('frecuencia'),
             ),
-            _action(
-              'Máximo de hábitos activos',
-              () => _message(
-                'Los espacios activos dependen de los desbloqueos del sistema de Hábitos; no se pueden aumentar desde Configuración.',
-              ),
-              value: 'Según desbloqueos',
-            ),
-            _action(
-              'Recalcular mis recomendaciones',
-              () => _message(
-                'Tus preferencias se guardaron. La generación automática de recomendaciones requiere integrar el motor de sugerencias.',
-              ),
-              subtitle:
-                  'Guarda tus intereses; el motor de recomendaciones está pendiente',
-            ),
           ]),
-          _section('ASISTENTE IA', Icons.auto_awesome_outlined, [
-            _toggle(
-              'analizarHistorialIA',
-              'Permitir análisis del historial',
-              subtitle:
-                  'Consentimiento guardado; Mr.Healthy debe consultar este ajuste antes de analizar datos.',
-            ),
-          ]),
-          _section('PRIVACIDAD Y DATOS', Icons.shield_outlined, [
-            _action('Ver información de privacidad', () => _page('privacidad')),
-            _action('Evidencias temporales guardadas', _showEvidence),
-            _action(
-              'Eliminar mi cuenta definitivamente',
-              _deleteAccount,
-              subtitle: 'Requiere eliminación segura desde backend',
-            ),
-          ]),
-          _section('EXPERIENCIA VISUAL', Icons.visibility_outlined, [
+          _section('APARIENCIA', Icons.palette_outlined, [
             _action(
               'Tema',
-              () => _choose('tema', 'Tema', ['Sistema', 'Claro', 'Oscuro']),
+              () => _choose('tema', 'Tema', const [
+                'Sistema',
+                'Claro',
+                'Oscuro',
+              ]),
               value: _str('tema'),
             ),
-            _toggle('sonidosApp', 'Sonidos de la app'),
-            _toggle('vibracionHaptica', 'Vibración háptica'),
-            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
             _action(
-              'Tamaño de texto',
-              () => _choose('tamanoTexto', 'Tamaño de texto', [
+              'Tamaño del texto',
+              () => _choose('tamanoTexto', 'Tamaño del texto', const [
                 'Pequeño',
                 'Normal',
                 'Grande',
@@ -606,93 +561,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _action(
               'Idioma',
-              () => _choose('idioma', 'Idioma', ['Español']),
+              () => _choose('idioma', 'Idioma', const ['Español']),
               value: _str('idioma'),
             ),
           ]),
-          _section('CONFIGURACIÓN SOCIAL', Icons.people_outline, [
+          _section('RECORDATORIOS', Icons.notifications_none_rounded, [
+            _toggle('permitirRecordatorios', 'Permitir recordatorios'),
+            _toggle('recordatorioHabito', 'Recordatorio de hábitos'),
+            _toggle('recordatorioRacha', 'Recordatorio de racha'),
+            _toggle('recordatorioDesafios', 'Recordatorio de desafíos'),
+            _toggle(
+              'descansoSemanal',
+              'Descanso semanal',
+              subtitle: 'Un día a la semana sin avisos.',
+            ),
             _action(
-              'Quién puede ver mis logros',
-              () => _choose('visibilidadLogros', 'Visibilidad de logros', [
-                'Todos',
-                'Solo amigos',
+              'Horario del recordatorio',
+              () => _choose('horarioRecordatorio', 'Horario', const [
+                '07:00',
+                '09:00',
+                '12:00',
+                '15:00',
+                '18:00',
+                '21:00',
+              ]),
+              value: _str('horarioRecordatorio'),
+            ),
+          ]),
+          _section('PRIVACIDAD Y AMIGOS', Icons.lock_outline_rounded, [
+            _toggle('mostrarRachaAmigos', 'Mostrar mi racha a mis amigos'),
+            _toggle('permitirReacciones', 'Permitir reacciones'),
+            _action(
+              'Visibilidad de logros',
+              () => _choose('visibilidadLogros', 'Visibilidad de logros', const [
                 'Solo yo',
+                'Solo amigos',
+                'Todos',
               ]),
               value: _str('visibilidadLogros'),
             ),
             _action(
-              'Quién puede enviarme desafíos',
-              () => _choose('desafiosDe', 'Invitaciones a desafíos', [
+              'Desafíos de',
+              () => _choose('desafiosDe', 'Desafíos de', const [
                 'Todos',
                 'Solo amigos',
-                'Nadie',
               ]),
               value: _str('desafiosDe'),
             ),
-            _toggle('mostrarRachaAmigos', 'Mostrar racha a mis amigos'),
-            _toggle('permitirReacciones', 'Permitir reacciones'),
-            _action(
-              'Administrar usuarios bloqueados',
-              () => _message(
-                'La lista de bloqueos necesita integración con AmigosServicio. No se han aplicado bloqueos.',
-              ),
-            ),
-          ]),
-          _section('RECORDATORIOS', Icons.notifications_none, [
             _toggle(
-              'permitirRecordatorios',
-              'Permitir recordatorios',
-              subtitle:
-                  'Preferencia guardada. No programa notificaciones del dispositivo.',
+              'analizarHistorialIA',
+              'Analizar mi historial con IA',
+              subtitle: 'Para darte retroalimentación más personalizada.',
             ),
-            _action('Horario preferido', () async {
-              final parts = _str('horarioRecordatorio').split(':');
-              final time = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(
-                  hour: int.tryParse(parts.first) ?? 9,
-                  minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-                ),
-              );
-              if (time != null) {
-                await _save(
-                  'horarioRecordatorio',
-                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                );
-              }
-            }, value: _str('horarioRecordatorio')),
-            _toggle('recordatorioHabito', 'Recordatorios por hábito'),
-            _toggle('recordatorioRacha', 'Recordatorio de racha'),
-            _toggle('recordatorioDesafios', 'Recordatorios de desafíos'),
-            _toggle('descansoSemanal', 'Descanso semanal'),
+            _action('Ver evidencias temporales', _showEvidence),
           ]),
-          _section('GAMIFICACIÓN', Icons.emoji_events_outlined, [
-            _toggle('mostrarXp', 'Mostrar XP lograda'),
-            _toggle('mostrarPuntos', 'Mostrar Habit Coins'),
-            _toggle('mostrarNivelPerfil', 'Mostrar nivel en perfil'),
+          _section('EXPERIENCIA', Icons.auto_awesome_outlined, [
+            _toggle('sonidosApp', 'Sonidos de la app'),
+            _toggle('vibracionHaptica', 'Vibración'),
+            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
+            _toggle('efectosRecompensa', 'Efectos de recompensa'),
+            _toggle('mostrarXp', 'Mostrar XP'),
+            _toggle('mostrarPuntos', 'Mostrar puntos'),
+            _toggle('mostrarNivelPerfil', 'Mostrar nivel en el perfil'),
             _toggle('mostrarRachasDiarias', 'Mostrar rachas diarias'),
-            _toggle('efectosRecompensa', 'Efectos visuales de recompensa'),
-            _toggle('modoDiscreto', 'Modo discreto'),
+            _toggle(
+              'modoDiscreto',
+              'Modo discreto',
+              subtitle: 'Reduce notificaciones y elementos llamativos.',
+            ),
           ]),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 14),
-            child: Text(
-              'Los ajustes de visualización, funciones sociales, IA y avisos se guardan en tu cuenta. Para aplicarlos en todas las pantallas, cada módulo debe leer estas preferencias.',
-              style: TextStyle(color: muted, fontSize: 12),
-            ),
-          ),
-          _section('INFORMACIÓN Y SOPORTE', Icons.info_outline, [
+          _section('INFORMACIÓN', Icons.info_outline_rounded, [
+            _action('Términos y condiciones', () => _page('terminos')),
+            _action('Política de privacidad', () => _page('privacidad')),
             _action('Acerca de Healthy Habit', () => _page('acerca')),
-            _action('Términos de uso', () => _page('terminos')),
-            _action('Aviso de privacidad', () => _page('privacidad')),
-            _action(
-              'Versión de la aplicación',
-              () => _message(
-                'Versión: consultar pubspec.yaml / compilación instalada.',
-              ),
-              value: 'Ver detalle',
-            ),
-            _action('Ayuda y soporte técnico', () => _page('ayuda')),
+          ]),
+          _section('ZONA DE RIESGO', Icons.warning_amber_rounded, [
+            _action('Eliminar cuenta', _deleteAccount),
           ]),
         ],
       ),

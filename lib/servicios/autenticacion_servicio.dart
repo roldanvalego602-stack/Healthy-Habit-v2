@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_servicios.dart';
 
 class AuthService {
@@ -148,6 +150,75 @@ class AuthService {
       await GoogleSignIn().signOut();
     } finally {
       await _auth.signOut();
+    }
+  }
+
+  Future<void> deleteAccount({
+    required String uid,
+    required String email,
+    required String password,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No hay una sesión activa.');
+    }
+
+    try {
+      debugPrint('Iniciando eliminación de cuenta: $uid');
+
+      // Verifica si el usuario se registró con email/password o Google
+      final isEmailProvider = user.providerData.any(
+        (provider) => provider.providerId == 'password',
+      );
+
+      debugPrint('Es proveedor email/password: $isEmailProvider');
+
+      if (isEmailProvider) {
+        // Reauthenticate con email y contraseña
+        debugPrint('Reauthenticando con email/password...');
+        final credential = EmailAuthProvider.credential(
+          email: email,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+        debugPrint('Reauthenticación exitosa');
+      } else {
+        // Si es Google, reauthenticate con Google
+        debugPrint('Reauthenticando con Google...');
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser != null) {
+          final googleAuth = await googleUser.authentication;
+          final credential = GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
+          );
+          await user.reauthenticateWithCredential(credential);
+          debugPrint('Reauthenticación con Google exitosa');
+        }
+      }
+
+      // Elimina los datos del usuario de Firestore
+      debugPrint('Eliminando datos de Firestore...');
+      final db = FirebaseFirestore.instanceFor(
+  app: Firebase.app(),
+  databaseId: 'default',
+);
+await db.collection('users').doc(uid).delete();
+  
+      debugPrint('Datos de Firestore eliminados');
+
+      // Elimina la cuenta de Firebase Auth
+      debugPrint('Eliminando cuenta de Firebase Auth...');
+      await user.delete();
+      debugPrint('Cuenta de Firebase Auth eliminada');
+
+      // Cierra la sesión
+      debugPrint('Cerrando sesión...');
+      await _auth.signOut();
+      debugPrint('Sesión cerrada');
+    } catch (e) {
+      debugPrint('Error durante eliminación: $e');
+      rethrow;
     }
   }
 }

@@ -296,9 +296,21 @@ class NutriCalculatorService {
       return 'No identifiqué tu opción.\n\n$_preguntaSexo';
     }
 
-    if (pasoGET == 2) {
+        if (pasoGET == 2) {
       final peso = _parseWeightInKilograms(text);
       if (peso == null) {
+        // Si escribió primero la altura, se guarda y se pide el peso.
+        final alturaPrimero = _alturaSoloSiClara(text);
+        if (alturaPrimero != null) {
+          alturaGET = alturaPrimero;
+          return 'Anoté tu altura: ${_describirAltura(alturaPrimero)}. '
+              'Ahora dime tu peso, en kg (por ejemplo: 70 kg) o en libras '
+              '(por ejemplo: 150 lb).';
+        }
+        if (_traeUnidadDeAltura(normalizeText(text))) {
+          return 'Eso parece una altura. Primero dime tu peso, en kg '
+              '(por ejemplo: 70 kg) o en libras (por ejemplo: 150 lb).';
+        }
         return 'No entendí tu peso. Escríbelo en kg (por ejemplo: 70 kg) o '
             'en libras (por ejemplo: 150 lb).';
       }
@@ -308,6 +320,12 @@ class NutriCalculatorService {
       final alturaEnFrase = _findHeightInPhrase(normalizeText(text));
       if (alturaEnFrase != null) return _continuarTrasAlturaGET(alturaEnFrase);
 
+      // Si ya había dado su altura antes, no se la vuelve a pedir.
+      final alturaGuardada = alturaGET;
+      if (alturaGuardada != null) {
+        return _continuarTrasAlturaGET(alturaGuardada);
+      }
+
       pasoGET = 3;
       return 'Gracias. Ahora dime tu altura en metros, centímetros o pies '
           '(por ejemplo: 1.70 m, 170 cm o 5 pies 10 pulgadas).';
@@ -316,6 +334,10 @@ class NutriCalculatorService {
     if (pasoGET == 3) {
       final altura = _parseHeightInMeters(text);
       if (altura == null) {
+         if (_traeUnidadDePeso(normalizeText(text))) {
+          return 'Eso parece un peso. Ahora necesito tu altura, por ejemplo: '
+              '1.70 m o 170 cm.';
+        }
         return 'No entendí tu altura. Escríbela como 1.70 m, 170 cm o '
             '5 pies 10 pulgadas.';
       }
@@ -361,6 +383,7 @@ class NutriCalculatorService {
     if (pasoGET == 10) {
       if (_containsAny(text, _negativos)) {
         pasoGET = 2;
+         alturaGET = null; // ← nueva
         _notaAltura = null;
         return 'Sin problema, volvamos a ingresar tus datos. ¿Cuál es tu peso? '
             'Puedes escribirlo en kg (por ejemplo: 70 kg) o en libras '
@@ -505,9 +528,21 @@ class NutriCalculatorService {
       return 'Está bien.';
     }
 
-    if (pasoIMC == 2) {
+        if (pasoIMC == 2) {
       final peso = _parseWeightInKilograms(text);
       if (peso == null) {
+        // Si escribió primero la altura, se guarda y se pide el peso.
+        final alturaPrimero = _alturaSoloSiClara(text);
+        if (alturaPrimero != null) {
+          alturaIMC = alturaPrimero;
+          return 'Anoté tu altura: ${_describirAltura(alturaPrimero)}. '
+              'Ahora dime tu peso, en kg (por ejemplo: 65 kg) o en libras '
+              '(por ejemplo: 150 lb).';
+        }
+        if (_traeUnidadDeAltura(normalizeText(text))) {
+          return 'Eso parece una altura. Primero dime tu peso, en kg '
+              '(por ejemplo: 70 kg) o en libras (por ejemplo: 150 lb).';
+        }
         return 'No entendí tu peso. Escríbelo en kg (por ejemplo: 65 kg) o '
             'en libras (por ejemplo: 150 lb).';
       }
@@ -517,6 +552,10 @@ class NutriCalculatorService {
       final alturaEnFrase = _findHeightInPhrase(normalizeText(text));
       if (alturaEnFrase != null) return _validarIMC(alturaEnFrase);
 
+      // Si ya había dado su altura antes, no se la vuelve a pedir.
+      final alturaGuardada = alturaIMC;
+      if (alturaGuardada != null) return _validarIMC(alturaGuardada);
+
       pasoIMC = 3;
       return 'Gracias. Ahora dime tu altura en metros, centímetros o pies '
           '(por ejemplo: 1.70 m, 170 cm o 5 pies 10 pulgadas).';
@@ -525,6 +564,10 @@ class NutriCalculatorService {
     if (pasoIMC == 3) {
       final altura = _parseHeightInMeters(text);
       if (altura == null) {
+         if (_traeUnidadDePeso(normalizeText(text))) {
+          return 'Eso parece un peso. Ahora necesito tu altura, por ejemplo: '
+              '1.70 m o 170 cm.';
+        }
         return 'No entendí tu altura. Escríbela como 1.70 m, 170 cm o '
             '5 pies 10 pulgadas.';
       }
@@ -651,6 +694,25 @@ class NutriCalculatorService {
     final numbers = RegExp(_num).allMatches(text).toList();
     return numbers.length == 1 ? numbers.first.group(1) : null;
   }
+    /// Verdadero si hay un número con unidad de altura ("170 cm", "1.70 m", "5 pies").
+  bool _traeUnidadDeAltura(String text) => RegExp(
+    r'\d\s*(?:cms?|centimetros?|metros?|mts?|m|ft|feet|pies?|f|pulgadas?|in)\b',
+  ).hasMatch(text);
+
+  /// Verdadero si hay un número con unidad de peso ("70 kg", "150 lb").
+  bool _traeUnidadDePeso(String text) => RegExp(
+    r'\d\s*(?:kgs|kg|kilogramos?|kilos?|k|lbs|lb|libras?|l)\b',
+  ).hasMatch(text);
+
+    /// Altura escrita antes que el peso ("189 cm"). Devuelve null si no trae
+  /// unidad de altura o si se interpretó con dudas (por ejemplo "174 f").
+  double? _alturaSoloSiClara(String text) {
+    final t = normalizeText(text);
+    if (!_traeUnidadDeAltura(t)) return null;
+    final altura = _parseHeightInMeters(t);
+    if (altura == null || _notaAltura != null) return null;
+    return altura;
+  }
 
   /// Altura escrita de forma exacta ("1.70", "170 cm", "5 pies 10 pulgadas").
   double? _parseHeightStrict(String input) {
@@ -749,6 +811,7 @@ class NutriCalculatorService {
     if (inPhrase != null) return inPhrase;
 
     final lone = _loneNumber(text);
+    if (lone != null && _traeUnidadDePeso(text)) return null; // "70 kg" no es una altura
     return lone == null ? null : _parseHeightStrict(lone);
   }
 
@@ -794,6 +857,7 @@ class NutriCalculatorService {
     if (marked != null) return _parseWeightStrict(marked.group(1)!);
 
     final lone = _loneNumber(text);
+     if (lone != null && _traeUnidadDeAltura(text)) return null; // "170 cm" no es un peso
     return lone == null ? null : _parseWeightStrict(lone);
   }
 
