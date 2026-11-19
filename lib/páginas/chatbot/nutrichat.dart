@@ -376,7 +376,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
           final requiresProfile = NutriRespuestasService.contiene(normalized, [
             'mi perfil','mis datos','mis estadisticas','mi progreso',
             'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
-            'mis habitos','habitos activos','camino de xp',
+            'mis habitos','habitos activos','que habitos tengo',
+            'mis actividades','camino de xp',
             'subir de nivel','mi posicion','cuanto he avanzado','cuantos xp',
           ]) || _lastTopic == 'profile';
           final available = !requiresProfile ||
