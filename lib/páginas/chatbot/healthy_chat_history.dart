@@ -64,12 +64,14 @@ class HealthyChatSession {
 class HealthyChatHistory {
   const HealthyChatHistory();
 
+  FirebaseFirestore get _db => FirebaseFirestore.instanceFor(
+    app: Firebase.app(), databaseId: 'default',
+  );
+
   DocumentReference<Map<String, dynamic>> get _profile {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Inicia sesión para guardar conversaciones.');
-    return FirebaseFirestore.instanceFor(
-      app: Firebase.app(), databaseId: 'default',
-    ).collection('users').doc(uid);
+    return _db.collection('users').doc(uid);
   }
 
   CollectionReference<Map<String, dynamic>> get _sessions =>
@@ -108,7 +110,7 @@ class HealthyChatHistory {
     final parent = _sessions.doc(chatId);
     final message = parent.collection('messages').doc();
     final title = text.trim().replaceAll(RegExp(r'\s+'), ' ');
-    final batch = _profile.firestore.batch();
+    final batch = _db.batch();
     batch.set(message, {
       'text': text,
       'isUser': isUser,
@@ -132,7 +134,7 @@ class HealthyChatHistory {
     while (true) {
       final page = await parent.collection('messages').limit(100).get();
       if (page.docs.isEmpty) break;
-      final batch = _profile.firestore.batch();
+      final batch = _db.batch();
       for (final doc in page.docs) {
         batch.delete(doc.reference);
       }
