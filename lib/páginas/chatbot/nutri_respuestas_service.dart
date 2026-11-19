@@ -33,10 +33,10 @@ class NutriRespuestasService {
   /// from genuine questions about identity, stigma or discrimination.
   static bool ataqueDiscriminatorio(String input) {
     final s = normalizar(input);
-    final grupo = RegExp(r'\\b(gays?|homosexuales?|lesbianas?|trans|negros?|indigenas?|migrantes?|musulmanes?|judios?|asiaticos?)\\b');
-    final ataque = RegExp(r'\\b(odio|matar|maten|expulsar|inferiores|asco|sucios|degenerados|desaparezcan|no merecen|son basura)\\b');
-    final insultoExplicito = RegExp(r'\\b(maricon(?:es)?|joto(?:s)?|nigger|nigga|beaner|sudaca(?:s)?)\\b');
-    final contextoExplicativo = RegExp(r'\\b(que significa|definicion|por que es ofensivo|como denunciar|me dijeron|me llamaron)\\b');
+    final grupo = RegExp(r'\b(gays?|homosexuales?|lesbianas?|trans|negros?|indigenas?|migrantes?|musulmanes?|judios?|asiaticos?)\b');
+    final ataque = RegExp(r'\b(odio|matar|maten|expulsar|inferiores|asco|sucios|degenerados|desaparezcan|no merecen|son basura)\b');
+    final insultoExplicito = RegExp(r'\b(maricon(?:es)?|joto(?:s)?|nigger|nigga|beaner|sudaca(?:s)?)\b');
+    final contextoExplicativo = RegExp(r'\b(que significa|definicion|por que es ofensivo|como denunciar|me dijeron|me llamaron)\b');
     return (grupo.hasMatch(s) && ataque.hasMatch(s)) ||
         (insultoExplicito.hasMatch(s) && !contextoExplicativo.hasMatch(s));
   }
