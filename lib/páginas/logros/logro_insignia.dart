@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'logros_service.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 Color colorRareza(RarezaLogro rareza) {
   switch (rareza) {
@@ -53,7 +54,7 @@ class _LogroInsigniaState extends State<LogroInsignia>
   void _sync() {
     final enabled = widget.desbloqueado &&
       widget.rareza != RarezaLogro.frecuente &&
-      TickerMode.of(context) && !MediaQuery.disableAnimationsOf(context);
+      TickerMode.of(context) && HealthyVisualEffects.enabled(context);
     if (enabled) {
       if (!_animation.isAnimating) _animation.repeat();
     } else {
@@ -93,7 +94,7 @@ class _LogroInsigniaState extends State<LogroInsignia>
                 ),
                 Icon(widget.icono,
                   size: widget.size * 0.30, color: tone,
-                  shadows: widget.desbloqueado
+                  shadows: widget.desbloqueado && HealthyVisualEffects.allowDecorativeShadows
                       ? [Shadow(color: tone.withOpacity(0.6), blurRadius: 9)] : null,
                 ),
                 if (!widget.desbloqueado)
