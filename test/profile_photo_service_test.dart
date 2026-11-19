@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:healthy_habit/servicios/profile_photo_service.dart';
@@ -40,6 +41,24 @@ void main() {
       () => ProfilePhotoService.prepareJpeg(bytes),
       throwsA(isA<ProfilePhotoException>()),
     );
+  });
+
+  test('explica códigos de Firebase en lugar de un error genérico', () {
+    final cases = <String, String>{
+      'unauthorized': 'permiso',
+      'bucket-not-found': 'bucket',
+      'quota-exceeded': 'límite',
+      'unauthenticated': 'sesión',
+    };
+    for (final entry in cases.entries) {
+      final error = ProfilePhotoService.explainFirebaseError(
+        FirebaseException(plugin: 'firebase_storage', code: entry.key),
+        stage: 'subida a Storage',
+      );
+      expect(error.message.toLowerCase(),
+          contains(entry.value), reason: entry.key);
+      expect(error.code, entry.key);
+    }
   });
 
   testWidgets('sin foto muestra un icono de respaldo',
