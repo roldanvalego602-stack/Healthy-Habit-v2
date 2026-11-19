@@ -122,6 +122,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                         final isCurrent = level.number == current.number;
 
                         return _levelNode(
+                          context,
                           level,
                           completed: completed,
                           rewardClaimed: reclamados.contains(level.number),
@@ -249,6 +250,7 @@ class CaminoNivelesScreen extends StatelessWidget {
   }
 
   Widget _levelNode(
+    BuildContext context,
     HealthyLevel level, {
     required bool completed,
     required bool rewardClaimed,
