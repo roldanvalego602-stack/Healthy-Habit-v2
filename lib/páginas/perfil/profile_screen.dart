@@ -110,6 +110,14 @@ class ProfileScreen extends StatelessWidget {
         final xp = _integer(data['xp']);
         final coins = _integer(data['habitCoins']);
         final streak = _integer(data['currentStreak']);
+        final rawSettings = data['settings'];
+        final prefs = rawSettings is Map ? rawSettings : const <String, dynamic>{};
+        bool visible(String key) =>
+            prefs[key] != false && prefs['modoDiscreto'] != true;
+        final showXp = visible('mostrarXp');
+        final showCoins = visible('mostrarPuntos');
+        final showLevel = visible('mostrarNivelPerfil');
+        final showStreak = visible('mostrarRachasDiarias');
         return Scaffold(
           backgroundColor: background,
           body: SafeArea(
@@ -126,14 +134,19 @@ class ProfileScreen extends StatelessWidget {
                     username: username,
                     email: email,
                     coins: coins,
+                    showCoins: showCoins,
                     data: data,
                   ),
                   const SizedBox(height: 16),
                   _friendsCard(context, user.uid),
                   const SizedBox(height: 22),
-                  _levelCard(level: level, xp: xp),
-                  const SizedBox(height: 14),
-                  _statistics(streak: streak, coins: coins, uid: user.uid),
+                  if (showLevel || showXp) ...[
+                    _levelCard(level: level, xp: xp,
+                      showLevel: showLevel, showXp: showXp),
+                    const SizedBox(height: 14),
+                  ],
+                  _statistics(streak: streak, coins: coins,
+                    uid: user.uid, showStreak: showStreak, showCoins: showCoins),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Mis logros',
@@ -284,6 +297,7 @@ class ProfileScreen extends StatelessWidget {
     required String username,
     required String email,
     required int coins,
+    required bool showCoins,
     required Map<String, dynamic> data,
   }) {
     return Container(
@@ -477,6 +491,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (showCoins) ...[
                       const SizedBox(width: 10),
                       Container(
                         height: 44,
@@ -499,6 +514,7 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -677,7 +693,7 @@ class ProfileScreen extends StatelessWidget {
     _open(context, AmigosScreen(initialTab: tab));
   }
 
-  Widget _levelCard({required int level, required int xp}) {
+  Widget _levelCard({required int level, required int xp, required bool showLevel, required bool showXp}) {
     const xpForNextLevel = 1000;
     final xpInLevel = xp % xpForNextLevel;
     final progress = xpInLevel / xpForNextLevel;
@@ -694,7 +710,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
+          if (showLevel) Row(
             children: [
               Container(
                 width: 60,
@@ -745,6 +761,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (showXp) ...[
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -784,6 +801,7 @@ class ProfileScreen extends StatelessWidget {
               style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
           ),
+          ],
         ],
       ),
     );
@@ -809,9 +827,11 @@ class ProfileScreen extends StatelessWidget {
     required int streak,
     required int coins,
     required String uid,
+    required bool showStreak,
+    required bool showCoins,
   }) => Row(
     children: [
-      Expanded(
+      if (showStreak) Expanded(
         child: _statCard(
           icon: Icons.local_fire_department_outlined,
           value: '$streak',
@@ -820,7 +840,7 @@ class ProfileScreen extends StatelessWidget {
           iconColor: gold,
         ),
       ),
-      const SizedBox(width: 9),
+      if (showStreak) const SizedBox(width: 9),
       Expanded(
         child: FutureBuilder<int>(
           future: _completedCount(uid),
@@ -839,8 +859,8 @@ class ProfileScreen extends StatelessWidget {
               ),
         ),
       ),
-      const SizedBox(width: 9),
-      Expanded(
+      if (showCoins) const SizedBox(width: 9),
+      if (showCoins) Expanded(
         child: _statCard(
           customIcon: const HealthyCoinIcon(size: 22),
           value: '$coins',
