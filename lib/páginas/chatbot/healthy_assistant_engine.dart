@@ -95,8 +95,10 @@ class HealthyAssistantEngine {
     // penalizaciones y confirmación explícita. Nunca escribir directamente.
     if (has(['agrega','agregar','anade','anadir','activar','iniciar un habito',
              'quiero empezar un habito','ponme un habito',
-             'elimina','eliminar','borrar','quitar','abandonar','cancelar habito'])) {
-      final removing = has(['elimina','eliminar','borrar','quitar','abandonar','cancelar']);
+             'elimina','eliminar','borrar','quitar','abandonar','cancelar habito',
+             'eliminalo','quitalo','agregalo','anadelo','activarlo'])) {
+      final removing = has(['elimina','eliminar','borrar','quitar','abandonar','cancelar',
+        'eliminalo','quitalo']);
       Map<String, dynamic>? target;
       for (final h in habitCatalog) {
         final name = NutriRespuestasService.normalizar(h['title'].toString());
