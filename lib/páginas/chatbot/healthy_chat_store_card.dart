@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../tienda/shop_service.dart';
@@ -31,18 +32,27 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
   bool _working = false;
   late Stream<ShopState> _stateStream;
 
+  Stream<ShopState> _shopStream() {
+    if (widget.stateStream != null) return widget.stateStream!;
+    if (FirebaseAuth.instance.currentUser == null) {
+      return Stream<ShopState>.error(
+        const ShopException('Inicia sesión para consultar tu tienda.'));
+    }
+    return ShopService.instance.watch();
+  }
+
   @override
   void initState() {
     super.initState();
     _itemId = shopItemById(widget.initialItemId)?.id;
-    _stateStream = widget.stateStream ?? ShopService.instance.watch();
+    _stateStream = _shopStream();
   }
 
   @override
   void didUpdateWidget(covariant HealthyChatStoreCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.stateStream != widget.stateStream) {
-      _stateStream = widget.stateStream ?? ShopService.instance.watch();
+      _stateStream = _shopStream();
     }
     if (oldWidget.initialItemId != widget.initialItemId) {
       _itemId = shopItemById(widget.initialItemId)?.id;
@@ -180,7 +190,13 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                 stream: _stateStream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return const Text('No pude consultar tu saldo e inventario.');
+                    return Text(
+                      snapshot.error is ShopException
+                          ? snapshot.error.toString()
+                          : 'No pude consultar tu saldo e inventario.',
+                      style: TextStyle(
+                        color: HealthyAdaptive.muted, fontSize: 12),
+                    );
                   }
                   if (!snapshot.hasData) {
                     return const Padding(
