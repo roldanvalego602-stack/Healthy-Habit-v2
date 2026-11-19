@@ -53,7 +53,7 @@ void main() {
         ),
       ),
     ));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 900));
   }
 
   testWidgets('carrusel en móvil estrecho abre el producto real',
@@ -100,7 +100,7 @@ void main() {
       find.byKey(const Key('tienda-carrusel-destacados')),
       const Offset(-260, 0),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 900));
     expect(tester.takeException(), isNull);
   });
 }
