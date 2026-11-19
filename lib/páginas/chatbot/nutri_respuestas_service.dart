@@ -4,7 +4,7 @@ import 'healthy_knowledge_base.dart';
 /// Respuestas locales y transparentes: no consulta Internet ni inventa datos.
 class NutriRespuestasService {
   final Random _random = Random();
-  final HealthyKnowledgeBase _knowledge = const HealthyKnowledgeBase();
+  final HealthyWellnessKnowledgeBase _knowledge = const HealthyWellnessKnowledgeBase();
 
   /// Tone is applied to everyday educational responses, never safety messages.
   String humor = 'amigable';
