@@ -518,6 +518,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
             'mis habitos','habitos activos','que habitos tengo',
             'mis actividades','camino de xp',
             'subir de nivel','mi posicion','cuanto he avanzado','cuantos xp',
+            'tienda','armario','canjear',
           ]) || _lastTopic == 'profile';
           final available = !requiresProfile ||
               await _refreshAssistantData();
