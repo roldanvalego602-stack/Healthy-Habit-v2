@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../servicios/profile_photo_service.dart';
 import 'profile_avatar.dart';
@@ -133,9 +134,12 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
       _mensaje(error.message);
+    } on PlatformException catch (error) {
+      _mensaje('No se pudo acceder a cámara o galería '
+          '(código: ${error.code}). Revisa los permisos del dispositivo.');
     } catch (_) {
-      _mensaje('No fue posible seleccionar o subir la foto. '
-          'Comprueba permisos, conexión y Firebase Storage.');
+      _mensaje('No fue posible procesar la foto. Revisa que sea una '
+          'imagen válida y comprueba tu conexión.');
     } finally {
       if (mounted) setState(() => _subiendoFoto = false);
     }
@@ -233,9 +237,13 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
 
   void _mensaje(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 7),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
