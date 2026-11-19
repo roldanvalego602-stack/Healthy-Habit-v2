@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
@@ -40,8 +41,18 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         builder:
             (ctx) => AlertDialog(
               title: Text('¿Comprar ${item.name}?'),
-              content: Text(
-                '${item.description}\n\nCosto: ${item.price} Habit Coins.',
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.description),
+                  const SizedBox(height: 12),
+                  const Text('Costo:'),
+                  HealthyCoinAmount(amount: '${item.price}',
+                    size: 22, suffix: ' Habit Coins',
+                    style: TextStyle(color: navy,
+                      fontWeight: FontWeight.w800)),
+                ],
               ),
               actions: [
                 TextButton(
@@ -413,23 +424,28 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 ),
               ),
               const SizedBox(height: 7),
-              Text(
-                _busy == item.id
-                    ? 'Guardando...'
-                    : equipped
-                    ? 'Equipado · Toca para quitar'
-                    : owned
-                    ? (item.slot == null ? 'Adquirido' : 'Toca para equipar')
-                    : affordable
-                    ? '${item.price} H. Coins'
-                    : 'Saldo insuficiente',
-                maxLines: 2,
-                style: TextStyle(
-                  color: equipped ? green : muted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
+              !owned && affordable && _busy != item.id
+                  ? HealthyCoinAmount(amount: '${item.price}',
+                      size: 17, suffix: ' H. Coins',
+                      style: TextStyle(
+                        color: muted, fontWeight: FontWeight.w700,
+                        fontSize: 11))
+                  : Text(
+                      _busy == item.id
+                          ? 'Guardando...'
+                          : equipped
+                              ? 'Equipado · Toca para quitar'
+                              : owned
+                                  ? (item.slot == null
+                                      ? 'Adquirido' : 'Toca para equipar')
+                                  : 'Saldo insuficiente',
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: equipped ? green : muted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
               const SizedBox(height: 6),
               Text(
                 item.description,
