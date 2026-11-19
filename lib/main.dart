@@ -7,6 +7,7 @@ import 'tema/healthy_theme.dart';
 import 'tema/healthy_visual_mode.dart';
 import 'tema/healthy_motion.dart';
 import 'tema/healthy_float.dart';
+import 'servicios/preferencias_app.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -66,6 +67,19 @@ class HabitTrackerApp extends StatelessWidget {
         theme: HealthyThemes.light(),
         darkTheme: HealthyThemes.dark(),
         themeMode: HealthyThemeController.instance.mode,
+        // La escala de Configuración se aplica a todas las rutas,
+        // respetando también la escala de accesibilidad del dispositivo.
+        builder: (context, child) => PreferenciasApp(
+          builder: (context, _, textScale) {
+            final baseScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(baseScale * textScale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
         home: const SplashScreen(),
       ),
     );
