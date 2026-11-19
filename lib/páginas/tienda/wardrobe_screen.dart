@@ -257,18 +257,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         children: [
           Row(
             children: [
-<<<<<<< HEAD
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(22)),
-                  child: const Text('Cuidado con Mr. Healthy, tiene +999 de Aura', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF26735F), fontWeight: FontWeight.w700, fontSize: 12)),
-=======
               const Expanded(
                 child: Text(
                   'Vista previa de Mr. Healthy',
                   style: TextStyle(color: navy, fontWeight: FontWeight.w800),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
                 ),
               ),
               IconButton(
@@ -284,12 +276,6 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-<<<<<<< HEAD
-                if (hasAura)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.65), blurRadius: 42, spreadRadius: 12)]),
-=======
                 if (aura)
                   Container(
                     width: 220,
@@ -303,7 +289,6 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                           spreadRadius: 10,
                         ),
                       ],
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
                     ),
                   ),
                 if (cape)

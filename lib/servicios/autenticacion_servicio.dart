@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_servicios.dart';
 
 class AuthService {
@@ -198,7 +199,12 @@ class AuthService {
 
       // Elimina los datos del usuario de Firestore
       debugPrint('Eliminando datos de Firestore...');
-      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+      final db = FirebaseFirestore.instanceFor(
+  app: Firebase.app(),
+  databaseId: 'default',
+);
+await db.collection('users').doc(uid).delete();
+  
       debugPrint('Datos de Firestore eliminados');
 
       // Elimina la cuenta de Firebase Auth

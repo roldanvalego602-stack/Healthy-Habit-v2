@@ -1,14 +1,14 @@
 import 'dart:math';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:healthy_habit/servicios/clima_servicio.dart';
+
+import 'chat_historial.dart';
 import 'nutri_calculator_service.dart';
 import 'texto_chatbot.dart';
-import 'chat_historial.dart';
-import 'package:healthy_habit/servicios/clima_servicio.dart';
-import 'package:healthy_habit/servicios/firebase_servicios.dart';
 
 export 'chat_historial.dart' show ChatMessage;
 
@@ -40,7 +40,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final List<String> offensiveWords = [
     //IA
     'puta',
-    'puta',
     'puto',
     'culo',
     'mierda',
@@ -65,7 +64,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
     'vrg',
     'verga',
     'estupida',
-    'estupido',
     'perra',
     'perra madre',
     'chingada madre',
@@ -80,10 +78,27 @@ class _NutriChatPageState extends State<NutriChatPage> {
     'tonto chatbot',
     'vete a la vrg',
   ];
-  bool isTyping = false;
 
-  late final ChatSession _session;
+  bool isTyping = false;
+  bool _hasSentMessage = false;
+  String _primerNombre = '';
+
+    late ChatSession _session;
+  String? _temaActual; // tema de la conversación abierta en el historial
   List<ChatMessage> messages = [];
+
+  final List<String> quickOptions = const [
+    '¿Cómo mejorar mi racha?',
+    '¿Qué misión tengo hoy?',
+    'Quiero mejorar mi hidratación',
+    'Hablar con un profesional',
+    '¿Cómo está el clima hoy?',
+  ];
+
+  static String _timeNow() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+  }
 
   String _getCurrentUserNameSync() {
     final user = FirebaseAuth.instance.currentUser;
@@ -103,89 +118,20 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void initState() {
     super.initState();
-    final initialName = _getCurrentUserNameSync();
+    ChatHistoryStore.instance.ensureLoaded(); // carga lo guardado
     _session = ChatHistoryStore.instance.startSession(
       FirebaseAuth.instance.currentUser?.uid,
     );
     // La lista de la sesión es la misma que muestra el chat.
-    messages = _session.messages;
+    messages = [];
     messages.add(
       ChatMessage(
         text:
-            '¡Hola, $initialName! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
+            '¡Hola, ${_getCurrentUserNameSync()}! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
         isUser: false,
-        time: _getFormattedTime(),
+        time: _timeNow(),
       ),
     );
-    _loadUserName();
-  }
-
-  Future<void> _loadUserName() async {
-    final name = await _getCurrentUserName();
-    if (!mounted) return;
-
-    setState(() {
-      if (messages.isNotEmpty) {
-        messages[0] = ChatMessage(
-          text:
-              '¡Hola, $name! Puedo resolver dudas sobre la app, tus misiones y tus hábitos, aunque algo limitado aún. ¿Por dónde empezamos?',
-          isUser: false,
-          time: messages[0].time,
-        );
-      }
-    });
-  }
-
-  Future<String> _getCurrentUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 'Usuario';
-
-    try {
-      await user.reload();
-    } catch (_) {}
-
-    final refreshedUser = FirebaseAuth.instance.currentUser;
-    if (refreshedUser == null) return 'Usuario';
-
-    try {
-      final snapshot =
-          await appFirestore.collection('users').doc(refreshedUser.uid).get();
-      final firestoreName = snapshot.data()?['name'];
-      if (firestoreName is String && firestoreName.trim().isNotEmpty) {
-        return firestoreName.trim();
-      }
-    } catch (_) {}
-
-    final displayName = refreshedUser.displayName;
-    if (displayName != null && displayName.trim().isNotEmpty) {
-      return displayName.trim();
-    }
-
-    final email = refreshedUser.email;
-    if (email != null && email.contains('@')) {
-      return email.split('@').first.trim();
-    }
-
-    return 'Usuario';
-  }
-
-  final List<String> quickOptions = const [
-    '¿Cómo mejorar mi racha?',
-    '¿Qué misión tengo hoy?',
-    'Quiero mejorar mi hidratación',
-    'Hablar con un profesional',
-    '¿Cómo está el clima hoy?',
-  ];
-
-  static String _timeNow() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _iniciarSesion();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
   }
@@ -204,7 +150,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
       final snapshot = await db.collection('users').doc(user.uid).get();
       final data = snapshot.data() ?? <String, dynamic>{};
       if (!mounted) return;
-      _perfil = data;
       final storedName = data['name'];
       if (storedName is String && storedName.trim().isNotEmpty) {
         nombre = storedName.trim();
@@ -230,7 +175,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   void _onFocusChange() {
     if (_inputFocus.hasFocus) {
       // Espera al ajuste de tamaño causado por el teclado.
-      Future<void>.delayed(const Duration(milliseconds: 250), _scrollToBottom);
+      Future<void>.delayed(const Duration(milliseconds: 250), scrollToBottom);
     }
   }
 
@@ -240,9 +185,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (text.isEmpty) return;
 
     messageController.clear();
+    _prepararSesion(text); // ← nueva
     setState(() {
       _hasSentMessage = true;
-      messages.add(ChatMessage(text: text, isUser: true, time: _timeNow()));
+        _agregarMensaje(ChatMessage(text: text, isUser: true, time: _timeNow()));
       isTyping = true;
     });
 
@@ -256,12 +202,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
         if (!mounted) return;
 
         setState(() {
-          messages.add(
-            ChatMessage(
-              text: response,
-              isUser: false,
-              time: _getFormattedTime(),
-            ),
+          _agregarMensaje(
+            ChatMessage(text: response, isUser: false, time: _timeNow()),
           );
           isTyping = false;
         });
@@ -311,17 +253,75 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
     Future.delayed(const Duration(milliseconds: 450), () {
       if (!mounted) return;
+       
+       
 
-      setState(() {
-        messages.add(
-          ChatMessage(text: response, isUser: false, time: _getFormattedTime()),
+       setState(() {
+        _agregarMensaje(
+          ChatMessage(text: response, isUser: false, time: _timeNow()),
         );
         isTyping = false;
       });
 
       scrollToBottom();
     });
-    _scrollToBottom();
+  }
+    /// Cada tema nuevo abre una conversación nueva en el historial.
+  void _prepararSesion(String text) {
+    final store = ChatHistoryStore.instance;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final enCalculo =
+        _calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0;
+    // Dentro de un cálculo (IMC/GET) no se cambia de conversación.
+    final tema = enCalculo ? null : ChatTopics.detectar(text);
+
+    if (_session.deleted) {
+      // El usuario borró la conversación abierta: se empieza otra.
+      _session = store.startSession(uid);
+    } else if (tema != null &&
+        _temaActual != null &&
+        tema != _temaActual &&
+        _session.hasUserMessages) {
+      _session = store.startSession(uid);
+    }
+    if (tema != null) _temaActual = tema;
+  }
+
+  /// Muestra el mensaje en el chat y lo guarda en el historial.
+  void _agregarMensaje(ChatMessage message) {
+    messages.add(message);
+    _session.messages.add(message);
+    if (!_session.deleted) ChatHistoryStore.instance.persist();
+  }
+
+
+  /// Empieza un chat limpio: solo el saludo, sin mensajes anteriores.
+  void _nuevoChat() {
+    _calculatorService.resetIMC();
+    _calculatorService.resetGET();
+
+    final store = ChatHistoryStore.instance;
+    store.discardIfEmpty(_session);
+    final nombre =
+        _primerNombre.isEmpty ? _getCurrentUserNameSync() : _primerNombre;
+
+    setState(() {
+      _session = store.startSession(FirebaseAuth.instance.currentUser?.uid);
+      _temaActual = null;
+      _lastTopic = null;
+      _pendingOffer = null;
+      _hasSentMessage = false;
+      isTyping = false;
+      messages = [
+        ChatMessage(
+          text:
+              '¡Hola, $nombre! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
+          isUser: false,
+          time: _timeNow(),
+        ),
+      ];
+    });
+    scrollToBottom();
   }
 
   static const List<String> _climaKeywords = [
@@ -349,8 +349,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (!mounted) return;
 
     setState(() {
-      messages.add(
-        ChatMessage(text: response, isUser: false, time: _getFormattedTime()),
+      _agregarMensaje(
+        ChatMessage(text: response, isUser: false, time: _timeNow()),
       );
       isTyping = false;
     });
@@ -822,8 +822,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       return 'Evita ropa muy ajustada, que no transpire o calzado gastado o inadecuado. Pueden causar rozaduras, ampollas, sobrecalentamiento y lesiones en rodillas y tobillos.';
     }
 
-    if (text.contains('entren') &&
-        _containsAny(text, ['antes', 'despues'])) {
+    if (text.contains('entren') && _containsAny(text, ['antes', 'despues'])) {
       return 'Depende de la duración e intensidad del ejercicio y de cómo te sientas. Si vas a comer una comida completa antes de entrenar, intenta hacerlo entre 1 y 3 horas antes; si falta poco, elige algo ligero que te siente bien. Después de entrenar, procura incluir proteína y carbohidratos en tu siguiente comida; no es necesario comer inmediatamente. Mantente bien hidratado.';
     }
 
@@ -1553,14 +1552,24 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void dispose() {
     ChatHistoryStore.instance.discardIfEmpty(_session);
+    _inputFocus.removeListener(_onFocusChange);
+    _inputFocus.dispose();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
   }
 
+  // ====================================================
+  // INTERFAZ
+  // ====================================================
+
   @override
   Widget build(BuildContext context) {
-    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final options =
+        _calculatorService.opcionesRapidas.isNotEmpty
+            ? _calculatorService.opcionesRapidas
+            : quickOptions;
+
     return Scaffold(
       backgroundColor: _background,
       resizeToAvoidBottomInset: true,
@@ -1590,17 +1599,18 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
-          IconButton(
+                    IconButton(
             tooltip: 'Historial',
-            icon: const Icon(Icons.history_rounded, color: Color(0xFF172B36)),
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ChatHistoryPage(activeSessionId: _session.id),
-                  ),
+            icon: const Icon(Icons.history_rounded, color: _navy),
+            onPressed: () async {
+              final resultado = await Navigator.push<String>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatHistoryPage(activeSessionId: _session.id),
                 ),
+              );
+              if (resultado == 'nuevo' && mounted) _nuevoChat();
+            },
           ),
           const SizedBox(width: 4),
         ],
@@ -1609,7 +1619,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: ListView(
                 controller: scrollController,
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
@@ -1618,251 +1628,231 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   horizontal: 20,
                   vertical: 10,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Hero Banner de Mr. Healthy
-                    Center(
-                      child: Column(
-                        children: [
-                          const SizedBox(
-                            width: 120,
-                            height: 6,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Color(0xFF172B36),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(3),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/mascot/healthy.png',
-                                width: 56,
-                                height: 56,
-                                errorBuilder:
-                                    (context, error, stackTrace) => const Icon(
-                                      Icons.eco_rounded,
-                                      color: Color(0xFF00C88C),
-                                      size: 48,
-                                    ),
-                              ),
-                              const SizedBox(width: 14),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE2F7ED),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Text(
-                                      'A TU RITMO',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Color(0xFF198568),
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  const Text(
-                                    'Un pequeño paso, juntos.',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF172B36),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Lista de Mensajes
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: messages.length + (isTyping ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= messages.length) {
-                          return const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              'Mr. Healthy está escribiendo...',
-                              style: TextStyle(
-                                color: Color(0xFF198568),
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          );
-                        }
-                        return _buildMessageBubble(messages[index]);
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Sugerencias rápidas verticales
-                    Text(
-                      _calculatorService.opcionesRapidas.isNotEmpty
-                          ? 'Elige una opción'
-                          : 'Sugerencias rápidas',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF7A869A),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Column(
-                      children:
-                          (_calculatorService.opcionesRapidas.isNotEmpty
-                                  ? _calculatorService.opcionesRapidas
-                                  : quickOptions)
-                              .map((option) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: InkWell(
-                                    onTap:
-                                        isTyping
-                                            ? null
-                                            : () => sendMessage(option),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 14,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFFE5EEE9),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              option,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w800,
-                                                color: Color(0xFF172B36),
-                                              ),
-                                            ),
-                                          ),
-                                          const Icon(
-                                            Icons.north_east_rounded,
-                                            size: 18,
-                                            color: Color(0xFF198568),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              })
-                              .toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Input inferior con caja blanca redondeada y nota médica
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              color: const Color(0xFFF7F9F8),
-              child: Column(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: const Color(0xFFE5EEE9),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 18),
-                        Expanded(
-                          child: TextField(
-                            controller: messageController,
-                            textCapitalization: TextCapitalization.sentences,
-                            minLines: 1,
-                            maxLines: 3,
-                            onSubmitted: (_) => sendMessage(),
-                            decoration: const InputDecoration(
-                              hintText: 'Escribe a Mr. Healthy...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF8A8F98),
-                                fontSize: 14,
-                              ),
-                              border: InputBorder.none,
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+
+                  // Lista de mensajes
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: messages.length + (isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= messages.length) {
+                        return const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Mr. Healthy está escribiendo...',
+                            style: TextStyle(
+                              color: _green,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: InkWell(
-                            onTap: isTyping ? null : () => sendMessage(),
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF8DE0C0),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.arrow_upward_rounded,
-                                color: Color(0xFF172B36),
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        );
+                      }
+                      return _buildMessageBubble(messages[index]);
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Sugerencias rápidas verticales
+                  Text(
+                    _calculatorService.opcionesRapidas.isNotEmpty
+                        ? 'Elige una opción'
+                        : 'Sugerencias rápidas',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: _muted,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  for (final option in options) _buildQuickOption(option),
+                ],
+              ),
+            ),
+            _buildInputBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Center(
+      child: Column(
+        children: [
+          const SizedBox(
+            width: 120,
+            height: 6,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _navy,
+                borderRadius: BorderRadius.all(Radius.circular(3)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/mascot/healthy.png',
+                width: 56,
+                height: 56,
+                errorBuilder:
+                    (context, error, stackTrace) => const Icon(
+                      Icons.eco_rounded,
+                      color: Color(0xFF00C88C),
+                      size: 48,
+                    ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2F7ED),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'A TU RITMO',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: _green,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   const Text(
-                    'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
-                    textAlign: TextAlign.center,
+                    'Un pequeño paso, juntos.',
                     style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8A8F98),
-                      height: 1.3,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: _navy,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickOption(String option) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: isTyping ? null : () => sendMessage(option),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE5EEE9), width: 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  option,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: _navy,
+                  ),
+                ),
+              ),
+              const Icon(Icons.north_east_rounded, size: 18, color: _green),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  // Input inferior con caja blanca redondeada y nota médica
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      color: _background,
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFFE5EEE9), width: 1),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 18),
+                Expanded(
+                  child: TextField(
+                    controller: messageController,
+                    focusNode: _inputFocus,
+                    textCapitalization: TextCapitalization.sentences,
+                    minLines: 1,
+                    maxLines: 3,
+                    onSubmitted: (_) => sendMessage(),
+                    decoration: const InputDecoration(
+                      hintText: 'Escribe a Mr. Healthy...',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF8A8F98),
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: InkWell(
+                    onTap: isTyping ? null : () => sendMessage(),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF8DE0C0),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: _navy,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: Color(0xFF8A8F98),
+              height: 1.3,
+            ),
+          ),
+        ],
       ),
     );
   }

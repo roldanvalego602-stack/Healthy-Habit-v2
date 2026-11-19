@@ -131,12 +131,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
         final String levelTitle =
             userData['title'] as String? ?? 'Cultivador Constante';
-        final int currentXp = (userData['xp'] as num?)?.toInt() ??
+        final int currentXp =
+            (userData['xp'] as num?)?.toInt() ??
             (userData['currentXp'] as num?)?.toInt() ??
             0;
         final int nextLevelXp =
             (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
-        final int streakDays = (userData['currentStreak'] as num?)?.toInt() ??
+        final int streakDays =
+            (userData['currentStreak'] as num?)?.toInt() ??
             (userData['streakDays'] as num?)?.toInt() ??
             0;
         final String nextAchievement =
@@ -283,9 +285,10 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
-<<<<<<< HEAD
-=======
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+              ),
             ],
           ),
           child: TextButton(
@@ -311,8 +314,10 @@ class _TopBar extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+              ),
             ],
           ),
           child: TextButton(
@@ -554,7 +559,9 @@ class _StatsRow extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: habitProgress,
                     strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
+                    backgroundColor: AppColors.primaryGreen.withValues(
+                      alpha: 0.15,
+                    ),
                     valueColor: const AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),

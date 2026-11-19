@@ -114,18 +114,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       final habitoRef = _habitos.doc(widget.habitId);
       final attemptRef = habitoRef.collection('attempts').doc(widget.attemptId);
       final resultados = await Future.wait([habitoRef.get(), attemptRef.get()]);
-<<<<<<< HEAD
-
-      final habitoSnapshot =
-          resultados[0];
-
-      final attemptSnapshot =
-          resultados[1];
-
-=======
       final habitoSnapshot = resultados[0];
       final attemptSnapshot = resultados[1];
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
       if (!habitoSnapshot.exists) {
         throw Exception('No se encontró el hábito seleccionado.');
       }
@@ -321,21 +311,13 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
       await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
-<<<<<<< HEAD
 
-=======
-        final habitoSnapshot = await transaction.get(habitoRef);
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (!attemptSnapshot.exists) {
           throw Exception('El intento ya no existe.');
         }
         final datosAttempt = attemptSnapshot.data()!;
-<<<<<<< HEAD
 
-=======
-        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
         final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
         // Comprobar el estado dentro de la transacción
         // evita guardar registros en intentos cancelados
@@ -701,14 +683,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColores.verdePrincipal,
                   foregroundColor: Colors.white,
-<<<<<<< HEAD
-                  disabledBackgroundColor: AppColores.verdePrincipal
-                      .withValues(alpha: 0.6),
-=======
                   disabledBackgroundColor: AppColores.verdePrincipal.withValues(
                     alpha: 0.6,
                   ),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

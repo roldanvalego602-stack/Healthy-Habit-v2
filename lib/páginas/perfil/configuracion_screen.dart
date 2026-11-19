@@ -495,41 +495,149 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: navy,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: textMuted,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ],
+          _section('CUENTA', Icons.person_outline_rounded, [
+            _action(
+              'Editar perfil',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditarPerfilScreen()),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: green,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: const Color(0xFFDCDFE3),
-          ),
+            _action(
+              'Cambiar correo',
+              _editEmail,
+              value: user.email ?? 'Sin correo',
+            ),
+            _action('Restablecer contraseña', _resetPassword),
+          ]),
+          _section('OBJETIVOS', Icons.flag_outlined, [
+            _action(
+              'Objetivo principal',
+              () => _choose('objetivoPrincipal', 'Objetivo principal', const [
+                'Mejorar mi bienestar',
+                'Alimentarme mejor',
+                'Hidratarme más',
+                'Tener más energía',
+              ]),
+              value: _str('objetivoPrincipal'),
+            ),
+            _action('Categorías de interés', _categories, value: selected),
+            _action(
+              'Dificultad',
+              () => _choose('dificultad', 'Dificultad', const [
+                'Suave',
+                'Moderado',
+                'Exigente',
+              ]),
+              value: _str('dificultad'),
+            ),
+            _action(
+              'Frecuencia',
+              () => _choose('frecuencia', 'Frecuencia', const [
+                'Diaria',
+                'Semanal',
+              ]),
+              value: _str('frecuencia'),
+            ),
+          ]),
+          _section('APARIENCIA', Icons.palette_outlined, [
+            _action(
+              'Tema',
+              () => _choose('tema', 'Tema', const [
+                'Sistema',
+                'Claro',
+                'Oscuro',
+              ]),
+              value: _str('tema'),
+            ),
+            _action(
+              'Tamaño del texto',
+              () => _choose('tamanoTexto', 'Tamaño del texto', const [
+                'Pequeño',
+                'Normal',
+                'Grande',
+              ]),
+              value: _str('tamanoTexto'),
+            ),
+            _action(
+              'Idioma',
+              () => _choose('idioma', 'Idioma', const ['Español']),
+              value: _str('idioma'),
+            ),
+          ]),
+          _section('RECORDATORIOS', Icons.notifications_none_rounded, [
+            _toggle('permitirRecordatorios', 'Permitir recordatorios'),
+            _toggle('recordatorioHabito', 'Recordatorio de hábitos'),
+            _toggle('recordatorioRacha', 'Recordatorio de racha'),
+            _toggle('recordatorioDesafios', 'Recordatorio de desafíos'),
+            _toggle(
+              'descansoSemanal',
+              'Descanso semanal',
+              subtitle: 'Un día a la semana sin avisos.',
+            ),
+            _action(
+              'Horario del recordatorio',
+              () => _choose('horarioRecordatorio', 'Horario', const [
+                '07:00',
+                '09:00',
+                '12:00',
+                '15:00',
+                '18:00',
+                '21:00',
+              ]),
+              value: _str('horarioRecordatorio'),
+            ),
+          ]),
+          _section('PRIVACIDAD Y AMIGOS', Icons.lock_outline_rounded, [
+            _toggle('mostrarRachaAmigos', 'Mostrar mi racha a mis amigos'),
+            _toggle('permitirReacciones', 'Permitir reacciones'),
+            _action(
+              'Visibilidad de logros',
+              () => _choose('visibilidadLogros', 'Visibilidad de logros', const [
+                'Solo yo',
+                'Solo amigos',
+                'Todos',
+              ]),
+              value: _str('visibilidadLogros'),
+            ),
+            _action(
+              'Desafíos de',
+              () => _choose('desafiosDe', 'Desafíos de', const [
+                'Todos',
+                'Solo amigos',
+              ]),
+              value: _str('desafiosDe'),
+            ),
+            _toggle(
+              'analizarHistorialIA',
+              'Analizar mi historial con IA',
+              subtitle: 'Para darte retroalimentación más personalizada.',
+            ),
+            _action('Ver evidencias temporales', _showEvidence),
+          ]),
+          _section('EXPERIENCIA', Icons.auto_awesome_outlined, [
+            _toggle('sonidosApp', 'Sonidos de la app'),
+            _toggle('vibracionHaptica', 'Vibración'),
+            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
+            _toggle('efectosRecompensa', 'Efectos de recompensa'),
+            _toggle('mostrarXp', 'Mostrar XP'),
+            _toggle('mostrarPuntos', 'Mostrar puntos'),
+            _toggle('mostrarNivelPerfil', 'Mostrar nivel en el perfil'),
+            _toggle('mostrarRachasDiarias', 'Mostrar rachas diarias'),
+            _toggle(
+              'modoDiscreto',
+              'Modo discreto',
+              subtitle: 'Reduce notificaciones y elementos llamativos.',
+            ),
+          ]),
+          _section('INFORMACIÓN', Icons.info_outline_rounded, [
+            _action('Términos y condiciones', () => _page('terminos')),
+            _action('Política de privacidad', () => _page('privacidad')),
+            _action('Acerca de Healthy Habit', () => _page('acerca')),
+          ]),
+          _section('ZONA DE RIESGO', Icons.warning_amber_rounded, [
+            _action('Eliminar cuenta', _deleteAccount),
+          ]),
         ],
       ),
     );

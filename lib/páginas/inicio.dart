@@ -1,31 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-<<<<<<< HEAD
-import 'package:healthy_habit/main.dart' as app;
-import 'package:healthy_habit/p%C3%A1ginas/habitos/registrar_habito_screen.dart';
-import 'package:healthy_habit/p%C3%A1ginas/notifications_screen.dart';
-import '../páginas/habitos/habits_screen.dart';
-import '../páginas/desafios/desafios_screen.dart';
-import '../páginas/tienda/store_screen.dart';
-import '../páginas/perfil/profile_screen.dart';
-import '../páginas/chatbot/nutrichat.dart';
-=======
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
-<<<<<<< HEAD
-// Función global para convertir valores a enteros
-int _leerEntero(dynamic value, int fallback) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? fallback;
-}
-
-// Si se ejecuta este archivo directamente, se usa el main real (inicializa Firebase).
-Future<void> main() => app.main();
-=======
 import 'habitos/habits_screen.dart';
 import 'habitos/registrar_habito_screen.dart';
 import 'tienda/store_screen.dart';
@@ -41,7 +19,6 @@ import 'estadisticas/progreso_screen.dart';
 
 // Firebase se inicializa realmente en lib/main.dart.
 void main() => runApp(const HabitTrackerApp());
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
 
 class HabitTrackerApp extends StatelessWidget {
   const HabitTrackerApp({super.key});
@@ -207,27 +184,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
           return const Center(child: CircularProgressIndicator());
         }
 
-<<<<<<< HEAD
-        final String name =
-            ((userData['name'] as String?) ?? '').trim().isNotEmpty
-                ? (userData['name'] as String).trim()
-                : ((currentUser.displayName ?? '').trim().isNotEmpty
-                    ? currentUser.displayName!.trim()
-                    : 'Usuario');
-        final String? photoUrl = userData['photoUrl'] ?? currentUser.photoURL;
-        final int level = (userData['level'] as num?)?.toInt() ?? 1;
-        final String levelTitle =
-            userData['title'] as String? ?? 'Cultivador Constante';
-        final int currentXp = (userData['currentXp'] as num?)?.toInt() ?? 0;
-        final int nextLevelXp =
-            (userData['nextLevelXp'] as num?)?.toInt() ?? 1000;
-        final int streakDays = (userData['streakDays'] as num?)?.toInt() ?? 0;
-        final String nextAchievement =
-            userData['nextAchievementTitle'] as String? ??
-            'Insignia Ritmo firme';
-        final String nextAchievementSub =
-            userData['nextAchievementSubtitle'] as String? ?? 'A 2 misiones';
-=======
         final data = profile.data?.data() ?? <String, dynamic>{};
 
         final name = (data['name'] ?? user.displayName ?? 'Usuario').toString();
@@ -244,7 +200,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
         final level = LevelSystem.fromXp(xp).number;
 
         final streak = _number(data['currentStreak'] ?? data['streakDays']);
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
@@ -290,86 +245,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
       },
     );
   }
-<<<<<<< HEAD
-
-  Future<List<Map<String, dynamic>>> _cargarDatosHabitos(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> habitDocs,
-  ) async {
-    final List<Map<String, dynamic>> resultado = [];
-
-    for (final habitDoc in habitDocs) {
-      final habitData = habitDoc.data();
-
-      final attemptsSnapshot =
-          await habitDoc.reference.collection('attempts').get();
-
-      final attempts =
-          attemptsSnapshot.docs.map((doc) {
-            return <String, dynamic>{...doc.data(), 'attemptId': doc.id};
-          }).toList();
-
-      // Preferir el intento que sigue en proceso.
-      final activeAttempts = attempts.where(
-        (attempt) => attempt['status'] == 'inProgress',
-      );
-
-      Map<String, dynamic>? selectedAttempt;
-
-      if (activeAttempts.isNotEmpty) {
-        selectedAttempt = activeAttempts.first;
-      } else {
-        // Si no hay uno activo, conservar el último intento
-        // completado para contabilizarlo en las estadísticas.
-        final completedAttempts = attempts.where(
-          (attempt) => attempt['status'] == 'completed',
-        );
-
-        if (completedAttempts.isNotEmpty) {
-          selectedAttempt = completedAttempts.first;
-        }
-      }
-
-      if (selectedAttempt == null) continue;
-
-      resultado.add({
-        'habitId': habitDoc.id,
-        'attemptId': selectedAttempt['attemptId'],
-        'title':
-            (habitData['title'] ?? habitData['name'] ?? 'Hábito').toString(),
-        'category': (habitData['category'] ?? 'Bienestar').toString(),
-        'status': selectedAttempt['status'],
-        'progress': _leerEntero(selectedAttempt['progress'], 0),
-        'target': _leerEntero(selectedAttempt['target'], 1),
-        'xp': _leerEntero(habitData['xp'], 0),
-      });
-    }
-
-    // Primero aparecen los hábitos en proceso.
-    resultado.sort((a, b) {
-      final aActive = a['status'] == 'inProgress';
-      final bActive = b['status'] == 'inProgress';
-
-      if (aActive && !bActive) return -1;
-      if (!aActive && bActive) return 1;
-
-      return 0;
-    });
-
-    return resultado;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(child: _tabs[_selectedIndex]),
-      bottomNavigationBar: _BottomNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: _onNavTap,
-      ),
-    );
-  }
-=======
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
 }
 
 // ====================================================
@@ -410,39 +285,6 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: AssetImage('assets/logo/logo.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'Healthy Habit',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark,
-          ),
-        ),
-        const Spacer(),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
-=======
     final active =
         habits.where((h) => h.data()['latestStatus'] == 'inProgress').toList();
 
@@ -516,7 +358,6 @@ class _HomeContent extends StatelessWidget {
                   ),
                 ),
               ),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
             ],
           ),
 
@@ -727,11 +568,7 @@ class _HomeContent extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-<<<<<<< HEAD
-                  color: AppColors.primaryGreen.withValues(alpha: 0.3),
-=======
                   color: AppColors.primaryGreen.withValues(alpha: 0.25),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -868,163 +705,11 @@ class _HomeContent extends StatelessWidget {
   // MISIÓN DEL DÍA
   // --------------------------------------------------
 
-<<<<<<< HEAD
-  const _StatsRow({
-    required this.streakDays,
-    required this.completedHabits,
-    required this.totalHabits,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final double habitProgress =
-        totalHabits > 0 ? (completedHabits / totalHabits) : 0.0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.yellowCard,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        '$streakDays días',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Racha actual',
-                  style: TextStyle(fontSize: 11, color: AppColors.textGrey),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: CircularProgressIndicator(
-                    value: habitProgress,
-                    strokeWidth: 4,
-                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-                    valueColor: const AlwaysStoppedAnimation(
-                      AppColors.primaryGreen,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$completedHabits / $totalHabits',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const Text(
-                        'Completados',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textGrey,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final VoidCallback onTapViewHabits;
-  const _SectionHeader({required this.onTapViewHabits});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Tu misión de hoy',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: AppColors.textDark,
-          ),
-        ),
-        GestureDetector(
-          onTap: onTapViewHabits,
-          child: const Text(
-            'Ver hábitos',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryGreen,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------- Tarjeta Misión Adaptable ----------
-class _MissionCard extends StatelessWidget {
-  final Map<String, dynamic>? missionData;
-  final VoidCallback onTapViewHabits;
-
-  const _MissionCard({this.missionData, required this.onTapViewHabits});
-
-  @override
-  Widget build(BuildContext context) {
-    if (missionData == null) {
-=======
   Widget _mission(
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>>? habit,
   ) {
     if (habit == null) {
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(22),
@@ -1154,32 +839,6 @@ class _MissionCard extends StatelessWidget {
     );
   }
 
-<<<<<<< HEAD
-// ---------- Banner Próximo Logro ----------
-class _NextAchievementCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _NextAchievementCard({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.purpleCard,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.yellowCard,
-              shape: BoxShape.circle,
-=======
   // --------------------------------------------------
   // LOGROS
   // --------------------------------------------------
@@ -1193,7 +852,6 @@ class _NextAchievementCard extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text('No se pudieron consultar los logros.'),
->>>>>>> 34f73f5809ac44596173a8e916e03d8bb0aeeb09
             ),
           );
         }
