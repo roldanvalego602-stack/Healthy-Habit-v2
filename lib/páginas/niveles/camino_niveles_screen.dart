@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_motion.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -73,11 +74,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.monetization_on_outlined,
-                              color: Color(0xFFB68B26),
-                              size: 32,
-                            ),
+                            const HealthyCoinIcon(size: 32),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -238,13 +235,17 @@ class CaminoNivelesScreen extends StatelessWidget {
           ),
           if (next != null) ...[
             const SizedBox(height: 8),
-            Text(
-              'Próxima recompensa: '
-              '${next.rewardCoins} Habit Coins',
-              style: const TextStyle(
-                color: Color(0xFFFFE49A),
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Próxima recompensa: ',
+                  style: TextStyle(color: Color(0xFFFFE49A),
+                    fontWeight: FontWeight.w700)),
+                HealthyCoinAmount(amount: '${next.rewardCoins}', size: 18,
+                  suffix: ' Habit Coins',
+                  style: const TextStyle(color: Color(0xFFFFE49A),
+                    fontWeight: FontWeight.w700)),
+              ],
             ),
           ],
         ],
