@@ -60,9 +60,16 @@ class HealthyChatProfileEditor extends StatelessWidget {
                       fontWeight: FontWeight.w900))),
                 ]),
                 const SizedBox(height: 9),
-                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: HealthyAdaptive.text,
-                    fontWeight: FontWeight.w800)),
+                AnimatedSwitcher(
+                  duration: HealthyVisualEffects.duration(
+                    context, const Duration(milliseconds: 280)),
+                  child: Text(name,
+                    key: ValueKey('profile-name-$name'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: HealthyAdaptive.text,
+                      fontWeight: FontWeight.w800)),
+                ),
                 if (username.isNotEmpty)
                   Text('@$username', maxLines: 1,
                     overflow: TextOverflow.ellipsis,
