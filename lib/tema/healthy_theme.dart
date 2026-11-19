@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'healthy_motion.dart';
 
 /// Preferencia de apariencia del dispositivo. No depende de una sesión Firebase.
 class HealthyThemeController extends ChangeNotifier {
@@ -53,6 +54,13 @@ class HealthyThemes {
   static const _green = Color(0xFF00C88C);
   static ThemeData light() => ThemeData(
     useMaterial3: true,
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: HealthyRouteTransitions(),
+      TargetPlatform.iOS: HealthyRouteTransitions(),
+      TargetPlatform.linux: HealthyRouteTransitions(),
+      TargetPlatform.windows: HealthyRouteTransitions(),
+      TargetPlatform.macOS: HealthyRouteTransitions(),
+    }),
     fontFamily: 'Inter',
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
