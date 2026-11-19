@@ -112,6 +112,13 @@ class HealthyChatChallengesCard extends StatelessWidget {
                   '${available.length} disponibles',
                   style: TextStyle(color: HealthyAdaptive.muted,
                     fontSize: 11)),
+              const SizedBox(height: 5),
+              Text(
+                'Nota: los desafíos iniciales de Healthy Habit pueden '
+                'incluir valores de demostración hasta integrar su seguimiento real.',
+                style: TextStyle(color: HealthyAdaptive.muted,
+                  fontSize: 10.5),
+              ),
               for (final doc in chosen)
                 HealthyChatProgressTile(
                   title: (doc.data()['title'] ?? 'Desafío').toString(),
