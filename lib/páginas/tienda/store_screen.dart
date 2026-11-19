@@ -202,10 +202,10 @@ class _StoreScreenState extends State<StoreScreen> {
                   ),
                 SliverToBoxAdapter(
                   child: StoreFeaturedCarousel(
-                    items: [
-                      for (final id in featuredShopItemIds)
-                        if (shopItemById(id) case final ShopItem item) item,
-                    ],
+                    items: featuredShopItemIds
+                        .map(shopItemById)
+                        .whereType<ShopItem>()
+                        .toList(),
                     shopState: state,
                     onSelected: (item) => _showFeaturedPreview(item, state),
                   ),
