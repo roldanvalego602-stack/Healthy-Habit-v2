@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 
 /// Pantalla de celebración de un logro para Healthy Habit.
 ///
@@ -60,10 +61,20 @@ class AchievementScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(color: _navy, fontWeight: FontWeight.w800),
             ),
-            content: Text(
-              '$description\n\nRecompensa obtenida: +$xpReward XP y +$coinReward Habit Coins.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: _muted, height: 1.5),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(description, textAlign: TextAlign.center,
+                  style: TextStyle(color: _muted, height: 1.5)),
+                const SizedBox(height: 12),
+                Text('Recompensa obtenida: +$xpReward XP',
+                  style: TextStyle(color: _muted)),
+                HealthyCoinAmount(amount: '+$coinReward',
+                  size: 21, suffix: ' Habit Coins',
+                  style: TextStyle(color: _navy,
+                    fontWeight: FontWeight.w800)),
+              ],
             ),
             actionsAlignment: MainAxisAlignment.center,
             actions: [
@@ -308,18 +319,7 @@ class AchievementScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Image.asset(
-                                  'assets/monedas/h coin.png',
-                                  width: 30,
-                                  height: 30,
-                                  fit: BoxFit.contain,
-                                  errorBuilder:
-                                      (context, error, stackTrace) =>
-                                          const Icon(
-                                            Icons.image_not_supported_outlined,
-                                            color: Color(0xFFB58A26),
-                                            size: 30,
-                                          ),
+                                const HealthyCoinIcon(size: 30),
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
