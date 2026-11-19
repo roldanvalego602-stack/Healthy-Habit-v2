@@ -72,6 +72,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   String? _sessionId;
   String _lastTopic = '';
   String _lastHabitTitle = '';
+  String _lastShopItemId = '';
   bool _historyLoading = false;
   bool _manuallyStartedNew = false;
   List<Map<String, dynamic>> _habitosPerfil = [];
@@ -181,6 +182,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
         _lastHabitTitle = '';
+        _lastShopItemId = '';
+        for (final record in records.reversed) {
+          if (record.card == 'shop_item' &&
+              record.actionArgument.isNotEmpty) {
+            _lastShopItemId = record.actionArgument;
+            break;
+          }
+        }
         for (final record in records.reversed) {
           if (record.action == 'habits' &&
               record.actionArgument.isNotEmpty) {
@@ -190,8 +199,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         for (final record in records.reversed) {
           if (!record.isUser) {
-            _lastTopic = const ['habit_add', 'habit_remove', 'profile']
-                    .contains(record.card) ? record.card : '';
+            _lastTopic = const [
+              'habit_add','habit_remove','profile','shop_item',
+            ].contains(record.card) ? record.card : '';
             break;
           }
         }
@@ -213,6 +223,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _sessionId = null;
       _lastTopic = '';
       _lastHabitTitle = '';
+      _lastShopItemId = '';
       _hasSentMessage = false;
       messages
         ..clear()
@@ -516,7 +527,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
           } else {
             intent = _engine.resolve(text, profile: _perfil,
                 habits: _habitosPerfil, lastTopic: _lastTopic,
-                lastHabitTitle: _lastHabitTitle);
+                lastHabitTitle: _lastHabitTitle,
+                lastShopItemId: _lastShopItemId);
             response = intent.text.isNotEmpty
                 ? intent.text
                 : _respuestas.responder(text,
@@ -525,6 +537,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
               _lastHabitTitle = intent.actionArgument;
+            }
+            if (intent.card == 'shop_item' &&
+                intent.actionArgument.isNotEmpty) {
+              _lastShopItemId = intent.actionArgument;
             }
           }
         }
