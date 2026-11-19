@@ -11,7 +11,8 @@ import 'registrar_habito_screen.dart';
 import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
-  const HabitsScreen({super.key});
+  const HabitsScreen({super.key, this.initialSearch = ''});
+  final String initialSearch;
   @override
   State<HabitsScreen> createState() => _HabitsScreenState();
 }
@@ -70,6 +71,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSearch.trim().isNotEmpty) {
+      searching = true;
+      searchController.text = widget.initialSearch.trim();
+    }
     _load();
   }
 
