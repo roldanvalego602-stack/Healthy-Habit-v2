@@ -6,6 +6,7 @@ import 'logros_service.dart';
 import 'logro_insignia.dart';
 import 'logros_vitrina.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 class LogrosScreen extends StatelessWidget {
   const LogrosScreen({super.key});
@@ -246,7 +247,18 @@ class LogroSteamCard extends StatelessWidget {
     final achievement = item.definicion;
     final unlocked = item.obtenido;
     final tone = colorRareza(achievement.rareza);
-    return Container(
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('reveal-${achievement.id}-$unlocked'),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: HealthyVisualEffects.duration(context,
+        const Duration(milliseconds: 420)),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) => Transform.scale(
+        alignment: Alignment.centerLeft,
+        scale: unlocked ? 0.96 + 0.04 * value : 1,
+        child: child,
+      ),
+      child: Container(
       key: ValueKey('logro-${achievement.id}'),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -309,6 +321,7 @@ class LogroSteamCard extends StatelessWidget {
           ],
         )),
       ]),
+      ),
     );
   }
 }
