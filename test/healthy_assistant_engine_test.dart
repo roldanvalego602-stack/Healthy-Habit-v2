@@ -38,7 +38,7 @@ void main() {
       profile: profile, habits: habits);
     expect(result.action, 'habits');
     expect(result.card, 'habit_remove');
-    expect(result.text, contains('confirmas'));
+    expect(result.text, contains('confirma'));
   });
 
   test('recordar intención permite continuar con el nombre', () {
