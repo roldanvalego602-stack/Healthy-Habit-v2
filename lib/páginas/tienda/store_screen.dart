@@ -4,6 +4,7 @@ import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_float.dart';
 import '../../tema/healthy_celebration.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_coin.dart';
 
 import 'shop_service.dart';
 import 'store_featured_carousel.dart';
@@ -566,18 +567,8 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  Widget _coinIcon({double size = 24}) {
-    return Image.asset(
-      'assets/monedas/h coin.png',
-      width: size,
-      height: size,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.monetization_on_rounded,
-        size: size,
-        color: const Color(0xFFFFC845),
-      ),
-    );
-  }
+  Widget _coinIcon({double size = 24}) =>
+      HealthyCoinIcon(size: size);
 
   // Colores de las recompensas: el modo oscuro utiliza pigmentos profundos,
   // no pasteles luminosos con texto casi blanco.
