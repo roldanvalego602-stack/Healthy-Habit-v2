@@ -217,7 +217,9 @@ class HealthyAssistantEngine {
       if (entry != null) {
         return HealthyAssistantReply(
           '${entry.answer}\n\nFuente de referencia: ${entry.source}',
-          card: 'knowledge');
+          card: 'knowledge',
+          action: 'source',
+          actionArgument: entry.source.split('·').last.trim());
       }
       return const HealthyAssistantReply(
         'No tengo una ficha verificada que responda con precisión esa pregunta. '
