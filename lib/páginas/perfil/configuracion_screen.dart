@@ -617,8 +617,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Mantener constancia',
               ]),
               value: _str('objetivoPrincipal'),
+              subtitle: 'Se guarda como preferencia; aún no genera un plan automático.',
             ),
-            _action('Categorías de interés', _categories, value: selected),
+            _action('Categorías de interés', _categories, value: selected,
+              subtitle: 'Preferencia guardada; recomendaciones automáticas pendientes.'),
             _action(
               'Nivel de dificultad',
               () => _choose('dificultad', 'Dificultad', [
@@ -627,11 +629,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Difícil',
               ]),
               value: _str('dificultad'),
+              subtitle: 'Aún no modifica automáticamente la dificultad de tus hábitos.',
             ),
             _action(
               'Frecuencia de hábitos',
               () => _choose('frecuencia', 'Frecuencia', ['Diaria', 'Semanal']),
               value: _str('frecuencia'),
+              subtitle: 'Aún no reprograma tus hábitos activos.',
             ),
             _action(
               'Máximo de hábitos activos',
@@ -680,7 +684,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _toggle('sonidosApp', 'Sonidos de la app'),
             _toggle('vibracionHaptica', 'Vibración háptica'),
-            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
+            _toggle('animacionesDivertidas', 'Animaciones divertidas',
+              subtitle: 'Preferencia guardada; los efectos no están conectados globalmente.'),
             _action(
               'Tamaño de texto',
               () => _choose('tamanoTexto', 'Tamaño de texto', [
@@ -705,6 +710,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Solo yo',
               ]),
               value: _str('visibilidadLogros'),
+              subtitle: 'Aún no restringe el acceso a logros. Requiere reglas de Firestore.',
             ),
             _action(
               'Quién puede enviarme desafíos',
@@ -714,9 +720,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Nadie',
               ]),
               value: _str('desafiosDe'),
+              subtitle: 'Aún no restringe invitaciones a desafíos.',
             ),
             _toggle('mostrarRachaAmigos', 'Mostrar racha a mis amigos'),
-            _toggle('permitirReacciones', 'Permitir reacciones'),
+            _toggle('permitirReacciones', 'Permitir reacciones',
+              subtitle: 'Pendiente de conectarse con los módulos sociales.'),
             _action(
               'Administrar usuarios bloqueados',
               () => _message(
@@ -747,10 +755,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             }, value: _str('horarioRecordatorio')),
-            _toggle('recordatorioHabito', 'Recordatorios por hábito'),
-            _toggle('recordatorioRacha', 'Recordatorio de racha'),
-            _toggle('recordatorioDesafios', 'Recordatorios de desafíos'),
-            _toggle('descansoSemanal', 'Descanso semanal'),
+            _toggle('recordatorioHabito', 'Recordatorios por hábito',
+              subtitle: 'Sin programación de avisos del dispositivo.'),
+            _toggle('recordatorioRacha', 'Recordatorio de racha',
+              subtitle: 'Sin programación de avisos del dispositivo.'),
+            _toggle('recordatorioDesafios', 'Recordatorios de desafíos',
+              subtitle: 'Sin programación de avisos del dispositivo.'),
+            _toggle('descansoSemanal', 'Descanso semanal',
+              subtitle: 'Aún no altera automáticamente metas ni recordatorios.'),
           ]),
           _section('GAMIFICACIÓN', Icons.emoji_events_outlined, [
             _toggle('mostrarXp', 'Mostrar XP lograda'),
@@ -758,7 +770,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _toggle('mostrarNivelPerfil', 'Mostrar nivel en perfil'),
             _toggle('mostrarRachasDiarias', 'Mostrar rachas diarias'),
             _toggle('efectosRecompensa', 'Efectos visuales de recompensa'),
-            _toggle('modoDiscreto', 'Modo discreto'),
+            _toggle('modoDiscreto', 'Modo discreto',
+              subtitle: 'Oculta datos en tu perfil y efectos de compra; faltan otros módulos.'),
           ]),
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
