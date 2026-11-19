@@ -18,13 +18,6 @@ class _C {
   static Color get mintSoft => HealthyAdaptive.mint;
   static const gold = Color(0xFFD5A33E);
 
-  static const avatars = [
-    Color(0xFF198568),
-    Color(0xFFD5A33E),
-    Color(0xFF459FCB),
-    Color(0xFF8C72C6),
-    Color(0xFFE8736C),
-  ];
 }
 
 /// Feed con el progreso en vivo de las personas que sigues: nivel, racha,
@@ -271,10 +264,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final progresoLogro =
             _doble(_primero(d, ['nextAchievementProgress']), -1);
 
-        final color =
-            _C.avatars[uid.codeUnits.fold<int>(0, (a, b) => a + b) %
-                _C.avatars.length];
-
+    
         return Material(
           color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(22),
