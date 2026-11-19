@@ -5,13 +5,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import 'nutri_respuestas_service.dart';
+import 'healthy_assistant_engine.dart';
+import 'healthy_chat_history.dart';
+import 'healthy_chat_history_sheet.dart';
+import '../habitos/habits_screen.dart';
+import '../estadisticas/progreso_screen.dart';
+import '../perfil/profesionales_screen.dart';
+import '../perfil/profile_screen.dart';
+import '../niveles/camino_niveles_screen.dart';
+import '../ranking_screen.dart';
+import '../tienda/store_screen.dart';
 
 class ChatMessage {
   final String text;
   final bool isUser;
   final String time;
+  final String action;
+  final String argument;
+  final String card;
 
-  ChatMessage({required this.text, required this.isUser, required this.time});
+  ChatMessage({required this.text, required this.isUser, required this.time,
+    this.action = '', this.argument = '', this.card = ''});
+
+  factory ChatMessage.fromRecord(HealthyChatRecord record) => ChatMessage(
+    text: record.text, isUser: record.isUser,
+    time: '${record.createdAt.hour.toString().padLeft(2, '0')}:${record.createdAt.minute.toString().padLeft(2, '0')}',
+    action: record.action, argument: record.actionArgument, card: record.card,
+  );
 }
 
 class NutriChatPage extends StatefulWidget {
@@ -33,6 +53,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
+  final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
+  final HealthyChatHistory _history = const HealthyChatHistory();
+  String? _sessionId;
+  String _lastTopic = '';
+  bool _historyLoading = false;
+  List<Map<String, dynamic>> _habitosPerfil = [];
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
   bool isTyping = false;
@@ -67,6 +93,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     super.initState();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
+    _loadRecentChat();
   }
 
   Future<void> _cargarSaludoPersonalizado() async {
