@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/healthy_float.dart';
+import '../tema/healthy_motion.dart';
+import '../tema/healthy_visual_mode.dart';
 
 import 'niveles/levels_system.dart';
 
@@ -301,7 +304,10 @@ class RankingScreen extends StatelessWidget {
     final hasPhoto =
         photo.startsWith('https://') || photo.startsWith('http://');
 
-    return Container(
+    return HealthyMotionCard(
+      enableEntrance: isMe,
+      enablePress: false,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
         color: isMe ? HealthyAdaptive.mint : HealthyAdaptive.surface,
@@ -310,6 +316,10 @@ class RankingScreen extends StatelessWidget {
             isMe
                 ? Border.all(color: green, width: 1.5)
                 : Border.all(color: HealthyAdaptive.border),
+        boxShadow: isMe && HealthyVisualEffects.allowDecorativeShadows
+            ? [BoxShadow(color: green.withValues(alpha: 0.12),
+                blurRadius: 13, offset: const Offset(0, 4))]
+            : null,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -383,6 +393,7 @@ class RankingScreen extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -453,7 +464,11 @@ class RankingPodiumCard extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: accent.withValues(alpha: 0.5)),
       ),
-      child: Icon(level.icon, color: accent, size: compact ? 26 : 29),
+      child: HealthyFloat(
+        enabled: first,
+        distance: 3.5,
+        child: Icon(level.icon, color: accent, size: compact ? 26 : 29),
+      ),
     );
 
     final mainInfo = Column(
@@ -490,7 +505,9 @@ class RankingPodiumCard extends StatelessWidget {
       ],
     );
 
-    return Container(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(18),
@@ -540,6 +557,7 @@ class RankingPodiumCard extends StatelessWidget {
                 mainInfo,
               ],
             ),
+      ),
     );
   }
 }
