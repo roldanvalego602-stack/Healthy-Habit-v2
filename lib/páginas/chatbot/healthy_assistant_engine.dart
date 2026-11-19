@@ -67,6 +67,7 @@ class HealthyAssistantEngine {
     required Map<String, dynamic> profile,
     required List<Map<String, dynamic>> habits,
     String lastTopic = '',
+    String lastHabitTitle = '',
   }) {
     final normalized = NutriRespuestasService.normalizar(input);
     bool has(List<String> terms) =>
@@ -114,7 +115,10 @@ class HealthyAssistantEngine {
           }
         }
       }
-      final title = target?['title']?.toString() ?? '';
+      final referential = has(['eliminalo','quitamelo','quitalo','borrarlo',
+          'agregalo','anadelo','activarlo','ese habito','el mismo']);
+      final title = target?['title']?.toString() ??
+          (referential ? lastHabitTitle : '');
       return HealthyAssistantReply(
         title.isEmpty
             ? removing
