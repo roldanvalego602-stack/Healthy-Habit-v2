@@ -13,6 +13,7 @@ import '../estadisticas/progreso_screen.dart';
 import '../perfil/profesionales_screen.dart';
 import '../perfil/profile_screen.dart';
 import '../niveles/camino_niveles_screen.dart';
+import '../niveles/levels_system.dart';
 import '../ranking_screen.dart';
 import '../tienda/store_screen.dart';
 
@@ -165,6 +166,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           }
         }
       });
+      _refreshAssistantData();
       _scrollToBottom();
     } catch (_) {
       _chatNotice('No se pudo abrir el historial de ese chat.');
@@ -208,21 +210,23 @@ class _NutriChatPageState extends State<NutriChatPage> {
     }
   }
 
-  Future<void> _refreshAssistantData() async {
+  Future<bool> _refreshAssistantData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _perfil = {};
       _habitosPerfil = [];
-      return;
+      return false;
     }
     final userRef = FirebaseFirestore.instanceFor(
       app: Firebase.app(), databaseId: 'default',
     ).collection('users').doc(user.uid);
     try {
       final result = await userRef.get();
+      if (!result.exists) return false;
       _perfil = result.data() ?? {};
     } catch (_) {
       _perfil = {};
+      return false;
     }
     try {
       final result = await userRef.collection('user_habits').limit(100).get();
@@ -230,6 +234,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     } catch (_) {
       _habitosPerfil = [];
     }
+    return true;
   }
 
   void _navigateFromChat(ChatMessage message) {
@@ -291,110 +296,94 @@ class _NutriChatPageState extends State<NutriChatPage> {
   }
 
   Future<void> sendMessage([String? predefinedText]) async {
-    if (!mounted || isTyping) return;
+    if (!mounted || isTyping || _historyLoading) return;
     final text = (predefinedText ?? messageController.text).trim();
     if (text.isEmpty) return;
+    final first = _sessionId == null;
+    final userMessage = ChatMessage(
+      text: text, isUser: true, time: _timeNow());
 
     messageController.clear();
     setState(() {
       _hasSentMessage = true;
-      messages.add(ChatMessage(text: text, isUser: true, time: _timeNow()));
+      messages.add(userMessage);
       isTyping = true;
     });
     _scrollToBottom();
 
-    String response;
+    String response = '';
+    HealthyAssistantReply intent = const HealthyAssistantReply('');
     try {
+      // Los mensajes se guardan en orden cronológico por conversación.
+      await _persist(userMessage, first: first);
       final normalized = NutriRespuestasService.normalizar(text);
-      // Moderación antes de los flujos: el lenguaje ofensivo no se procesa
-      // como un dato numérico de IMC/GET. No se bloquea el resto del chat.
-      if (NutriRespuestasService.tieneGroserias(text) ||
-          NutriRespuestasService.contiene(text, [
-            'suicidio',
-            'suicidarme',
-            'matarme',
-            'hacerme daño',
-            'autolesion',
-          ])) {
+      final danger = NutriRespuestasService.contiene(text, [
+        'suicidio', 'suicidarme', 'matarme', 'hacerme daño', 'autolesion',
+      ]);
+      if (danger) {
+        response = _respuestas.moderar(text, _primerNombre);
+      } else if (NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
       } else if (NutriRespuestasService.contiene(normalized, [
-            'cancelar',
-            'salir del calculo',
-            'detener calculo',
-          ]) &&
-          (_calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0)) {
+        'cancelar', 'salir del calculo', 'detener calculo',
+      ]) && (_calculatorService.pasoIMC > 0 ||
+            _calculatorService.pasoGET > 0)) {
         _calculatorService.resetIMC();
         _calculatorService.resetGET();
         response = 'Cálculo cancelado. ¿Te ayudo con otra cosa? 🌿';
       } else {
-        // Actualizar estadísticas solo cuando se preguntan; no inventar datos.
-        if (NutriRespuestasService.contiene(normalized, [
-          'mi perfil',
-          'mis datos',
-          'mis estadisticas',
-          'cuantas monedas',
-          'habit coins',
-          'mi nivel',
-          'cuanta xp',
-          'mi xp',
-          'mi racha',
-          'mi nombre',
-          'mi usuario',
-          'como va mi perfil',
-        ])) {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            try {
-              final snapshot =
-                  await FirebaseFirestore.instanceFor(
-                    app: Firebase.app(),
-                    databaseId: 'default',
-                  ).collection('users').doc(user.uid).get();
-              _perfil = snapshot.data() ?? <String, dynamic>{};
-            } catch (_) {
-              _perfil = <String, dynamic>{};
-            }
+        final activeCalculator = _calculatorService.pasoIMC > 0 ||
+            _calculatorService.pasoGET > 0;
+        final calculatorIntent = NutriRespuestasService.contiene(normalized, [
+          'imc','indice de masa corporal','get','gasto energetico',
+          'calorias diarias','calcular mi get',
+        ]);
+        final calc = activeCalculator || calculatorIntent
+            ? _calculatorService.procesarMensaje(text) : '';
+        if (calc.isNotEmpty) {
+          response = calc;
+        } else {
+          final requiresProfile = NutriRespuestasService.contiene(normalized, [
+            'mi perfil','mis datos','mis estadisticas','mi progreso',
+            'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
+            'mis habitos','habitos activos','agrega','agregar',
+            'eliminar','elimina','borrar','quitar','abandonar',
+            'cancelar habito','camino de xp','subir de nivel',
+            'mi posicion','cuanto he avanzado','cuantos xp',
+          ]) || _lastTopic == 'profile';
+          final available = !requiresProfile ||
+              await _refreshAssistantData();
+          if (!available) {
+            response = 'No pude consultar tus datos actualizados. '
+                'Revisa tu conexión e inténtalo de nuevo; no inventaré XP ni monedas.';
           } else {
-            _perfil = <String, dynamic>{};
+            intent = _engine.resolve(text, profile: _perfil,
+                habits: _habitosPerfil, lastTopic: _lastTopic);
+            response = intent.text.isNotEmpty
+                ? intent.text
+                : _respuestas.responder(text,
+                    nombre: _primerNombre, perfil: _perfil);
+            _lastTopic = _engine.topicFor(intent);
           }
         }
-        final activeCalculator =
-            _calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0;
-        final calculatorIntent = NutriRespuestasService.contiene(normalized, [
-          'imc',
-          'indice de masa corporal',
-          'get',
-          'gasto energetico',
-          'calorias diarias',
-          'calcular mi get',
-        ]);
-        final calcResponse =
-            (activeCalculator || calculatorIntent)
-                ? _calculatorService.procesarMensaje(text)
-                : '';
-        response =
-            calcResponse.isNotEmpty
-                ? calcResponse
-                : _respuestas.responder(
-                  text,
-                  nombre: _primerNombre,
-                  perfil: _perfil,
-                );
       }
     } catch (_) {
-      response =
-          'Tuve un problema al preparar la respuesta. Intenta de nuevo en un momento. 🌿';
+      response = 'Ocurrió un problema al preparar tu respuesta. '
+          'Puedes intentar de nuevo.';
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
+    final botMessage = ChatMessage(
+      text: response, isUser: false, time: _timeNow(),
+      action: intent.action, argument: intent.actionArgument,
+      card: intent.card,
+    );
     setState(() {
-      messages.add(
-        ChatMessage(text: response, isUser: false, time: _timeNow()),
-      );
+      messages.add(botMessage);
       isTyping = false;
     });
     _scrollToBottom();
+    await _persist(botMessage);
   }
 
   void _scrollToBottom() {
