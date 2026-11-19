@@ -199,6 +199,7 @@ class HealthyAssistantEngine {
       'como preparar','como hacer','como realizar','como se hace',
       'como prevenir',
       'cuantas proteinas','proteinas de','calorias de',
+      'calorias tiene','cuantas calorias','valor nutricional',
       'datos de','explicame','ver ficha','ver catalogo',
       'quiero saber','que contiene','para que sirve',
       'recomiendame','dime sobre',
@@ -211,9 +212,29 @@ class HealthyAssistantEngine {
       final warning = catalogItem.precauciones.isEmpty
           ? ''
           : '\nPrecaución: ${catalogItem.precauciones.first}';
+      final wantsCalories = has(['calorias', 'kcal', 'energia calorica']);
+      final numericDetails = catalogItem.categoria == 'Alimentos'
+          ? catalogItem.detalles.entries
+              .where((entry) => const {
+                'Proteína', 'Grasas', 'Carbohidratos', 'Fibra',
+              }.contains(entry.key))
+              .map((entry) => '${entry.key}: ${entry.value}')
+              .join(' · ')
+          : '';
+      final nutrition = wantsCalories &&
+              !catalogItem.detalles.keys.any(
+                (label) => label.toLowerCase().contains('calor'))
+          ? '\nEsta ficha aún no contiene un valor calórico revisado. '
+              'No voy a estimarlo.'
+          : numericDetails.isNotEmpty
+              ? '\nComposición aproximada (${catalogItem.detalles['Referencia'] ?? 'porción indicada en la ficha'}): '
+                  '$numericDetails.'
+              : '';
       return HealthyAssistantReply(
-        '${catalogItem.titulo}: $summary$benefits$warning\n'
-        'Puedes revisar su ficha completa y su fuente en el catálogo.',
+        '${catalogItem.titulo}: $summary$benefits$warning$nutrition\n'
+        'Puedes revisar la ficha completa y su fuente en el catálogo. '
+        'Los datos del catálogo son educativos y requieren revisión '
+        'antes de usarse como referencia clínica.',
         action: 'catalog_item', actionArgument: catalogItem.id,
         card: 'catalog_item',
       );
