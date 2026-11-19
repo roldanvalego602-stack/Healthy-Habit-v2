@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_float.dart';
 import 'shop_service.dart';
@@ -240,9 +241,7 @@ class _StoreFeaturedCarouselState extends State<StoreFeaturedCarousel> {
                                 ),
                               ),
                               Row(children: [
-                                Icon(Icons.monetization_on_rounded, size: 19,
-                                  color: dark ? const Color(0xFFFFD888)
-                                      : const Color(0xFF9C762A)),
+                                const HealthyCoinIcon(size: 20),
                                 const SizedBox(width: 5),
                                 Expanded(child: Text(
                                   item.price == 0 ? 'Gratis'
