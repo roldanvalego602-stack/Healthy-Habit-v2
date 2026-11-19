@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_float.dart';
 import '../../tema/healthy_celebration.dart';
 import '../../tema/healthy_visual_mode.dart';
 
@@ -166,14 +167,6 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
-  void _back() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      widget.onNavigate?.call(0);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,7 +210,11 @@ class _StoreScreenState extends State<StoreScreen> {
                     delegate: SliverChildListDelegate([
                       Row(
                         children: [
-                          Icon(Icons.auto_awesome_rounded, color: _green),
+                          HealthyGlowIcon(
+                            icon: Icons.auto_awesome_rounded,
+                            color: _green,
+                            size: 22,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -266,15 +263,6 @@ class _StoreScreenState extends State<StoreScreen> {
         children: [
           Row(
             children: [
-              IconButton.filledTonal(
-                onPressed: _back,
-                icon: const Icon(Icons.arrow_back_rounded),
-                style: IconButton.styleFrom(
-                  backgroundColor: HealthyAdaptive.surface,
-                  foregroundColor: _ink,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Tienda',
