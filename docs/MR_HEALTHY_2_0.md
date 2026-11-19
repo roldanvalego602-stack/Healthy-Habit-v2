@@ -63,6 +63,22 @@ Pruebas manuales recomendadas:
 4. Abrir historial, tiendas, hábitos, desafíos y tarjetas previas; confirmar que no se hayan alterado.
 5. Ejecutar `flutter pub get` para actualizar el archivo `pubspec.lock` con las nuevas dependencias y subir ese cambio después de revisarlo.
 
+## Catálogo visual y consultas del asistente
+
+- Confirmación de que las nueve fotografías JPG de `assets/images/catalogo/` están en la rama; `CatalogoScreen` y `CatalogoDetalleScreen` ya seleccionan `Image.asset` si el recurso no es SVG. No es necesario sustituir esas pantallas nuevamente.
+- `HealthyAssistantEngine` identifica las nueve fichas del catálogo, con preguntas sobre nutrientes, beneficios, ejercicios, precauciones y recomendaciones. Las respuestas reutilizan descripciones y precauciones redactadas en `catalogo_datos.dart`; no calcula nutrientes ni inventa alimentos.
+- `HealthyChatCatalogCard` muestra fotografía JPG, beneficio breve, fuente y botón para abrir los detalles. Está integrado con `nutrichat.dart` y sus sesiones persistentes; respeta Lite/Normal.
+- Prueba: `flutter test test/healthy_chat_catalog_test.dart`.
+
+## Avance sobre Desafíos: retirar recompensas de demostración
+
+- Se detectaron documentos iniciales con progreso `5/7`, `2/4` y `7/7` que se sembraban **sin registrar actividades reales** y que permitían reclamar recompensas de ejemplo.
+- Nuevos datos iniciales: progreso cero, estado disponible o bloqueado, origen `demo` y marca `progressVerified: false`.
+- Las misiones antiguas que carecen de procedencia confiable no se eliminan ni modifican de forma destructiva: la interfaz presenta su avance como no verificado y bloquea reclamar recompensas.
+- `ChallengeProgressPolicy` y `DesafiosScreen` requieren **progreso verificado** y objetivo completado antes de intentar acreditar XP/monedas; la tarjeta de Mr. Healthy también lo respeta.
+- **Pendiente:** el servicio que genere progreso a partir de registros auténticos de hábitos y **reglas de Firestore o Cloud Functions** que impidan que un cliente falsifique `progressVerified`, `progressSource` o su propio XP. Los comprobadores del cliente, por sí solos, no son una frontera de seguridad.
+- Prueba: `flutter test test/challenge_progress_policy_test.dart`.
+
 ## Reglas de seguridad de Firestore — revisión requerida
 
 No se ha localizado `firestore.rules` en la rama. Integra una regla como la siguiente **dentro del `match /users/{userId}` existente**; no sustituyas el resto de las reglas.
