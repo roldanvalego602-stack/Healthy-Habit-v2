@@ -363,7 +363,10 @@ class NutriRespuestasService {
           'Si me das un poco de contexto, puedo ayudarte a razonarla o relacionarla con tus objetivos.',
       'Me dejaste pensando 🤔. Mi conocimiento aquí es limitado: no consulto Internet en tiempo real. '
           '¿Buscas una explicación, un consejo práctico o un dato específico?',
-      'Eso se sale un poquito de mi jardín de conocimientos 🌿. Cuéntame qué parte te interesa y trataré de ayudarte sin darte información inventada.',
+      'No tengo datos suficientes para afirmar algo concreto sobre eso. '
+      'Si me cuentas qué quieres descubrir o resolver, puedo intentar '
+      'plantear opciones, hacerte preguntas útiles o explicarte lo que '
+      'sí está disponible en la aplicación.',
       'Podemos desmenuzarlo juntos. Dime si te interesa el «qué», el «cómo» o el «por qué», y lo abordamos paso a paso.',
     ], fallback: true);
   }
