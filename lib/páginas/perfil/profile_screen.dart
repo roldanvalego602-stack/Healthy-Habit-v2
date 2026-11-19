@@ -376,11 +376,10 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           child: HealthyProfileAvatar(
-                            photoUrl: _string(
-                              data['photoUrl'],
-                              fallback: FirebaseAuth.instance.currentUser
-                                      ?.photoURL ?? '',
-                            ),
+                            photoUrl: data.containsKey('photoUrl')
+                                ? data['photoUrl']?.toString() ?? ''
+                                : FirebaseAuth.instance.currentUser
+                                        ?.photoURL ?? '',
                             size: 86,
                           ),
                         ),
