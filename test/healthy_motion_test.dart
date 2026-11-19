@@ -79,4 +79,33 @@ void main() {
     expect(find.text('8 días'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('Lite muestra XP exacta inmediatamente', (tester) async {
+    await HealthyVisualController.instance.select(HealthyVisualMode.lite);
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: HealthyCountUp(
+        value: 1280,
+        suffix: ' XP acumulados',
+        style: TextStyle(fontSize: 18),
+      )),
+    ));
+    expect(find.text('1280 XP acumulados'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await HealthyVisualController.instance.select(HealthyVisualMode.normal);
+  });
+
+  testWidgets('Normal termina el contador de XP en el valor real',
+      (tester) async {
+    await HealthyVisualController.instance.select(HealthyVisualMode.normal);
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: HealthyCountUp(
+        value: 350,
+        suffix: ' XP acumulados',
+        style: TextStyle(fontSize: 18),
+      )),
+    ));
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text('350 XP acumulados'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
