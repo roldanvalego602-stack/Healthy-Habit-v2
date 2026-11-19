@@ -91,7 +91,8 @@ class HealthyRemindersService {
     final vibrate = settings['vibracionHaptica'] != false;
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        'healthy_habit_daily_v1',
+        'healthy_reminders_s' + (playSound ? '1' : '0') +
+            '_v' + (vibrate ? '1' : '0'),
         'Recordatorios de Healthy Habit',
         channelDescription: 'Avisos voluntarios para hábitos, rachas y desafíos',
         importance: Importance.defaultImportance,
