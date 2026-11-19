@@ -8,6 +8,7 @@ import 'informacion_app_screen.dart';
 import '../sesion/sobre_nosotros_screen.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../servicios/healthy_reminders_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -155,20 +156,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
     final before = settings[key];
+    const reminderKeys = {
+      'permitirRecordatorios',
+      'horarioRecordatorio',
+      'recordatorioHabito',
+      'recordatorioRacha',
+      'recordatorioDesafios',
+      'descansoSemanal',
+      'sonidosApp',
+      'vibracionHaptica',
+    };
     setState(() {
       settings[key] = value;
       saving = true;
     });
+    DocumentReference<Map<String, dynamic>>? ref;
+    var committed = false;
     try {
-      final ref = userRef;
+      ref = userRef;
       if (ref == null) throw StateError('Sesión cerrada');
       await ref.set({
         'settings': {key: value},
       }, SetOptions(merge: true));
+      committed = true;
+      if (reminderKeys.contains(key)) {
+        final active = await HealthyRemindersService.instance.synchronize(
+          settings,
+          askPermission: key == 'permitirRecordatorios' && value == true,
+        );
+        if (!active && settings['permitirRecordatorios'] == true) {
+          throw StateError(
+            'Android no tiene habilitadas las notificaciones. '
+            'Permítelas en los ajustes del teléfono.',
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() => settings[key] = before);
-        _message('No se guardó el cambio: $e');
+        _message('No se aplicó el cambio: $e');
+      }
+      if (committed && ref != null) {
+        try {
+          await ref.set({
+            'settings': {key: before},
+          }, SetOptions(merge: true));
+          if (reminderKeys.contains(key)) {
+            await HealthyRemindersService.instance.synchronize(settings);
+          }
+        } catch (_) {
+          if (mounted) {
+            _message('No se pudo restaurar la preferencia. Comprueba tu conexión.');
+          }
+        }
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -737,7 +777,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'permitirRecordatorios',
               'Permitir recordatorios',
               subtitle:
-                  'Preferencia guardada. No programa notificaciones del dispositivo.',
+                  'Programa avisos locales aproximados; Android puede retrasarlos.',
+            ),
+            _action(
+              'Enviar notificación de prueba',
+              () async {
+                try {
+                  final sent = await HealthyRemindersService.instance.sendTest();
+                  if (!mounted) return;
+                  _message(sent
+                      ? 'Notificación enviada. Revisa la bandeja de Android.'
+                      : 'Android no autorizó las notificaciones. Actívalas en ajustes.');
+                } catch (error) {
+                  _message('No se pudo mostrar la notificación: $error');
+                }
+              },
+              subtitle: 'Comprueba los permisos antes de programar avisos.',
             ),
             _action('Horario preferido', () async {
               final parts = _str('horarioRecordatorio').split(':');
@@ -756,13 +811,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             }, value: _str('horarioRecordatorio')),
             _toggle('recordatorioHabito', 'Recordatorios por hábito',
-              subtitle: 'Sin programación de avisos del dispositivo.'),
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
             _toggle('recordatorioRacha', 'Recordatorio de racha',
               subtitle: 'Sin programación de avisos del dispositivo.'),
             _toggle('recordatorioDesafios', 'Recordatorios de desafíos',
               subtitle: 'Sin programación de avisos del dispositivo.'),
             _toggle('descansoSemanal', 'Descanso semanal',
-              subtitle: 'Aún no altera automáticamente metas ni recordatorios.'),
+              subtitle: 'Omite los recordatorios los domingos; no cambia tus metas.'),
           ]),
           _section('GAMIFICACIÓN', Icons.emoji_events_outlined, [
             _toggle('mostrarXp', 'Mostrar XP lograda'),
