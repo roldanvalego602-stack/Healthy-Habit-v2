@@ -241,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _tabs[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: _tabs[_selectedIndex])),
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
