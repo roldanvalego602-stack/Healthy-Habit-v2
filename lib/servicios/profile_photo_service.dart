@@ -101,7 +101,7 @@ class ProfilePhotoService {
       final previous = await userRef.get();
       oldPath = previous.data()?['profilePhotoPath']?.toString() ?? '';
     } on FirebaseException catch (error) {
-      throw _friendlyError(error, stage: 'lectura de Firestore');
+      throw explainFirebaseError(error, stage: 'lectura de Firestore');
     }
 
     final object = _storage.ref().child(
@@ -113,7 +113,7 @@ class ProfilePhotoService {
         cacheControl: 'private,max-age=3600',
       ));
     } on FirebaseException catch (error) {
-      throw _friendlyError(error, stage: 'subida a Storage');
+      throw explainFirebaseError(error, stage: 'subida a Storage');
     } catch (_) {
       throw const ProfilePhotoException(
         'No se completó la subida a Storage. Comprueba la conexión.',
@@ -133,7 +133,7 @@ class ProfilePhotoService {
     try {
       url = await object.getDownloadURL();
     } on FirebaseException catch (error) {
-      throw _friendlyError(error, stage: 'obtención de la URL');
+      throw explainFirebaseError(error, stage: 'obtención de la URL');
     }
     try {
       await userRef.set({
@@ -143,7 +143,7 @@ class ProfilePhotoService {
       }, SetOptions(merge: true));
     } on FirebaseException catch (error) {
       try { await object.delete(); } catch (_) {}
-      throw _friendlyError(error, stage: 'guardado en Firestore');
+      throw explainFirebaseError(error, stage: 'guardado en Firestore');
     }
     // El documento de Firestore es la referencia para toda la app.
     try { await user.updatePhotoURL(url); } catch (_) {}
@@ -155,7 +155,7 @@ class ProfilePhotoService {
   }
 
   @visibleForTesting
-  static ProfilePhotoException _friendlyError(
+  static ProfilePhotoException explainFirebaseError(
     FirebaseException error, {required String stage}) {
     final code = error.code.toLowerCase();
     if (code == 'unauthorized' || code == 'permission-denied') {
