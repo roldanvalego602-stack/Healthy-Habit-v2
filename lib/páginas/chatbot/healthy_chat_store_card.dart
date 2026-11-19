@@ -122,7 +122,23 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(title),
-        content: Text(details),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(details),
+            if (purchase) ...[
+              const SizedBox(height: 10),
+              const Text('Costo del artículo:'),
+              HealthyCoinAmount(amount: '${item.price}', size: 22,
+                suffix: ' Habit Coins'),
+              const SizedBox(height: 5),
+              const Text('Saldo actual:'),
+              HealthyCoinAmount(amount: '${state.coins}', size: 22,
+                suffix: ' Habit Coins'),
+            ],
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar')),
