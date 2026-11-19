@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
+import 'profile_avatar.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -133,6 +134,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
 
         final name = _readString(data, 'name', widget.name);
+        final photoUrl = _readString(data, 'photoUrl',
+          isOwnAccount(widget.userId)
+              ? _currentUser?.photoURL ?? '' : '');
         final username = _formatUsername(
           _readString(data, 'username', widget.username),
         );
@@ -203,6 +207,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         children: [
                           _publicProfileCard(
                             name: name,
+                            photoUrl: photoUrl,
                             username: username,
                             bio: bio,
                             title: title,
@@ -228,12 +233,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
+  bool isOwnAccount(String uid) => _currentUser?.uid == uid;
+
   String _formatUsername(String username) {
     return username.startsWith('@') ? username : '@$username';
   }
 
   Widget _publicProfileCard({
     required String name,
+    required String photoUrl,
     required String username,
     required String bio,
     required String title,
@@ -293,9 +301,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: mint, width: 2),
                   ),
-                  child: CircleAvatar(
-                    backgroundColor: HealthyAdaptive.mint,
-                    child: Icon(Icons.person_rounded, size: 50, color: green),
+                  child: HealthyProfileAvatar(
+                    photoUrl: photoUrl,
+                    size: 80,
                   ),
                 ),
                 const SizedBox(height: 8),
