@@ -4,7 +4,7 @@ import 'package:healthy_habit/páginas/chatbot/nutri_respuestas_service.dart';
 
 void main() {
   group('Mr. Healthy - curated knowledge', () {
-    const kb = HealthyKnowledgeBase();
+    const kb = HealthyWellnessKnowledgeBase();
 
     test('answers common nutrition questions', () {
       expect(kb.answer('¿Qué son las proteínas?'), contains('proteínas'));
