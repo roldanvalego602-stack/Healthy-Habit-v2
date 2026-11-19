@@ -254,6 +254,9 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final username = _texto(d['username']);
         final nivel = _num(_primero(d, ['level']), 1);
         final racha = _num(_primero(d, ['currentStreak', 'streakDays']), 0);
+        final rawSettings = d['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
         final xpActual = _num(_primero(d, ['currentXp']), 0);
         final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
         final progresoXp =
@@ -343,7 +346,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '$racha días 🔥',
+                                  publicStreak ? '$racha días 🔥' : 'Racha privada',
                                   style: TextStyle(
                                     color: _C.navy,
                                     fontSize: 11.5,
