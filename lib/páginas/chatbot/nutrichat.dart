@@ -315,7 +315,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
     HealthyAssistantReply intent = const HealthyAssistantReply('');
     try {
       // Los mensajes se guardan en orden cronológico por conversación.
-      await _persist(userMessage, first: first);
       final normalized = NutriRespuestasService.normalizar(text);
       final danger = NutriRespuestasService.contiene(text, [
         'suicidio', 'suicidarme', 'matarme', 'hacerme daño', 'autolesion',
@@ -346,10 +345,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
           final requiresProfile = NutriRespuestasService.contiene(normalized, [
             'mi perfil','mis datos','mis estadisticas','mi progreso',
             'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
-            'mis habitos','habitos activos','agrega','agregar',
-            'eliminar','elimina','borrar','quitar','abandonar',
-            'cancelar habito','camino de xp','subir de nivel',
-            'mi posicion','cuanto he avanzado','cuantos xp',
+            'mis habitos','habitos activos','camino de xp',
+            'subir de nivel','mi posicion','cuanto he avanzado','cuantos xp',
           ]) || _lastTopic == 'profile';
           final available = !requiresProfile ||
               await _refreshAssistantData();
@@ -380,10 +377,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
     );
     setState(() {
       messages.add(botMessage);
-      isTyping = false;
     });
     _scrollToBottom();
+    // La respuesta aparece de inmediato; la escritura se serializa después.
+    await _persist(userMessage, first: first);
     await _persist(botMessage);
+    if (mounted) setState(() => isTyping = false);
   }
 
   void _scrollToBottom() {
