@@ -6,6 +6,7 @@ import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
+import 'habit_action_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 import '../niveles/levels_system.dart';
@@ -31,7 +32,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Color get muted => HealthyAdaptive.muted;
   Color get border => HealthyAdaptive.border;
   static const int initialHabitSlots = 3;
-  static const int maxDifficultCancellationFee = 25;
+  static const int maxDifficultCancellationFee = HabitActionService.difficultCancellationLimit;
+  final HabitActionService _habitActions = const HabitActionService();
   final TextEditingController searchController = TextEditingController();
   String selectedCategory = 'Todos';
   String selectedDifficulty = 'Todos';
@@ -262,227 +264,50 @@ class _HabitsScreenState extends State<HabitsScreen> {
     if (accepted == true && mounted) await _cancelHabit(entry);
   }
 
+  /// Comparte las mismas validaciones y transacciones que Mr. Healthy.
   Future<void> _cancelHabit(_ActiveHabitEntry entry) async {
-    final userDoc = _userDoc;
-    final collection = _habitsCollection;
-    if (userDoc == null || collection == null || saving) return;
+    if (saving) return;
     setState(() => saving = true);
     try {
-      final habitRef = collection.doc(entry.habit.id);
-      final attemptRef = habitRef.collection('attempts').doc(entry.attempt.id);
-      final deducted = await _db.runTransaction<int>((transaction) async {
-        final attemptSnap = await transaction.get(attemptRef);
-        final habitSnap = await transaction.get(habitRef);
-        final userSnap = await transaction.get(userDoc);
-        if (!attemptSnap.exists ||
-            attemptSnap.data()?['status'] != 'inProgress' ||
-            habitSnap.data()?['lastAttemptId'] != entry.attempt.id) {
-          throw StateError(
-            'Este hábito ya no está activo. Actualiza la pantalla.',
-          );
-        }
-        final rawBalance =
-            (userSnap.data()?['habitCoins'] as num?)?.toInt() ?? 0;
-        final balance = rawBalance < 0 ? 0 : rawBalance;
-        final penalty =
-            _isDifficult(entry.habit)
-                ? (balance < maxDifficultCancellationFee
-                    ? balance
-                    : maxDifficultCancellationFee)
-                : 0;
-        transaction.update(attemptRef, {
-          'status': 'cancelled',
-          'cancelledAt': FieldValue.serverTimestamp(),
-          'cancellationPenalty': penalty,
-        });
-        transaction.update(habitRef, {
-          'lastStatus': 'cancelled',
-          'latestStatus': 'cancelled',
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        if (penalty > 0) {
-          transaction.update(userDoc, {'habitCoins': balance - penalty});
-        }
-        return penalty;
-      });
+      final preview = await _habitActions.preview(entry.habit.id, remove: true);
+      if (preview.attemptId != entry.attempt.id) {
+        throw StateError('El intento cambió; actualiza tus hábitos.');
+      }
+      final result = await _habitActions.execute(preview);
       if (!mounted) return;
-      setState(() {
-        active.removeWhere(
-          (item) =>
-              item.attempt.id == entry.attempt.id &&
-              item.habit.id == entry.habit.id,
-        );
-        coins = (coins - deducted).clamp(0, 2147483647);
-      });
-      _showMessage(
-        deducted == 0
-            ? 'Hábito abandonado. Tu historial se conserva.'
-            : 'Hábito abandonado. Se descontaron $deducted Habit Coins.',
-      );
+      _showMessage(result.chargedCoins == 0
+          ? 'Hábito abandonado. Tu historial se conserva.'
+          : 'Hábito abandonado. Se descontaron ${result.chargedCoins} Habit Coins.');
       await _load();
-    } catch (e, stackTrace) {
-      debugPrint('Error al abandonar hábito: $e\n$stackTrace');
-      if (mounted) _showMessage('No se pudo abandonar el hábito: $e');
+    } catch (error) {
+      if (mounted) _showMessage('No se pudo abandonar: $error');
     } finally {
       if (mounted) setState(() => saving = false);
     }
   }
 
   Future<void> addHabit(Habit habit) async {
-    final collection = _habitsCollection;
-    final user = _user;
-    final userDoc = _userDoc;
-    if (collection == null || user == null || userDoc == null) {
-      _showMessage('Inicia sesión para guardar tus hábitos.');
-      return;
-    }
     if (saving) return;
-    if (active.any((entry) => entry.habit.id == habit.id)) {
-      _showMessage('Este hábito ya está en progreso.');
-      return;
-    }
-    if (active.length >= habitSlots) {
-      _showMessage(
-        'Ya ocupaste tus $habitSlots espacios disponibles. '
-        'Completa o cancela un hábito para liberar uno.',
-      );
-      return;
-    }
-    if (!_isUnlocked(habit)) {
-      _showMessage('Todavía no cumples los requisitos para desbloquearlo.');
-      return;
-    }
-    if (habit.coinCost > 0 && coins < habit.coinCost) {
-      _showMessage('No tienes suficientes monedas para adquirirlo.');
-      return;
-    }
     setState(() => saving = true);
     try {
-      final habitRef = collection.doc(habit.id);
-      final attemptsRef = habitRef.collection('attempts');
-      final previousAttempts = await attemptsRef.get();
-      final attemptNumber = previousAttempts.docs.length + 1;
-      final attemptRef = attemptsRef.doc();
-      final now = DateTime.now();
-      final attempt = UserHabit(
-        id: attemptRef.id,
-        habitId: habit.id,
-        status: UserHabitStatus.inProgress,
-        progress: 0,
-        target: habit.target,
-        attemptNumber: attemptNumber,
-        xpEarned: 0,
-        acquiredAt: now,
-        frequencyType: habit.frequencyType,
-        registrationsPerPeriod: habit.registrationsPerPeriod,
-        durationPeriods: habit.durationPeriods,
-        gracePeriods: habit.gracePeriods,
-        streakEnabled: habit.streakEnabled,
-        periodProgress: 0,
-        streak: 0,
-        longestStreak: 0,
-        missedPeriods: 0,
-        completedAt: null,
-        cancelledAt: null,
-        availableAgainAt: null,
-      );
-      if (habit.coinCost > 0) {
-        await _db.runTransaction((transaction) async {
-          final userSnapshot = await transaction.get(userDoc);
-          final balance =
-              (userSnapshot.data()?['habitCoins'] as num?)?.toInt() ?? 0;
-          if (balance < habit.coinCost) {
-            throw StateError('No tienes suficientes monedas.');
-          }
-          transaction.set(userDoc, {
-            'uid': user.uid,
-            'habitSlots': habitSlots,
-            'habitCoins': balance - habit.coinCost,
-          }, SetOptions(merge: true));
-          transaction.set(habitRef, {
-            ...habit.toMap(),
-            'acquiredAt': FieldValue.serverTimestamp(),
-            'lastAttemptId': attemptRef.id,
-            'lastStatus': 'inProgress',
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-          transaction.set(attemptRef, attempt.toMap());
-        });
-      } else {
-        final batch = _db.batch();
-        batch.set(habitRef, {
-          ...habit.toMap(),
-          'acquiredAt': FieldValue.serverTimestamp(),
-          'lastAttemptId': attemptRef.id,
-          'lastStatus': 'inProgress',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        batch.set(attemptRef, attempt.toMap());
-        batch.set(userDoc, {
-          'uid': user.uid,
-          'habitSlots': habitSlots,
-        }, SetOptions(merge: true));
-        await batch.commit();
-      }
+      final preview = await _habitActions.preview(habit.id, remove: false);
+      await _habitActions.execute(preview);
       if (!mounted) return;
-      setState(() {
-        active.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
-        if (habit.coinCost > 0) coins -= habit.coinCost;
-      });
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
-    } catch (e, stackTrace) {
-      debugPrint('ERROR AL GUARDAR HÁBITO: $e');
-      debugPrint('DETALLES: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            duration: const Duration(seconds: 8),
-          ),
-        );
-      }
+      await _load();
+    } catch (error) {
+      if (mounted) _showMessage('No se pudo agregar el hábito: $error');
     } finally {
-      if (mounted) {
-        setState(() => saving = false);
-      }
+      if (mounted) setState(() => saving = false);
     }
   }
 
-  bool _isUnlocked(Habit habit) {
-    final unlockType = habit.unlockType.trim().toLowerCase();
-    final level = LevelSystem.fromXp(xp).number;
-
-    switch (unlockType) {
-      case 'none':
-      case 'free':
-        return true;
-
-      case 'level':
-        return level >= (habit.requiredLevel ?? 1);
-
-      case 'coins':
-        return coins >= habit.coinCost;
-
-      case 'habit':
-        return active.any((entry) => entry.habit.id == habit.requiredHabitId);
-
-      case 'combined':
-        final levelOk = level >= (habit.requiredLevel ?? 1);
-        final coinsOk = coins >= habit.coinCost;
-        final habitOk =
-            habit.requiredHabitId == null ||
-            active.any((entry) => entry.habit.id == habit.requiredHabitId);
-
-        return levelOk && coinsOk && habitOk;
-
-      default:
-        debugPrint(
-          'Tipo de desbloqueo desconocido: '
-          '${habit.unlockType} (${habit.id})',
-        );
-        return false;
-    }
-  }
+  bool _isUnlocked(Habit habit) => HabitActionService.isUnlocked(
+    habit,
+    xp: xp,
+    coins: coins,
+    activeIds: active.map((entry) => entry.habit.id).toSet(),
+  );
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
