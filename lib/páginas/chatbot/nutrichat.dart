@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -1155,8 +1156,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           Row(children: [
             Expanded(child: _metric(Icons.local_fire_department_outlined,
                 'Racha', '$streak días')),
-            Expanded(child: _metric(Icons.monetization_on_rounded,
-                'Monedas', '$coins')),
+            Expanded(child: _coinMetric('$coins')),
           ]),
           const SizedBox(height: 11),
           ClipRRect(
@@ -1172,6 +1172,21 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ),
     );
   }
+
+  Widget _coinMetric(String value) => Row(children: [
+    const HealthyCoinIcon(size: 19),
+    const SizedBox(width: 5),
+    Expanded(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Monedas', style: TextStyle(color: HealthyAdaptive.muted,
+          fontSize: 10)),
+        Text(value, overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: HealthyAdaptive.text,
+            fontWeight: FontWeight.w800, fontSize: 13)),
+      ],
+    )),
+  ]);
 
   Widget _metric(IconData icon, String label, String value) {
     return Row(children: [
