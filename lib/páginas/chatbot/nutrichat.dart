@@ -101,6 +101,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
   ];
 
   final List<String> quickOptions = const [
+    '¿Quién eres?',
+    'Cuéntame una historia',
+    '¿Qué es la inteligencia artificial?',
     '¿Cómo va mi perfil?',
     'Mis desafíos',
     '¿Qué logros tengo?',
