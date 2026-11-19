@@ -385,16 +385,7 @@ class _HomeContent extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: ActionChip(
-              avatar: Image.asset(
-                'assets/monedas/h coin.png',
-                width: 23,
-                height: 23,
-                errorBuilder:
-                    (_, __, ___) => const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size: 19,
-                    ),
-              ),
+              avatar: const HealthyCoinIcon(size: 23),
               label: Text('$coins Habit Coins · Ir a tienda'),
               onPressed: onStore,
             ),
