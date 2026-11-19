@@ -364,8 +364,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (ctx) => AlertDialog(
           title: const Text('Versión de Healthy Habit'),
           content: Text(
-            'Versión: ${info.version}\\n'
-            'Compilación: ${info.buildNumber}\\n'
+            'Versión: ${info.version}\n'
+            'Compilación: ${info.buildNumber}\n'
             'Paquete: ${info.packageName}',
           ),
           actions: [
