@@ -19,6 +19,7 @@ class NutriCalculatorService {
   double? getTotalGET;
 
   void resetGET() {
+    _confirmandoCambioDeTema = false;
     pasoGET = 0;
     sexoGET = null;
     pesoGET = null;
@@ -34,6 +35,7 @@ class NutriCalculatorService {
   }
 
   void resetIMC() {
+    _confirmandoCambioDeTema = false;
     pasoIMC = 0;
     pesoUsuario = null;
     pesoIMCEnLibras = false;
