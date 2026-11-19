@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 /// Botón social con efecto de presión, transición entre estados y carga.
 /// La etiqueta solo cambia cuando el flujo de Firebase actualiza su estado.
@@ -29,7 +30,7 @@ class _SocialActionButtonState extends State<SocialActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final reduceMotion = !HealthyVisualEffects.enabled(context);
     final enabled = widget.onPressed != null && !widget.busy;
     final primary = Theme.of(context).colorScheme.primary;
     final surface = Theme.of(context).colorScheme.surface;
