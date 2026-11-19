@@ -81,6 +81,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('un canje rechazado no produce anuncio de éxito',
+      (tester) async {
+    await HealthyVisualController.instance.select(HealthyVisualMode.normal);
+    var committed = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SizedBox(width: 320,
+        child: HealthyChatStoreCard(
+          initialItemId: 'crown',
+          stateStream: Stream.value(const ShopState(
+            coins: 220,
+            owned: <String>{},
+            equipped: <String, String>{},
+          )),
+          purchaseAction: (_) async {
+            throw const ShopException('Compra no autorizada');
+          },
+          onCommitted: (_) { committed++; },
+        ))),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chat-shop-purchase')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('chat-store-confirm')));
+    await tester.pumpAndSettle();
+    expect(committed, 0);
+    expect(find.text('Compra no autorizada'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Lite permite equipar propiedad real con confirmación',
       (tester) async {
     await HealthyVisualController.instance.select(HealthyVisualMode.lite);
