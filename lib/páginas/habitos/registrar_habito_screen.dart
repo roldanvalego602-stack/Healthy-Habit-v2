@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
 import 'habit_interaction_card.dart';
 
@@ -295,7 +296,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ? 'image/webp'
               : 'image/jpeg';
 
-      await _db.runTransaction((transaction) async {
+      final resultado = await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
         final habitoSnapshot = await transaction.get(habitoRef);
         final usuarioSnapshot = await transaction.get(usuarioRef);
@@ -454,8 +455,46 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'createdAt': FieldValue.serverTimestamp(),
           'userId': uid,
         });
+        // Solo devolvemos el resultado cuando Firestore confirma la transacción.
+        // No conceder recompensas desde la interfaz ni dentro de callbacks visuales.
+        return (
+          completado: completado,
+          rachaAnterior: rachaAnterior,
+          nuevaRacha: nuevaRacha,
+          nivelAnterior: nivelAnterior,
+          nivelNuevo: nivelNuevo,
+        );
       });
       if (!mounted) return;
+      if (resultado.nivelNuevo > resultado.nivelAnterior) {
+        HealthyCelebration.show(
+          context,
+          title: '¡Subiste al nivel ${resultado.nivelNuevo}!',
+          subtitle: 'Tu registro se guardó correctamente.',
+          icon: Icons.workspace_premium_rounded,
+        );
+      } else if (resultado.nuevaRacha > resultado.rachaAnterior) {
+        HealthyCelebration.show(
+          context,
+          title: '¡${resultado.nuevaRacha} días de racha!',
+          subtitle: 'Tu constancia sigue creciendo.',
+          icon: Icons.local_fire_department_rounded,
+        );
+      } else if (resultado.completado) {
+        HealthyCelebration.show(
+          context,
+          title: '¡Hábito completado!',
+          subtitle: 'Tu meta quedó registrada.',
+          icon: Icons.emoji_events_rounded,
+        );
+      } else {
+        HealthyCelebration.show(
+          context,
+          title: '¡Registro guardado!',
+          subtitle: 'Tu progreso se actualizó.',
+          icon: Icons.check_circle_rounded,
+        );
+      }
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
