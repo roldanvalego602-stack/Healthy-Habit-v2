@@ -75,9 +75,12 @@ void main() {
     final complete = painters(tester);
     expect(complete[3].upper, 1);
     expect(complete[3].lower, 0);
+    expect(complete[3].lowerAsh, 1);
     expect(complete[4].upper, 0);
-    expect(firstColor(tester, 5), lockedBefore);
-    expect(firstColor(tester, 4), isNot(lockedBefore));
+    expect(complete[4].upperAsh, 1);
+    expect(complete[19].lowerAsh, 0);
+    expect(firstColor(tester, 5), isNot(lockedBefore));
+    expect(firstColor(tester, 4), isNot(firstColor(tester, 5)));
     expect(tester.takeException(), isNull);
   });
 
@@ -92,6 +95,7 @@ void main() {
     final track = painters(tester);
     expect(track[2].upper, 1);
     expect(track[3].upper, 0);
+    expect(track[3].upperAsh, 1);
     expect(find.byKey(const ValueKey('xp-journey-node-20')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await HealthyVisualController.instance.select(HealthyVisualMode.normal);
