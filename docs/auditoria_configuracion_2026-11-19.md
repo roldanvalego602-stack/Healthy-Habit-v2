@@ -30,9 +30,9 @@ Un ajuste se considera **funcional** solo cuando: (1) la UI permite cambiarlo, (
 - Tema Claro/Oscuro/Sistema: controlador persistido en SharedPreferences y aplicado en MaterialApp.
 - Modo visual Lite/Normal: controlador global; módulos que usen HealthyVisualEffects lo respetan. Otros efectos requieren auditoría.
 - Tamaño de texto: conectado a MaterialApp.builder por PreferenciasApp. Respetar textScaler accesible; verificar pantallas pequeñas y textos largos.
-- sonidosApp y vibracionHaptica: ahora consultados por HealthyFeedbackService al comprar en StoreScreen. **PARCIAL**: falta conexión con demás eventos y accesorios.
+- sonidosApp y vibracionHaptica: ahora consultados por HealthyFeedbackService al comprar en StoreScreen y WardrobeScreen. **PARCIAL**: falta conexión con demás eventos.
 - efectosRecompensa y modoDiscreto: consultados al mostrar celebración de compra. **PARCIAL** en otros flujos.
-- animacionesDivertidas: **SOLO GUARDADO**; no hay consumidor independiente; modo Lite controla algunas animaciones.
+- animacionesDivertidas: consumido ahora por HealthyVisualEffects a través de HealthySettingsScope; **PARCIAL**: solo animaciones que usan ese helper. Modo Lite sigue siendo independiente.
 - Idioma: Español es la única opción; no se promete internacionalización.
 
 ## Social
