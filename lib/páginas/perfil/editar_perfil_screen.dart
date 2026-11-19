@@ -77,7 +77,9 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         data['bio'],
         'Pequeños pasos, raíces fuertes.',
       );
-      _photoUrl = _texto(data['photoUrl'], user.photoURL ?? '');
+      _photoUrl = data.containsKey('photoUrl')
+          ? data['photoUrl']?.toString() ?? ''
+          : user.photoURL ?? '';
       setState(() {
         _cargando = false;
         _errorCarga = null;
@@ -134,6 +136,44 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     } catch (_) {
       _mensaje('No fue posible seleccionar o subir la foto. '
           'Comprueba permisos, conexión y Firebase Storage.');
+    } finally {
+      if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
+
+  Future<void> _quitarFoto() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Quitar foto de perfil?'),
+        content: const Text(
+          'Volverá a mostrarse el avatar predeterminado. '
+          'Tu nombre y los demás datos no cambiarán.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Quitar foto'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !mounted) return;
+    setState(() => _subiendoFoto = true);
+    try {
+      await _photoService.remove();
+      if (!mounted) return;
+      setState(() => _photoUrl = '');
+      _mensaje('La foto se quitó de tu perfil.');
+    } on ProfilePhotoException catch (error) {
+      _mensaje(error.message);
+    } catch (_) {
+      _mensaje('No se pudo quitar la foto. Revisa la conexión.');
     } finally {
       if (mounted) setState(() => _subiendoFoto = false);
     }
@@ -332,6 +372,22 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                                 fontSize: 12,
                                 color: HealthyAdaptive.muted,
                                 fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if ((_photoUrl ?? '').isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              TextButton.icon(
+                                onPressed: _subiendoFoto ? null : _quitarFoto,
+                                icon: const Icon(Icons.delete_outline_rounded,
+                                  size: 17),
+                                label: const Text('Quitar foto'),
+                              ),
+                            ],
+                            Text(
+                              'La fotografía se guarda al subirla.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: HealthyAdaptive.muted,
                               ),
                             ),
                           ],
