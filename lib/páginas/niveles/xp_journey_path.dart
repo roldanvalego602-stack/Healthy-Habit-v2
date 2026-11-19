@@ -448,7 +448,9 @@ class _XpJourneyStop extends StatelessWidget {
                               Text('● TU NIVEL ACTUAL',
                                   style: TextStyle(
                                     color: activated
-                                        ? const Color(0xFF31DDAC)
+                                        ? (dark || level.dark
+                                            ? const Color(0xFF31DDAC)
+                                            : const Color(0xFF0C7857))
                                         : muted,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
