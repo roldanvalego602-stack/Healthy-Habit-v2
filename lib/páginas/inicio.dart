@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/healthy_motion.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
@@ -672,7 +673,9 @@ class _HomeContent extends StatelessWidget {
   // --------------------------------------------------
 
   Widget _stat(IconData icon, String value, String caption, Color bg) {
-    return Container(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: bg,
@@ -683,19 +686,29 @@ class _HomeContent extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primaryGreen),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: AppColors.textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          caption == 'Racha actual'
+              ? HealthyStreakNumber(
+                  days: int.tryParse(value.split(' ').first) ?? 0,
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
+              : Text(
+                  value,
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
           Text(
             caption,
             style: TextStyle(color: AppColors.textGrey, fontSize: 11),
           ),
         ],
+      ),
       ),
     );
   }
