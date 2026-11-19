@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
@@ -458,14 +459,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Image.asset(
-                              'assets/monedas/h coin.png',
-                              width: 20,
-                              height: 20,
-                              errorBuilder:
-                                  (_, __, ___) =>
-                                      const SizedBox(width: 20, height: 20),
-                            ),
+                            const HealthyCoinIcon(size: 20),
                             const SizedBox(width: 6),
                             Text(
                               '$coins',
@@ -820,12 +814,7 @@ class ProfileScreen extends StatelessWidget {
       const SizedBox(width: 9),
       Expanded(
         child: _statCard(
-          customIcon: Image.asset(
-            'assets/monedas/h coin.png',
-            width: 22,
-            height: 22,
-            errorBuilder: (_, __, ___) => const SizedBox(width: 22, height: 22),
-          ),
+          customIcon: const HealthyCoinIcon(size: 22),
           value: '$coins',
           label: 'Habit Coins',
           color: HealthyAdaptive.lavender,
@@ -998,13 +987,19 @@ class ProfileScreen extends StatelessWidget {
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
                           const SizedBox(height: 5),
-                          const Text(
-                            '+25 XP · +10 Habit Coins',
-                            style: TextStyle(
-                              color: green,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('+25 XP · ',
+                                style: TextStyle(color: green,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                              HealthyCoinAmount(amount: '+10', size: 16,
+                                suffix: ' Habit Coins',
+                                style: TextStyle(color: green,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                            ],
                           ),
                         ],
                       ),
