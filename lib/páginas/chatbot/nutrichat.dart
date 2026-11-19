@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
+import 'healthy_knowledge_base.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
@@ -608,7 +609,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ]);
       if (danger) {
         response = _respuestas.moderar(text, _primerNombre);
-      } else if (NutriRespuestasService.tieneGroserias(text)) {
+      } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
       } else if (NutriRespuestasService.contiene(normalized, [
         'cancelar', 'salir del calculo', 'detener calculo',
@@ -660,7 +661,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 habits: _habitosPerfil, lastTopic: _lastTopic,
                 lastHabitTitle: _lastHabitTitle,
                 lastShopItemId: _lastShopItemId);
-            response = intent.text.isNotEmpty
+            final knowledge = const HealthyKnowledgeBase().answer(text);
+            final toneCommand = NutriRespuestasService.contiene(text, const [
+              'cambia tu humor', 'modo serio', 'modo divertido',
+              'modo motivador', 'modo tranquilo', 'modo amigable',
+            ]);
+            response = toneCommand
+                ? _respuestas.responder(text, nombre: _primerNombre, perfil: _perfil)
+                : (knowledge != null
+                    ? _respuestas.responder(text, nombre: _primerNombre, perfil: _perfil)
+                    : intent.text.isNotEmpty
                 ? intent.text
                 : _conversation.reply(
                     text,
@@ -668,7 +678,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     previousUserMessage: lastUserPrompt,
                   ) ??
                   _respuestas.responder(
-                    text, nombre: _primerNombre, perfil: _perfil);
+                    text, nombre: _primerNombre, perfil: _perfil));
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
@@ -700,6 +710,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
     await _persist(userMessage, first: first);
     await _persist(botMessage);
     if (mounted) setState(() => isTyping = false);
+    if (_readAloud && mounted) {
+      try {
+        await _tts.speak(response);
+      } catch (_) {
+        if (mounted) setState(() => _voiceError = 'No se puede reproducir audio en este dispositivo.');
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -756,6 +773,26 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Personalidad de Mr. Healthy',
+            icon: Icon(Icons.sentiment_satisfied_alt_rounded, color: _navy),
+            onSelected: (mood) {
+              setState(() => _respuestas.cambiarHumor(mood));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Mr. Healthy: modo $mood')),
+              );
+            },
+            itemBuilder: (_) => NutriRespuestasService.moods
+                .map((mood) => PopupMenuItem<String>(
+                  value: mood,
+                  child: Text(mood[0].toUpperCase() + mood.substring(1)),
+                )).toList(),
+          ),
+          IconButton(
+            tooltip: _readAloud ? 'Silenciar respuestas' : 'Leer respuestas en voz alta',
+            icon: Icon(_readAloud ? Icons.volume_up_rounded : Icons.volume_off_rounded, color: _navy),
+            onPressed: _toggleReadAloud,
+          ),
           IconButton(
             key: const Key('healthy-chat-history-button'),
             onPressed: isTyping || _historyLoading ? null : _showChatHistory,
