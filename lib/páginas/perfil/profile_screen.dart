@@ -350,26 +350,62 @@ class ProfileScreen extends StatelessWidget {
             offset: const Offset(0, -45),
             child: Column(
               children: [
-                Container(
-                  width: 94,
-                  height: 94,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: HealthyAdaptive.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _frameColor(
-                        _string(data['profileFrame'], fallback: 'Brote dorado'),
-                      ),
-                      width: 3,
+                Semantics(
+                  button: true,
+                  label: 'Editar foto de perfil',
+                  child: InkWell(
+                    key: const Key('profile-edit-photo'),
+                    customBorder: const CircleBorder(),
+                    onTap: () => _open(context, const EditarPerfilScreen()),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 94,
+                          height: 94,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: HealthyAdaptive.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _frameColor(
+                                _string(data['profileFrame'],
+                                    fallback: 'Brote dorado'),
+                              ),
+                              width: 3,
+                            ),
+                          ),
+                          child: HealthyProfileAvatar(
+                            photoUrl: _string(
+                              data['photoUrl'],
+                              fallback: FirebaseAuth.instance.currentUser
+                                      ?.photoURL ?? '',
+                            ),
+                            size: 86,
+                          ),
+                        ),
+                        Positioned(
+                          right: -3,
+                          bottom: -3,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: HealthyAdaptive.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: HealthyAdaptive.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: HealthyProfileAvatar(
-                    photoUrl: _string(
-                      data['photoUrl'],
-                      fallback: FirebaseAuth.instance.currentUser?.photoURL ?? '',
-                    ),
-                    size: 86,
                   ),
                 ),
                 const SizedBox(height: 8),
