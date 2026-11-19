@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
 import '../sesion/sobre_nosotros_screen.dart';
@@ -351,6 +352,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _message('Enlace enviado a $email');
     } on FirebaseAuthException catch (e) {
       _message('No se pudo enviar: ${e.message ?? e.code}');
+    }
+  }
+
+  Future<void> _showVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Versión de Healthy Habit'),
+          content: Text(
+            'Versión: ${info.version}\\n'
+            'Compilación: ${info.buildNumber}\\n'
+            'Paquete: ${info.packageName}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      _message('No se pudo consultar la versión instalada: $e');
     }
   }
 
@@ -747,9 +774,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _action('Aviso de privacidad', () => _page('privacidad')),
             _action(
               'Versión de la aplicación',
-              () => _message(
-                'Versión: consultar pubspec.yaml / compilación instalada.',
-              ),
+              _showVersion,
               value: 'Ver detalle',
             ),
             _action('Ayuda y soporte técnico', () => _page('ayuda')),
