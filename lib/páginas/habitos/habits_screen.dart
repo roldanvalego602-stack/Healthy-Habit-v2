@@ -32,7 +32,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Color get muted => HealthyAdaptive.muted;
   Color get border => HealthyAdaptive.border;
   static const int initialHabitSlots = 3;
-  static const int maxDifficultCancellationFee = HabitActionService.difficultCancellationLimit;
   final HabitActionService _habitActions = const HabitActionService();
   final TextEditingController searchController = TextEditingController();
   String selectedCategory = 'Todos';
