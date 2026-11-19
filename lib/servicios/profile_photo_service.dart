@@ -1,0 +1,110 @@
+import 'dart:typed_data';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+
+/// Foto de perfil de usuario. Firestore (users/{uid}.photoUrl) es la
+/// fuente de verdad; Firebase Auth se sincroniza como dato secundario.
+class ProfilePhotoService {
+  ProfilePhotoService({ImagePicker? picker})
+      : _picker = picker ?? ImagePicker();
+
+  final ImagePicker _picker;
+
+  FirebaseFirestore get _db => FirebaseFirestore.instanceFor(
+        app: Firebase.app(), databaseId: 'default');
+
+  FirebaseStorage get _storage => FirebaseStorage.instanceFor(
+        app: Firebase.app());
+
+  Future<XFile?> pick(ImageSource source) => _picker.pickImage(
+        source: source,
+        maxWidth: 1400,
+        maxHeight: 1400,
+        imageQuality: 88,
+        requestFullMetadata: false,
+      );
+
+  /// Rechaza imágenes dañadas y genera un JPEG pequeño que se puede subir
+  /// mediante putData también desde Flutter web (sin dart:io).
+  @visibleForTesting
+  static Uint8List prepareJpeg(Uint8List bytes) {
+    if (bytes.isEmpty || bytes.length > 12 * 1024 * 1024) {
+      throw const ProfilePhotoException(
+        'Selecciona una imagen de hasta 12 MB.');
+    }
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null || decoded.width < 32 || decoded.height < 32) {
+      throw const ProfilePhotoException(
+        'No se pudo leer la fotografía seleccionada.');
+    }
+    final oriented = img.bakeOrientation(decoded);
+    final target = oriented.width > 1024 || oriented.height > 1024
+        ? img.copyResize(
+            oriented,
+            width: oriented.width >= oriented.height ? 1024 : null,
+            height: oriented.height > oriented.width ? 1024 : null,
+            interpolation: img.Interpolation.average,
+          )
+        : oriented;
+    return Uint8List.fromList(img.encodeJpg(target, quality: 82));
+  }
+
+  /// La foto nunca se vincula a otra cuenta si cambia la sesión durante
+  /// la subida. Se usa una ruta distinta para evitar cachés obsoletas.
+  Future<String> upload(XFile selected) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw const ProfilePhotoException(
+        'Inicia sesión para cambiar tu fotografía.');
+    }
+    final bytes = prepareJpeg(await selected.readAsBytes());
+    final object = _storage.ref().child(
+      'users/${user.uid}/profile/avatar_${DateTime.now().microsecondsSinceEpoch}.jpg',
+    );
+    try {
+      await object.putData(bytes, SettableMetadata(
+        contentType: 'image/jpeg',
+        cacheControl: 'public,max-age=3600',
+      ));
+      if (FirebaseAuth.instance.currentUser?.uid != user.uid) {
+        await object.delete();
+        throw const ProfilePhotoException(
+          'Cambió la sesión durante la subida. Inténtalo nuevamente.');
+      }
+      final url = await object.getDownloadURL();
+      await _db.collection('users').doc(user.uid).set({
+        'photoUrl': url,
+        'profilePhotoPath': object.fullPath,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      // Firestore ya se actualizó. Un fallo en Auth no invalida el resultado.
+      try {
+        await user.updatePhotoURL(url);
+      } catch (_) {}
+      return url;
+    } on FirebaseException catch (error) {
+      if (error.code == 'unauthorized' ||
+          error.code == 'permission-denied') {
+        throw const ProfilePhotoException(
+          'Firebase Storage rechazó el archivo. '
+          'Revisa las reglas de acceso y que Storage esté habilitado.');
+      }
+      throw const ProfilePhotoException(
+        'No se pudo guardar la foto. Comprueba tu conexión y Storage.');
+    }
+  }
+}
+
+class ProfilePhotoException implements Exception {
+  const ProfilePhotoException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
