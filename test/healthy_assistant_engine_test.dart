@@ -81,6 +81,49 @@ void main() {
     expect(result.text, contains('demostración'));
   });
 
+  test('muestra desafíos sin inventar recompensas', () {
+    final result = engine.resolve('Muéstrame los desafíos',
+      profile: profile, habits: habits);
+    expect(result.action, 'challenges');
+    expect(result.card, 'challenges');
+    expect(result.text, contains('consultar'));
+    expect(result.text, isNot(contains('80 XP')));
+  });
+
+  test('consulta misiones como desafíos y no como hábitos', () {
+    final result = engine.resolve('Mis misiones',
+      profile: profile, habits: habits);
+    expect(result.action, 'challenges');
+  });
+
+  test('consulta logros mediante un componente de progreso', () {
+    final result = engine.resolve('¿Qué logros tengo?',
+      profile: profile, habits: habits);
+    expect(result.card, 'achievements');
+    expect(result.action, 'achievements');
+  });
+
+  test('edición de perfil nunca cambia datos desde el motor', () {
+    final result = engine.resolve('Cambiar mi nombre',
+      profile: profile, habits: habits);
+    expect(result.card, 'edit_profile');
+    expect(result.action, 'edit_profile');
+  });
+
+  test('encuentra artículo único del catálogo por nombre parcial', () {
+    final result = engine.resolve('Quiero comprar corona',
+      profile: profile, habits: habits);
+    expect(result.action, 'shop');
+    expect(result.actionArgument, 'crown');
+    expect(result.card, 'shop_item');
+  });
+
+  test('una solicitud genérica abre selector de artículos reales', () {
+    final result = engine.resolve('Qué puedo comprar',
+      profile: profile, habits: habits);
+    expect(result.card, 'shop_picker');
+  });
+
   test('el motor conserva un fallback para intenciones no verificadas', () {
     final result = engine.resolve('Explícame física cuántica',
       profile: profile, habits: habits);
