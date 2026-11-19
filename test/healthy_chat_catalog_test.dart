@@ -46,6 +46,22 @@ void main() {
     expect(reply.text, isNot(contains('1000 calorías')));
   });
 
+  test('una pregunta sobre calorías sin cifra documentada no inventa dato', () {
+    final reply = engine.resolve('¿Cuántas calorías tiene la avena?',
+      profile: profile, habits: habits);
+    expect(reply.card, 'catalog_item');
+    expect(reply.actionArgument, 'avena');
+    expect(reply.text, contains('No voy a estimarlo'));
+  });
+
+  test('nutrientes usan únicamente valores del catálogo y su porción', () {
+    final reply = engine.resolve('¿Qué nutrientes tienen las lentejas?',
+      profile: profile, habits: habits);
+    expect(reply.text, contains('Proteína:'));
+    expect(reply.text, contains('100 g de lentejas cocidas'));
+    expect(reply.text, contains('Composición aproximada'));
+  });
+
   test('catálogo sin ficha específica abre el listado', () {
     final reply = engine.resolve('Abre el catálogo',
       profile: profile, habits: habits);
