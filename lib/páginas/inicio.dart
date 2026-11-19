@@ -105,7 +105,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
     return Scaffold(
       backgroundColor: AppColors.page,
-      body: SafeArea(child: screens[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: screens[_selectedIndex])),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
