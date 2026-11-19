@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
 import 'tema/healthy_visual_mode.dart';
 import 'tema/healthy_motion.dart';
+import 'tema/healthy_float.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -516,7 +517,10 @@ class _StatsRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text('🔥', style: TextStyle(fontSize: 18)),
+                    const HealthyFloat(
+                      distance: 2,
+                      child: Text('🔥', style: TextStyle(fontSize: 18)),
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: HealthyStreakNumber(
