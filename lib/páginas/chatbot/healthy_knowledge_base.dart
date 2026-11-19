@@ -1,9 +1,29 @@
-import 'texto_chatbot.dart';
+/// Standalone text normalization so this module does not depend on older files.
+String _normalizarTexto(String value) => value
+    .toLowerCase()
+    .replaceAll(RegExp('[àáâãä]'), 'a')
+    .replaceAll(RegExp('[èéêë]'), 'e')
+    .replaceAll(RegExp('[ìíîï]'), 'i')
+    .replaceAll(RegExp('[òóôõö]'), 'o')
+    .replaceAll(RegExp('[ùúûü]'), 'u')
+    .replaceAll('ñ', 'n')
+    .replaceAll(RegExp(r'\\s+'), ' ')
+    .trim();
+
+bool _contieneTermino(String input, String term) {
+  final key = _normalizarTexto(term);
+  if (key.isEmpty) return false;
+  final suffix = key.length > 3 ? r'(?:s|es)?' : '';
+  return RegExp(
+    r'(^|[^a-z0-9])' + RegExp.escape(key) + suffix + r'($|[^a-z0-9])',
+  ).hasMatch(input);
+}
+
 
 /// Knowledge base curated for brief, general wellness education.
 /// This does not perform diagnoses, food composition estimates or medical plans.
-class HealthyKnowledgeBase {
-  const HealthyKnowledgeBase();
+class HealthyWellnessKnowledgeBase {
+  const HealthyWellnessKnowledgeBase();
 
   static const entries = <KnowledgeEntry>[
     KnowledgeEntry(['proteina', 'proteinas', 'musculo', 'ganar masa muscular'],
@@ -81,14 +101,14 @@ class HealthyKnowledgeBase {
   ];
 
   String? answer(String query) {
-    final normalized = normalizeText(query);
+    final normalized = _normalizarTexto(query);
     if (normalized.isEmpty) return null;
     KnowledgeEntry? best;
     var maxScore = 0;
     for (final entry in entries) {
       var score = 0;
       for (final key in entry.keywords) {
-        if (containsAnyKeyword(normalized, [key])) {
+        if (_contieneTermino(normalized, key)) {
           score += key.contains(' ') ? 4 : 2;
         }
       }
