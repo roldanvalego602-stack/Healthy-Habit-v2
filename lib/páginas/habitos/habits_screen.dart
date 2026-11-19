@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
@@ -897,20 +899,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
       0,
       attempt.target,
     );
-    return Container(
+    return HealthyMotionCard(
+      key: ValueKey('active-habit-${habit.id}'),
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
       decoration: BoxDecoration(
         color: categoryBg(habit.category),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(color: HealthyAdaptive.border, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: HealthyVisualEffects.allowDecorativeShadows
+            ? [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 15, offset: const Offset(0, 6))]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1035,6 +1035,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
