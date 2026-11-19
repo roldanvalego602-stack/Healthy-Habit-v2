@@ -218,13 +218,26 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                                 children: [
                                   ClipRRect(
                                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                    child: SvgPicture.asset(
-                                      item.imagen,
-                                      semanticsLabel: 'Ilustración de ${item.titulo}',
-                                      height: 138,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => SizedBox(height: 138, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(_icono(item.icono), size: 48, color: _verde))),
-                                    ),
+                                    child: item.imagen.endsWith('.svg')
+                                        ? SvgPicture.asset(
+                                            item.imagen,
+                                            semanticsLabel: 'Ilustración de ${item.titulo}',
+                                            height: 138,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                _imagenAlternativa(item, 138),
+                                          )
+                                        : Image.asset(
+                                            item.imagen,
+                                            semanticLabel: 'Fotografía de ${item.titulo}',
+                                            height: 138,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            filterQuality: FilterQuality.medium,
+                                            errorBuilder: (_, __, ___) =>
+                                                _imagenAlternativa(item, 138),
+                                          ),
                                   ),
                                   Padding(
                                 padding: const EdgeInsets.all(16),
@@ -298,4 +311,13 @@ class _CatalogoScreenState extends State<CatalogoScreen>
       ),
     );
   }
+  Widget _imagenAlternativa(CatalogoItem item, double altura) => SizedBox(
+    height: altura,
+    width: double.infinity,
+    child: ColoredBox(
+      color: HealthyAdaptive.mint,
+      child: Icon(_icono(item.icono), size: 48, color: _verde),
+    ),
+  );
+
 }
