@@ -320,7 +320,6 @@ class AchievementScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const HealthyCoinIcon(size: 30),
-                                ),
                                 const SizedBox(height: 5),
                                 Text(
                                   '+$coinReward Habit Coins',
