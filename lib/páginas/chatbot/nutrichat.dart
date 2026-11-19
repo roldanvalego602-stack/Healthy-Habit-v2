@@ -661,7 +661,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 habits: _habitosPerfil, lastTopic: _lastTopic,
                 lastHabitTitle: _lastHabitTitle,
                 lastShopItemId: _lastShopItemId);
-            final knowledge = const HealthyKnowledgeBase().answer(text);
+            final knowledge = const HealthyWellnessKnowledgeBase().answer(text);
             if (knowledge != null) intent = const HealthyAssistantReply('');
             final toneCommand = NutriRespuestasService.contiene(text, const [
               'cambia tu humor', 'modo serio', 'modo divertido',
