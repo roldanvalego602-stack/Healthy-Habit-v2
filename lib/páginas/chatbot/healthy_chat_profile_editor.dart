@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../perfil/profile_avatar.dart';
 
 /// Vista previa verificada; los cambios los valida EditarPerfilScreen.
 class HealthyChatProfileEditor extends StatelessWidget {
@@ -48,12 +49,17 @@ class HealthyChatProfileEditor extends StatelessWidget {
             final name = (profile['name'] ?? 'Sin nombre').toString();
             final username = (profile['username'] ?? '').toString();
             final bio = (profile['bio'] ?? '').toString();
+            final photoUrl = profile.containsKey('photoUrl')
+                ? profile['photoUrl']?.toString() ?? ''
+                : FirebaseAuth.instance.currentUser?.photoURL ?? '';
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(children: [
-                  Icon(Icons.manage_accounts_rounded,
-                      color: HealthyAdaptive.accent),
+                  HealthyProfileAvatar(
+                    photoUrl: photoUrl,
+                    size: 44,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(child: Text('Editar tu perfil',
                     style: TextStyle(color: HealthyAdaptive.text,
