@@ -336,17 +336,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                 ),
                 child: Row(
                   children: [
-                    Image.asset(
-                      'assets/monedas/h coin.png',
-                      width: 20,
-                      height: 20,
-                      errorBuilder:
-                          (_, __, ___) => const Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 18,
-                            color: Colors.amber,
-                          ),
-                    ),
+                    const HealthyCoinIcon(size: 20),
                     const SizedBox(width: 6),
                     Text(
                       '$coins',
