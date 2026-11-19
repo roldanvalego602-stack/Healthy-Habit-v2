@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../tienda/shop_service.dart';
 
@@ -85,7 +86,11 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                   leading: Text(item.emoji, style: const TextStyle(fontSize: 27)),
                   title: Text(item.name),
                   subtitle: Text(item.category),
-                  trailing: Text('${item.price} HC'),
+                  trailing: HealthyCoinAmount(
+                    amount: '${item.price}', size: 18,
+                    style: const TextStyle(fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                  ),
                   onTap: () => Navigator.pop(sheetContext, item.id),
                 );
               },
@@ -208,9 +213,14 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Saldo: ${state.coins} Habit Coins',
-                        style: TextStyle(color: HealthyAdaptive.muted,
-                          fontSize: 12)),
+                      Row(children: [
+                        Text('Saldo: ', style: TextStyle(
+                          color: HealthyAdaptive.muted, fontSize: 12)),
+                        HealthyCoinAmount(amount: '${state.coins}', size: 19,
+                          suffix: ' HC',
+                          style: TextStyle(color: HealthyAdaptive.text,
+                            fontWeight: FontWeight.w800, fontSize: 12)),
+                      ]),
                       const SizedBox(height: 10),
                       if (item != null) ...[
                         Row(children: [
@@ -222,9 +232,14 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                               Text(item.name, style: TextStyle(
                                 color: HealthyAdaptive.text,
                                 fontSize: 14, fontWeight: FontWeight.w800)),
-                              Text('${item.category} · ${item.price} HC',
+                              Text(item.category,
                                 style: TextStyle(color: HealthyAdaptive.muted,
                                   fontSize: 11)),
+                              HealthyCoinAmount(amount: '${item.price}',
+                                size: 16, suffix: ' HC',
+                                style: TextStyle(
+                                  color: HealthyAdaptive.text, fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
                             ],
                           )),
                         ]),
