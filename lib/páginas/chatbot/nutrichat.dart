@@ -59,6 +59,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   String? _sessionId;
   String _lastTopic = '';
   bool _historyLoading = false;
+  bool _manuallyStartedNew = false;
   List<Map<String, dynamic>> _habitosPerfil = [];
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
@@ -138,7 +139,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (FirebaseAuth.instance.currentUser == null) return;
     try {
       final sessions = await _history.watchSessions().first;
-      if (!mounted || _hasSentMessage || sessions.isEmpty) return;
+      if (!mounted || _hasSentMessage || _manuallyStartedNew || sessions.isEmpty) return;
       await _openSession(sessions.first.id);
     } catch (_) {
       // El chat sigue disponible si Firestore no permite consultar el historial.
@@ -152,10 +153,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
       final records = await _history.loadMessages(id);
       if (!mounted) return;
       setState(() {
+        _manuallyStartedNew = false;
         _sessionId = id;
         messages
           ..clear()
           ..addAll(records.map(ChatMessage.fromRecord));
+        if (messages.isEmpty) {
+          messages.add(ChatMessage(
+            text: '¡Hola! Soy Mr. Healthy. ¿En qué te ayudo?',
+            isUser: false, time: _timeNow()));
+        }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
         for (final record in records.reversed) {
@@ -166,7 +173,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
           }
         }
       });
-      _refreshAssistantData();
+      await _refreshAssistantData();
+      if (mounted) setState(() {});
       _scrollToBottom();
     } catch (_) {
       _chatNotice('No se pudo abrir el historial de ese chat.');
@@ -178,6 +186,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   void _newConversation() {
     if (isTyping) return;
     setState(() {
+      _manuallyStartedNew = true;
       _sessionId = null;
       _lastTopic = '';
       _hasSentMessage = false;
