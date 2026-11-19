@@ -594,9 +594,6 @@ class _AmigosScreenState extends State<AmigosScreen> {
     final racha = _num(d['currentStreak']);
     final ocupado = _ocupados.contains(uid);
 
-    final color =
-        _C.avatars[uid.codeUnits.fold<int>(0, (a, b) => a + b) %
-            _C.avatars.length];
 
     return Material(
       color: HealthyAdaptive.surface,
