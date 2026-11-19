@@ -127,8 +127,8 @@ class HealthyAssistantEngine {
                 ? 'Puedo ayudarte a abandonar un hábito. Abre tus hábitos activos, elige el que quieras quitar y confirma la operación. Los hábitos difíciles pueden tener una penalización.'
                 : 'Puedo ayudarte a comenzar un hábito. Abre el catálogo, selecciona una actividad y confirma sus requisitos y cupos.'
             : removing
-                ? 'Encontré «$title». Abre Hábitos, selecciona el intento activo correspondiente y confirma si deseas abandonarlo. No borraré tu historial ni aplicaré penalizaciones sin tu confirmación.'
-                : 'Encontré «$title». Te llevaré a su búsqueda en Hábitos para que revises requisitos, cupos y confirmes si deseas iniciarlo.',
+                ? 'Encontré «$title». Revisa aquí la penalización y confirma si deseas abandonarlo. No borraré tu historial ni aplicaré cargos sin tu confirmación.'
+                : 'Encontré «$title». Revisa aquí sus requisitos, cupos y costo para que confirmes si deseas iniciarlo.',
         action: 'habits',
         actionArgument: title,
         card: removing ? 'habit_remove' : 'habit_add',
@@ -142,7 +142,7 @@ class HealthyAssistantEngine {
         final name = NutriRespuestasService.normalizar(h['title'].toString());
         if (normalized.contains(name)) {
           return HealthyAssistantReply(
-            'Encontré «${h['title']}». Puedes revisarlo en la pantalla de Hábitos y decidir allí si deseas ${lastTopic == 'habit_add' ? 'activarlo' : 'abandonarlo'}.',
+            'Encontré «${h['title']}». Puedes revisar los requisitos y confirmar aquí mismo si deseas ${lastTopic == 'habit_add' ? 'activarlo' : 'abandonarlo'}.',
             action: 'habits',
             actionArgument: h['title'].toString(),
             card: lastTopic,
