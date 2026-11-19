@@ -7,6 +7,11 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SobreNosotrosScreen()));
     expect(find.text('Sobre nosotros'), findsOneWidget);
     expect(find.text('¿Por qué nació Healthy Habit?'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Constancia y progreso visible'),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Constancia y progreso visible'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -15,7 +20,12 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Nuestra identidad'), findsOneWidget);
-    expect(find.text('Creación de nuestro logo'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('Creación de nuestro logo'),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Creación de nuestro logo'), findsOneWidget);
   });
 
   testWidgets('No publica correos y teléfonos ficticios', (tester) async {
