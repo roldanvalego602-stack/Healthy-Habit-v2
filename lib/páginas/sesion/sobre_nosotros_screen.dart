@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
 
 class SobreNosotrosScreen extends StatelessWidget {
   const SobreNosotrosScreen({super.key});
 
   // ====== EDITA AQUÍ TU INFORMACIÓN DE CONTACTO ======
-  static const String _correo = 'correo@ejemplo.com';
-  static const String _telefono = '+52 000 000 0000';
-  static const String _sitioWeb = 'www.ejemplo.com';
-  static const String _redSocial = '@healthyhabit';
+  static const String _correo = ''; // Pendiente de proporcionar por el equipo.
+  static const String _telefono = '';
+  static const String _sitioWeb = '';
+  static const String _redSocial = ''; // No se ha verificado una cuenta oficial.
   static const String _ubicacion = 'Durango, México';
-  static const String _version = 'Versión 1.0.0';
+  static const String _version = 'Healthy Habit · Proyecto académico';
   // ====================================================
 
+  // Se emplea el logotipo ya registrado en pubspec.yaml.
+  static const List<String> _imgLogo = ['assets/logo/logo.png'];
+  static const List<String> _imgMarca = ['assets/logo/logo.png'];
+  static const List<String> _imgColores = <String>[];
+  static const List<String> _imgIconos = [
+    'assets/logo/MrHealty.png',
+    'assets/mascot/healthy.png',
+  ];
+
   void _copiar(BuildContext context, String texto) {
+    if (texto.trim().isEmpty) return;
     Clipboard.setData(ClipboardData(text: texto));
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -23,18 +35,18 @@ class SobreNosotrosScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9F8),
+        backgroundColor: HealthyAdaptive.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF0E1A30)),
-        title: const Text(
+        iconTheme: IconThemeData(color: HealthyAdaptive.text),
+        title: Text(
           'Sobre nosotros',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF0E1A30),
+            color: HealthyAdaptive.text,
           ),
         ),
       ),
@@ -82,6 +94,51 @@ class SobreNosotrosScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const _PilaresRow(),
           const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            child: Text('Nuestra identidad', style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w900,
+              color: HealthyAdaptive.text,
+            )),
+          ),
+          HealthyMotionCard(child: _ImagenCard(
+            icon: Icons.draw_outlined,
+            etiqueta: 'LOGO',
+            titulo: 'Creación de nuestro logo',
+            texto: 'Nuestro logotipo representa una fruta segmentada y la progresión de los hábitos. Las etapas del proceso de diseño pueden añadirse aquí.',
+            imagenes: _imgLogo,
+            altura: 180,
+          )),
+          const SizedBox(height: 16),
+          HealthyMotionCard(child: _ImagenCard(
+            icon: Icons.verified_outlined,
+            etiqueta: 'MARCA',
+            titulo: 'Nuestra marca',
+            texto: 'La identidad visual de Healthy Habit.',
+            imagenes: _imgMarca,
+            altura: 180,
+          )),
+          const SizedBox(height: 16),
+          HealthyMotionCard(child: _ImagenCard(
+            icon: Icons.palette_outlined,
+            etiqueta: 'COLORES',
+            titulo: 'Nuestros colores',
+            texto: 'Paleta de colores de la aplicación.',
+            imagenes: _imgColores,
+            altura: 140,
+            extra: _PaletaColores(),
+          )),
+          const SizedBox(height: 16),
+          HealthyMotionCard(child: _ImagenCard(
+            icon: Icons.interests_outlined,
+            etiqueta: 'ICONOS',
+            titulo: 'Elaboración de iconos',
+            texto: 'Logotipo y mascota utilizados en Healthy Habit.',
+            imagenes: _imgIconos,
+            altura: 100,
+            minimoEspacios: 2,
+          )),
+          const SizedBox(height: 24),
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 10),
             child: Text(
@@ -97,6 +154,12 @@ class SobreNosotrosScreen extends StatelessWidget {
             decoration: _cardDecoration(),
             child: Column(
               children: [
+                if (_correo.isEmpty && _telefono.isEmpty && _sitioWeb.isEmpty && _redSocial.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Los canales oficiales de contacto aún no están configurados.', style: TextStyle(color: HealthyAdaptive.muted)),
+                  ),
+                if (_correo.isNotEmpty)
                 _ContactTile(
                   icon: Icons.mail_outline_rounded,
                   label: 'Correo electrónico',
@@ -104,6 +167,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   onTap: () => _copiar(context, _correo),
                 ),
                 const _Divisor(),
+                if (_telefono.isNotEmpty)
                 _ContactTile(
                   icon: Icons.phone_outlined,
                   label: 'Teléfono',
@@ -111,6 +175,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   onTap: () => _copiar(context, _telefono),
                 ),
                 const _Divisor(),
+                if (_sitioWeb.isNotEmpty)
                 _ContactTile(
                   icon: Icons.language_rounded,
                   label: 'Sitio web',
@@ -118,6 +183,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   onTap: () => _copiar(context, _sitioWeb),
                 ),
                 const _Divisor(),
+                if (_redSocial.isNotEmpty)
                 _ContactTile(
                   icon: Icons.alternate_email_rounded,
                   label: 'Redes sociales',
@@ -150,12 +216,12 @@ class SobreNosotrosScreen extends StatelessWidget {
 
 BoxDecoration _cardDecoration() {
   return BoxDecoration(
-    color: Colors.white,
+    color: HealthyAdaptive.surface,
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: Colors.grey.shade200),
+    border: Border.all(color: HealthyAdaptive.border),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.025),
+        color: HealthyAdaptive.isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.025),
         blurRadius: 10,
         offset: const Offset(0, 4),
       ),
