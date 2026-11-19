@@ -10,6 +10,9 @@ import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
+import 'healthy_chat_store_card.dart';
+import 'healthy_chat_progress_cards.dart';
+import 'healthy_chat_profile_editor.dart';
 import 'healthy_chat_habit_picker.dart';
 import '../habitos/modelo/habit.dart';
 import '../../tema/healthy_visual_mode.dart';
@@ -23,6 +26,9 @@ import '../niveles/camino_niveles_screen.dart';
 import '../niveles/levels_system.dart';
 import '../ranking_screen.dart';
 import '../tienda/store_screen.dart';
+import '../desafios/desafios_screen.dart';
+import '../logros/logros_screen.dart';
+import '../perfil/editar_perfil_screen.dart';
 
 class ChatMessage {
   final String text;
@@ -323,6 +329,27 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (mounted) setState(() => isTyping = false);
   }
 
+  Future<void> _onShopCommitted(String detail) async {
+    await _refreshAssistantData();
+    if (!mounted) return;
+    final reply = ChatMessage(
+      text: detail,
+      isUser: false,
+      time: _timeNow(),
+      card: 'shop_result',
+      action: 'shop',
+    );
+    setState(() => messages.add(reply));
+    HealthyCelebration.show(
+      context,
+      title: '¡Apariencia actualizada!',
+      subtitle: detail,
+      icon: Icons.auto_awesome_rounded,
+    );
+    _scrollToBottom();
+    await _persist(reply);
+  }
+
   Future<void> _onHabitActionCompleted(HabitActionResult result) async {
     await _refreshAssistantData();
     if (!mounted) return;
@@ -382,9 +409,22 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'shop':
         target = const StoreScreen();
         break;
+      case 'challenges':
+        target = const DesafiosScreen();
+        break;
+      case 'achievements':
+        target = const LogrosScreen();
+        break;
+      case 'edit_profile':
+        target = const EditarPerfilScreen();
+        break;
     }
     if (target != null) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => target!));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => target!))
+          .then((_) async {
+        await _refreshAssistantData();
+        if (mounted) setState(() {});
+      });
     }
   }
 
@@ -877,6 +917,29 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 onCompleted: (result) => _onHabitActionCompleted(result),
               ),
             ],
+            if (!isUser &&
+                (message.card == 'shop_item' ||
+                 message.card == 'shop_picker')) ...[
+              HealthyChatStoreCard(
+                initialItemId: message.argument,
+                onCommitted: _onShopCommitted,
+              ),
+            ],
+            if (!isUser && message.card == 'challenges') ...[
+              HealthyChatChallengesCard(
+                onOpen: () => _navigateFromChat(message),
+              ),
+            ],
+            if (!isUser && message.card == 'achievements') ...[
+              HealthyChatAchievementsCard(
+                onOpen: () => _navigateFromChat(message),
+              ),
+            ],
+            if (!isUser && message.card == 'edit_profile') ...[
+              HealthyChatProfileEditor(
+                onEdit: () => _navigateFromChat(message),
+              ),
+            ],
             if (!isUser && message.card == 'knowledge') ...[
               const SizedBox(height: 10),
               Row(children: [
@@ -893,9 +956,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
               _profileCard(),
             ],
             if (!isUser && message.action.isNotEmpty &&
-                !(message.action == 'habits' &&
-                  (message.card == 'habit_add' ||
-                   message.card == 'habit_remove'))) ...[
+                !const {
+                  'habit_add', 'habit_remove', 'shop_item', 'shop_picker',
+                  'challenges', 'achievements', 'edit_profile',
+                }.contains(message.card)) ...[
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 key: ValueKey('healthy-chat-action-${message.action}'),
@@ -935,6 +999,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return 'Abrir mi camino de XP';
       case 'ranking': return 'Ver clasificación';
       case 'shop': return 'Abrir Tienda';
+      case 'challenges': return 'Ver desafíos';
+      case 'achievements': return 'Ver logros';
+      case 'edit_profile': return 'Editar mi perfil';
       case 'source': return 'Consultar fuente oficial';
       default: return 'Abrir';
     }
@@ -949,6 +1016,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'levels': return Icons.route_outlined;
       case 'ranking': return Icons.leaderboard_outlined;
       case 'shop': return Icons.storefront_outlined;
+      case 'challenges': return Icons.flag_outlined;
+      case 'achievements': return Icons.workspace_premium_outlined;
+      case 'edit_profile': return Icons.manage_accounts_outlined;
       case 'source': return Icons.open_in_new_rounded;
       default: return Icons.open_in_new_rounded;
     }
