@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 import 'shop_service.dart';
 import 'wardrobe_screen.dart';
@@ -282,7 +284,9 @@ class _StoreScreenState extends State<StoreScreen> {
     final canBuy = state != null && !owned && affordable && _busy == null;
     final palette = _palette(item.category);
 
-    return Container(
+    return HealthyMotionCard(
+      key: ValueKey('store-card-${item.id}'),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -293,13 +297,9 @@ class _StoreScreenState extends State<StoreScreen> {
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _ink, width: 2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x180F4039),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: HealthyVisualEffects.allowDecorativeShadows
+            ? const [BoxShadow(color: Color(0x180F4039), blurRadius: 12, offset: Offset(0, 6))]
+            : null,
       ),
       child: Column(
         children: [
@@ -469,6 +469,7 @@ class _StoreScreenState extends State<StoreScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
