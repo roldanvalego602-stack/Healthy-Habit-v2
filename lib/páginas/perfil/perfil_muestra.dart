@@ -157,6 +157,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final rawSettings = data['settings'];
         final publicStreak = rawSettings is! Map ||
             rawSettings['mostrarRachaAmigos'] != false;
+        final achievementsVisibility = rawSettings is Map
+            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
+            : 'Solo amigos';
         final completed = _readInt(
           data,
           'completedHabits',
@@ -225,9 +228,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _statistics(streak, completed,
                             showStreak: isOwnProfile || publicStreak),
                           const SizedBox(height: 28),
-                          _sectionTitle('Logros destacados'),
-                          const SizedBox(height: 14),
-                          _achievementsCard(),
+                          _visibleAchievements(
+                            own: isOwnProfile,
+                            visibility: achievementsVisibility,
+                          ),
                           const SizedBox(height: 28),
                           _mascotSupportCard(name),
                         ],
@@ -541,6 +545,51 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         fontSize: 20,
         fontWeight: FontWeight.w900,
       ),
+    );
+  }
+
+  Widget _visibleAchievements({
+    required bool own,
+    required String visibility,
+  }) {
+    Widget content() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Logros destacados'),
+        const SizedBox(height: 14),
+        _achievementsCard(),
+      ],
+    );
+
+    Widget privateMessage() => Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        'Los logros de este usuario son privados.',
+        style: TextStyle(color: muted),
+      ),
+    );
+
+    if (own || visibility == 'Todos') return content();
+    if (visibility == 'Solo yo') return privateMessage();
+    final viewer = _currentUser?.uid;
+    if (viewer == null) return privateMessage();
+
+    // Una solicitud de seguimiento aceptada crea este documento.
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _db.collection('users').doc(widget.userId)
+          .collection('followers').doc(viewer).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return privateMessage();
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return snapshot.data!.exists ? content() : privateMessage();
+      },
     );
   }
 
