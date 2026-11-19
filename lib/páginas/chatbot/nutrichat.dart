@@ -59,6 +59,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final HealthyChatHistory _history = const HealthyChatHistory();
   String? _sessionId;
   String _lastTopic = '';
+  String _lastHabitTitle = '';
   bool _historyLoading = false;
   bool _manuallyStartedNew = false;
   List<Map<String, dynamic>> _habitosPerfil = [];
@@ -166,6 +167,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
+        _lastHabitTitle = '';
+        for (final record in records.reversed) {
+          if (record.action == 'habits' &&
+              record.actionArgument.isNotEmpty) {
+            _lastHabitTitle = record.actionArgument;
+            break;
+          }
+        }
         for (final record in records.reversed) {
           if (!record.isUser) {
             _lastTopic = const ['habit_add', 'habit_remove', 'profile']
@@ -190,6 +199,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _manuallyStartedNew = true;
       _sessionId = null;
       _lastTopic = '';
+      _lastHabitTitle = '';
       _hasSentMessage = false;
       messages
         ..clear()
@@ -375,12 +385,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 'Revisa tu conexión e inténtalo de nuevo; no inventaré XP ni monedas.';
           } else {
             intent = _engine.resolve(text, profile: _perfil,
-                habits: _habitosPerfil, lastTopic: _lastTopic);
+                habits: _habitosPerfil, lastTopic: _lastTopic,
+                lastHabitTitle: _lastHabitTitle);
             response = intent.text.isNotEmpty
                 ? intent.text
                 : _respuestas.responder(text,
                     nombre: _primerNombre, perfil: _perfil);
             _lastTopic = _engine.topicFor(intent);
+            if (intent.action == 'habits' &&
+                intent.actionArgument.isNotEmpty) {
+              _lastHabitTitle = intent.actionArgument;
+            }
           }
         }
       }
