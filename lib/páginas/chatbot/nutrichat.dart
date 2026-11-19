@@ -662,6 +662,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 lastHabitTitle: _lastHabitTitle,
                 lastShopItemId: _lastShopItemId);
             final knowledge = const HealthyKnowledgeBase().answer(text);
+            if (knowledge != null) intent = const HealthyAssistantReply('');
             final toneCommand = NutriRespuestasService.contiene(text, const [
               'cambia tu humor', 'modo serio', 'modo divertido',
               'modo motivador', 'modo tranquilo', 'modo amigable',
@@ -777,21 +778,25 @@ class _NutriChatPageState extends State<NutriChatPage> {
             tooltip: 'Personalidad de Mr. Healthy',
             icon: Icon(Icons.sentiment_satisfied_alt_rounded, color: _navy),
             onSelected: (mood) {
+              if (mood == '_audio') {
+                _toggleReadAloud();
+                return;
+              }
               setState(() => _respuestas.cambiarHumor(mood));
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Mr. Healthy: modo $mood')),
               );
             },
-            itemBuilder: (_) => NutriRespuestasService.moods
-                .map((mood) => PopupMenuItem<String>(
-                  value: mood,
-                  child: Text(mood[0].toUpperCase() + mood.substring(1)),
-                )).toList(),
-          ),
-          IconButton(
-            tooltip: _readAloud ? 'Silenciar respuestas' : 'Leer respuestas en voz alta',
-            icon: Icon(_readAloud ? Icons.volume_up_rounded : Icons.volume_off_rounded, color: _navy),
-            onPressed: _toggleReadAloud,
+            itemBuilder: (_) => [
+              ...NutriRespuestasService.moods.map((mood) => PopupMenuItem<String>(
+                value: mood,
+                child: Text(mood[0].toUpperCase() + mood.substring(1)),
+              )),
+              PopupMenuItem<String>(
+                value: '_audio',
+                child: Text(_readAloud ? 'Desactivar voz' : 'Activar voz'),
+              ),
+            ],
           ),
           IconButton(
             key: const Key('healthy-chat-history-button'),
@@ -804,17 +809,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
             onPressed: isTyping ? null : _newConversation,
             tooltip: 'Nueva conversación',
             icon: Icon(Icons.add_comment_outlined, color: _navy),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              width: 38,
-              height: 38,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (_, __, ___) => const Icon(Icons.eco, color: _green),
-            ),
           ),
         ],
       ),
