@@ -58,14 +58,14 @@ void main() {
     expect(result.card, 'habit_remove');
   });
 
-  test('pregunta nutricional responde solo ficha con fuente', () {
+  test('pregunta nutricional resuelve la ficha real de catálogo', () {
     final result = engine.resolve('¿Qué nutrientes tienen las lentejas?',
       profile: profile, habits: habits);
-    expect(result.card, 'knowledge');
-    expect(result.action, 'source');
-    expect(result.actionArgument, 'https://fdc.nal.usda.gov/');
-    expect(result.text, contains('USDA'));
-    expect(result.text, contains('lentejas'));
+    expect(result.card, 'catalog_item');
+    expect(result.action, 'catalog_item');
+    expect(result.actionArgument, 'lentejas');
+    expect(result.text, contains('Lentejas'));
+    expect(result.text, contains('ficha completa'));
   });
 
   test('sin ficha no inventa valores nutricionales', () {
