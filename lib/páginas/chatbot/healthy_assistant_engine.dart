@@ -69,6 +69,7 @@ class HealthyAssistantEngine {
     required List<Map<String, dynamic>> habits,
     String lastTopic = '',
     String lastHabitTitle = '',
+    String lastShopItemId = '',
   }) {
     final normalized = NutriRespuestasService.normalizar(input);
     bool has(List<String> terms) =>
@@ -195,10 +196,14 @@ class HealthyAssistantEngine {
           shopCatalog.where((other) =>
             NutriRespuestasService.normalizar(other.name)
                 .split(' ').contains(word)).length == 1);
-      if ((exact || uniqueWord) &&
-          has(['comprar','compra','canjear','quiero','equipar',
-              'ponerme','usar','quitarme','desequipar',
-              'cuanto cuesta','precio','tengo'])) {
+      final followUp = lastTopic == 'shop_item' &&
+          item.id == lastShopItemId &&
+          has(['compralo','comprala','equipalo','equipala',
+              'cuanto cuesta','precio','quitamelo','quitalo']);
+      if (((exact || uniqueWord) &&
+           has(['comprar','compra','canjear','quiero','equipar',
+               'ponerme','usar','quitarme','quitame','desequipar',
+               'cuanto cuesta','precio','tengo'])) || followUp) {
         return HealthyAssistantReply(
           'Encontré «${item.name}» en la tienda. '
           'Consultaré tu saldo y la colección antes de ofrecer '
@@ -305,6 +310,7 @@ class HealthyAssistantEngine {
       case 'habit_add': return 'habit_add';
       case 'habit_remove': return 'habit_remove';
       case 'profile': return 'profile';
+      case 'shop_item': return 'shop_item';
       case 'knowledge': return 'knowledge';
       default: return '';
     }
