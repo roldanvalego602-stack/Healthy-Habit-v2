@@ -53,14 +53,24 @@ class CatalogoDetalleScreen extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: SvgPicture.asset(
-              item.imagen,
-              semanticsLabel: 'Ilustración de ${item.titulo}',
-              height: 190,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => SizedBox(height: 190, child: ColoredBox(color: HealthyAdaptive.mint, child: Icon(_icono, size: 56, color: _verde))),
-            ),
+            child: item.imagen.endsWith('.svg')
+                ? SvgPicture.asset(
+                    item.imagen,
+                    semanticsLabel: 'Ilustración de ${item.titulo}',
+                    height: 190,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagenAlternativa(),
+                  )
+                : Image.asset(
+                    item.imagen,
+                    semanticLabel: 'Fotografía de ${item.titulo}',
+                    height: 190,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, __, ___) => _imagenAlternativa(),
+                  ),
           ),
           const SizedBox(height: 14),
           Container(
@@ -227,6 +237,15 @@ class CatalogoDetalleScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _imagenAlternativa() => SizedBox(
+    height: 190,
+    width: double.infinity,
+    child: ColoredBox(
+      color: HealthyAdaptive.mint,
+      child: Icon(_icono, size: 56, color: _verde),
+    ),
+  );
 
   Widget _chip(String s) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
