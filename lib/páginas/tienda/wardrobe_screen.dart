@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
+import '../../servicios/healthy_feedback_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
@@ -70,7 +71,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     }
     setState(() => _busy = item.id);
     try {
-      if (!state.owns(item.id)) await ShopService.instance.buy(item);
+      if (!state.owns(item.id)) {
+        await ShopService.instance.buy(item);
+        await HealthyFeedbackService.onReward();
+      }
       if (item.slot != null) {
         await ShopService.instance.equip(
           item,
