@@ -134,9 +134,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
 
         final name = _readString(data, 'name', widget.name);
-        final photoUrl = _readString(data, 'photoUrl',
-          isOwnAccount(widget.userId)
-              ? _currentUser?.photoURL ?? '' : '');
+        final photoUrl = data.containsKey('photoUrl')
+            ? data['photoUrl']?.toString() ?? ''
+            : isOwnAccount(widget.userId)
+                ? _currentUser?.photoURL ?? ''
+                : '';
         final username = _formatUsername(
           _readString(data, 'username', widget.username),
         );
