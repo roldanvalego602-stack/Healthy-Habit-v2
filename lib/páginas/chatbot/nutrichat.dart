@@ -92,12 +92,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   final List<String> quickOptions = const [
     '¿Cómo va mi perfil?',
-    'Ver mis estadísticas',
+    'Mis desafíos',
+    '¿Qué logros tengo?',
+    'Quiero comprar corona',
+    'Editar mi perfil',
     'Agregar un hábito',
-    '¿Qué hábitos tengo activos?',
+    'Ver mis estadísticas',
     'Hablar con un profesional',
     '¿Qué nutrientes tienen las lentejas?',
-    '¿Cómo mejorar mi racha?',
     'Quiero calcular mi GET',
   ];
 
