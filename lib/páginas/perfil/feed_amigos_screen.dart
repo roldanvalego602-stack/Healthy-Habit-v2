@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'profile_avatar.dart';
 
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -311,17 +312,9 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: color,
-                        child: Text(
-                          nombre.characters.first.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                      HealthyProfileAvatar(
+                        photoUrl: d['photoUrl']?.toString(),
+                        size: 44,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
