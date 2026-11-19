@@ -134,3 +134,63 @@ class HealthyCountUp extends StatelessWidget {
     );
   }
 }
+
+
+/// Consistent lightweight transitions between major tabs.
+class HealthyPageSwitch extends StatelessWidget {
+  const HealthyPageSwitch({super.key, required this.index, required this.child});
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!HealthyVisualEffects.enabled(context)) return child;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      reverseDuration: const Duration(milliseconds: 130),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (page, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.025, 0.015),
+            end: Offset.zero,
+          ).animate(animation),
+          child: page,
+        ),
+      ),
+      child: KeyedSubtree(
+        key: ValueKey<int>(index),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Fade and slide for ordinary push routes, respecting reduced motion.
+class HealthyRouteTransitions extends PageTransitionsBuilder {
+  const HealthyRouteTransitions();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (!HealthyVisualEffects.enabled(context)) return child;
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.035, 0.015),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+    );
+  }
+}
