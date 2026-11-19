@@ -253,12 +253,17 @@ class RankingScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            inRanking
-                ? '$xp XP acumulados'
-                : 'Sigue ganando XP para entrar en la clasificación.',
-            style: const TextStyle(color: Colors.white70),
-          ),
+          if (inRanking)
+            HealthyCountUp(
+              value: xp,
+              suffix: ' XP acumulados',
+              style: const TextStyle(color: Colors.white70),
+            )
+          else
+            const Text(
+              'Sigue ganando XP para entrar en la clasificación.',
+              style: TextStyle(color: Colors.white70),
+            ),
           if (inRanking) ...[
             const SizedBox(height: 5),
             Text(
