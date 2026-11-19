@@ -783,7 +783,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: HealthyVisualEffects.duration(context, const Duration(milliseconds: 180)),
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
