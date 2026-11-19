@@ -170,6 +170,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Future<void> _confirmAddHabit(Habit habit) async {
+    if (saving) return;
+    late final HabitActionPreview preview;
+    try {
+      preview = await _habitActions.preview(habit.id, remove: false);
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+      return;
+    }
+    if (!mounted) return;
     final accepted = await showDialog<bool>(
       context: context,
       builder:
@@ -208,7 +217,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ],
           ),
     );
-    if (accepted == true && mounted) await addHabit(habit);
+    if (accepted == true && mounted) {
+      await addHabit(habit, preview: preview);
+    }
   }
 
   bool _isDifficult(Habit habit) {
@@ -218,12 +229,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Future<void> _confirmCancelHabit(_ActiveHabitEntry entry) async {
     if (saving) return;
-    final fee =
-        _isDifficult(entry.habit)
-            ? (coins < maxDifficultCancellationFee
-                ? coins
-                : maxDifficultCancellationFee)
-            : 0;
+    late final HabitActionPreview preview;
+    try {
+      preview = await _habitActions.preview(entry.habit.id, remove: true);
+      if (preview.attemptId != entry.attempt.id) {
+        throw StateError('El intento cambió. Actualiza la pantalla.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+      return;
+    }
+    if (!mounted) return;
+    final fee = preview.estimatedCost;
     final accepted = await showDialog<bool>(
       context: context,
       builder:
@@ -261,19 +278,24 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ],
           ),
     );
-    if (accepted == true && mounted) await _cancelHabit(entry);
+    if (accepted == true && mounted) {
+      await _cancelHabit(entry, preview: preview);
+    }
   }
 
   /// Comparte las mismas validaciones y transacciones que Mr. Healthy.
-  Future<void> _cancelHabit(_ActiveHabitEntry entry) async {
+  Future<void> _cancelHabit(_ActiveHabitEntry entry, {
+    HabitActionPreview? preview,
+  }) async {
     if (saving) return;
     setState(() => saving = true);
     try {
-      final preview = await _habitActions.preview(entry.habit.id, remove: true);
-      if (preview.attemptId != entry.attempt.id) {
+      final checked = preview ??
+          await _habitActions.preview(entry.habit.id, remove: true);
+      if (checked.attemptId != entry.attempt.id) {
         throw StateError('El intento cambió; actualiza tus hábitos.');
       }
-      final result = await _habitActions.execute(preview);
+      final result = await _habitActions.execute(checked);
       if (!mounted) return;
       _showMessage(result.chargedCoins == 0
           ? 'Hábito abandonado. Tu historial se conserva.'
@@ -286,12 +308,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
-  Future<void> addHabit(Habit habit) async {
+  Future<void> addHabit(Habit habit, {
+    HabitActionPreview? preview,
+  }) async {
     if (saving) return;
     setState(() => saving = true);
     try {
-      final preview = await _habitActions.preview(habit.id, remove: false);
-      await _habitActions.execute(preview);
+      final checked = preview ??
+          await _habitActions.preview(habit.id, remove: false);
+      await _habitActions.execute(checked);
       if (!mounted) return;
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
       await _load();
