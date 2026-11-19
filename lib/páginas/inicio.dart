@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/healthy_coin.dart';
 import '../tema/healthy_motion.dart';
 import '../tema/healthy_float.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
@@ -650,14 +651,18 @@ class _HomeContent extends StatelessWidget {
 
           if (next != null) ...[
             const SizedBox(height: 6),
-            Text(
-              'Próxima recompensa prevista: '
-              '${next.rewardCoins} Habit Coins',
-              style: const TextStyle(
-                color: Color(0xFFFFE49A),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 5,
+              children: [
+                const Text('Próxima recompensa prevista:',
+                  style: TextStyle(color: Color(0xFFFFE49A),
+                    fontSize: 12, fontWeight: FontWeight.w700)),
+                HealthyCoinAmount(amount: '${next.rewardCoins}',
+                  size: 18, suffix: ' Habit Coins',
+                  style: const TextStyle(color: Color(0xFFFFE49A),
+                    fontSize: 12, fontWeight: FontWeight.w700)),
+              ],
             ),
           ],
         ],
