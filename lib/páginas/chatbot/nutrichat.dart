@@ -78,12 +78,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
   ];
 
   final List<String> quickOptions = const [
-    '¿Cómo mejorar mi racha?',
-    '¿Qué misión tengo hoy?',
-    'Quiero mejorar mi hidratación',
-    'Hablar con un profesional',
-    'Sugiere hábitos para mí',
     '¿Cómo va mi perfil?',
+    'Ver mis estadísticas',
+    'Agregar un hábito',
+    '¿Qué hábitos tengo activos?',
+    'Hablar con un profesional',
+    '¿Qué nutrientes tienen las lentejas?',
+    '¿Cómo mejorar mi racha?',
     'Quiero calcular mi GET',
   ];
 
@@ -798,7 +799,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'habits':
         return message.argument.isEmpty
             ? 'Abrir Hábitos'
-            : 'Buscar «${message.argument}»';
+            : 'Buscar en Hábitos';
       case 'progress': return 'Ver estadísticas y gráficas';
       case 'professionals': return 'Ver directorio de profesionales';
       case 'profile': return 'Abrir mi perfil';
