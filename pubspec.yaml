@@ -26,6 +26,8 @@ dependencies:
   draggable_fab: ^0.1.4
   push: ^3.3.3
   url_launcher: ^6.3.2
+  geolocator: ^14.1.2
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
