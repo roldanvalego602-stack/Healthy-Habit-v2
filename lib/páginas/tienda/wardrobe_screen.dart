@@ -141,18 +141,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         ),
                       ),
                     ),
-                    Image.asset(
-                      'assets/monedas/h coin.png',
-                      width: 24,
-                      height: 24,
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (_, __, ___) => const Icon(
-                            Icons.image_not_supported_outlined,
-                            color: Color(0xFFB58A26),
-                            size: 22,
-                          ),
-                    ),
+                    const HealthyCoinIcon(size: 24),
                     const SizedBox(width: 5),
                     Text(
                       state == null ? '...' : '${state.coins}',
