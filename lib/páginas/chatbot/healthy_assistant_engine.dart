@@ -197,6 +197,7 @@ class HealthyAssistantEngine {
       'informacion','informame','hablame','muestrame',
       'que sabes','beneficios','precauciones','nutrientes',
       'como preparar','como hacer','como realizar','como se hace',
+      'como prevenir',
       'cuantas proteinas','proteinas de','calorias de',
       'datos de','explicame','ver ficha','ver catalogo',
       'quiero saber','que contiene','para que sirve',
