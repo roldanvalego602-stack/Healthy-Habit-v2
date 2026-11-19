@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
-import '../../tema/healthy_float.dart';
 import '../../tema/healthy_motion.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -166,9 +165,7 @@ class CaminoNivelesScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              HealthyFloat(
-                distance: 3,
-                child: Container(
+              Container(
                 width: 66,
                 height: 66,
                 decoration: BoxDecoration(
@@ -184,7 +181,6 @@ class CaminoNivelesScreen extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
                 ),
               ),
               const SizedBox(width: 14),
