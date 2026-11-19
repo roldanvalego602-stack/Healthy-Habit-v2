@@ -118,6 +118,14 @@ void main() {
     expect(result.card, 'shop_item');
   });
 
+  test('recuerda artículo para seguimiento sin inventar uno nuevo', () {
+    final result = engine.resolve('Cómpralo',
+      profile: profile, habits: habits,
+      lastTopic: 'shop_item', lastShopItemId: 'crown');
+    expect(result.card, 'shop_item');
+    expect(result.actionArgument, 'crown');
+  });
+
   test('una solicitud genérica abre selector de artículos reales', () {
     final result = engine.resolve('Qué puedo comprar',
       profile: profile, habits: habits);
