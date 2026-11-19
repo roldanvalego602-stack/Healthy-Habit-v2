@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../logros/logros_service.dart';
+import '../desafios/challenge_progress_policy.dart';
 
 FirebaseFirestore get _healthyDb => FirebaseFirestore.instanceFor(
   app: Firebase.app(), databaseId: 'default');
@@ -98,7 +99,7 @@ class HealthyChatChallengesCard extends StatelessWidget {
           final active = all.where((d) =>
               d.data()['status'] == 'inProgress').toList();
           final claimable = all.where((d) =>
-              d.data()['status'] == 'completed').toList();
+              ChallengeProgressPolicy.claimable(d.data())).toList();
           final available = all.where((d) =>
               d.data()['status'] == 'available').toList();
           final chosen = <QueryDocumentSnapshot<Map<String, dynamic>>>[
@@ -114,17 +115,20 @@ class HealthyChatChallengesCard extends StatelessWidget {
                     fontSize: 11)),
               const SizedBox(height: 5),
               Text(
-                'Nota: los desafíos iniciales de Healthy Habit pueden '
-                'incluir valores de demostración hasta integrar su seguimiento real.',
+                'Solo los avances verificados a partir de hábitos reales '
+                'podrán generar recompensas. Los ejemplos no cuentan.',
                 style: TextStyle(color: HealthyAdaptive.muted,
                   fontSize: 10.5),
               ),
               for (final doc in chosen)
                 HealthyChatProgressTile(
                   title: (doc.data()['title'] ?? 'Desafío').toString(),
-                  progress: _fraction(doc.data()['currentProgress'],
+                  progress: _fraction(
+                      ChallengeProgressPolicy.visibleProgress(doc.data()),
                       doc.data()['totalProgress']),
-                  description: _challengeStatus(doc.data()),
+                  description: ChallengeProgressPolicy.verified(doc.data())
+                      ? _challengeStatus(doc.data())
+                      : 'Vista previa · progreso no verificado',
                   icon: Icons.flag_outlined,
                 ),
               if (chosen.isEmpty) Text(
