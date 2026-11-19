@@ -39,7 +39,73 @@ class NutriCalculatorService {
     pesoIMCEnLibras = false;
   }
 
+  // Adaptación selectiva de Mijo: proteger el estado del cálculo si el
+  // usuario cambia claramente de tema, sin reemplazar las fórmulas existentes.
+  bool _confirmandoCambioDeTema = false;
+  bool get calculoActivo => pasoIMC > 0 || pasoGET > 0;
+
+  List<String> get opcionesRapidas => _confirmandoCambioDeTema
+      ? const ['Continuar cálculo', 'Salir del cálculo']
+      : const [];
+
+  bool _esCambioDeTema(String input) {
+    final t = _normalizeText(input);
+    return const [
+      'clima', 'temperatura de hoy', 'pronostico', 'va a llover',
+      'mis estadisticas', 'mi perfil', 'mis monedas', 'habit coins',
+      'mi racha', 'mis habitos', 'agregar un habito', 'eliminar habito',
+      'ranking', 'mis logros', 'mis desafios', 'mi tienda',
+    ].any((term) => t.contains(term));
+  }
+
+  String _preguntaPendiente() {
+    if (pasoIMC == 1) return '¿Quieres calcular tu IMC?';
+    if (pasoIMC == 2 || pasoGET == 2) {
+      return 'Indícame tu peso en kg o libras.';
+    }
+    if (pasoIMC == 3 || pasoGET == 3) {
+      return 'Indícame tu altura en metros, centímetros o pies.';
+    }
+    if (pasoGET == 1) {
+      return 'Para el GET, dime tu sexo para el cálculo (hombre o mujer).';
+    }
+    if (pasoGET == 4) return '¿Qué edad tienes?';
+    if (pasoGET == 5) return 'Indica tu nivel de actividad física (1 a 4).';
+    if (pasoGET == 8) return '¿Quieres ver los macronutrientes?';
+    if (pasoGET == 9) return 'Indica una distribución (1 a 4).';
+    return 'Puedes continuar con el dato que te pedí anteriormente.';
+  }
+
+  /// Interrumpe sin consumir entradas destinadas a otra sección de la app.
+  /// El usuario puede optar por reanudar o abandonar el cálculo en curso.
   String procesarMensaje(String input) {
+    if (_confirmandoCambioDeTema) {
+      final normalized = _normalizeText(input);
+      if (const ['continuar calculo', 'seguir', 'continuar', 'si']
+          .contains(normalized)) {
+        _confirmandoCambioDeTema = false;
+        return 'Continuemos. ${_preguntaPendiente()}';
+      }
+      if (const ['salir del calculo', 'salir', 'cancelar', 'no']
+          .contains(normalized)) {
+        _confirmandoCambioDeTema = false;
+        resetIMC();
+        resetGET();
+        return 'Cálculo cancelado. Puedes hacerme otra pregunta.';
+      }
+      return '¿Quieres continuar con el cálculo o salir? '
+          'Elige una de las dos opciones.';
+    }
+    if (calculoActivo && _esCambioDeTema(input)) {
+      _confirmandoCambioDeTema = true;
+      return 'Estábamos realizando un cálculo de IMC o GET. '
+          'Detecté que cambiaste de tema. ¿Deseas continuar o salir? '
+          'Si sales, puedes repetir tu nueva pregunta.';
+    }
+    return _procesarFlujoExistente(input);
+  }
+
+  String _procesarFlujoExistente(String input) {
     final text = input.toLowerCase();
 
     // ==========================================
