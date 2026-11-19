@@ -93,7 +93,8 @@ class _XpJourneyPathState extends State<XpJourneyPath>
       builder: (context, _) {
         // El trazo recorre todas las paradas: enciende las alcanzadas y
         // oscurece progresivamente las que todavía están bloqueadas.
-        final position = (LevelSystem.levels.length - 1) * _reveal.value;
+        // Un pequeño margen final permite apagar completamente la última parada.
+        final position = (LevelSystem.levels.length - 1 + 0.3) * _reveal.value;
         final motion = HealthyVisualEffects.enabled(context);
         return Column(
           key: const Key('xp-journey-path'),
