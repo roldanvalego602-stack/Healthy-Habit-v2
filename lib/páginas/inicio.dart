@@ -1,3 +1,4 @@
+import 'perfil/profile_avatar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -347,16 +348,9 @@ class _HomeContent extends StatelessWidget {
                 child: InkWell(
                   onTap: onProfile,
                   borderRadius: BorderRadius.circular(30),
-                  child: CircleAvatar(
-                    backgroundColor: AppColors.mintCard,
-                    foregroundImage:
-                        photoUrl != null && photoUrl!.isNotEmpty
-                            ? NetworkImage(photoUrl!)
-                            : null,
-                    child: Icon(
-                      Icons.person,
-                      color: AppColors.primaryGreen,
-                    ),
+                  child: HealthyProfileAvatar(
+                    photoUrl: photoUrl,
+                    size: 44,
                   ),
                 ),
               ),
