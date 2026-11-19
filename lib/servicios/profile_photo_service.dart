@@ -86,71 +86,121 @@ class ProfilePhotoService {
     }
   }
 
+  /// Fases independientes para presentar un error útil sin exponer tokens.
   Future<String> upload(XFile selected) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw const ProfilePhotoException(
-        'Inicia sesión para cambiar tu fotografía.');
+      throw const ProfilePhotoException('Inicia sesión para subir una foto.',
+          code: 'unauthenticated');
     }
+
     final bytes = prepareJpeg(await selected.readAsBytes());
     final userRef = _db.collection('users').doc(user.uid);
-    final previous = await userRef.get();
-    final oldPath = previous.data()?['profilePhotoPath']?.toString() ?? '';
+    var oldPath = '';
+    try {
+      final previous = await userRef.get();
+      oldPath = previous.data()?['profilePhotoPath']?.toString() ?? '';
+    } on FirebaseException catch (error) {
+      throw _friendlyError(error, stage: 'lectura de Firestore');
+    }
+
     final object = _storage.ref().child(
       'users/${user.uid}/profile/avatar_${DateTime.now().microsecondsSinceEpoch}.jpg',
     );
     try {
       await object.putData(bytes, SettableMetadata(
         contentType: 'image/jpeg',
-        cacheControl: 'public,max-age=3600',
+        cacheControl: 'private,max-age=3600',
       ));
-      if (FirebaseAuth.instance.currentUser?.uid != user.uid) {
-        await object.delete();
-        throw const ProfilePhotoException(
-          'Cambió la sesión durante la subida. Inténtalo nuevamente.');
-      }
-      final url = await object.getDownloadURL();
-      try {
-        await userRef.set({
-          'photoUrl': url,
-          'profilePhotoPath': object.fullPath,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (_) {
-        // Una subida sin documento enlazado no debe dejar residuos.
-        try {
-          await object.delete();
-        } catch (_) {}
-        rethrow;
-      }
-      // Firestore ya se actualizó. Un fallo en Auth no invalida el resultado.
-      try {
-        await user.updatePhotoURL(url);
-      } catch (_) {}
-      if (oldPath.isNotEmpty &&
-          oldPath != object.fullPath &&
-          oldPath.startsWith('users/${user.uid}/profile/')) {
-        try {
-          await _storage.ref().child(oldPath).delete();
-        } catch (_) {}
-      }
-      return url;
     } on FirebaseException catch (error) {
-      if (error.code == 'unauthorized' ||
-          error.code == 'permission-denied') {
-        throw const ProfilePhotoException(
-          'Firebase Storage rechazó el archivo. '
-          'Revisa las reglas de acceso y que Storage esté habilitado.');
-      }
+      throw _friendlyError(error, stage: 'subida a Storage');
+    } catch (_) {
       throw const ProfilePhotoException(
-        'No se pudo guardar la foto. Comprueba tu conexión y Storage.');
+        'No se completó la subida a Storage. Comprueba la conexión.',
+        code: 'upload-failed',
+      );
     }
+
+    if (FirebaseAuth.instance.currentUser?.uid != user.uid) {
+      try { await object.delete(); } catch (_) {}
+      throw const ProfilePhotoException(
+        'La sesión cambió durante la subida. Vuelve a intentarlo.',
+        code: 'session-changed',
+      );
+    }
+
+    late final String url;
+    try {
+      url = await object.getDownloadURL();
+    } on FirebaseException catch (error) {
+      throw _friendlyError(error, stage: 'obtención de la URL');
+    }
+    try {
+      await userRef.set({
+        'photoUrl': url,
+        'profilePhotoPath': object.fullPath,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } on FirebaseException catch (error) {
+      try { await object.delete(); } catch (_) {}
+      throw _friendlyError(error, stage: 'guardado en Firestore');
+    }
+    // El documento de Firestore es la referencia para toda la app.
+    try { await user.updatePhotoURL(url); } catch (_) {}
+    if (oldPath.isNotEmpty && oldPath != object.fullPath &&
+        oldPath.startsWith('users/${user.uid}/profile/')) {
+      try { await _storage.ref().child(oldPath).delete(); } catch (_) {}
+    }
+    return url;
   }
+
+  @visibleForTesting
+  static ProfilePhotoException _friendlyError(
+    FirebaseException error, {required String stage}) {
+    final code = error.code.toLowerCase();
+    if (code == 'unauthorized' || code == 'permission-denied') {
+      return ProfilePhotoException(
+        'Firebase rechazó el permiso en $stage. '
+        'Revisa las reglas de Storage y Firestore para tu cuenta. '
+        '(Código: ${error.code})',
+        code: code,
+      );
+    }
+    if (code == 'bucket-not-found' || code == 'invalid-default-bucket' ||
+        code == 'no-default-bucket') {
+      return ProfilePhotoException(
+        'No se encontró el bucket de Firebase Storage. '
+        'Verifica que esté creado y que coincida con firebase_options.dart. '
+        '(Código: ${error.code})',
+        code: code,
+      );
+    }
+    if (code == 'quota-exceeded') {
+      return ProfilePhotoException(
+        'Se alcanzó el límite de Firebase Storage. '
+        'Revisa la cuota y la facturación del proyecto.',
+        code: code,
+      );
+    }
+    if (code == 'unauthenticated') {
+      return ProfilePhotoException(
+        'La sesión de Firebase caducó. Vuelve a iniciar sesión.',
+        code: code,
+      );
+    }
+    return ProfilePhotoException(
+      'Error en $stage (Firebase: ${error.code}). '
+      'Revisa Storage, las reglas y tu conexión.',
+      code: code,
+    );
+  }
+
 }
 
 class ProfilePhotoException implements Exception {
-  const ProfilePhotoException(this.message);
+  const ProfilePhotoException(this.message, {this.code = 'unknown'});
   final String message;
+  final String code;
 
   @override
   String toString() => message;
