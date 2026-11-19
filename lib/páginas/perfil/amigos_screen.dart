@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import 'profile_avatar.dart';
 import 'social_action_button.dart';
 import 'reaction_picker_dialog.dart';
 import 'amigos_servicio.dart';
@@ -614,17 +615,9 @@ class _AmigosScreenState extends State<AmigosScreen> {
             children: [
               Row(
                 children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: color,
-                child: Text(
-                  nombre.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+              HealthyProfileAvatar(
+                photoUrl: d['photoUrl']?.toString(),
+                size: 50,
               ),
               const SizedBox(width: 12),
               Expanded(
