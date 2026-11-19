@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../servicios/profile_photo_service.dart';
+import 'profile_avatar.dart';
 import '../../tema/healthy_theme.dart';
 
 import '../../Contenido_del_tema/colores.dart';
@@ -22,6 +25,9 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   final _fraseController = TextEditingController();
   bool _cargando = true;
   bool _guardando = false;
+  bool _subiendoFoto = false;
+  String? _photoUrl;
+  final ProfilePhotoService _photoService = ProfilePhotoService();
   String? _errorCarga;
   int _cargaActual = 0;
 
@@ -71,6 +77,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         data['bio'],
         'Pequeños pasos, raíces fuertes.',
       );
+      _photoUrl = _texto(data['photoUrl'], user.photoURL ?? '');
       setState(() {
         _cargando = false;
         _errorCarga = null;
@@ -84,8 +91,56 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     }
   }
 
+  Future<void> _elegirFoto() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Elegir de galería'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Tomar una foto'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+    try {
+      final selected = await _photoService.pick(source);
+      if (selected == null || !mounted) return;
+      setState(() => _subiendoFoto = true);
+      final url = await _photoService.upload(selected);
+      if (!mounted) return;
+      setState(() => _photoUrl = url);
+      _mensaje('Foto de perfil actualizada.');
+    } on ProfilePhotoException catch (error) {
+      _mensaje(error.message);
+    } catch (_) {
+      _mensaje('No fue posible seleccionar o subir la foto. '
+          'Comprueba permisos, conexión y Firebase Storage.');
+    } finally {
+      if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
+
   Future<void> _guardarCambios() async {
-    if (_guardando || _cargando) return;
+    if (_guardando || _cargando || _subiendoFoto) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _mensaje('Tu sesión ha terminado. Inicia sesión nuevamente.');
@@ -153,7 +208,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
-          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
+          onPressed: _guardando || _subiendoFoto ? null : () => Navigator.of(context).pop(),
         ),
         title: Text(
           'Editar Perfil',
@@ -208,39 +263,75 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                   child: Column(
                     children: [
                       Center(
-                        child: Stack(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColores.verdePrincipal,
-                                  width: 3,
+                            Semantics(
+                              button: true,
+                              label: 'Cambiar foto de perfil',
+                              child: InkWell(
+                                key: const Key('edit-profile-photo'),
+                                onTap: _subiendoFoto ? null : _elegirFoto,
+                                customBorder: const CircleBorder(),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      width: 104,
+                                      height: 104,
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColores.verdePrincipal,
+                                          width: 3,
+                                        ),
+                                      ),
+                                      child: HealthyProfileAvatar(
+                                        photoUrl: _photoUrl,
+                                        size: 96,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: const BoxDecoration(
+                                          color: AppColores.verdePrincipal,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: Colors.white,
+                                          size: 19,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_subiendoFoto)
+                                      const Positioned.fill(
+                                        child: ColoredBox(
+                                          color: Color(0x77000000),
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                color: Colors.white,
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                size: 58,
-                                color: AppColores.verdePrincipal,
                               ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: AppColores.verdePrincipal,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _subiendoFoto
+                                  ? 'Subiendo fotografía…'
+                                  : 'Toca la foto para cambiarla',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: HealthyAdaptive.muted,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -294,7 +385,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                       SizedBox(
                         width: double.infinity,
                         child:
-                            _guardando
+                            _guardando || _subiendoFoto
                                 ? const Center(
                                   child: Padding(
                                     padding: EdgeInsets.all(12),
