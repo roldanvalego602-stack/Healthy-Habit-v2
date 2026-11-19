@@ -1,4 +1,4 @@
-# Mr. Healthy 2.0 — fases 1 y 2
+# Mr. Healthy 2.0 — fases 1, 2 y 3
 
 ## Estado funcional
 
@@ -15,6 +15,26 @@
 - Historial: nuevo chat, recuperación y borrado explícito. La función de borrado también elimina documentos de mensajes.
 - Profesionales: la pantalla existente contiene datos **de demostración**. No anunciarla como una red de prestadores verificados.
 - **No hay todavía modelo generativo, llamada a LLM ni memoria semántica persistente**. Las consultas fuera del catálogo siguen recurriendo a respuestas locales prudentes.
+
+## Fase 3 — acciones y tarjetas por módulo
+
+- **Tienda**: el usuario puede solicitar artículos por nombre o elegirlos de la colección. La tarjeta muestra saldo e inventario desde `ShopService.watch()`, y permite comprar, equipar o quitar artículos con un **diálogo de confirmación antes de cada operación**. Las mutaciones reales siguen usando `ShopService.buy/equip`, no instrucciones generadas por el chatbot. El resultado solo se anuncia después de que la operación termine correctamente.
+- **Memoria contextual**: se conserva el último artículo referido en el historial para seguir conversaciones como "quiero comprar corona" → "cómpralo", sin cambiar nada automáticamente.
+- **Desafíos**: tarjeta con datos de la subcolección `users/{uid}/challenges`: desafíos activos, disponibles, por reclamar y barras de avance. Aceptar y reclamar permanecen en `DesafiosScreen` para no duplicar la lógica que acredita XP y monedas.
+- **Logros**: tarjeta que utiliza el mismo `LogrosService.progreso` que la colección para mostrar cuántos logros se han alcanzado y qué objetivos faltan. No concede premios.
+- **Editar perfil**: vista previa de nombre, usuario y biografía actualizados desde Firestore y acceso a `EditarPerfilScreen`. Los cambios exigen usar las validaciones existentes del formulario.
+- **Animaciones**: apertura/cambio de contenido de las tarjetas mediante `AnimatedSize`, aparición de barras de progreso con `TweenAnimationBuilder`, botones de confirmación y celebración al terminar un canje/equipamiento. Toda decoración respeta `HealthyVisualEffects` (Lite y reducir movimiento).
+- **Limitación significativa**: el módulo de Desafíos contiene un conjunto inicial con progreso de demostración; los datos que el chat presenta proceden de esos documentos, pero **no equivalen necesariamente a actividad real comprobada**. Por eso las reclamaciones NO se ejecutan desde el chat, y la tarjeta advierte de esa limitación. Antes de producción, reemplazar el sembrado de progreso ficticio por estado comprobado y revisar reglas de concesión de XP.
+- **Seguridad**: las reglas Firestore deben impedir que un cliente cambie los saldos, `shopInventory`, estados de retos o XP sin validación servidor. Las transacciones del cliente son útiles para consistencia, pero no sustituyen autorizaciones del backend.
+
+### Pruebas adicionales
+
+```bash
+flutter test test/healthy_chat_modules_test.dart
+flutter test test/healthy_assistant_engine_test.dart
+```
+
+Consultar desde Mr. Healthy: "Mis desafíos", "¿Qué logros tengo?", "Quiero comprar corona", "Cómpralo" y "Cambiar mi nombre". Comprobar que los importes y barras reflejen Firestore, que cancelar una compra no cambie las monedas, y que la edición abra el formulario original.
 
 ## Reglas de seguridad de Firestore — revisión requerida
 
