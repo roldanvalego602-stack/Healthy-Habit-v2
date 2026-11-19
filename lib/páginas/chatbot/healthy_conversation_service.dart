@@ -178,6 +178,68 @@ class HealthyConversationService {
           'que razonemos?';
     }
 
+    // Conocimientos generales intemporales, sin inventar datos actuales.
+    // Se responde solo a conceptos presentes en este pequeño glosario.
+    if (_has(t, ['que es', 'que significa', 'explicame', 'hablame de',
+        'como funciona', 'para que sirve', 'definicion de'])) {
+      const concepts = <String, String>{
+        'fotosintesis': 'La fotosíntesis es el proceso mediante el cual '
+          'plantas, algas y algunos microorganismos convierten la energía '
+          'de la luz en energía química. Usan agua y dióxido de carbono, '
+          'y muchas de estas rutas liberan oxígeno.',
+        'algoritmo': 'Un algoritmo es una secuencia finita de instrucciones '
+          'para resolver un problema o realizar una tarea. '
+          'Puede describirse con pasos, diagramas o código.',
+        'programacion': 'Programar consiste en diseñar instrucciones '
+          'para que una computadora realice tareas. '
+          'Implica comprender un problema, escribir código, '
+          'probarlo y corregir errores.',
+        'inteligencia artificial': 'La inteligencia artificial es un '
+          'campo de la informática que desarrolla sistemas capaces '
+          'de realizar tareas como reconocer patrones, generar texto '
+          'y apoyar decisiones. Sus resultados pueden equivocarse.',
+        'flutter': 'Flutter es un framework de Google para construir '
+          'interfaces y aplicaciones a partir de una base de código '
+          'principalmente escrita en Dart. Healthy Habit utiliza Flutter.',
+        'firebase': 'Firebase es una plataforma de desarrollo de '
+          'aplicaciones que ofrece servicios como autenticación, '
+          'almacenamiento, bases de datos y funciones en la nube. '
+          'Healthy Habit utiliza varios de esos servicios.',
+        'base de datos': 'Una base de datos organiza información para '
+          'consultarla y actualizarla. Firestore es una base de datos '
+          'de documentos utilizada en Healthy Habit.',
+        'sistema solar': 'El Sistema Solar incluye al Sol y los cuerpos '
+          'que orbitan a su alrededor: planetas, lunas, asteroides '
+          'y cometas, entre otros.',
+        'galaxia': 'Una galaxia es un conjunto gravitacional de '
+          'estrellas, gas, polvo y otros componentes. '
+          'La Vía Láctea es la galaxia donde se encuentra el Sol.',
+        'marte': 'Marte es el cuarto planeta desde el Sol. '
+          'Es rocoso y tiene una atmósfera muy delgada, '
+          'compuesta principalmente por dióxido de carbono.',
+        'adn': 'El ADN es una molécula que almacena información '
+          'genética en muchos organismos. Su secuencia participa '
+          'en la transmisión de características biológicas.',
+        'proteina': 'Las proteínas son moléculas formadas por '
+          'aminoácidos que cumplen funciones estructurales, '
+          'enzimáticas y de regulación en los seres vivos.',
+        'habito': 'Un hábito es un comportamiento que se vuelve '
+          'más automático mediante repetición y señales del '
+          'entorno. Para construir uno conviene empezar con '
+          'acciones pequeñas y fáciles de repetir.',
+        'estres': 'El estrés es una respuesta del organismo ante '
+          'demandas o amenazas percibidas. Puede ser temporal; '
+          'si es intenso o persistente, buscar apoyo profesional '
+          'puede ser útil.',
+      };
+      for (final entry in concepts.entries) {
+        if (_has(t, [entry.key])) {
+          return '${entry.value} ¿Quieres un ejemplo sencillo '
+              'o prefieres profundizar en alguna parte?';
+        }
+      }
+    }
+
     return null;
   }
 }
