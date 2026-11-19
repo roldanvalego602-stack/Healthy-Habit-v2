@@ -62,6 +62,8 @@ void main() {
     final result = engine.resolve('¿Qué nutrientes tienen las lentejas?',
       profile: profile, habits: habits);
     expect(result.card, 'knowledge');
+    expect(result.action, 'source');
+    expect(result.actionArgument, 'https://fdc.nal.usda.gov/');
     expect(result.text, contains('USDA'));
     expect(result.text, contains('lentejas'));
   });
