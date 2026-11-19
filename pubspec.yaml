@@ -21,6 +21,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
   image_picker: ^1.2.1
+  image: ^4.5.4
   flutter_svg: ^2.0.17
   firebase_storage: ^12.4.10
   draggable_fab: ^0.1.4
