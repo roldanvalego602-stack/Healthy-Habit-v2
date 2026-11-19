@@ -14,6 +14,7 @@ class HealthyRemindersService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  Future<void>? _initializing;
   int _revision = 0;
 
   static const int _firstId = 8100;
@@ -31,8 +32,14 @@ class HealthyRemindersService {
   bool get supported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  Future<void> initialize() async {
-    if (!supported || _initialized) return;
+  Future<void> initialize() {
+    if (!supported || _initialized) return Future<void>.value();
+    return _initializing ??= _initializeInternal().whenComplete(() {
+      _initializing = null;
+    });
+  }
+
+  Future<void> _initializeInternal() async {
     tz_data.initializeTimeZones();
     final zone = await FlutterTimezone.getLocalTimezone();
     // Nunca suponer la zona horaria del usuario por ubicación o IP.
