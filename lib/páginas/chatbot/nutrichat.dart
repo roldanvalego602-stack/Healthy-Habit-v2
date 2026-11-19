@@ -133,6 +133,156 @@ class _NutriChatPageState extends State<NutriChatPage> {
     });
   }
 
+  Future<void> _loadRecentChat() async {
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      final sessions = await _history.watchSessions().first;
+      if (!mounted || _hasSentMessage || sessions.isEmpty) return;
+      await _openSession(sessions.first.id);
+    } catch (_) {
+      // El chat sigue disponible si Firestore no permite consultar el historial.
+    }
+  }
+
+  Future<void> _openSession(String id) async {
+    if (isTyping) return;
+    setState(() => _historyLoading = true);
+    try {
+      final records = await _history.loadMessages(id);
+      if (!mounted) return;
+      setState(() {
+        _sessionId = id;
+        messages
+          ..clear()
+          ..addAll(records.map(ChatMessage.fromRecord));
+        _hasSentMessage = records.isNotEmpty;
+        _lastTopic = '';
+        for (final record in records.reversed) {
+          if (!record.isUser) {
+            _lastTopic = const ['habit_add', 'habit_remove', 'profile']
+                    .contains(record.card) ? record.card : '';
+            break;
+          }
+        }
+      });
+      _scrollToBottom();
+    } catch (_) {
+      _chatNotice('No se pudo abrir el historial de ese chat.');
+    } finally {
+      if (mounted) setState(() => _historyLoading = false);
+    }
+  }
+
+  void _newConversation() {
+    if (isTyping) return;
+    setState(() {
+      _sessionId = null;
+      _lastTopic = '';
+      _hasSentMessage = false;
+      messages
+        ..clear()
+        ..add(ChatMessage(
+          text: '¡Hola! Soy Mr. Healthy. ¿En qué te ayudo?',
+          isUser: false,
+          time: _timeNow(),
+        ));
+    });
+  }
+
+  void _chatNotice(String notice) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(notice)));
+  }
+
+  Future<void> _persist(ChatMessage message, {bool first = false}) async {
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      _sessionId ??= await _history.createSession();
+      await _history.saveMessage(_sessionId!, text: message.text,
+        isUser: message.isUser, action: message.action,
+        actionArgument: message.argument, card: message.card,
+        isFirstUserMessage: first && message.isUser);
+    } catch (_) {
+      _chatNotice('No se pudo sincronizar este mensaje con el historial.');
+    }
+  }
+
+  Future<void> _refreshAssistantData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _perfil = {};
+      _habitosPerfil = [];
+      return;
+    }
+    final userRef = FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('users').doc(user.uid);
+    try {
+      final result = await userRef.get();
+      _perfil = result.data() ?? {};
+    } catch (_) {
+      _perfil = {};
+    }
+    try {
+      final result = await userRef.collection('user_habits').limit(100).get();
+      _habitosPerfil = result.docs.map((d) => d.data()).toList();
+    } catch (_) {
+      _habitosPerfil = [];
+    }
+  }
+
+  void _navigateFromChat(ChatMessage message) {
+    Widget? target;
+    switch (message.action) {
+      case 'habits':
+        target = HabitsScreen(initialSearch: message.argument);
+        break;
+      case 'progress':
+        target = const ProgresoScreen();
+        break;
+      case 'professionals':
+        target = const ProfesionalesScreen();
+        break;
+      case 'profile':
+        target = const ProfileScreen();
+        break;
+      case 'levels':
+        final raw = _perfil['xp'] ?? _perfil['currentXp'];
+        target = CaminoNivelesScreen(
+          xp: raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0);
+        break;
+      case 'ranking':
+        target = const RankingScreen();
+        break;
+      case 'shop':
+        target = const StoreScreen();
+        break;
+    }
+    if (target != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => target!));
+    }
+  }
+
+  Future<void> _showChatHistory() async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      _chatNotice('Inicia sesión para guardar conversaciones.');
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (_) => HealthyChatHistorySheet(
+        history: _history,
+        activeId: _sessionId,
+        onSelected: _openSession,
+        onNew: _newConversation,
+      ),
+    );
+  }
+
   void _onFocusChange() {
     if (_inputFocus.hasFocus) {
       // Espera al ajuste de tamaño causado por el teclado.
