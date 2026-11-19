@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
+import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
@@ -65,6 +66,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final ScrollController scrollController = ScrollController();
   final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
+  final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
@@ -101,6 +103,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     'Hablar con un profesional',
     '¿Qué nutrientes tienen las lentejas?',
     'Quiero calcular mi GET',
+    '¿Cómo está el clima hoy?',
   ];
 
   static String _timeNow() {
@@ -513,6 +516,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
             ? _calculatorService.procesarMensaje(text) : '';
         if (calc.isNotEmpty) {
           response = calc;
+        } else if (NutriRespuestasService.contiene(normalized, const [
+          'clima', 'pronostico', 'va a llover', 'esta lloviendo',
+          'temperatura de hoy', 'tiempo meteorologico',
+        ])) {
+          // Mijo: clima real por solicitud explícita, sin ubicación por IP.
+          try {
+            final weather = await _climaServicio.obtenerClimaActual();
+            response = weather.mensaje;
+            intent = HealthyAssistantReply(
+              response, card: 'weather');
+          } on ClimaException catch (error) {
+            response = error.message;
+          }
         } else {
           final requiresProfile = NutriRespuestasService.contiene(normalized, [
             'mi perfil','mis datos','mis estadisticas','mi progreso',
@@ -752,6 +768,23 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ),
         ),
         const SizedBox(height: 10),
+        if (_calculatorService.opcionesRapidas.isNotEmpty) ...[
+          Text('Continuar o salir del cálculo',
+            style: TextStyle(color: _muted,
+              fontWeight: FontWeight.w700, fontSize: 12)),
+          const SizedBox(height: 7),
+          Wrap(
+            spacing: 8, runSpacing: 5,
+            children: [
+              for (final option in _calculatorService.opcionesRapidas)
+                ActionChip(
+                  label: Text(option),
+                  onPressed: isTyping ? null : () => sendMessage(option),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
         ...quickOptions.map(
           (option) => Padding(
             padding: const EdgeInsets.only(bottom: 7),
@@ -958,6 +991,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
               HealthyChatProfileEditor(
                 onEdit: () => _navigateFromChat(message),
               ),
+            ],
+            if (!isUser && message.card == 'weather') ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.cloud_outlined, size: 18,
+                  color: HealthyAdaptive.accent),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  'Clima actual · Open-Meteo · ubicación aproximada',
+                  style: TextStyle(fontSize: 11,
+                    color: HealthyAdaptive.muted),
+                )),
+              ]),
             ],
             if (!isUser && message.card == 'knowledge') ...[
               const SizedBox(height: 10),
