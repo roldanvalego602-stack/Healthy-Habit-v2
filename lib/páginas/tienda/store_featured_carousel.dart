@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_float.dart';
 import 'shop_service.dart';
 
 /// Destacados del catálogo real. La lista se puede ampliar sin tocar el carrusel.
@@ -188,10 +189,14 @@ class _StoreFeaturedCarouselState extends State<StoreFeaturedCarousel> {
                                   ),
                                 ),
                                 const Spacer(),
-                                Icon(Icons.stars_rounded,
+                                HealthyGlowIcon(
+                                  icon: Icons.stars_rounded,
                                   color: dark
                                       ? const Color(0xFFFFDB91)
-                                      : const Color(0xFF987227), size: 22),
+                                      : const Color(0xFF987227),
+                                  size: 22,
+                                  float: index == _index,
+                                ),
                               ]),
                               const SizedBox(height: 9),
                               Expanded(
@@ -221,10 +226,14 @@ class _StoreFeaturedCarouselState extends State<StoreFeaturedCarousel> {
                                     ),
                                     Expanded(
                                       flex: 4,
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(item.emoji,
-                                          style: const TextStyle(fontSize: 74)),
+                                      child: HealthyFloat(
+                                        enabled: index == _index,
+                                        distance: 6,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(item.emoji,
+                                            style: const TextStyle(fontSize: 74)),
+                                        ),
                                       ),
                                     ),
                                   ],
