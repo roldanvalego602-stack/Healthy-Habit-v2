@@ -89,6 +89,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   bool _historyLoading = false;
   bool _manuallyStartedNew = false;
   List<Map<String, dynamic>> _habitosPerfil = [];
+  bool _allowHistoryAnalysis = false;
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -353,6 +354,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (user == null) {
       _perfil = {};
       _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
       return false;
     }
     final userRef = FirebaseFirestore.instanceFor(
@@ -362,8 +364,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
       final result = await userRef.get();
       if (!result.exists) return false;
       _perfil = result.data() ?? {};
+      final rawSettings = _perfil['settings'];
+      _allowHistoryAnalysis =
+          rawSettings is Map && rawSettings['analizarHistorialIA'] == true;
+      if (!_allowHistoryAnalysis) {
+        _habitosPerfil = [];
+        return true;
+      }
     } catch (_) {
       _perfil = {};
+      _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
       return false;
     }
     try {
@@ -656,6 +667,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
           if (!available) {
             response = 'No pude consultar tus datos actualizados. '
                 'Revisa tu conexión e inténtalo de nuevo; no inventaré XP ni monedas.';
+          } else if (!_allowHistoryAnalysis &&
+              NutriRespuestasService.contiene(normalized, const [
+                'mis habitos', 'habitos activos', 'que habitos tengo',
+                'mis actividades',
+              ])) {
+            response = 'Para consultar tus hábitos desde el asistente, activa '
+                '«Permitir análisis del historial» en Configuración. '
+                'Puedes seguir viendo tus hábitos desde su sección normal.';
           } else {
             intent = _engine.resolve(text, profile: _perfil,
                 habits: _habitosPerfil, lastTopic: _lastTopic,
