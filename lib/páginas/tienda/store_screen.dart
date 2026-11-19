@@ -5,6 +5,7 @@ import '../../tema/healthy_celebration.dart';
 import '../../tema/healthy_visual_mode.dart';
 
 import 'shop_service.dart';
+import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
 
 /// Tienda con tarjetas horizontales grandes. Conserva el catálogo y las compras.
@@ -74,6 +75,87 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
+  void _showFeaturedPreview(ShopItem item, ShopState? state) {
+    final owned = state?.owns(item.id) ?? false;
+    final affordable = state != null && state.coins >= item.price;
+    final canBuy = state != null && !owned && affordable && _busy == null;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            22, 12, 22, 22 + MediaQuery.viewInsetsOf(sheetContext).bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Text(item.emoji,
+                style: const TextStyle(fontSize: 76))),
+              const SizedBox(height: 12),
+              Text(item.category.toUpperCase(),
+                style: TextStyle(color: HealthyAdaptive.accent,
+                  fontSize: 11, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              Text(item.name,
+                style: TextStyle(color: HealthyAdaptive.text,
+                  fontSize: 25, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 9),
+              Text(item.description,
+                style: TextStyle(color: HealthyAdaptive.muted,
+                  fontSize: 14, height: 1.4)),
+              const SizedBox(height: 17),
+              Row(children: [
+                _coinIcon(size: 24),
+                const SizedBox(width: 8),
+                Expanded(child: Text(
+                  item.price == 0 ? 'Gratis'
+                      : '${item.price} Habit Coins',
+                  style: TextStyle(color: HealthyAdaptive.text,
+                    fontSize: 17, fontWeight: FontWeight.w800))),
+              ]),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: canBuy ? () {
+                    Navigator.of(sheetContext).pop();
+                    _buy(item);
+                  } : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: HealthyAdaptive.accent,
+                    foregroundColor: const Color(0xFF10392F),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(owned ? 'Ya adquirido'
+                      : state == null ? 'Cargando saldo'
+                      : affordable ? 'Canjear recompensa'
+                      : 'Saldo insuficiente'),
+                ),
+              ),
+              if (state != null && !owned && !affordable) ...[
+                const SizedBox(height: 8),
+                Center(child: Text(
+                  'Te faltan ${item.price - state.coins} Habit Coins',
+                  style: TextStyle(color: HealthyAdaptive.muted,
+                    fontSize: 12))),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openWardrobe() {
     if (widget.onOpenWardrobe != null) {
       widget.onOpenWardrobe!();
@@ -118,6 +200,16 @@ class _StoreScreenState extends State<StoreScreen> {
                       ),
                     ),
                   ),
+                SliverToBoxAdapter(
+                  child: StoreFeaturedCarousel(
+                    items: [
+                      for (final id in featuredShopItemIds)
+                        if (shopItemById(id) case final ShopItem item) item,
+                    ],
+                    shopState: state,
+                    onSelected: (item) => _showFeaturedPreview(item, state),
+                  ),
+                ),
                 SliverToBoxAdapter(child: _categoryFilters()),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
