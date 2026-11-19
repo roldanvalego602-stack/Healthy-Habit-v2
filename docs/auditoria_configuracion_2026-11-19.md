@@ -37,14 +37,14 @@ Un ajuste se considera **funcional** solo cuando: (1) la UI permite cambiarlo, (
 
 ## Social
 - mostrarRachaAmigos: consultado desde FeedAmigosScreen y PublicProfileScreen para ocultar el dato en pantalla. **AÚN SIN CONTROL DE LECTURA** desde Firestore Rules.
-- visibilidadLogros: **SOLO GUARDADO**; los destacados de PublicProfileScreen son ejemplos estáticos.
+- visibilidadLogros: ahora controla la sección Logros destacados en PublicProfileScreen. 'Solo amigos' comprueba un seguidor aceptado de la cuenta (users/{uid}/followers/{viewerUid}). **SOLO PRESENTACIÓN**: las tarjetas de ejemplo siguen sin representar logros reales, y falta asegurar los accesos mediante Firestore Rules.
 - desafiosDe: **SOLO GUARDADO**; verificar flujo de invitaciones antes de aplicarlo.
 - permitirReacciones: **SOLO GUARDADO**.
 - Lista de bloqueados: **NO IMPLEMENTADA**; requiere bloquear relaciones, feeds y reglas.
 - Datos del perfil público no deben equipararse con permisos de backend; ocultar widgets no asegura que datos no se lean.
 
 ## Recordatorios
-- permitirRecordatorios, horarioRecordatorio, recordatorioHabito, recordatorioRacha, recordatorioDesafios y descansoSemanal: **SOLO GUARDADO**. No hay planificador de notificaciones del dispositivo; NotificationsScreen contiene notificaciones de ejemplo, no agenda real. Requiere permisos Android, plugin/servicio, horario, zona y cancelación al deshabilitar.
+- permitirRecordatorios, horarioRecordatorio, recordatorioHabito, recordatorioRacha, recordatorioDesafios y descansoSemanal: **IMPLEMENTACIÓN ANDROID SIN PRUEBA EN DISPOSITIVO**. HealthyRemindersService usa flutter_local_notifications 19.5.0 con timezone local detectada en el dispositivo; agenda diariamente hábitos, rachas, desafíos, o lunes-sábado al habilitar descanso semanal. Se cancela al apagar el ajuste o cerrar sesión; se restaura desde Firestore al iniciar sesión. Se incluye notificación de prueba y solicitud explícita de permiso. Android puede retrasar avisos inexactos. NotificationsScreen sigue mostrando datos de demostración, independientes de la agenda del sistema.
 
 ## Gamificación
 - mostrarXp, mostrarPuntos, mostrarNivelPerfil, mostrarRachasDiarias y modoDiscreto: aplicados al ProfileScreen, conservan datos subyacentes. **PARCIAL** en otras pantallas como ranking, tienda y chat.
@@ -60,8 +60,8 @@ Un ajuste se considera **funcional** solo cuando: (1) la UI permite cambiarlo, (
 3. Desactivar XP/monedas/racha; verificar perfil y feed de otro usuario.
 4. Desactivar sonidos/vibración/efectos; comprar desde tienda con dos cuentas de prueba.
 5. Desactivar analizarHistorialIA; preguntar al asistente por hábitos y verificar que no consulte user_habits.
-6. Enviar recordatorio / bloquear persona / borrar cuenta: **NO MARCAR APROBADO** hasta implementar backend/scheduler y probar.
-7. Revisar reglas Firestore reales y pruebas de acceso con usuarios distintos.
+6. Enviar notificación de prueba desde Android 13+, aceptar/denegar permisos y verificar estado. Programar aviso en 2–5 minutos, cerrar app, comprobar entrega (puede demorarse) y después desactivar todos; comprobar cancelación y reinicio.\n7. Bloquear persona / borrar cuenta: **NO MARCAR APROBADO** hasta implementar backend y probar.
+8. Revisar reglas Firestore reales y pruebas de acceso con usuarios distintos.
 
 ## Prioridad de cierre
 P0: privacidad de datos, permisos backend, no prometer recordatorios o eliminación, persistencia de cuenta.
