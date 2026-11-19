@@ -9,6 +9,10 @@ import 'nutri_respuestas_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
+import 'healthy_chat_habit_card.dart';
+import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_celebration.dart';
+import '../habitos/habit_action_service.dart';
 import '../habitos/habits_screen.dart';
 import '../estadisticas/progreso_screen.dart';
 import '../perfil/profesionales_screen.dart';
@@ -272,6 +276,35 @@ class _NutriChatPageState extends State<NutriChatPage> {
     } catch (_) {
       _chatNotice('No fue posible abrir la fuente.');
     }
+  }
+
+  Future<void> _onHabitActionCompleted(HabitActionResult result) async {
+    await _refreshAssistantData();
+    if (!mounted) return;
+    final text = result.removed
+        ? 'Confirmado: «${result.habit.title}» fue abandonado. '
+          'Se descontaron ${result.chargedCoins} Habit Coins y tu historial permanece disponible.'
+        : 'Confirmado: «${result.habit.title}» se agregó a tus hábitos activos. '
+          'Puedes registrar tu progreso desde Hábitos.';
+    final message = ChatMessage(
+      text: text, isUser: false, time: _timeNow(),
+      action: 'habits', argument: result.habit.title,
+      card: 'habit_result',
+    );
+    setState(() {
+      messages.add(message);
+    });
+    HealthyCelebration.show(context,
+      title: result.removed ? 'Hábito actualizado' : '¡Nuevo hábito!',
+      subtitle: result.removed
+          ? 'Tu historial se conservó.'
+          : 'Puedes comenzar a registrar tus avances.',
+      icon: result.removed
+          ? Icons.task_alt_rounded
+          : Icons.emoji_events_rounded,
+    );
+    _scrollToBottom();
+    await _persist(message);
   }
 
   void _navigateFromChat(ChatMessage message) {
@@ -735,7 +768,20 @@ class _NutriChatPageState extends State<NutriChatPage> {
     final isUser = message.isUser;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey('mr-healthy-message-${messages.indexOf(message)}'),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: HealthyVisualEffects.duration(
+          context, const Duration(milliseconds: 220)),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) => Opacity(
+          opacity: value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 7),
+            child: child,
+          ),
+        ),
+        child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.82,
@@ -763,6 +809,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 height: 1.4,
               ),
             ),
+            if (!isUser &&
+                (message.card == 'habit_add' ||
+                 message.card == 'habit_remove') &&
+                message.argument.trim().isNotEmpty) ...[
+              HealthyChatHabitCard(
+                habitTitle: message.argument,
+                remove: message.card == 'habit_remove',
+                onCompleted: (result) => _onHabitActionCompleted(result),
+              ),
+            ],
             if (!isUser && message.card == 'knowledge') ...[
               const SizedBox(height: 10),
               Row(children: [
@@ -778,7 +834,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
               const SizedBox(height: 12),
               _profileCard(),
             ],
-            if (!isUser && message.action.isNotEmpty) ...[
+            if (!isUser && message.action.isNotEmpty &&
+                !(message.action == 'habits' &&
+                  message.argument.trim().isNotEmpty &&
+                  (message.card == 'habit_add' ||
+                   message.card == 'habit_remove'))) ...[
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 key: ValueKey('healthy-chat-action-${message.action}'),
@@ -801,6 +861,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
