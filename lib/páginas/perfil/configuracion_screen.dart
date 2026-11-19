@@ -685,7 +685,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _toggle('sonidosApp', 'Sonidos de la app'),
             _toggle('vibracionHaptica', 'Vibración háptica'),
             _toggle('animacionesDivertidas', 'Animaciones divertidas',
-              subtitle: 'Preferencia guardada; los efectos no están conectados globalmente.'),
+              subtitle: 'Reduce animaciones compatibles con HealthyVisualEffects en toda la app.'),
             _action(
               'Tamaño de texto',
               () => _choose('tamanoTexto', 'Tamaño de texto', [
