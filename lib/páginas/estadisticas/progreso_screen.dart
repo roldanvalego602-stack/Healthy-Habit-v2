@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -17,7 +18,20 @@ class _Log {
   final String title;
   final int xp;
   final bool completed;
-  const _Log(this.date, this.title, this.xp, this.completed);
+  final String note;
+  final bool hasEvidence;
+  final String? evidenceId;
+  final DateTime? evidenceExpiresAt;
+  const _Log(
+    this.date,
+    this.title,
+    this.xp,
+    this.completed, {
+    required this.note,
+    required this.hasEvidence,
+    this.evidenceId,
+    this.evidenceExpiresAt,
+  });
 }
 
 class _ProgresoScreenState extends State<ProgresoScreen> {
@@ -64,8 +78,16 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           final data = doc.data();
           final date = _date(data['createdAt']);
           if (date == null) continue;
-          entries.add(_Log(date, (data['habitTitle'] ?? 'Hábito').toString(),
-            _int(data['xpEarned']), data['completed'] == true));
+          entries.add(_Log(
+            date,
+            (data['habitTitle'] ?? 'Hábito').toString(),
+            _int(data['xpEarned']),
+            data['completed'] == true,
+            note: (data['note'] ?? '').toString().trim(),
+            hasEvidence: data['hasEvidence'] == true,
+            evidenceId: data['evidenceId']?.toString(),
+            evidenceExpiresAt: _date(data['evidenceExpiresAt']),
+          ));
         }
       }
       entries.sort((a, b) => b.date.compareTo(a.date));
@@ -81,6 +103,127 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
       if (!mounted) return;
       setState(() { loading = false; error = 'No se pudieron consultar las estadísticas. Comprueba la conexión y los permisos de Firestore.\n$e'; });
     }
+  }
+
+  bool _evidenceAvailable(_Log log) =>
+      log.hasEvidence &&
+      log.evidenceId != null &&
+      log.evidenceId!.isNotEmpty &&
+      log.evidenceExpiresAt != null &&
+      DateTime.now().toUtc().isBefore(log.evidenceExpiresAt!.toUtc());
+
+  Future<void> _viewEvidence(_Log log) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !_evidenceAvailable(log)) {
+      _showMessage('La fotografía ha expirado o no está disponible.');
+      return;
+    }
+    try {
+      final doc = await db.collection('users').doc(user.uid)
+          .collection('temporary_habit_evidence').doc(log.evidenceId!).get();
+      if (!mounted) return;
+      final data = doc.data();
+      final expiry = _date(data?['expiresAt']);
+      if (data == null ||
+          expiry == null ||
+          !DateTime.now().toUtc().isBefore(expiry.toUtc())) {
+        _showMessage('La evidencia ya no está disponible.');
+        return;
+      }
+      final encoded = data['imageBase64'];
+      if (encoded is! String || encoded.isEmpty) {
+        _showMessage('No se encontró la imagen de este registro.');
+        return;
+      }
+      final bytes = base64Decode(encoded);
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(log.title),
+          content: SingleChildScrollView(child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.memory(bytes, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Text('No se pudo abrir la imagen.')),
+              if (log.note.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Nota: ${log.note}'),
+              ],
+              const SizedBox(height: 10),
+              const Text('La fotografía es temporal. El registro y su nota permanecen en el historial.',
+                style: TextStyle(fontSize: 12)),
+            ],
+          )),
+          actions: [TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          )],
+        ),
+      );
+    } catch (_) {
+      _showMessage('No se pudo cargar la evidencia. Revisa tu conexión.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _logCard(_Log log) {
+    final available = _evidenceAvailable(log);
+    final date = log.date;
+    final dateLabel = '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _panel(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: Text(log.title, style: TextStyle(
+              color: ink, fontWeight: FontWeight.w800, fontSize: 14,
+            ))),
+            Text('+${log.xp} XP', style: const TextStyle(
+              color: mint, fontWeight: FontWeight.w800,
+            )),
+          ]),
+          const SizedBox(height: 4),
+          Text(dateLabel, style: TextStyle(
+            fontSize: 11, color: HealthyAdaptive.muted,
+          )),
+          if (log.note.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.notes_rounded, size: 17, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(child: Text(log.note, style: TextStyle(
+                color: ink, fontSize: 13, height: 1.4,
+              ))),
+            ]),
+          ],
+          if (log.hasEvidence) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              Icon(available ? Icons.image_outlined : Icons.hide_image_outlined,
+                size: 18, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(child: Text(
+                available ? 'Fotografía temporal disponible' : 'Fotografía expirada o no disponible',
+                style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
+              )),
+              if (available) TextButton(
+                onPressed: () => _viewEvidence(log),
+                child: const Text('Ver'),
+              ),
+            ]),
+          ],
+        ],
+      )),
+    );
   }
 
   Widget _tile(String label, String value, IconData icon, Color color) => Container(
@@ -104,7 +247,6 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final todayKey = _key(today);
     final daily = <String, int>{};
     final byHabit = <String, int>{};
     for (final log in logs) {
@@ -116,6 +258,10 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
     final activeDays = last7.where((d) => (daily[_key(d)] ?? 0) > 0).length;
     final maxDaily = last7.fold<int>(1, (m, d) { final n = daily[_key(d)] ?? 0; return n > m ? n : m; });
     final sortedHabits = byHabit.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+    final monthLogs = logs.where((log) =>
+        log.date.year == month.year && log.date.month == month.month).toList();
+    final monthDays = monthLogs.map((log) => _key(log.date)).toSet().length;
+    final monthXp = monthLogs.fold<int>(0, (sum, log) => sum + log.xp);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final offset = DateTime(month.year, month.month, 1).weekday - 1;
     return Scaffold(
@@ -161,6 +307,14 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
             const Text('Las barras representan registros guardados, no porcentajes de cumplimiento.',
               style: TextStyle(fontSize: 11, color: Color(0xFF71879A))),
           ])),
+          _section('Resumen del mes seleccionado'),
+          _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${monthLogs.length} registros · $monthDays días activos · $monthXp XP',
+              style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
+            const SizedBox(height: 8),
+            const Text('El resumen corresponde al mes mostrado en el calendario. Los valores se calculan con registros reales.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF71879A))),
+          ])),
           _section('Calendario de constancia'),
           _panel(Column(children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -197,6 +351,14 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
               Text('${entry.value} registros', style: const TextStyle(fontWeight: FontWeight.bold, color: mint)),
             ])),
           ])),
+          _section('Historial de registros'),
+          if (logs.isEmpty) _panel(const Text('Todavía no tienes registros para consultar.')),
+          for (final log in logs.take(15)) _logCard(log),
+          if (logs.length > 15) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Se muestran los últimos 15 registros.', style: TextStyle(
+              color: HealthyAdaptive.muted, fontSize: 12)),
+          ),
           const SizedBox(height: 15),
           const Text('Las estadísticas se calculan a partir de los registros disponibles en Firestore. No se estiman días sin historial.',
             style: TextStyle(fontSize: 11, color: Color(0xFF71879A))),
