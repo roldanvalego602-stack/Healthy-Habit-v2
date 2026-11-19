@@ -126,6 +126,7 @@ class SobreNosotrosScreen extends StatelessWidget {
             texto: 'Paleta de colores de la aplicación.',
             imagenes: _imgColores,
             altura: 140,
+            minimoEspacios: 0,
             extra: _PaletaColores(),
           )),
           const SizedBox(height: 16),
@@ -139,14 +140,14 @@ class SobreNosotrosScreen extends StatelessWidget {
             minimoEspacios: 2,
           )),
           const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
             child: Text(
               'Contacto',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF0E1A30),
+                color: HealthyAdaptive.text,
               ),
             ),
           ),
@@ -166,7 +167,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   value: _correo,
                   onTap: () => _copiar(context, _correo),
                 ),
-                const _Divisor(),
+                if (_correo.isNotEmpty && _telefono.isNotEmpty) const _Divisor(),
                 if (_telefono.isNotEmpty)
                 _ContactTile(
                   icon: Icons.phone_outlined,
@@ -174,7 +175,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   value: _telefono,
                   onTap: () => _copiar(context, _telefono),
                 ),
-                const _Divisor(),
+                if ((_correo.isNotEmpty || _telefono.isNotEmpty) && _sitioWeb.isNotEmpty) const _Divisor(),
                 if (_sitioWeb.isNotEmpty)
                 _ContactTile(
                   icon: Icons.language_rounded,
@@ -182,7 +183,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   value: _sitioWeb,
                   onTap: () => _copiar(context, _sitioWeb),
                 ),
-                const _Divisor(),
+                if ((_correo.isNotEmpty || _telefono.isNotEmpty || _sitioWeb.isNotEmpty) && _redSocial.isNotEmpty) const _Divisor(),
                 if (_redSocial.isNotEmpty)
                 _ContactTile(
                   icon: Icons.alternate_email_rounded,
@@ -190,7 +191,7 @@ class SobreNosotrosScreen extends StatelessWidget {
                   value: _redSocial,
                   onTap: () => _copiar(context, _redSocial),
                 ),
-                const _Divisor(),
+                if (_correo.isNotEmpty || _telefono.isNotEmpty || _sitioWeb.isNotEmpty || _redSocial.isNotEmpty) const _Divisor(),
                 _ContactTile(
                   icon: Icons.location_on_outlined,
                   label: 'Ubicación',
@@ -201,12 +202,7 @@ class SobreNosotrosScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Center(
-            child: Text(
-              _version,
-              style: TextStyle(fontSize: 12, color: Color(0xFF7A869A)),
-            ),
-          ),
+          Center(child: Text(_version, style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted))),
           const SizedBox(height: 20),
         ],
       ),
@@ -591,7 +587,7 @@ class _ImagenCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (count == 1)
             _EspacioImagen(ruta: imagenes.isEmpty ? null : imagenes.first, altura: altura)
-          else LayoutBuilder(
+          else if (count > 1) LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth < 320 ? 2 : 3;
               final width = (constraints.maxWidth - (columns - 1) * 10) / columns;
