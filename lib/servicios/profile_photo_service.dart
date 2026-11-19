@@ -161,8 +161,8 @@ class ProfilePhotoService {
     if (code == 'unauthorized' || code == 'permission-denied') {
       return ProfilePhotoException(
         'Firebase rechazó el permiso en $stage. '
-        'Revisa las reglas de Storage y Firestore para tu cuenta. '
-        '(Código: ${error.code})',
+        'Verifica las reglas de acceso y que Storage esté en el '
+        'plan Blaze (no Spark). Código: ${error.code}.',
         code: code,
       );
     }
@@ -170,8 +170,8 @@ class ProfilePhotoService {
         code == 'no-default-bucket') {
       return ProfilePhotoException(
         'No se encontró el bucket de Firebase Storage. '
-        'Verifica que esté creado y que coincida con firebase_options.dart. '
-        '(Código: ${error.code})',
+        'Comprueba su creación, nombre y plan Blaze en Firebase Console. '
+        'Código: ${error.code}.',
         code: code,
       );
     }
