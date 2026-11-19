@@ -140,6 +140,7 @@ class HabitActionService {
     }
 
     return HabitActionPreview(
+      userId: userRef.id,
       habit: habit,
       remove: remove,
       attemptId: remove ? active[habit.id] : null,
@@ -160,6 +161,9 @@ class HabitActionService {
   /// o la pantalla frente a cupos obsoletos.
   Future<HabitActionResult> execute(HabitActionPreview preview) async {
     final userRef = _userRef;
+    if (userRef.id != preview.userId) {
+      throw StateError('La sesión cambió. Vuelve a solicitar la acción.');
+    }
     final habit = preview.habit;
     final habitRef = userRef.collection('user_habits').doc(habit.id);
     final attemptsRef = habitRef.collection('attempts');
@@ -227,6 +231,11 @@ class HabitActionService {
       final userSnap = await tx.get(userRef);
       final habitSnap = await tx.get(habitRef);
       final data = userSnap.data() ?? {};
+      final previousId = habitSnap.data()?['lastAttemptId']?.toString();
+      DocumentSnapshot<Map<String, dynamic>>? previousSnap;
+      if (previousId != null && previousId.isNotEmpty) {
+        previousSnap = await tx.get(attemptsRef.doc(previousId));
+      }
       if (!userSnap.exists ||
           number(data['habitMutationVersion']) != preview.mutationVersion) {
         throw StateError('Tus hábitos cambiaron. Solicita una vista nueva.');
@@ -242,8 +251,14 @@ class HabitActionService {
       }
       if (habitSnap.data()?['lastStatus'] == 'inProgress' ||
           habitSnap.data()?['latestStatus'] == 'inProgress' ||
-          habitSnap.data()?['lastStatus'] == 'completed' && !habit.repeatable) {
+          previousSnap?.data()?['status'] == 'inProgress' ||
+          (habitSnap.data()?['lastStatus'] == 'completed' &&
+              !habit.repeatable)) {
         throw StateError('Este hábito ya está activo o no es repetible.');
+      }
+      final until = previousSnap?.data()?['availableAgainAt'];
+      if (until is Timestamp && until.toDate().isAfter(DateTime.now())) {
+        throw StateError('Este hábito aún está en periodo de espera.');
       }
       // Se vuelven a validar las condiciones para evitar gastar monedas con
       // información obsoleta. No se usa un batch sin verificación.
@@ -270,6 +285,7 @@ class HabitActionService {
 
 class HabitActionPreview {
   const HabitActionPreview({
+    required this.userId,
     required this.habit,
     required this.remove,
     required this.attemptId,
@@ -281,6 +297,7 @@ class HabitActionPreview {
     required this.mutationVersion,
     required this.estimatedCost,
   });
+  final String userId;
   final Habit habit;
   final bool remove;
   final String? attemptId;
