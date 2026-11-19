@@ -10,6 +10,8 @@ import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
+import 'healthy_chat_habit_picker.dart';
+import '../habitos/modelo/habit.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_celebration.dart';
 import '../habitos/habit_action_service.dart';
@@ -276,6 +278,49 @@ class _NutriChatPageState extends State<NutriChatPage> {
     } catch (_) {
       _chatNotice('No fue posible abrir la fuente.');
     }
+  }
+
+  Future<void> _chooseHabitForChat(bool remove) async {
+    if (isTyping || _historyLoading) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: HealthyAdaptive.surface,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => HealthyChatHabitPicker(
+        remove: remove,
+        onSelected: (habit) => _onHabitPicked(habit, remove),
+      ),
+    );
+  }
+
+  Future<void> _onHabitPicked(Habit habit, bool remove) async {
+    if (!mounted || isTyping) return;
+    final first = _sessionId == null;
+    final cardType = remove ? 'habit_remove' : 'habit_add';
+    final user = ChatMessage(
+      text: '${remove ? 'Abandonar' : 'Agregar'}: ${habit.title}',
+      isUser: true, time: _timeNow());
+    final bot = ChatMessage(
+      text: remove
+          ? 'Elegiste «${habit.title}». Verificaré el intento activo '
+              'y su posible penalización antes de pedirte confirmación.'
+          : 'Elegiste «${habit.title}». Revisaré tus cupos, '
+              'monedas y requisitos antes de solicitar confirmación.',
+      isUser: false, time: _timeNow(),
+      action: 'habits', argument: habit.title, card: cardType,
+    );
+    setState(() {
+      messages.addAll([user, bot]);
+      _hasSentMessage = true;
+      _lastTopic = cardType;
+      _lastHabitTitle = habit.title;
+      isTyping = true;
+    });
+    _scrollToBottom();
+    await _persist(user, first: first);
+    await _persist(bot);
+    if (mounted) setState(() => isTyping = false);
   }
 
   Future<void> _onHabitActionCompleted(HabitActionResult result) async {
@@ -812,6 +857,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
             if (!isUser &&
                 (message.card == 'habit_add' ||
                  message.card == 'habit_remove') &&
+                message.argument.trim().isEmpty) ...[
+              const SizedBox(height: 9),
+              FilledButton.icon(
+                key: const Key('mr-healthy-pick-habit'),
+                onPressed: isTyping ? null : () =>
+                    _chooseHabitForChat(message.card == 'habit_remove'),
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('Seleccionar hábito'),
+              ),
+            ],
+            if (!isUser &&
+                (message.card == 'habit_add' ||
+                 message.card == 'habit_remove') &&
                 message.argument.trim().isNotEmpty) ...[
               HealthyChatHabitCard(
                 habitTitle: message.argument,
@@ -836,7 +894,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
             ],
             if (!isUser && message.action.isNotEmpty &&
                 !(message.action == 'habits' &&
-                  message.argument.trim().isNotEmpty &&
                   (message.card == 'habit_add' ||
                    message.card == 'habit_remove'))) ...[
               const SizedBox(height: 10),
