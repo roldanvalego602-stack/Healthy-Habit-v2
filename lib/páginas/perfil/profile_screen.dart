@@ -13,6 +13,7 @@ import 'configuracion_screen.dart';
 import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
+import 'profile_avatar.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -363,20 +364,12 @@ class ProfileScreen extends StatelessWidget {
                       width: 3,
                     ),
                   ),
-                  child: CircleAvatar(
-                    backgroundColor: HealthyAdaptive.mint,
-                    backgroundImage:
-                        _string(data['photoUrl']).isNotEmpty
-                            ? NetworkImage(_string(data['photoUrl']))
-                            : null,
-                    child:
-                        _string(data['photoUrl']).isEmpty
-                            ? const Icon(
-                              Icons.person_rounded,
-                              size: 54,
-                              color: green,
-                            )
-                            : null,
+                  child: HealthyProfileAvatar(
+                    photoUrl: _string(
+                      data['photoUrl'],
+                      fallback: FirebaseAuth.instance.currentUser?.photoURL ?? '',
+                    ),
+                    size: 86,
                   ),
                 ),
                 const SizedBox(height: 8),
