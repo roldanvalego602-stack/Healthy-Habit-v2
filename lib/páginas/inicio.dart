@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
 import '../tema/healthy_motion.dart';
+import '../tema/healthy_float.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
@@ -684,7 +685,9 @@ class _HomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primaryGreen),
+          icon == Icons.local_fire_department
+              ? HealthyGlowIcon(icon: icon, color: const Color(0xFFE5A34B))
+              : Icon(icon, color: AppColors.primaryGreen),
           const SizedBox(height: 6),
           caption == 'Racha actual'
               ? HealthyStreakNumber(
