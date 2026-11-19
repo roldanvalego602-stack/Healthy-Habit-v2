@@ -163,7 +163,8 @@ class HealthyAssistantEngine {
     }
 
     if (has(['mis desafios','mis retos','desafios activos','desafios disponibles',
-        'misiones disponibles','ver desafios','aceptar desafio',
+        'mis misiones','misiones disponibles','ver desafios','ver mis desafios',
+        'muestrame los desafios','aceptar desafio',
         'reclamar desafio','reclamar recompensa de desafio',
         'que desafios tengo'])) {
       return const HealthyAssistantReply(
@@ -173,8 +174,9 @@ class HealthyAssistantEngine {
         action: 'challenges', card: 'challenges');
     }
 
-    if (has(['mis logros','mis insignias','medallas','logros desbloqueados',
-        'proximo logro','siguiente logro','ver logros','mis trofeos'])) {
+    if (has(['mis logros','que logros tengo','mis insignias','medallas',
+        'logros desbloqueados','proximo logro','siguiente logro',
+        'ver logros','mis trofeos'])) {
       return const HealthyAssistantReply(
         'Revisaré tus logros y cuánto te falta para el siguiente. '
         'No se concederán XP ni monedas al mostrar la información.',
@@ -183,9 +185,20 @@ class HealthyAssistantEngine {
 
     for (final item in shopCatalog) {
       final itemName = NutriRespuestasService.normalizar(item.name);
-      if (normalized.contains(itemName) &&
-          has(['comprar','canjear','quiero','equipar','ponerme','usar',
-              'quitarme','desequipar','cuanto cuesta','precio','tengo'])) {
+      final uniqueWords = itemName.split(' ')
+          .where((word) => word.length >= 5 && !const {
+            'avatar', 'lentes', 'recompensa', 'articulo',
+          }.contains(word));
+      final exact = normalized.contains(itemName);
+      final uniqueWord = uniqueWords.any((word) =>
+          NutriRespuestasService.contiene(normalized, [word]) &&
+          shopCatalog.where((other) =>
+            NutriRespuestasService.normalizar(other.name)
+                .split(' ').contains(word)).length == 1);
+      if ((exact || uniqueWord) &&
+          has(['comprar','compra','canjear','quiero','equipar',
+              'ponerme','usar','quitarme','desequipar',
+              'cuanto cuesta','precio','tengo'])) {
         return HealthyAssistantReply(
           'Encontré «${item.name}» en la tienda. '
           'Consultaré tu saldo y la colección antes de ofrecer '
@@ -246,7 +259,7 @@ class HealthyAssistantEngine {
         action: 'ranking', card: 'ranking');
     }
     if (has(['mis habitos','habitos activos','que habitos tengo',
-             'mis actividades','mis misiones'])) {
+             'mis actividades'])) {
       if (active.isEmpty) {
         return const HealthyAssistantReply(
           'No encontré hábitos marcados como activos en tus registros consultados. Puedes abrir Hábitos para iniciar uno.',
