@@ -206,12 +206,12 @@ class HealthyAssistantEngine {
       final summary = catalogItem.descripcion;
       final benefits = catalogItem.beneficios.isEmpty
           ? ''
-          : '\\nBeneficio: ${catalogItem.beneficios.first}';
+          : '\nBeneficio: ${catalogItem.beneficios.first}';
       final warning = catalogItem.precauciones.isEmpty
           ? ''
-          : '\\nPrecaución: ${catalogItem.precauciones.first}';
+          : '\nPrecaución: ${catalogItem.precauciones.first}';
       return HealthyAssistantReply(
-        '${catalogItem.titulo}: $summary$benefits$warning\\n'
+        '${catalogItem.titulo}: $summary$benefits$warning\n'
         'Puedes revisar su ficha completa y su fuente en el catálogo.',
         action: 'catalog_item', actionArgument: catalogItem.id,
         card: 'catalog_item',
