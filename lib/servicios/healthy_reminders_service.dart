@@ -103,7 +103,7 @@ class HealthyRemindersService {
     for (var kind = 0; kind < flags.length; kind++) {
       if (!flags[kind]) continue;
       // Cada tipo se separa 20 minutos. Evitar avisos pasada la medianoche.
-      final minutes = (hour * 60 + minute + kind * 20).clamp(0, 1439);
+      final minutes = (hour * 60 + minute + kind * 20).clamp(0, 1439).toInt();
       final h = minutes ~/ 60;
       final m = minutes % 60;
       final now = tz.TZDateTime.now(tz.local);
