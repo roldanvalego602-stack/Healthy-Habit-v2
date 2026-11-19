@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'colores.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/healthy_motion.dart';
 
 class TarjetaContenedor extends StatelessWidget {
   final Widget child;
@@ -18,7 +19,9 @@ class TarjetaContenedor extends StatelessWidget {
   Widget build(BuildContext context) {
     final standard = colorFondo == AppColores.blanco;
     final actual = standard ? HealthyAdaptive.surface : colorFondo;
-    return Container(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
@@ -30,6 +33,7 @@ class TarjetaContenedor extends StatelessWidget {
                 : null,
       ),
       child: child,
+      ),
     );
   }
 }
