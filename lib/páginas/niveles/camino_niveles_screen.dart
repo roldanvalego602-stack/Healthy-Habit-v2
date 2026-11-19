@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'levels_system.dart';
 import 'xp_journey_path.dart';
+import 'healthy_level_reward_line.dart';
 
 class CaminoNivelesScreen extends StatelessWidget {
   final int xp;
@@ -235,30 +236,7 @@ class CaminoNivelesScreen extends StatelessWidget {
           ),
           if (next != null) ...[
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 7,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const Text(
-                  'Próxima recompensa:',
-                  softWrap: true,
-                  style: TextStyle(
-                    color: Color(0xFFFFE49A),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                HealthyCoinAmount(
-                  amount: '${next.rewardCoins}',
-                  size: 18,
-                  suffix: ' Habit Coins',
-                  style: const TextStyle(
-                    color: Color(0xFFFFE49A),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
+            HealthyLevelRewardLine(coins: next.rewardCoins),
           ],
         ],
       ),
