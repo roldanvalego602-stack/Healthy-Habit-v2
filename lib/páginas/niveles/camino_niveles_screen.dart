@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_float.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -61,7 +62,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                   return ListView(
                     padding: const EdgeInsets.all(18),
                     children: [
-                      _summary(current, next, xpActual),
+                      _summary(context, current, next, xpActual),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -149,7 +150,7 @@ class CaminoNivelesScreen extends StatelessWidget {
     );
   }
 
-  Widget _summary(HealthyLevel current, HealthyLevel? next, int xpActual) {
+  Widget _summary(BuildContext context, HealthyLevel current, HealthyLevel? next, int xpActual) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -172,7 +173,9 @@ class CaminoNivelesScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Container(
+              HealthyFloat(
+                distance: 3,
+                child: Container(
                 width: 66,
                 height: 66,
                 decoration: BoxDecoration(
@@ -188,6 +191,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -215,11 +219,20 @@ class CaminoNivelesScreen extends StatelessWidget {
           const SizedBox(height: 20),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: LevelSystem.progress(xpActual),
-              minHeight: 10,
-              backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF08B889)),
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey('xp-progress-$xpActual'),
+              tween: Tween(begin: HealthyVisualEffects.enabled(context) ? 0.0
+                  : LevelSystem.progress(xpActual),
+                end: LevelSystem.progress(xpActual)),
+              duration: HealthyVisualEffects.duration(
+                context, const Duration(milliseconds: 850)),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 10,
+                backgroundColor: Colors.white24,
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF08B889)),
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -331,7 +344,7 @@ class CaminoNivelesScreen extends StatelessWidget {
                 width: 2,
               ),
               boxShadow:
-                  isCurrent
+                  isCurrent && HealthyVisualEffects.allowDecorativeShadows
                       ? [
                         BoxShadow(
                           color: const Color(0xFF08B889).withValues(alpha: 0.15),
@@ -342,7 +355,11 @@ class CaminoNivelesScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(level.icon, size: 30, color: accent),
+                HealthyFloat(
+                  enabled: isCurrent,
+                  distance: 3,
+                  child: Icon(level.icon, size: 30, color: accent),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
