@@ -29,7 +29,7 @@ class _XpJourneyPathState extends State<XpJourneyPath>
         1, LevelSystem.levels.length);
 
   Duration get _travelDuration => Duration(
-        milliseconds: math.min(4200, 520 + (_lastReached - 1) * 220),
+        milliseconds: math.min(4600, 640 + (LevelSystem.levels.length - 1) * 170),
       );
 
   @override
@@ -67,7 +67,7 @@ class _XpJourneyPathState extends State<XpJourneyPath>
 
   void _synchronizeAnimation() {
     final animate = HealthyVisualEffects.enabled(context) &&
-        TickerMode.of(context) && _lastReached > 1;
+        TickerMode.of(context);
     if (!animate) {
       _reveal.stop();
       _reveal.value = 1;
@@ -91,7 +91,9 @@ class _XpJourneyPathState extends State<XpJourneyPath>
     return AnimatedBuilder(
       animation: _reveal,
       builder: (context, _) {
-        final position = (_lastReached - 1) * _reveal.value;
+        // El trazo recorre todas las paradas: enciende las alcanzadas y
+        // oscurece progresivamente las que todavía están bloqueadas.
+        final position = (LevelSystem.levels.length - 1) * _reveal.value;
         final motion = HealthyVisualEffects.enabled(context);
         return Column(
           key: const Key('xp-journey-path'),
@@ -123,6 +125,8 @@ class XpJourneyTrackPainter extends CustomPainter {
   const XpJourneyTrackPainter({
     required this.upper,
     required this.lower,
+    required this.upperAsh,
+    required this.lowerAsh,
     required this.first,
     required this.last,
     required this.litColor,
@@ -131,6 +135,8 @@ class XpJourneyTrackPainter extends CustomPainter {
 
   final double upper;
   final double lower;
+  final double upperAsh;
+  final double lowerAsh;
   final bool first;
   final bool last;
   final Color litColor;
@@ -148,14 +154,19 @@ class XpJourneyTrackPainter extends CustomPainter {
       ..color = litColor
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
+    final ash = Paint()
+      ..color = const Color(0xFF24353E)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
 
     if (!first) {
       canvas.drawLine(Offset(x, 0), Offset(x, centerY), base);
-      if (upper > 0) {
+      if (upper > 0 || upperAsh > 0) {
+        final amount = math.max(upper, upperAsh);
         canvas.drawLine(
           Offset(x, 0),
-          Offset(x, centerY * upper.clamp(0.0, 1.0)),
-          bright,
+          Offset(x, centerY * amount.clamp(0.0, 1.0)),
+          upperAsh > 0 ? ash : bright,
         );
       }
     }
@@ -163,12 +174,13 @@ class XpJourneyTrackPainter extends CustomPainter {
       canvas.drawLine(
         Offset(x, centerY), Offset(x, size.height), base,
       );
-      if (lower > 0) {
+      if (lower > 0 || lowerAsh > 0) {
+        final amount = math.max(lower, lowerAsh);
         canvas.drawLine(
           Offset(x, centerY),
           Offset(x, centerY + (size.height - centerY) *
-              lower.clamp(0.0, 1.0)),
-          bright,
+              amount.clamp(0.0, 1.0)),
+          lowerAsh > 0 ? ash : bright,
         );
       }
     }
@@ -178,6 +190,8 @@ class XpJourneyTrackPainter extends CustomPainter {
   bool shouldRepaint(covariant XpJourneyTrackPainter oldDelegate) =>
       upper != oldDelegate.upper ||
       lower != oldDelegate.lower ||
+      upperAsh != oldDelegate.upperAsh ||
+      lowerAsh != oldDelegate.lowerAsh ||
       first != oldDelegate.first ||
       last != oldDelegate.last ||
       litColor != oldDelegate.litColor ||
@@ -215,11 +229,17 @@ class _XpJourneyStop extends StatelessWidget {
     final reveal = unlocked
         ? ((position - index + 0.16) / 0.16).clamp(0.0, 1.0)
         : 0.0;
-    final activated = reveal >= 0.999;
+    // Las etapas futuras se oscurecen cuando la línea llega a ellas.
+    final fused = unlocked
+        ? 0.0
+        : ((position - index + 0.16) / 0.27).clamp(0.0, 1.0);
+    final activated = unlocked && reveal >= 0.999;
     final dark = Theme.of(context).brightness == Brightness.dark;
     const unlitStart = Color(0xFF26343E);
     const unlitEnd = Color(0xFF192630);
     const unlitInk = Color(0xFFB3BEC6);
+    const waitingStart = Color(0xFF425966);
+    const waitingEnd = Color(0xFF344954);
     const lineBright = Color(0xFF30D8A2);
     final reachedColor = level.accentColor;
 
@@ -232,22 +252,36 @@ class _XpJourneyStop extends StatelessWidget {
     final fgLive = dark || level.dark
         ? const Color(0xFFF2F7F6)
         : const Color(0xFF17392F);
-    final fg = Color.lerp(unlitInk, fgLive, reveal)!;
-    final muted = Color.lerp(
-      const Color(0xFF91A0A9),
-      fgLive.withValues(alpha: 0.78),
-      reveal,
-    )!;
+    final fg = unlocked
+        ? Color.lerp(unlitInk, fgLive, reveal)!
+        : Color.lerp(const Color(0xFFE5EDF1), unlitInk, fused)!;
+    final muted = unlocked
+        ? Color.lerp(
+            const Color(0xFF91A0A9),
+            fgLive.withValues(alpha: 0.78),
+            reveal,
+          )!
+        : Color.lerp(
+            const Color(0xFFCEDAE0),
+            const Color(0xFF91A0A9),
+            fused,
+          )!;
     final accent = Color.lerp(
       const Color(0xFF71838E), reachedColor, reveal,
     )!;
 
-    final upperFill = first
+    final upperFraction = first
         ? 0.0
         : ((position - (index - 1)) * 2).clamp(0.0, 1.0);
-    final lowerFill = last
+    final lowerFraction = last
         ? 0.0
         : ((position - index) * 2).clamp(0.0, 1.0);
+    // Los segmentos antes y hasta el nivel actual son luminosos;
+    // después de él, la misma onda deja una estela oscura.
+    final upperFill = unlocked ? upperFraction : 0.0;
+    final lowerFill = unlocked && !current ? lowerFraction : 0.0;
+    final upperAsh = unlocked ? 0.0 : upperFraction;
+    final lowerAsh = unlocked && !current ? 0.0 : lowerFraction;
 
     return IntrinsicHeight(
       child: Row(
@@ -259,6 +293,8 @@ class _XpJourneyStop extends StatelessWidget {
               painter: XpJourneyTrackPainter(
                 upper: upperFill,
                 lower: lowerFill,
+                upperAsh: upperAsh,
+                lowerAsh: lowerAsh,
                 first: first,
                 last: last,
                 litColor: lineBright,
@@ -273,7 +309,9 @@ class _XpJourneyStop extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     color: Color.lerp(
-                      const Color(0xFF293943),
+                      unlocked
+                          ? const Color(0xFF293943)
+                          : Color.lerp(waitingStart, unlitStart, fused)!,
                       current ? const Color(0xFF20AD80) : reachedColor,
                       reveal,
                     ),
@@ -324,8 +362,12 @@ class _XpJourneyStop extends StatelessWidget {
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: [
-                      Color.lerp(unlitStart, liveStart, reveal)!,
-                      Color.lerp(unlitEnd, liveEnd, reveal)!,
+                      unlocked
+                          ? Color.lerp(unlitStart, liveStart, reveal)!
+                          : Color.lerp(waitingStart, unlitStart, fused)!,
+                      unlocked
+                          ? Color.lerp(unlitEnd, liveEnd, reveal)!
+                          : Color.lerp(waitingEnd, unlitEnd, fused)!,
                     ]),
                     borderRadius: BorderRadius.circular(19),
                     border: Border.all(
