@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -53,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'dificultad': 'Moderado',
     'frecuencia': 'Diaria',
     'tema': 'Sistema',
+    'modoVisual': 'Normal',
     'tamanoTexto': 'Normal',
     'idioma': 'Español',
     'visibilidadLogros': 'Solo amigos',
@@ -94,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (stored is Map) ...Map<String, dynamic>.from(stored),
           // La selección local se aplica incluso sin conexión Firebase.
           'tema': HealthyThemeController.label(HealthyThemeController.instance.mode),
+          'modoVisual': HealthyVisualController.label(HealthyVisualController.instance.mode),
         };
         loading = false;
       });
@@ -101,6 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() {
         settings['tema'] = HealthyThemeController.label(HealthyThemeController.instance.mode);
+        settings['modoVisual'] = HealthyVisualController.label(HealthyVisualController.instance.mode);
         loading = false;
       });
       _message('No se pudieron cargar tus preferencias: $e');
@@ -126,6 +130,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }, SetOptions(merge: true));
       } catch (_) {
         // El tema sigue disponible sin conexión.
+      }
+      return;
+    }
+    if (key == 'modoVisual') {
+      try {
+        await HealthyVisualController.instance.select(
+          HealthyVisualController.parse(value.toString()),
+        );
+      } catch (e) {
+        _message('No se pudo guardar el modo visual: $e');
+        return;
+      }
+      if (mounted) setState(() => settings[key] = value);
+      try {
+        await userRef?.set({
+          'settings': {'modoVisual': value},
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // La preferencia global sigue activa sin conexión.
       }
       return;
     }
@@ -620,6 +643,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Tema',
               () => _choose('tema', 'Tema', ['Sistema', 'Claro', 'Oscuro']),
               value: _str('tema'),
+            ),
+            _action(
+              'Modo visual',
+              () => _choose('modoVisual', 'Rendimiento visual', ['Lite', 'Normal']),
+              value: _str('modoVisual'),
+              subtitle: 'Lite reduce animaciones y efectos sin quitar funciones',
             ),
             _toggle('sonidosApp', 'Sonidos de la app'),
             _toggle('vibracionHaptica', 'Vibración háptica'),
