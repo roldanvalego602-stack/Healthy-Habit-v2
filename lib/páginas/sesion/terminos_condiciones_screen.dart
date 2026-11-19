@@ -53,7 +53,7 @@ class TerminosCondicionesScreen extends StatelessWidget {
           'pensadas para apoyar tu constancia y mostrarte tu progreso.',
     ),
     _Seccion(
-      icon: Icons.monetization_on_outlined,
+      icon: Icons.info_outline,
       titulo: 'HabitCoins',
       texto:
           'Las HabitCoins son monedas propias de la aplicación. No son dinero '
