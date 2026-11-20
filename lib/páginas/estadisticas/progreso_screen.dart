@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 /// Estadísticas basadas en registros reales de cada intento (attempts/logs).
 /// Un registro equivale a una actividad; completar un intento es distinto.
@@ -231,9 +233,20 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
     decoration: BoxDecoration(color: HealthyAdaptive.surface, borderRadius: BorderRadius.circular(18)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, color: color), const SizedBox(height: 9),
-      Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
-      Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF71879A))),
+      Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
+      Text(label, maxLines: 2, style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted)),
     ]),
+  );
+
+  Widget _weeklyMetric(IconData icon, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: HealthyAdaptive.accent, size: 16),
+      const SizedBox(width: 5),
+      Text(label, style: TextStyle(
+        fontWeight: FontWeight.w700, color: ink, fontSize: 13)),
+    ],
   );
 
   Widget _section(String text) => Padding(
@@ -256,6 +269,9 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
     final last7 = List.generate(7, (i) => DateTime(today.year, today.month, today.day).subtract(Duration(days: 6-i)));
     final weekly = last7.fold<int>(0, (sum, day) => sum + (daily[_key(day)] ?? 0));
     final activeDays = last7.where((d) => (daily[_key(d)] ?? 0) > 0).length;
+    final last7Keys = last7.map(_key).toSet();
+    final weeklyXp = logs.where((log) => last7Keys.contains(_key(log.date)))
+        .fold<int>(0, (sum, log) => sum + log.xp);
     final maxDaily = last7.fold<int>(1, (m, d) { final n = daily[_key(d)] ?? 0; return n > m ? n : m; });
     final sortedHabits = byHabit.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
     final monthLogs = logs.where((log) =>
@@ -274,8 +290,48 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           mainAxisSize: MainAxisSize.min, children: [Text(error!, textAlign: TextAlign.center),
           const SizedBox(height: 12), ElevatedButton(onPressed: _load, child: const Text('Reintentar'))])))
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 30), children: [
-          const Text('Cada registro cuenta. Sigue construyendo tu constancia.', style: TextStyle(color: Color(0xFF71879A))),
+          Text('Cada registro cuenta. Sigue construyendo tu constancia.',
+            style: TextStyle(color: HealthyAdaptive.muted)),
           const SizedBox(height: 15),
+          HealthyMotionCard(
+            enablePress: false,
+            child: _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.insights_rounded, color: HealthyAdaptive.accent, size: 22),
+                const SizedBox(width: 9),
+                Expanded(child: Text('Tu avance esta semana',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: ink))),
+              ]),
+              const SizedBox(height: 12),
+              Text('$activeDays de 7 días con actividad',
+                style: TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 15)),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: activeDays / 7),
+                  duration: HealthyVisualEffects.enabled(context)
+                      ? const Duration(milliseconds: 650) : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, progress, _) => LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 10,
+                    backgroundColor: HealthyAdaptive.border,
+                    color: HealthyAdaptive.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(spacing: 14, runSpacing: 6, children: [
+                _weeklyMetric(Icons.check_circle_outline_rounded, '$weekly registros'),
+                _weeklyMetric(Icons.auto_awesome_rounded, '+$weeklyXp XP'),
+              ]),
+              const SizedBox(height: 6),
+              Text('Actividad calculada a partir de tus registros guardados.',
+                style: TextStyle(color: HealthyAdaptive.muted, fontSize: 11)),
+            ])),
+          ),
+          const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _tile('Experiencia total', '${_int(profile['xp'])} XP', Icons.stars_rounded, mint)),
             const SizedBox(width: 10),
@@ -295,10 +351,22 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
               for (final day in last7) Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
                 Text('${daily[_key(day)] ?? 0}', style: TextStyle(fontSize: 11, color: ink)),
                 const SizedBox(height: 5),
-                Container(height: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily,
-                  margin: const EdgeInsets.symmetric(horizontal: 5),
-                  decoration: BoxDecoration(color: (daily[_key(day)] ?? 0) == 0 ? HealthyAdaptive.border : mint,
-                    borderRadius: BorderRadius.circular(7))),
+                TweenAnimationBuilder<double>(
+                  key: ValueKey('weekly-bar-${_key(day)}-${daily[_key(day)] ?? 0}'),
+                  tween: Tween(begin: 0, end: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily),
+                  duration: HealthyVisualEffects.enabled(context)
+                      ? const Duration(milliseconds: 520) : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, height, _) => Container(
+                    height: height,
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      color: (daily[_key(day)] ?? 0) == 0
+                          ? HealthyAdaptive.border : HealthyAdaptive.accent,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Text(['L','M','X','J','V','S','D'][day.weekday-1], style: TextStyle(fontSize: 12, color: ink)),
               ])),
@@ -345,7 +413,10 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
             Text('${logs.length} registros en total · $completedAttempts de $attemptsCount intentos completados',
               style: TextStyle(color: ink, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            if (sortedHabits.isEmpty) const Text('Aún no hay registros. Completa una actividad para comenzar.'),
+            if (sortedHabits.isEmpty) Text(
+              'Aún no hay registros. Completa una actividad para comenzar.',
+              style: TextStyle(color: HealthyAdaptive.muted)),
+
             for (final entry in sortedHabits.take(8)) Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Row(children: [
               Expanded(child: Text(entry.key, maxLines: 2, overflow: TextOverflow.ellipsis)),
               Text('${entry.value} registros', style: const TextStyle(fontWeight: FontWeight.bold, color: mint)),
