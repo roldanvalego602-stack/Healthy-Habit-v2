@@ -13,7 +13,7 @@ void main() {
   });
 
   test('dataset local tiene IDs únicos y fuentes estructuradas', () {
-    expect(index.cards.length, greaterThanOrEqualTo(15));
+    expect(index.cards.length, greaterThanOrEqualTo(40));
     expect(index.cards.map((card) => card.id).toSet().length,
         index.cards.length);
     expect(index.cards.every((card) =>
@@ -25,6 +25,20 @@ void main() {
     expect(index.search('¿Qué alimentos me dan más fibra?')?.card.id, 'fibra');
     expect(index.search('Háblame de las hojuelas de avena')?.card.id, 'avena');
     expect(index.search('Quiero mejorar mi hidratación')?.card.id, 'hidratacion');
+  });
+
+  test('reconoce formulaciones distintas para cena y ejercicio en casa', () {
+    expect(index.search('¿Qué debería cenar?')?.card.id, 'cena');
+    expect(index.search('¿Qué ejercicio puedo hacer en casa?')?.card.id, 'casa');
+    expect(index.search('¿Cómo mejorar mi alimentación?')?.card.id, 'plato');
+  });
+
+  test('las fichas internas no inventan enlaces oficiales', () async {
+    final answer = await hybrid.answer('Quiero mejorar mi hidratación',
+        operational: const HealthyAssistantReply(''));
+    expect(answer?.card, 'knowledge');
+    expect(answer?.action, isEmpty);
+    expect(answer?.actionArgument, isEmpty);
   });
 
   test('las palabras aisladas no relacionadas no generan respuestas', () {
