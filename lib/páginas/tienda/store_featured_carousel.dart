@@ -4,6 +4,7 @@ import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_float.dart';
 import 'shop_service.dart';
+import 'shop_item_artwork.dart';
 
 /// Destacados del catálogo real. La lista se puede ampliar sin tocar el carrusel.
 const featuredShopItemIds = <String>[
@@ -232,8 +233,7 @@ class _StoreFeaturedCarouselState extends State<StoreFeaturedCarousel> {
                                         distance: 6,
                                         child: FittedBox(
                                           fit: BoxFit.scaleDown,
-                                          child: Text(item.emoji,
-                                            style: const TextStyle(fontSize: 74)),
+                                          child: ShopItemArtwork(item: item, size: 105),
                                         ),
                                       ),
                                     ),
