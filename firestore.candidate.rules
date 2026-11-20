@@ -48,7 +48,13 @@ service cloud.firestore {
         'mint_aura': 120,
         'cape': 200,
         'pixel_glasses': 80,
-        'cat_ears': 150
+        'cat_ears': 150,
+        'sports_headband': 70,
+        'leaf_headphones': 140,
+        'leaf_hoodie': 200,
+        'wellness_medal': 100,
+        'water_bottle': 90,
+        'leaf_backpack': 170
       }.get(id, -1);
     }
 
@@ -126,17 +132,19 @@ service cloud.firestore {
       let inventory = request.resource.data.get('shopInventory', []);
       return look.keys().hasOnly([
           'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
-          'cuello', 'ojos', 'cabeza', 'aura', 'espalda'
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano'
         ])
         && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame'])
         && validEquippedSlot(look, inventory, 'perfil_banner', ['banner'])
         && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
         && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar'])
-        && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana'])
+        && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
         && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses'])
-        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones'])
         && validEquippedSlot(look, inventory, 'aura', ['mint_aura'])
-        && validEquippedSlot(look, inventory, 'espalda', ['cape']);
+        && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack'])
+        && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
+        && validEquippedSlot(look, inventory, 'mano', ['water_bottle']);
     }
 
     // Descuento por abandono: requiere que los DOS documentos del hábito
