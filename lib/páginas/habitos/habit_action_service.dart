@@ -221,6 +221,14 @@ class HabitActionService {
         tx.update(userRef, {
           'habitCoins': coins - deducted,
           'habitMutationVersion': preview.mutationVersion + 1,
+          // Referencia auditable para que Firestore Rules valide el descuento
+          // contra la cancelación del intento en ESTA misma transacción.
+          if (deducted > 0)
+            'habitCancellation': {
+              'habitId': habit.id,
+              'attemptId': id,
+              'version': preview.mutationVersion + 1,
+            },
         });
         return deducted;
       });
