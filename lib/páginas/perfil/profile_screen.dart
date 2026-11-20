@@ -16,6 +16,8 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import 'profile_monthly_summary.dart';
+import '../tienda/wardrobe_screen.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -161,7 +163,10 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _sectionTitle('Tu mes, paso a paso', null, null),
                   const SizedBox(height: 14),
-                  _monthlyProgress(context),
+                  ProfileMonthlySummary(
+                     userRef: userRef,
+                     onViewProgress: () => _open(context, const ProgresoScreen()),
+                   ),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Hecho a tu manera',
@@ -170,6 +175,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _customizationCard(data),
+                   const SizedBox(height: 12),
+                   SizedBox(
+                     width: double.infinity,
+                     child: OutlinedButton.icon(
+                       onPressed: () => _open(context, const WardrobeScreen()),
+                       icon: const Icon(Icons.checkroom_rounded),
+                       label: const Text('Abrir mi armario y equipar cosméticos'),
+                     ),
+                   ),
                   const SizedBox(height: 20),
                   _mascotCard(streak: streak),
                   const SizedBox(height: 20),
@@ -1053,64 +1067,6 @@ class ProfileScreen extends StatelessWidget {
         },
       ),
   );
-
-  Widget _monthlyProgress(BuildContext context) => Material(
-    color: HealthyAdaptive.surface,
-    borderRadius: BorderRadius.circular(26),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(26),
-      onTap: () => _open(context, const ProgresoScreen()),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: HealthyAdaptive.mint,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.insights_rounded,
-              color: HealthyAdaptive.accent, size: 28),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_monthLabel(DateTime.now()),
-                style: TextStyle(color: navy,
-                  fontSize: 15, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 5),
-              Text('Consulta tus registros, días activos, XP y calendario.',
-                style: TextStyle(color: muted, fontSize: 12)),
-              const SizedBox(height: 5),
-              Text('Ver mi progreso mensual',
-                style: TextStyle(color: HealthyAdaptive.accent,
-                  fontSize: 12, fontWeight: FontWeight.w800)),
-            ],
-          )),
-          Icon(Icons.chevron_right_rounded, color: HealthyAdaptive.accent),
-        ]),
-      ),
-    ),
-  );
-
-  static String _monthLabel(DateTime date) {
-    const months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
 
   Widget _customizationCard(Map<String, dynamic> data) => Column(
     children: [
