@@ -80,3 +80,11 @@ No desplegar `firestore.candidate.rules` todavía. Se requiere un diseño de aut
 Las reglas candidatas ahora validan que `FirebaseService.saveUserData` cree un perfil con saldo inicial de 100 Habit Coins, 0 XP, nivel 1 y racha 0. Se evita inyectar inventario o XP en el alta. `ShopService.equip` y `resetLook` tienen validación por ranura, inventario y dos prendas gratuitas.
 
 **Bloqueadores restantes:** aumentos arbitrarios de XP/HC por `update`; creación de logs falsos; penalizaciones a rachas en `habits_screen.dart` que reducen `habitCoins` sin compra; eliminación de perfil desde el cliente; origen no confiable del ranking; comprobación integral con Flutter. Ninguna regla fue desplegada.
+
+## Hallazgo adicional: activación/cancelación de hábitos
+
+El código real de penalizaciones está centralizado en `lib/páginas/habitos/habit_action_service.dart`, compartido entre la pantalla de Hábitos y Mr. Healthy; no se trata de un descuento genérico desde `habits_screen.dart`.
+
+Una activación puede reducir saldo por `habit.coinCost` y escribir en la misma transacción el perfil, la definición de hábito y el intento inicial. Una cancelación de hábito difícil puede descontar hasta 25 Habit Coins, incrementando `habitMutationVersion` y cambiando el intento a `cancelled`. `firestore.candidate.rules` restringe actualmente todo débito no vinculado a compras y bloquearía estas operaciones.
+
+Se añadieron dos pruebas de caracterización de la denegación actual; **total esperado: 50**, pendiente de ejecutar. Próximo paso: diseñar transiciones atómicas con comprobación de `getAfter` y límites de catálogo, sin abrir la opción de descuentos arbitrarios. Se mantienen las limitaciones de XP e ingresos autodeclarados.
