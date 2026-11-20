@@ -47,6 +47,14 @@ before(async () => {
       note: 'private',
     });
     await setDoc(doc(db, 'system/catalog'), { version: 1 });
+    await setDoc(doc(db, 'public_profiles/alice'), {
+      name: 'Alice', username: 'alice', xp: 50,
+      settings: { mostrarRachaAmigos: true, visibilidadLogros: 'Todos' },
+    });
+    await setDoc(doc(db, 'public_profiles/bob'), {
+      name: 'Bob', username: 'bob', xp: 100,
+      settings: { mostrarRachaAmigos: false, visibilidadLogros: 'Solo amigos' },
+    });
   });
 });
 
@@ -85,4 +93,24 @@ test('system es legible para autenticados pero no editable desde cliente', async
 test('sin autenticación no se permite acceder a perfiles', async () => {
   await assertFails(getDoc(doc(anonymous, 'users/alice')));
   assert.ok(env);
+});
+
+test('perfiles públicos son legibles para otros usuarios autenticados', async () => {
+  await assertSucceeds(getDoc(doc(alice, 'public_profiles/bob')));
+  await assertSucceeds(getDocs(collection(alice, 'public_profiles')));
+  await assertFails(getDoc(doc(anonymous, 'public_profiles/bob')));
+});
+
+test('un usuario no puede modificar el perfil público ajeno', async () => {
+  await assertFails(updateDoc(doc(alice, 'public_profiles/bob'), { xp: 9999 }));
+  await assertSucceeds(updateDoc(doc(alice, 'public_profiles/alice'), { xp: 51 }));
+});
+
+test('campos privados no se pueden introducir en perfiles públicos', async () => {
+  await assertFails(updateDoc(doc(alice, 'public_profiles/alice'), {
+    email: 'private@example.test',
+  }));
+  await assertFails(updateDoc(doc(alice, 'public_profiles/alice'), {
+    settings: { analizarHistorialIA: true },
+  }));
 });
