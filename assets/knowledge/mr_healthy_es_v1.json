@@ -385,6 +385,461 @@
         "name": "Healthy Habit — consejo educativo general",
         "url": ""
       }
+    },
+    {
+      "id": "carbohidratos",
+      "category": "alimentacion",
+      "title": "Carbohidratos",
+      "aliases": [
+        "carbohidratos",
+        "carbohidrato",
+        "alimentos con carbohidratos",
+        "cereales integrales"
+      ],
+      "tags": [
+        "energia",
+        "avena",
+        "arroz",
+        "pan"
+      ],
+      "answer": "Los carbohidratos son una fuente de energía. Una alimentación variada puede incluir cereales integrales, frutas y leguminosas, de acuerdo con el contexto de cada persona.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "grasas",
+      "category": "alimentacion",
+      "title": "Grasas alimentarias",
+      "aliases": [
+        "grasas saludables",
+        "grasas",
+        "aguacate",
+        "frutos secos"
+      ],
+      "tags": [
+        "aceite",
+        "nueces",
+        "semillas"
+      ],
+      "answer": "Las grasas forman parte de una alimentación variada. Algunas fuentes incluyen aguacate, nueces, semillas y aceites vegetales. Conviene limitar las grasas trans.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "vitaminas",
+      "category": "alimentacion",
+      "title": "Vitaminas y minerales",
+      "aliases": [
+        "vitaminas",
+        "minerales",
+        "micronutrientes",
+        "nutrientes esenciales"
+      ],
+      "tags": [
+        "alimentacion variada",
+        "verduras",
+        "frutas"
+      ],
+      "answer": "Las vitaminas y minerales participan en distintas funciones del cuerpo. Una alimentación variada ayuda a obtenerlos; una necesidad específica requiere valoración individual.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "hierro",
+      "category": "alimentacion",
+      "title": "Fuentes de hierro",
+      "aliases": [
+        "hierro",
+        "alimentos con hierro",
+        "anemia"
+      ],
+      "tags": [
+        "leguminosas",
+        "carnes",
+        "nutrientes"
+      ],
+      "answer": "El hierro se encuentra en distintos alimentos, como leguminosas y algunos productos animales. Ante sospecha de anemia no conviene diagnosticarla ni tratarla solo con consejos del chatbot.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "calcio",
+      "category": "alimentacion",
+      "title": "Calcio y salud ósea",
+      "aliases": [
+        "calcio",
+        "huesos",
+        "alimentos con calcio"
+      ],
+      "tags": [
+        "lacteos",
+        "nutrientes",
+        "minerales"
+      ],
+      "answer": "El calcio participa en la salud de huesos y dientes. Existen fuentes animales y vegetales; las necesidades dependen de la etapa de vida y situación individual.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "etiquetas",
+      "category": "alimentacion",
+      "title": "Lectura de etiquetas nutricionales",
+      "aliases": [
+        "etiqueta nutricional",
+        "etiquetas",
+        "sellos",
+        "leer etiquetas",
+        "informacion nutrimental"
+      ],
+      "tags": [
+        "sodio",
+        "azucares",
+        "porciones"
+      ],
+      "answer": "Para comparar alimentos envasados revisa la porción declarada, ingredientes y cantidad de sodio y azúcares. Los datos deben interpretarse considerando la cantidad realmente consumida.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "cena",
+      "category": "alimentacion",
+      "title": "Opciones sencillas para cenar",
+      "aliases": [
+        "cena saludable",
+        "ideas para cenar",
+        "que cenar",
+        "cenar sano"
+      ],
+      "tags": [
+        "comida",
+        "huevo",
+        "leguminosas"
+      ],
+      "answer": "Una cena práctica puede combinar verduras, una fuente de proteína como huevo, frijoles o tofu, y otro alimento de acuerdo con el apetito y las preferencias.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "colaciones",
+      "category": "alimentacion",
+      "title": "Colaciones y refrigerios",
+      "aliases": [
+        "colacion",
+        "snack saludable",
+        "entre comidas",
+        "botana saludable"
+      ],
+      "tags": [
+        "fruta",
+        "yogur",
+        "nueces"
+      ],
+      "answer": "Si tienes hambre entre comidas, opciones sencillas son fruta con yogur o una porción de nueces. No es obligatorio comer colaciones si no las necesitas.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "vegetariana",
+      "category": "alimentacion",
+      "title": "Alimentación vegetariana",
+      "aliases": [
+        "vegetariano",
+        "vegetariana",
+        "vegano",
+        "vegana",
+        "alimentacion vegetal"
+      ],
+      "tags": [
+        "leguminosas",
+        "cereales",
+        "vitamina b12"
+      ],
+      "answer": "Una alimentación basada en vegetales puede ser variada si se planifica bien. En dietas veganas conviene prestar atención especial a la vitamina B12 y asesorarse sobre necesidades individuales.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "alergias",
+      "category": "alimentacion",
+      "title": "Alergias e intolerancias alimentarias",
+      "aliases": [
+        "alergia alimentaria",
+        "alergias",
+        "intolerancia",
+        "gluten",
+        "lactosa"
+      ],
+      "tags": [
+        "reaccion alimentaria",
+        "sensibilidad"
+      ],
+      "answer": "Una alergia alimentaria y una intolerancia no son lo mismo. No elimines grupos completos por sospecha sin evaluación. Dificultad para respirar o hinchazón importante tras comer requieren atención urgente.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "glucosa",
+      "category": "alimentacion",
+      "title": "Alimentación y glucosa",
+      "aliases": [
+        "diabetes",
+        "glucosa",
+        "azucar en sangre",
+        "glucemia"
+      ],
+      "tags": [
+        "nutricion",
+        "salud"
+      ],
+      "answer": "La alimentación puede apoyar el cuidado de la glucosa, pero las decisiones deben individualizarse según el tratamiento y contexto clínico. No modifiques medicamentos por una respuesta del chatbot.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "peso",
+      "category": "alimentacion",
+      "title": "Cambios de peso",
+      "aliases": [
+        "bajar de peso",
+        "adelgazar",
+        "perder grasa",
+        "subir de peso",
+        "aumentar de peso"
+      ],
+      "tags": [
+        "alimentacion",
+        "actividad",
+        "descanso"
+      ],
+      "answer": "Los cambios de peso se abordan mejor con hábitos sostenibles que con dietas extremas. Si existe una variación involuntaria o preocupación clínica, busca orientación profesional.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "ayuno",
+      "category": "alimentacion",
+      "title": "Ayuno intermitente",
+      "aliases": [
+        "ayuno intermitente",
+        "ayunar",
+        "hacer ayuno"
+      ],
+      "tags": [
+        "horarios",
+        "comidas"
+      ],
+      "answer": "El ayuno no es indispensable para mejorar hábitos. Puede no ser adecuado en ciertas etapas o condiciones y requiere valoración si existe una situación de salud específica.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "suplementos",
+      "category": "alimentacion",
+      "title": "Suplementos nutricionales",
+      "aliases": [
+        "suplementos",
+        "proteina en polvo",
+        "creatina",
+        "suplemento alimenticio"
+      ],
+      "tags": [
+        "alimentacion",
+        "ejercicio"
+      ],
+      "answer": "Los suplementos no sustituyen una alimentación variada, el sueño ni el entrenamiento. Sus beneficios y riesgos varían según sustancia, calidad y condiciones personales.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "cardio",
+      "category": "movimiento",
+      "title": "Ejercicio aeróbico",
+      "aliases": [
+        "cardio",
+        "ejercicio aerobico",
+        "resistencia cardiovascular",
+        "correr",
+        "bicicleta"
+      ],
+      "tags": [
+        "caminar",
+        "actividad fisica"
+      ],
+      "answer": "Las actividades aeróbicas incluyen caminar a paso ligero, bicicleta o nadar. Puedes empezar con períodos cómodos y progresar de forma gradual.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "sentadillas",
+      "category": "movimiento",
+      "title": "Sentadillas",
+      "aliases": [
+        "sentadilla",
+        "sentadillas",
+        "hacer sentadillas"
+      ],
+      "tags": [
+        "piernas",
+        "ejercicio",
+        "fuerza"
+      ],
+      "answer": "Las sentadillas trabajan principalmente piernas y caderas. Prioriza un movimiento controlado y un rango cómodo; detente si experimentas dolor.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "flexiones",
+      "category": "movimiento",
+      "title": "Flexiones",
+      "aliases": [
+        "flexion",
+        "flexiones",
+        "lagartijas",
+        "hacer lagartijas"
+      ],
+      "tags": [
+        "brazos",
+        "ejercicio",
+        "fuerza"
+      ],
+      "answer": "Las flexiones trabajan varios músculos del torso y los brazos. Es posible empezar contra una pared o superficie elevada y ajustar la dificultad.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "planchas",
+      "category": "movimiento",
+      "title": "Plancha abdominal",
+      "aliases": [
+        "plancha abdominal",
+        "planchas",
+        "core",
+        "abdominales"
+      ],
+      "tags": [
+        "estabilidad",
+        "ejercicio"
+      ],
+      "answer": "La plancha es un ejercicio de estabilidad. Mantén una posición cómoda y respira continuamente; empieza con intervalos breves.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "calentamiento",
+      "category": "movimiento",
+      "title": "Calentamiento",
+      "aliases": [
+        "calentamiento",
+        "calentar antes de entrenar",
+        "antes de entrenar"
+      ],
+      "tags": [
+        "movilidad",
+        "ejercicio"
+      ],
+      "answer": "Antes de entrenar puedes realizar unos minutos de movimiento suave y progresivo relacionado con la actividad. Ajusta el esfuerzo a tu capacidad.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "movilidad",
+      "category": "movimiento",
+      "title": "Movilidad y estiramientos",
+      "aliases": [
+        "estirar",
+        "estiramientos",
+        "movilidad",
+        "flexibilidad"
+      ],
+      "tags": [
+        "ejercicio",
+        "articulaciones"
+      ],
+      "answer": "La movilidad suave y los estiramientos pueden ayudar a practicar movimientos controlados. No fuerces posiciones dolorosas ni rebotes intensamente.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "casa",
+      "category": "movimiento",
+      "title": "Ejercicio en casa",
+      "aliases": [
+        "entrenar en casa",
+        "rutina en casa",
+        "ejercicios en casa"
+      ],
+      "tags": [
+        "caminar",
+        "fuerza",
+        "sentadillas"
+      ],
+      "answer": "Puedes comenzar con caminar, levantarte de una silla o hacer flexiones contra una pared. Las sesiones breves también pueden formar parte de una rutina.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "motivacion",
+      "category": "habitos",
+      "title": "Constancia con los hábitos",
+      "aliases": [
+        "motivacion para entrenar",
+        "no tengo motivacion",
+        "disciplina",
+        "ser constante",
+        "mantener habitos"
+      ],
+      "tags": [
+        "rutina",
+        "objetivos",
+        "progreso"
+      ],
+      "answer": "Preparar con anticipación una actividad breve y realista puede facilitar empezar. La constancia suele construirse con acciones que resulten sostenibles.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
     }
   ]
 }
