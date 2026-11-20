@@ -71,7 +71,7 @@ class HealthyPublicProfileService {
     int positiveInt(String key, int fallback) {
       final raw = privateData[key];
       if (raw is! num) return fallback;
-      return raw.toInt().clamp(0, 1000000000);
+      return raw.toInt().clamp(0, 1000000000).toInt();
     }
 
     final rawSettings = privateData['settings'];
