@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
+import 'shop_item_artwork.dart';
 import '../../servicios/healthy_feedback_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
@@ -403,7 +404,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         : const Color(0xFFE5F7EF),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(item.emoji, style: const TextStyle(fontSize: 45)),
+                  child: ShopItemArtwork(item: item, size: 74),
                 ),
               ),
               const SizedBox(height: 9),
