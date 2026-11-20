@@ -10,16 +10,20 @@ class HealthyProfileAvatar extends StatelessWidget {
     required this.photoUrl,
     this.size = 88,
     this.iconSize,
+    this.preset = 'foto',
   });
 
   final String? photoUrl;
   final double size;
   final double? iconSize;
+  /// Estilo gratuito guardado en Firestore (sin depender de Storage).
+  final String preset;
 
   @override
   Widget build(BuildContext context) {
     final url = photoUrl?.trim() ?? '';
-    final validUrl = (Uri.tryParse(url)?.hasScheme ?? false) &&
+    final validUrl = preset == 'foto' &&
+        (Uri.tryParse(url)?.hasScheme ?? false) &&
         (url.startsWith('https://') || url.startsWith('http://'));
     return SizedBox.square(
       dimension: size,
@@ -48,7 +52,12 @@ class HealthyProfileAvatar extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Icon(
-              Icons.person_rounded,
+              switch (preset) {
+                'naturaleza' => Icons.spa_rounded,
+                'agua' => Icons.water_drop_rounded,
+                'energia' => Icons.bolt_rounded,
+                _ => Icons.person_rounded,
+              },
               size: iconSize ?? size * .60,
               color: HealthyAdaptive.accent,
             ),
