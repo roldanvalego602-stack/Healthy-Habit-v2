@@ -300,6 +300,10 @@ class HabitActionService {
         'acquiredAt': FieldValue.serverTimestamp(),
         'lastAttemptId': attemptRef.id,
         'lastStatus': 'inProgress',
+        // Inicio muestra el intento activo incluso antes del primer registro.
+        'latestAttemptId': attemptRef.id,
+        'latestProgress': 0,
+        'latestTarget': attempt.target,
         'latestStatus': 'inProgress',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
