@@ -8,6 +8,7 @@ import '../../tema/healthy_coin.dart';
 
 import '../../servicios/healthy_feedback_service.dart';
 import 'shop_service.dart';
+import 'shop_item_artwork.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
 
@@ -106,8 +107,7 @@ class _StoreScreenState extends State<StoreScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Text(item.emoji,
-                style: const TextStyle(fontSize: 76))),
+              Center(child: ShopItemArtwork(item: item, size: 125)),
               const SizedBox(height: 12),
               Text(item.category.toUpperCase(),
                 style: TextStyle(color: HealthyAdaptive.accent,
@@ -487,10 +487,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         child: Center(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
-                              item.emoji,
-                              style: const TextStyle(fontSize: 92),
-                            ),
+                            child: ShopItemArtwork(item: item, size: 126),
                           ),
                         ),
                       ),
