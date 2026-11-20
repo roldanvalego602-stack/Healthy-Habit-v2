@@ -10,7 +10,9 @@ void main() {
         preset: 'naturaleza',
       )),
     ));
-    expect(find.byIcon(Icons.spa_rounded), findsOneWidget);
+    final image = tester.widget<Image>(find.byType(Image));
+    expect((image.image as AssetImage).assetName,
+      'assets/avatares/avatar 2.png');
   });
 
   testWidgets('avatar hidratación utiliza su propio icono', (tester) async {
@@ -20,7 +22,9 @@ void main() {
         preset: 'agua',
       )),
     ));
-    expect(find.byIcon(Icons.water_drop_rounded), findsOneWidget);
+    final image = tester.widget<Image>(find.byType(Image));
+    expect((image.image as AssetImage).assetName,
+      'assets/avatares/avatar 3.png');
   });
 
   testWidgets('un identificador desconocido usa avatar clásico', (tester) async {
