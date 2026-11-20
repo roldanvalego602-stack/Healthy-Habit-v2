@@ -1,10 +1,8 @@
 import 'dart:math';
-import 'healthy_knowledge_base.dart';
 
 /// Respuestas locales y transparentes: no consulta Internet ni inventa datos.
 class NutriRespuestasService {
   final Random _random = Random();
-  final HealthyWellnessKnowledgeBase _knowledge = const HealthyWellnessKnowledgeBase();
 
   /// Tone is applied to everyday educational responses, never safety messages.
   String humor = 'amigable';
@@ -157,8 +155,6 @@ class NutriRespuestasService {
     if (contiene(text, ['calorias de', 'cuantas calorias tiene', 'tabla nutricional exacta'])) {
       return 'No tengo una tabla validada de calorías por alimento y porción. Para un cálculo fiable hace falta cantidad, preparación y una base de composición alimentaria verificada; evita tomar una cifra inventada como dato real.';
     }
-    final conocimiento = _knowledge.answer(text);
-    if (conocimiento != null) return _conHumor(conocimiento);
     final saludo = nombre.isEmpty ? '' : ', $nombre';
     final now = DateTime.now();
     final hora =
