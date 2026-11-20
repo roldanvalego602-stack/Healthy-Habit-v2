@@ -61,7 +61,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     return _userDoc.collection('user_habits');
   }
 
-  bool get _tieneEvidencia => _imagenSeleccionada != null;
   bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
   bool get _puedeGuardar =>
       !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
@@ -77,7 +76,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     _progreso = widget.currentProgress ?? 0;
     _meta = widget.goal ?? 6;
     _cargarHabito();
-    TemporaryEvidenceService.cleanExpiredForCurrentUser().catchError((_) {});
+    TemporaryEvidenceService.cleanExpiredForCurrentUser().then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('No se pudieron limpiar evidencias vencidas: $error');
+      },
+    );
   }
 
   @override
@@ -298,13 +302,11 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
       final resultado = await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
-        final habitoSnapshot = await transaction.get(habitoRef);
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (!attemptSnapshot.exists) {
           throw Exception('El intento ya no existe.');
         }
         final datosAttempt = attemptSnapshot.data()!;
-        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
         final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
         // Comprobar el estado dentro de la transacción
         // evita guardar registros en intentos cancelados
