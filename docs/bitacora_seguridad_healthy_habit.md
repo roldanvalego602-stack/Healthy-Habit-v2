@@ -175,3 +175,13 @@ En `lib/páginas/habitos/registrar_habito_screen.dart` se amplió exclusivamente
 No se modificaron fórmulas de XP, cálculo de monedas, rachas, evidencia, transacciones, permisos ni reglas. Se conserva la condición de mostrar celebración solo después de un commit exitoso; **no es una protección antifraude**.
 
 **Pruebas funcionales pendientes en Flutter:** registro sin evidencia (+10 XP), registro con evidencia válida (+15 XP), último registro que completa una meta, subida de nivel y crédito de monedas, operación fallida que no debe presentar celebración. Ejecutar `flutter analyze --no-fatal-infos lib` y validar con cuenta de demostración. Las reglas candidatas siguen sin desplegar; último resultado de reglas confirmado: 60/60.
+
+## Desarrollo de demo — pantalla Mi progreso (20-nov-2026)
+
+Se revisó `lib/páginas/estadisticas/progreso_screen.dart`. La fuente de datos continúa siendo `users/{uid}/user_habits/{habitId}/attempts/{attemptId}/logs` y el perfil privado; no se inventan registros ni se modifica Firebase.
+
+**Mejoras visibles realizadas:** tarjeta de resumen semanal con días activos sobre siete, barra de avance y métricas de registros y XP obtenidos durante los últimos siete días; animación de barras de actividad, adaptada a reducción de efectos visuales; títulos y cifras de tarjetas con manejo de desbordamiento y colores adaptativos. Se reutilizaron `HealthyMotionCard` y `HealthyVisualEffects`, ya presentes en el proyecto. La suma semanal de XP se calcula estrictamente desde `xpEarned` de los logs, por lo que puede no coincidir con el total histórico del perfil si el usuario recibió recompensas de desafíos u otros orígenes.
+
+**Pendiente validar en Flutter:** `flutter analyze --no-fatal-infos lib` y revisión visual en móvil (tema claro/oscuro, pantalla pequeña, cuenta sin registros, cuenta con siete días de actividad, cambio de mes y pull-to-refresh). Este cambio no ha pasado por compilación local ni un test de interfaz; solo se revisó el código en GitHub.
+
+**Estado de seguridad sin cambios:** ronda de pruebas de reglas cerrada temporalmente en 60/60; fraude de XP/HC e historial siguen abiertos y `firestore.candidate.rules` no debe desplegarse.
