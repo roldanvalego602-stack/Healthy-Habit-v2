@@ -555,12 +555,20 @@ test('equipar y restablecer el aspecto conserva la propiedad comprada', async ()
 
 test('activación vigente sin costo: versión y cupos no necesitan descontar HC', async () => {
   // catalogo.dart fija coinCost: 0 para todos los hábitos oficiales.
-  // Se caracteriza la escritura del perfil; la transacción Flutter completa
-  // (hábito e intento) todavía requiere una prueba de integración propia.
-  await assertSucceeds(updateDoc(doc(economy, 'users/economy'), {
-    habitCoins: 50, habitSlots: 3, habitMutationVersion: 1,
+  // El desafío reclamado en otro caso ya incrementó el saldo compartido.
+  // No escribir un valor fijo: eso aparentaría un débito no comercial.
+  const userRef = doc(economy, 'users/economy');
+  const before = (await getDoc(userRef)).data();
+  const coinsBefore = before.habitCoins;
+  const versionBefore = before.habitMutationVersion ?? 0;
+  await assertSucceeds(updateDoc(userRef, {
+    habitCoins: coinsBefore,
+    habitSlots: 3,
+    habitMutationVersion: versionBefore + 1,
   }));
-  assert.equal((await getDoc(doc(economy, 'users/economy'))).data().habitCoins, 50);
+  const after = (await getDoc(userRef)).data();
+  assert.equal(after.habitCoins, coinsBefore);
+  assert.equal(after.habitMutationVersion, versionBefore + 1);
 });
 
 test('un cliente no puede justificar una activación inventando un cobro', async () => {
