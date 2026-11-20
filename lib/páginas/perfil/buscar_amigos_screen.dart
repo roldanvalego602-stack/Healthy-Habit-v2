@@ -244,7 +244,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                         child: Text('Inicia sesión para buscar amigos.'),
                       )
                       : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: _db.collection('users').snapshots(),
+                        stream: _db.collection('public_profiles').snapshots(),
                         builder: (context, snapshot) {
                           if (snapshot.hasError) {
                             return const Center(
