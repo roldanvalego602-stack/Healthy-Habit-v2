@@ -359,7 +359,7 @@ service cloud.firestore {
       allow get, list: if authenticated();
       allow create, update: if owner(uid)
         && request.resource.data.keys().hasOnly([
-          'name', 'username', 'photoUrl', 'bio', 'title',
+          'name', 'username', 'photoUrl', 'profileAvatarStyle', 'bio', 'title',
           'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
           'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
           'nextAchievementProgress', 'settings'
@@ -369,6 +369,8 @@ service cloud.firestore {
         && request.resource.data.username is string
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
+        && request.resource.data.get('profileAvatarStyle', 'foto')
+          in ['foto', 'naturaleza', 'agua', 'energia']
         && request.resource.data.settings is map
         && request.resource.data.settings.keys().hasOnly([
           'mostrarRachaAmigos', 'visibilidadLogros'
