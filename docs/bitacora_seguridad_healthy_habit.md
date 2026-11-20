@@ -87,3 +87,15 @@ En cada actualización, anotar: fecha, objetivo, archivos cambiados, resultado d
 - No se alteró `firestore.rules`, `firebase.json` ni la configuración de producción.
 
 **Siguiente acción:** ejecutar 48 pruebas en emulador, luego diseñar permisos seguros para penalizaciones/ingresos y probar los recorridos Flutter.
+
+## Etapa 10 — contratos de débito no comercial (20-nov-2026)
+
+**El usuario confirmó 48/48 pruebas aprobadas.** Se inspeccionó `lib/páginas/habitos/habit_action_service.dart`, que contiene las transacciones reales de activación y abandono de hábitos:
+
+- **Activación:** comprueba desbloqueos/cupos y puede cobrar `habit.coinCost`, actualizando `habitCoins`, `habitSlots`, `habitMutationVersion`, `user_habits/{habitId}` y un nuevo `attempt`.
+- **Cancelación:** solo en intentos `inProgress`, calcula una penalización de hasta **25 Habit Coins** si el hábito es difícil, cambia el intento a `cancelled` y actualiza los datos de estado y versión del perfil.
+- La regla `validOwnerUpdate` de la candidata obliga actualmente a validar como compra cualquier descuento positivo de `habitCoins`. Por tanto puede bloquear ambas acciones aunque sean legítimas.
+
+Se agregaron **dos pruebas de caracterización**, que esperan rechazo de descuentos ajenos a la tienda. **Total esperado: 50**, pendiente de ejecutar. **Son pruebas de bloqueo conocido, no de la funcionalidad correcta**. Al diseñar la autorización de las transacciones de hábitos, habrá que cambiar los casos a éxito esperado y añadir casos de falsificación y cobros repetidos.
+
+**No se modificaron las reglas** en esta etapa para evitar autorizar descuentos arbitrarios. La economía continúa sin autoridad de servidor y el aumento unilateral de monedas/XP sigue permitido. No desplegar.
