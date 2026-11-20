@@ -871,7 +871,8 @@ class _HomeContent extends StatelessWidget {
 
     final progress = _number(data['latestProgress']);
 
-    final target = _number(data['latestTarget'], 1).clamp(1, 100000).toInt();
+    final target = _number(data['latestTarget'] ?? data['target'], 1)
+        .clamp(1, 100000).toInt();
 
     final fraction = (progress / target).clamp(0.0, 1.0);
 
