@@ -22,6 +22,29 @@ service cloud.firestore {
       }
     }
 
+    // Perfiles para ranking, búsqueda y vistas públicas. Ningún dato privado.
+    // El propietario aún controla XP: esto NO certifica un ranking anti-trampas.
+    match /public_profiles/{uid} {
+      allow get, list: if authenticated();
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'name', 'username', 'photoUrl', 'bio', 'title',
+          'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
+          'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
+          'nextAchievementProgress', 'settings'
+        ])
+        && request.resource.data.keys().hasAll(['name', 'username', 'xp'])
+        && request.resource.data.name is string
+        && request.resource.data.username is string
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        && request.resource.data.settings is map
+        && request.resource.data.settings.keys().hasOnly([
+          'mostrarRachaAmigos', 'visibilidadLogros'
+        ]);
+      allow delete: if owner(uid);
+    }
+
     match /system/{path=**} {
       allow read: if authenticated();
       allow write: if false;
