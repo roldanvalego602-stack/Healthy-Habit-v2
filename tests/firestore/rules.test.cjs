@@ -553,13 +553,21 @@ test('equipar y restablecer el aspecto conserva la propiedad comprada', async ()
   assert.deepEqual(state.shopInventory, ['crown']);
 });
 
-test('compatibilidad pendiente: activar un hábito de pago exige un descuento no comercial', async () => {
-  // HabitActionService.execute usa habitCoins y habitMutationVersion al
-  // activar un hábito con costo. La candidata actual lo bloquea.
-  // Esta prueba documenta el bloqueo; al implementar una política segura
-  // de activación, cambiar assertFails por assertSucceeds y validar getAfter.
+test('activación vigente sin costo: versión y cupos no necesitan descontar HC', async () => {
+  // catalogo.dart fija coinCost: 0 para todos los hábitos oficiales.
+  // Se caracteriza la escritura del perfil; la transacción Flutter completa
+  // (hábito e intento) todavía requiere una prueba de integración propia.
+  await assertSucceeds(updateDoc(doc(economy, 'users/economy'), {
+    habitCoins: 50, habitSlots: 3, habitMutationVersion: 1,
+  }));
+  assert.equal((await getDoc(doc(economy, 'users/economy'))).data().habitCoins, 50);
+});
+
+test('un cliente no puede justificar una activación inventando un cobro', async () => {
+  // El catálogo actual NO tiene compras de hábitos: descontar monedas
+  // y aumentar la versión sin compra válida debe seguir prohibido.
   await assertFails(updateDoc(doc(economy, 'users/economy'), {
-    habitCoins: 40, habitSlots: 3, habitMutationVersion: 1,
+    habitCoins: 40, habitSlots: 3, habitMutationVersion: 2,
   }));
 });
 
