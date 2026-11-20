@@ -248,6 +248,55 @@ service cloud.firestore {
       allow delete: if owner(uid);
     }
 
+    // Reacciones entre perfiles: el emisor crea, el destinatario consulta
+    // y puede marcar leído o responder. Nunca se exponen globalmente.
+    match /interactions/{interactionId} {
+      allow get, list: if authenticated()
+        && resource.data.toUid == request.auth.uid;
+      allow create: if authenticated()
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid.size() > 0
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.emoji is string
+        && request.resource.data.emoji.size() <= 16
+        && request.resource.data.emoji.size() > 0
+        && request.resource.data.challengeId is string
+        && request.resource.data.challengeId.size() <= 128
+        && request.resource.data.tipo == 'reaccion'
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt <= request.time
+        && request.resource.data.createdAt >= request.time - duration.value(5, 'm');
+      allow update: if authenticated()
+        && resource.data.toUid == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['leido'])
+            && request.resource.data.leido == true
+          )
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['estado', 'respondedAt'])
+            && request.resource.data.estado in ['aceptado', 'rechazado']
+            && request.resource.data.respondedAt == request.time
+          )
+        );
+      allow delete: if false;
+    }
+
     match /system/{path=**} {
       allow read: if authenticated();
       allow write: if false;
