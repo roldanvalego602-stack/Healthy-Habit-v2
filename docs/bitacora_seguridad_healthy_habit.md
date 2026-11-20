@@ -74,3 +74,16 @@ En cada actualización, anotar: fecha, objetivo, archivos cambiados, resultado d
 **Pruebas añadidas:** equipamiento, edición de perfil, privacidad/borrado de evidencias y consultas de logs anidados. **Nuevo total esperado: 43, todavía sin ejecutar.** Se creó `docs/auditoria_compatibilidad_firestore_flutter.md` con matriz de compatibilidad, riesgos y checklist manual.
 
 **Siguiente acción:** validar las 43 pruebas en emulador; luego revisar y corregir permisos de equipamiento y creación de perfiles con pruebas negativas adicionales. No alterar reglas de producción hasta resolver el modelo de confianza de XP/monedas y verificar recorridos completos de Flutter.
+
+## Etapa 9 — Validación de alta y equipamiento (20-nov-2026)
+
+**Confirmado por el usuario:** 43/43 pruebas aprobadas. **Código nuevo, aún sin validar:** 5 pruebas adicionales (total esperado 48).
+
+- `validInitialUser(uid)`: solo se puede crear un perfil con estructura inicial coincidente con `FirebaseService.saveUserData`: `xp=0`, `level=1`, `habitCoins=100`, `currentStreak=0`, UID del usuario y marca de tiempo del servidor. Se rechazan artículos preadquiridos y campos adicionales en el alta.
+- `validEquipped()`: cada ranura solo acepta artículos de su categoría y que estén en inventario, salvo los cosméticos gratuitos `sunglasses` y `bandana`. Mantiene `ShopService.equip` y `resetLook`.
+- Se agregaron 5 pruebas: alta realista, creación con economía falsa, cosméticos gratuitos, equipamiento inválido, restablecimiento conservando inventario.
+- **Alerta:** `users/{uid}` aún permite `delete` del propietario y escritura posterior; aunque una recreación debe iniciar con saldo predeterminado, el borrado de perfil necesita un flujo propio y pruebas de integridad.
+- **Alerta:** `habits_screen.dart` incluye penalizaciones que descuentan `habitCoins` sin compra. La regla existente puede bloquear ese flujo. No se ha alterado esa lógica; requerirá política propia y pruebas, antes de publicar.
+- No se alteró `firestore.rules`, `firebase.json` ni la configuración de producción.
+
+**Siguiente acción:** ejecutar 48 pruebas en emulador, luego diseñar permisos seguros para penalizaciones/ingresos y probar los recorridos Flutter.
