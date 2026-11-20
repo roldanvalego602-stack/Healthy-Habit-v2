@@ -7,7 +7,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp, deleteDoc, arrayUnion } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp, deleteDoc, arrayUnion, query, where } = require('firebase/firestore');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -410,4 +410,54 @@ test('el cliente no puede generar desafíos inicialmente verificados', async () 
     demoSeed: false, progressVerified: true,
     progressSource: 'habit_records', createdAt: serverTimestamp(),
   }));
+});
+
+test('un usuario puede enviar una reacción con campos legítimos', async () => {
+  await assertSucceeds(setDoc(doc(alice, 'interactions/reaction-1'), {
+    challengeId: '', createdAt: serverTimestamp(), emoji: '👏',
+    estado: 'enviado', fromUid: 'alice', leido: false,
+    respondedAt: null, tipo: 'reaccion', toUid: 'bob',
+  }));
+});
+
+test('destinatario puede consultar sus reacciones, terceros no', async () => {
+  await assertSucceeds(getDoc(doc(bob, 'interactions/reaction-1')));
+  await assertSucceeds(getDocs(query(collection(bob, 'interactions'),
+    where('toUid', '==', 'bob'))));
+  await assertFails(getDoc(doc(alice, 'interactions/reaction-1')));
+  await assertFails(getDocs(collection(bob, 'interactions')));
+  await assertFails(getDocs(query(collection(alice, 'interactions'),
+    where('toUid', '==', 'bob'))));
+});
+
+test('no se pueden suplantar remitentes ni enviar reacciones fraudulentas', async () => {
+  await assertFails(setDoc(doc(alice, 'interactions/reaction-forged'), {
+    challengeId: '', createdAt: serverTimestamp(), emoji: '👏',
+    estado: 'enviado', fromUid: 'bob', leido: false,
+    respondedAt: null, tipo: 'reaccion', toUid: 'alice',
+  }));
+  await assertFails(setDoc(doc(alice, 'interactions/reaction-reward'), {
+    challengeId: '', createdAt: serverTimestamp(), emoji: '👏',
+    estado: 'aceptado', fromUid: 'alice', leido: false,
+    respondedAt: null, tipo: 'reaccion', toUid: 'bob',
+  }));
+});
+
+test('destinatario puede marcar como leída y responder a una reacción', async () => {
+  await assertSucceeds(updateDoc(doc(bob, 'interactions/reaction-1'), {
+    leido: true,
+  }));
+  await assertSucceeds(updateDoc(doc(bob, 'interactions/reaction-1'), {
+    estado: 'aceptado', respondedAt: serverTimestamp(),
+  }));
+});
+
+test('nadie puede reasignar destinatario ni eliminar una reacción', async () => {
+  await assertFails(updateDoc(doc(bob, 'interactions/reaction-1'), {
+    toUid: 'alice',
+  }));
+  await assertFails(updateDoc(doc(alice, 'interactions/reaction-1'), {
+    leido: false,
+  }));
+  await assertFails(deleteDoc(doc(bob, 'interactions/reaction-1')));
 });
