@@ -55,6 +55,8 @@ before(async () => {
     await setDoc(doc(db, 'users/economy/challenges/c1'), {
       status: 'completed', xpReward: 40, hcReward: 10,
       currentProgress: 5, totalProgress: 5,
+      demoSeed: false, progressVerified: true,
+      progressSource: 'habit_records',
     });
     await setDoc(doc(db, 'users/buyer'), {
       name: 'Buyer', xp: 0, habitCoins: 500,
@@ -362,12 +364,50 @@ test('regresión: reclamar desafío completado mantiene la actualización de XP 
   await assertSucceeds(batch.commit());
 });
 
-test('vulnerabilidad conocida: todavía se puede falsificar un desafío propio', async () => {
-  // Debe sustituirse por assertFails cuando exista validación fiable
-  // de estados, origen del progreso y premios de desafíos.
-  await assertSucceeds(setDoc(doc(economy, 'users/economy/challenges/forged'), {
+test('un usuario no puede crear un desafío completado y con premios falsos', async () => {
+  await assertFails(setDoc(doc(economy, 'users/economy/challenges/forged'), {
     status: 'completed', xpReward: 999999, hcReward: 999999,
     currentProgress: 1, totalProgress: 1, progressVerified: true,
-    progressSource: 'habits',
+    progressSource: 'habit_records', demoSeed: false,
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test('se permite sembrar y aceptar un desafío demostrativo legítimo', async () => {
+  const ref = doc(economy, 'users/economy/challenges/demo1');
+  await assertSucceeds(setDoc(ref, {
+    title: 'Hidratación constante',
+    status: 'available', currentProgress: 0, totalProgress: 7,
+    xpReward: 80, hcReward: 25,
+    demoSeed: true, progressVerified: false, progressSource: 'demo',
+    createdAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    status: 'inProgress', acceptedAt: serverTimestamp(),
+  }));
+});
+
+test('no se permite modificar premios ni validar fraudulentamente un desafío demo', async () => {
+  const ref = doc(economy, 'users/economy/challenges/demo1');
+  await assertFails(updateDoc(ref, { xpReward: 999999 }));
+  await assertFails(updateDoc(ref, {
+    progressVerified: true,
+    progressSource: 'habit_records',
+    demoSeed: false,
+  }));
+  await assertFails(updateDoc(ref, { status: 'completed', currentProgress: 7 }));
+});
+
+test('un usuario no puede suprimir desafíos para recrearlos a voluntad', async () => {
+  await assertFails(deleteDoc(doc(economy, 'users/economy/challenges/demo1')));
+});
+
+test('el cliente no puede generar desafíos inicialmente verificados', async () => {
+  await assertFails(setDoc(doc(economy, 'users/economy/challenges/forgedVerified'), {
+    title: 'Trampa',
+    status: 'available', currentProgress: 0, totalProgress: 1,
+    xpReward: 40, hcReward: 10,
+    demoSeed: false, progressVerified: true,
+    progressSource: 'habit_records', createdAt: serverTimestamp(),
   }));
 });
