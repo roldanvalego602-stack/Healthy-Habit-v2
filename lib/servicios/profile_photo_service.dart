@@ -104,14 +104,28 @@ class ProfilePhotoService {
       throw explainFirebaseError(error, stage: 'lectura de Firestore');
     }
 
+    final bucket = Firebase.app().options.storageBucket;
+    if (bucket == null || bucket.isEmpty) {
+      throw const ProfilePhotoException(
+        'Firebase no tiene un bucket de Storage configurado. '
+        'Actívalo en Firebase Console y actualiza firebase_options.dart.',
+        code: 'no-default-bucket',
+      );
+    }
     final object = _storage.ref().child(
       'users/${user.uid}/profile/avatar_${DateTime.now().microsecondsSinceEpoch}.jpg',
     );
     try {
-      await object.putData(bytes, SettableMetadata(
+      final completed = await object.putData(bytes, SettableMetadata(
         contentType: 'image/jpeg',
         cacheControl: 'private,max-age=3600',
       ));
+      if (completed.state != TaskState.success) {
+        throw const ProfilePhotoException(
+          'La transferencia a Storage no se completó.',
+          code: 'upload-incomplete',
+        );
+      }
     } on FirebaseException catch (error) {
       throw explainFirebaseError(error, stage: 'subida a Storage');
     } catch (_) {
@@ -164,6 +178,17 @@ class ProfilePhotoService {
         'Firebase rechazó el permiso en $stage. '
         'Verifica las reglas de acceso y que Storage esté en el '
         'plan Blaze (no Spark). Código: ${error.code}.',
+        code: code,
+      );
+    }
+    if (code == 'object-not-found') {
+      return ProfilePhotoException(
+        'Storage respondió que el objeto no existe durante $stage. '
+        'Si sucede al subir una foto nueva, verifica en Firebase Console '
+        'que el bucket esté creado y activo y que el proyecto tenga '
+        'facturación Blaze; revisa además la ruta y las reglas '
+        'users/{uid}/profile/. Bucket configurado: '
+        '${Firebase.app().options.storageBucket ?? "sin configurar"}.',
         code: code,
       );
     }
