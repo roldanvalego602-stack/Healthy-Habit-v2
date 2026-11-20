@@ -672,3 +672,29 @@ test('si el saldo es menor de 25 HC se descuenta solo el saldo disponible', asyn
   }).commit());
   assert.equal((await getDoc(doc(db, 'users/cancel-low-balance'))).data().habitCoins, 0);
 });
+
+test('regresión: compra malformada sin marcador de cancelación se rechaza', async () => {
+  const user = doc(buyer, 'users/buyer');
+  const before = (await getDoc(user)).data();
+  await assertFails(updateDoc(user, {
+    habitCoins: before.habitCoins - 1,
+    shopInventory: [...before.shopInventory, 'unknown_item'],
+  }));
+});
+
+test('regresión: no se permite añadir marcador de cancelación sin débito', async () => {
+  const user = doc(economy, 'users/economy');
+  const before = (await getDoc(user)).data();
+  await assertFails(updateDoc(user, {
+    habitCoins: before.habitCoins,
+    habitCancellation: {
+      habitId: 'alim_007', attemptId: 'fake', version: 999,
+    },
+  }));
+});
+
+test('regresión: débito sin marcador no dispara la validación de cancelación', async () => {
+  const user = doc(economy, 'users/economy');
+  const before = (await getDoc(user)).data();
+  await assertFails(updateDoc(user, { habitCoins: before.habitCoins - 1 }));
+});
