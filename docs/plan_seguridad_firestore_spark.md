@@ -200,3 +200,11 @@ El usuario confirmó **30/30 pruebas aprobadas**. Se añadieron reglas específi
 La prueba anterior que documentaba la creación fraudulenta ahora exige su rechazo; se agregan cuatro pruebas sobre alta/aceptación demo, intento de modificación de recompensas y verificación, borrado y creación directamente verificada. **Total esperado: 34 pruebas** en el emulador, todavía sin ejecutar.
 
 **Limitaciones abiertas:** los premios de desafíos verificados preexistentes aún pueden sumarse arbitrariamente en `users/{uid}` porque no está protegida la transacción de economía; el usuario todavía puede modificar XP/HC directamente. Los datos creados con reglas antiguas no quedan automáticamente validados ni saneados. Deben auditarse colecciones globales y flujos de app antes del despliegue. No publicar esta candidata.
+
+## Auditoría de compatibilidad: reacciones entre amigos
+
+**34/34 pruebas** confirmadas por el usuario. La auditoría de código identificó una ruta de producción no cubierta por la candidata: `lib/páginas/perfil/interaction_service.dart` utiliza la colección global `interactions`; el `deny all` impediría enviar, listar, leer y responder reacciones al publicar las reglas nuevas.
+
+Se agregó un `match /interactions/{interactionId}` **solo en la candidata** que autoriza: emisor autenticado crea con `fromUid` igual a su UID, sin poder fijar estados de aceptación; destinatario consulta con filtro `toUid`, marca `leido` o responde, sin alterar participantes ni eliminar documentos. `createdAt` conserva compatibilidad con `Timestamp.fromDate(DateTime.now())` con tolerancia de cinco minutos al reloj del cliente. Los valores de respuesta admitidos `aceptado` y `rechazado` deben contrastarse en pruebas manuales con la interfaz de reacciones.
+
+Se agregaron cinco pruebas, **total esperado: 39 pruebas**, pendientes de ejecución. No significa que toda la aplicación esté auditada: restan otras rutas y el modelo de economía sigue vulnerable a modificaciones del propio usuario. La publicación continúa bloqueada.
