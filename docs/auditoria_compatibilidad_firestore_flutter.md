@@ -72,3 +72,11 @@ flutter test
 ## Condición de salida
 
 No desplegar `firestore.candidate.rules` todavía. Se requiere un diseño de autoridad para XP/HC, restricciones sobre escrituras directas de documentos económicos y perfiles, pruebas manuales de flujos Flutter y revisión de migración/rollback. Mantener registro de resultados en `docs/bitacora_seguridad_healthy_habit.md`.
+
+## Revisión de compatibilidad — alta y equipamiento
+
+**Estado de pruebas:** 43/43 aprobadas en la revisión anterior. **5 casos nuevos pendientes** (48 en total).
+
+Las reglas candidatas ahora validan que `FirebaseService.saveUserData` cree un perfil con saldo inicial de 100 Habit Coins, 0 XP, nivel 1 y racha 0. Se evita inyectar inventario o XP en el alta. `ShopService.equip` y `resetLook` tienen validación por ranura, inventario y dos prendas gratuitas.
+
+**Bloqueadores restantes:** aumentos arbitrarios de XP/HC por `update`; creación de logs falsos; penalizaciones a rachas en `habits_screen.dart` que reducen `habitCoins` sin compra; eliminación de perfil desde el cliente; origen no confiable del ranking; comprobación integral con Flutter. Ninguna regla fue desplegada.
