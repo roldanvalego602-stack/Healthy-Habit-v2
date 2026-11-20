@@ -83,15 +83,20 @@ class HealthyPublicProfileService {
             ? visibility
             : 'Solo amigos';
 
+    final rawAvatarStyle = privateData['profileAvatarStyle'];
+    final avatarStyle = ['foto', 'naturaleza', 'agua', 'energia']
+            .contains(rawAvatarStyle)
+        ? rawAvatarStyle as String
+        : 'foto';
+
     return {
       'name': stringValue('name', 'Usuario'),
       'username': stringValue('username', 'usuario'),
-      'photoUrl': stringValue('photoUrl', '', maxLength: 2048),
-      'profileAvatarStyle':
-          ['foto', 'naturaleza', 'agua', 'energia']
-                  .contains(privateData['profileAvatarStyle'])
-              ? privateData['profileAvatarStyle']
-              : 'foto',
+      // No publicar la URL de una fotografía si eligió un avatar local.
+      'photoUrl': avatarStyle == 'foto'
+          ? stringValue('photoUrl', '', maxLength: 2048)
+          : '',
+      'profileAvatarStyle': avatarStyle,
       'bio': stringValue('bio', '', maxLength: 300),
       // La personalización del perfil propio utiliza «profileTitle».
       // Mantener fallback a «title» para cuentas creadas anteriormente.
