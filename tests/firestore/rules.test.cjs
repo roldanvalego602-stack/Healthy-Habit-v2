@@ -16,6 +16,7 @@ let alice;
 let bob;
 let anonymous;
 let buyer;
+let economy;
 
 before(async () => {
   env = await initializeTestEnvironment({
@@ -33,11 +34,27 @@ before(async () => {
   bob = env.authenticatedContext('bob').firestore();
   anonymous = env.unauthenticatedContext().firestore();
   buyer = env.authenticatedContext('buyer').firestore();
+  economy = env.authenticatedContext('economy').firestore();
 
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, 'users/alice'), {
       name: 'Alice', xp: 50, habitCoins: 10,
+    });
+    await setDoc(doc(db, 'users/economy'), {
+      name: 'Economy', xp: 0, currentXp: 0,
+      level: 1, habitCoins: 50,
+      currentStreak: 0, streakDays: 0,
+    });
+    await setDoc(doc(db, 'users/economy/user_habits/water'), {
+      title: 'Tomar agua', latestStatus: 'inProgress',
+    });
+    await setDoc(doc(db, 'users/economy/user_habits/water/attempts/a1'), {
+      status: 'inProgress', progress: 0, target: 6, xpEarned: 0,
+    });
+    await setDoc(doc(db, 'users/economy/challenges/c1'), {
+      status: 'completed', xpReward: 40, hcReward: 10,
+      currentProgress: 5, totalProgress: 5,
     });
     await setDoc(doc(db, 'users/buyer'), {
       name: 'Buyer', xp: 0, habitCoins: 500,
@@ -316,5 +333,41 @@ test('saldo sin inventario y campos externos a la compra siguen sujetos a valida
     habitCoins: 1,
     shopInventory: arrayUnion('cap'),
     level: 999,
+  }));
+});
+
+test('regresión: un registro legítimo puede actualizar XP e intento en una transacción', async () => {
+  const batch = writeBatch(economy);
+  batch.update(doc(economy, 'users/economy'), {
+    xp: 10, currentXp: 10, level: 1,
+    habitCoins: 50, currentStreak: 1, streakDays: 1,
+  });
+  batch.update(doc(economy, 'users/economy/user_habits/water/attempts/a1'), {
+    progress: 1, xpEarned: 10,
+  });
+  batch.set(doc(economy, 'users/economy/user_habits/water/attempts/a1/logs/log1'), {
+    xpEarned: 10, progressAfter: 1, userId: 'economy',
+  });
+  await assertSucceeds(batch.commit());
+});
+
+test('regresión: reclamar desafío completado mantiene la actualización de XP y HC', async () => {
+  const batch = writeBatch(economy);
+  batch.update(doc(economy, 'users/economy'), {
+    xp: 50, habitCoins: 60,
+  });
+  batch.update(doc(economy, 'users/economy/challenges/c1'), {
+    status: 'claimed', claimedAt: serverTimestamp(),
+  });
+  await assertSucceeds(batch.commit());
+});
+
+test('vulnerabilidad conocida: todavía se puede falsificar un desafío propio', async () => {
+  // Debe sustituirse por assertFails cuando exista validación fiable
+  // de estados, origen del progreso y premios de desafíos.
+  await assertSucceeds(setDoc(doc(economy, 'users/economy/challenges/forged'), {
+    status: 'completed', xpReward: 999999, hcReward: 999999,
+    currentProgress: 1, totalProgress: 1, progressVerified: true,
+    progressSource: 'habits',
   }));
 });
