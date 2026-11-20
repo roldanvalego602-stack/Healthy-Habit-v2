@@ -864,7 +864,10 @@ class _HomeContent extends StatelessWidget {
 
     final category = (data['category'] ?? 'Bienestar').toString();
 
-    final attemptId = (data['latestAttemptId'] ?? '').toString();
+    // Los intentos anteriores a la sincronización de campos «latest»
+    // solamente tienen lastAttemptId. Mantener ambos evita perder el botón.
+    final attemptId =
+        (data['latestAttemptId'] ?? data['lastAttemptId'] ?? '').toString();
 
     final progress = _number(data['latestProgress']);
 
