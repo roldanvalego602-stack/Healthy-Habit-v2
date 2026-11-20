@@ -277,3 +277,21 @@ test('el saldo del propio usuario sigue siendo falsificable: riesgo pendiente', 
     xp: 999999,
   }));
 });
+
+test('no se pueden descontar monedas sin añadir una compra válida', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 25,
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 25,
+    shopInventory: ['crown'],
+  }));
+});
+
+test('una compra no puede introducir otros cambios de perfil o XP', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 300,
+    shopInventory: arrayUnion('cape'),
+    xp: 300000,
+  }));
+});
