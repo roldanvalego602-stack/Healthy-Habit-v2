@@ -1,22 +1,11 @@
+import 'healthy_assistant_reply.dart';
+export 'healthy_assistant_reply.dart';
 import '../habitos/catalogo.dart';
 import '../catalogo/datos/catalogo_datos.dart';
 import '../catalogo/modelos/catalogo_item.dart';
 import '../tienda/shop_service.dart';
 import '../niveles/levels_system.dart';
 import 'nutri_respuestas_service.dart';
-
-/// Respuesta estructurada: la interfaz decide cómo mostrar las tarjetas.
-class HealthyAssistantReply {
-  const HealthyAssistantReply(this.text, {
-    this.action = '',
-    this.actionArgument = '',
-    this.card = '',
-  });
-  final String text;
-  final String action;
-  final String actionArgument;
-  final String card;
-}
 
 /// Intenciones de alta confianza. No ejecuta cambios por cuenta del usuario.
 class HealthyAssistantEngine {
