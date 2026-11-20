@@ -8,6 +8,7 @@ import '../../tema/healthy_coin.dart';
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
 import '../logros/logros_screen.dart';
+import '../estadisticas/progreso_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'configuracion_screen.dart';
 import 'profesionales_screen.dart';
@@ -156,11 +157,9 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 14),
                   _achievementsCard(userRef, context),
                   const SizedBox(height: 12),
-                  _specialAchievements(),
-                  const SizedBox(height: 28),
                   _sectionTitle('Tu mes, paso a paso', null, null),
                   const SizedBox(height: 14),
-                  _monthlyProgress(),
+                  _monthlyProgress(context),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Hecho a tu manera',
@@ -461,9 +460,14 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 9),
-                Text(
-                  'Pequeños pasos, raíces fuertes.',
-                  style: TextStyle(color: muted, fontSize: 13),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Text(
+                    _string(data['bio'],
+                      fallback: 'Pequeños pasos, raíces fuertes.'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(height: 15),
                 Padding(
@@ -1165,44 +1169,44 @@ class ProfileScreen extends StatelessWidget {
     ),
   );
 
-  Widget _monthlyProgress() => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(26),
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _monthLabel(DateTime.now()),
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+  /// El resumen mensual enlaza estadísticas reales, en vez de un placeholder.
+  Widget _monthlyProgress(BuildContext context) => Material(
+    color: HealthyAdaptive.surface,
+    borderRadius: BorderRadius.circular(26),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(26),
+      onTap: () => _open(context, const ProgresoScreen()),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: HealthyAdaptive.mint,
+              borderRadius: BorderRadius.circular(16),
             ),
-            Icon(Icons.calendar_month_rounded, color: muted),
-          ],
-        ),
-        const SizedBox(height: 20),
-        const Icon(Icons.insights_outlined, color: green, size: 42),
-        const SizedBox(height: 12),
-        Text(
-          'Resumen mensual pendiente de integración',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: navy, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Aquí se mostrarán tus registros reales cuando conectemos las estadísticas.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: muted, fontSize: 11),
-        ),
-      ],
+            child: Icon(Icons.insights_rounded,
+              color: HealthyAdaptive.accent, size: 28),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_monthLabel(DateTime.now()),
+                style: TextStyle(color: navy,
+                  fontSize: 15, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 5),
+              Text('Consulta tus registros, días activos, XP y calendario.',
+                style: TextStyle(color: muted, fontSize: 12)),
+              const SizedBox(height: 5),
+              Text('Ver mi progreso mensual',
+                style: TextStyle(color: HealthyAdaptive.accent,
+                  fontSize: 12, fontWeight: FontWeight.w800)),
+            ],
+          )),
+          Icon(Icons.chevron_right_rounded, color: HealthyAdaptive.accent),
+        ]),
+      ),
     ),
   );
 
