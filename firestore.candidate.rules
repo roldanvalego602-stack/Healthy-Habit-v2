@@ -139,6 +139,64 @@ service cloud.firestore {
         && validEquippedSlot(look, inventory, 'espalda', ['cape']);
     }
 
+    // Descuento por abandono: requiere que los DOS documentos del hábito
+    // cambien en el mismo commit, y que el intento estuviera en progreso.
+    // El catálogo de la app solo penaliza hábitos de dificultad Difícil.
+    function cancellationHabitPath(uid, habitId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId);
+    }
+
+    function cancellationAttemptPath(uid, habitId, attemptId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId)/attempts/$(attemptId);
+    }
+
+    function validHabitCancellation(uid) {
+      let marker = request.resource.data.get('habitCancellation', {});
+      return marker is map
+        && marker.keys().hasOnly(['habitId', 'attemptId', 'version'])
+        && marker.keys().hasAll(['habitId', 'attemptId', 'version'])
+        && marker.habitId is string
+        && marker.attemptId is string
+        && marker.version is int
+        && marker.habitId.size() > 0
+        && marker.attemptId.size() > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'habitMutationVersion', 'habitCancellation'])
+        && resource.data.get('habitMutationVersion', 0) is int
+        && request.resource.data.habitMutationVersion
+          == resource.data.get('habitMutationVersion', 0) + 1
+        && marker.version == request.resource.data.habitMutationVersion
+        && resource.data.habitCoins is int
+        && resource.data.habitCoins > 0
+        && validCancellationDocuments(uid, marker.habitId, marker.attemptId);
+    }
+
+    function validCancellationDocuments(uid, habitId, attemptId) {
+      let habitPath = cancellationHabitPath(uid, habitId);
+      let attemptPath = cancellationAttemptPath(uid, habitId, attemptId);
+      let habitBefore = get(habitPath).data;
+      let habitAfter = getAfter(habitPath).data;
+      let attemptBefore = get(attemptPath).data;
+      let attemptAfter = getAfter(attemptPath).data;
+      let fee = resource.data.habitCoins < 25
+        ? resource.data.habitCoins : 25;
+      return habitBefore.get('difficulty', '') == 'Difícil'
+        && habitBefore.get('lastAttemptId', '') == attemptId
+        && habitBefore.get('lastStatus', '') == 'inProgress'
+        && habitAfter.get('lastStatus', '') == 'cancelled'
+        && habitAfter.get('latestStatus', '') == 'cancelled'
+        && habitAfter.get('updatedAt', null) == request.time
+        && habitAfter.diff(habitBefore).affectedKeys()
+          .hasOnly(['lastStatus', 'latestStatus', 'updatedAt'])
+        && attemptBefore.get('status', '') == 'inProgress'
+        && attemptAfter.get('status', '') == 'cancelled'
+        && attemptAfter.get('cancelledAt', null) == request.time
+        && attemptAfter.get('cancellationPenalty', -1) == fee
+        && attemptAfter.diff(attemptBefore).affectedKeys()
+          .hasOnly(['status', 'cancelledAt', 'cancellationPenalty'])
+        && request.resource.data.habitCoins == resource.data.habitCoins - fee;
+    }
+
     function validOwnerUpdate(uid) {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let currentBalance = resource.data.get('habitCoins', 0);
@@ -149,7 +207,10 @@ service cloud.firestore {
         && nextBalance < currentBalance;
       return owner(uid)
         && (!changed.hasAny(['shopEquipped']) || validEquipped())
-        && ((!(inventoryChanged || coinsDecreased)) || validInventoryChange());
+        && (!changed.hasAny(['habitCancellation']) || validHabitCancellation(uid))
+        && ((!(inventoryChanged || coinsDecreased))
+          || validInventoryChange()
+          || (coinsDecreased && !inventoryChanged && validHabitCancellation(uid)));
     }
 
     // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
