@@ -156,3 +156,11 @@ firebase emulators:exec --config firebase.emulator.json --only firestore --proje
 ```
 
 No desplegar `firestore.candidate.rules` ni alterar las reglas actuales hasta cerrar todas las brechas y completar regresión con Flutter.
+
+## Corrección tras suite 22/23 (20-nov-2026)
+
+Resultado reportado por el usuario: 22 pruebas aprobadas y una fallida (`no se puede comprar dos veces un artículo ya adquirido`). La prueba descubrió una vía real: se podía disminuir `habitCoins` sin modificar el inventario y, por tanto, sin entrar en `validInventoryChange()`. Algunos casos negativos además agotaban las 1,000 expresiones del evaluador por las 12 ramas de precio independientes.
+
+Corrección candidata: catálogo expresado como `rules.Map.get()`; el artículo añadido se obtiene como diferencia de listas mediante `removeAll()`. Cualquier reducción de `habitCoins` o modificación de `shopInventory` debe satisfacer la validación de compra. Esto evita la reducción sin compra y la segunda compra sin artículo nuevo, sin agotar la evaluación con 12 comparaciones repetidas. La referencia oficial de Firebase confirma que ambos métodos forman parte del lenguaje de reglas: https://firebase.google.com/docs/reference/rules/rules.List y https://firebase.google.com/docs/reference/rules/rules.Map.
+
+Se añadieron dos pruebas nuevas para débitos sin adquisición y compras mezcladas con XP arbitraria. **La suite esperada ahora es de 25 pruebas, pendiente de ejecutar.** La prueba de vulnerabilidad conocida que incrementa libremente el saldo y XP sigue demostrando un problema pendiente; las reglas aún no están listas para desplegar.
