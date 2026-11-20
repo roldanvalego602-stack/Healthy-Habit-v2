@@ -217,3 +217,37 @@ Se integró una tarjeta de accesos directos **«Tu recorrido saludable»** en el
 **Validación manual pendiente:** `flutter analyze --no-fatal-infos lib`; con usuario de prueba activar un hábito nunca registrado, volver a Inicio y pulsar «Registrar sesión»; confirmar que se abre el intento correcto con progreso inicial 0/meta del catálogo; guardar la primera sesión y verificar actualización de progreso en Inicio y Mi progreso; repetir con un documento anterior que solo tenga `lastAttemptId`. Este cambio no se compiló localmente.
 
 **Riesgos de seguridad pendientes:** siguen documentados; no desplegar `firestore.candidate.rules`; el último resultado de emulador aportado es 60/60.
+
+## Desarrollo — reparación integral de Perfil (20-nov-2026)
+
+**Objetivo solicitado:** finalizar la pantalla de Perfil y sus acciones de edición, estadísticas, amistades, logros, personalización, armario y orientación profesional, manteniendo el desarrollo prioritario para la evaluación.
+
+**Correcciones integradas en rama `feature/mr-healthy-voice-knowledge-motion`:**
+
+1. **Relaciones sociales consistentes:** `perfil_muestra.dart` ya no crea ni borra documentos independientes de `users/{uid}/friends` para simular solicitudes. Ahora utiliza `AmigosServicio.enviarSolicitud`, `cancelarSolicitud` y `dejarDeSeguir`; el botón escucha `following` y `solicitudes_enviadas` y distingue «Agregar amigo», «Pendiente» y «Siguiendo». Respeta doble pulsación y confirma los resultados de las operaciones.
+2. **Edición real:** `profile_screen.dart` muestra la biografía guardada `bio`, usa el correo actual de Firebase Auth, y refleja las cuatro personalizaciones existentes: banner, marco, título y nombre de estante. `healthy_public_profile_service.dart` sincroniza `profileTitle` en `public_profiles.title` con fallback a títulos anteriores.
+3. **Logros basados en datos:** la vista previa del perfil propio emplea `LogrosService.catalogo`, documentos de hábitos y medallas; muestra el número conseguido, la siguiente meta y una proporción real. Se quitaron tarjetas de logros ficticios «Próximamente». El perfil público solo enseña insignias deducibles de los valores compartidos (XP, nivel y racha), respetando su visibilidad configurada.
+4. **Estadísticas mensuales integradas:** nuevo componente `profile_monthly_summary.dart` muestra recuento del mes actual de registros, XP procedente de esos registros y días activos, con botón de actualización y acceso al calendario detallado. Las consultas de subcolecciones se realizan bajo el UID propietario. No se generan métricas ficticias.
+5. **Armario:** el apartado de personalización abre directamente `WardrobeScreen`, ya conectado a `ShopService` para equipar los cosméticos adquiridos.
+6. **Avatares gratuitos:** `EditarPerfilScreen` permite elegir cuatro estilos (fotografía/clásico, naturaleza, hidratación, energía) guardando solo `profileAvatarStyle` en Firestore, sin Storage. Se presentan en perfil propio, público, búsqueda, amigos y feed. Las fotos subidas siguen disponibles y al subir una se activa automáticamente el modo fotografía. La proyección pública utiliza una lista permitida de estilos.
+7. **Orientación profesional sin contactos ficticios:** se sustituyeron nombres y teléfonos de demostración por accesos funcionales al directorio público del Colegio Mexicano de Nutriólogos (`https://cmnutriologos.com/directorio/`) y la consulta de cédulas de la SEP (`https://www.gob.mx/cedulaprofesional/es`). No se anuncian profesionales afiliados ni citas inexistentes.
+8. **Compatibilidad de reglas candidatas:** se añadió `profileAvatarStyle` a los campos permitidos de `public_profiles` y se restringió a `foto`, `naturaleza`, `agua` y `energia`. **No se modificaron ni desplegaron reglas de producción.**
+9. **Pruebas agregadas:** `test/perfil/public_profile_projection_test.dart` (5 casos de proyección pública: título, privacidad, compatibilidad y avatar) y `test/perfil/profile_avatar_test.dart` (3 casos visuales). Una prueba de reglas de perfil público adicional extiende la suite de Firestore de 60 a **61 casos pendientes de ejecutar**. No se deben declarar aprobadas sin salida de emulador.
+
+**Límites pendientes para dar por terminado el módulo en producción:**
+- La fotografía real continúa dependiendo del bucket, configuración, reglas y plan de Firebase Storage; el selector de avatares es la alternativa gratuita en Firestore.
+- `SettingsScreen._deleteAccount` explica correctamente que no hay backend de eliminación integral; la opción sigue sin estar implementada y no debe anunciarse como funcional.
+- Varias preferencias avanzadas de Configuración (recomendaciones automáticas, bloqueos, privacidad avanzada, algunas opciones de sonido y gamificación) se guardan pero **no están aplicadas de extremo a extremo**. Un ajuste guardado no equivale a una función verificada.
+- Faltan compilación, análisis estático, pruebas en Android y dos cuentas reales en el emulador. No se dispone de Flutter SDK en el entorno de estas modificaciones; no afirmar «todo comprobado».
+
+**Validación recomendada:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+dart format lib/páginas/perfil/ lib/servicios/healthy_public_profile_service.dart lib/servicios/profile_photo_service.dart test/perfil/
+flutter analyze --no-fatal-infos lib test/perfil
+flutter test test/perfil
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+flutter run
+```
+Probar edición de nombre, usuario, biografía, foto (si Storage está disponible), avatar gratuito, título, estante, banner, armario, seguimiento/solicitudes con dos cuentas, logros, resumen mensual, configuración y enlaces externos.
