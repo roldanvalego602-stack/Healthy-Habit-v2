@@ -309,7 +309,7 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(9),
                 child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: activeDays / 7),
+                  tween: Tween<double>(begin: 0.0, end: activeDays / 7.0),
                   duration: HealthyVisualEffects.enabled(context)
                       ? const Duration(milliseconds: 650) : Duration.zero,
                   curve: Curves.easeOutCubic,
@@ -353,7 +353,7 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
                 const SizedBox(height: 5),
                 TweenAnimationBuilder<double>(
                   key: ValueKey('weekly-bar-${_key(day)}-${daily[_key(day)] ?? 0}'),
-                  tween: Tween(begin: 0, end: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily),
+                  tween: Tween<double>(begin: 0.0, end: 8.0 + 82.0 * (daily[_key(day)] ?? 0) / maxDaily),
                   duration: HealthyVisualEffects.enabled(context)
                       ? const Duration(milliseconds: 520) : Duration.zero,
                   curve: Curves.easeOutCubic,
