@@ -7,7 +7,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp, deleteDoc } = require('firebase/firestore');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -169,4 +169,56 @@ test('no es posible crear seguidores unilateralmente ni leer listas privadas aje
     createdAt: serverTimestamp(),
   }));
   await assertFails(getDocs(collection(alice, 'users/bob/followers')));
+});
+
+test('el emisor puede cancelar una solicitud eliminando ambos reflejos', async () => {
+  const send = writeBatch(bob);
+  send.set(doc(bob, 'users/alice/solicitudes/bob'), {
+    createdAt: serverTimestamp(),
+  });
+  send.set(doc(bob, 'users/bob/solicitudes_enviadas/alice'), {
+    createdAt: serverTimestamp(),
+  });
+  await assertSucceeds(send.commit());
+
+  await assertFails(deleteDoc(doc(bob, 'users/alice/solicitudes/bob')));
+
+  const cancel = writeBatch(bob);
+  cancel.delete(doc(bob, 'users/alice/solicitudes/bob'));
+  cancel.delete(doc(bob, 'users/bob/solicitudes_enviadas/alice'));
+  await assertSucceeds(cancel.commit());
+  assert.equal((await getDoc(doc(alice, 'users/alice/solicitudes/bob'))).exists(), false);
+  assert.equal((await getDoc(doc(bob, 'users/bob/solicitudes_enviadas/alice'))).exists(), false);
+});
+
+test('el destinatario puede rechazar una solicitud eliminando ambos reflejos', async () => {
+  const send = writeBatch(alice);
+  send.set(doc(alice, 'users/bob/solicitudes/alice'), {
+    createdAt: serverTimestamp(),
+  });
+  send.set(doc(alice, 'users/alice/solicitudes_enviadas/bob'), {
+    createdAt: serverTimestamp(),
+  });
+  await assertSucceeds(send.commit());
+
+  const reject = writeBatch(bob);
+  reject.delete(doc(bob, 'users/bob/solicitudes/alice'));
+  reject.delete(doc(bob, 'users/alice/solicitudes_enviadas/bob'));
+  await assertSucceeds(reject.commit());
+  assert.equal((await getDoc(doc(bob, 'users/bob/solicitudes/alice'))).exists(), false);
+  assert.equal((await getDoc(doc(alice, 'users/alice/solicitudes_enviadas/bob'))).exists(), false);
+});
+
+test('no se puede borrar sólo un reflejo del seguimiento', async () => {
+  await assertFails(deleteDoc(doc(alice, 'users/alice/following/bob')));
+  await assertFails(deleteDoc(doc(bob, 'users/bob/followers/alice')));
+});
+
+test('el seguidor puede dejar de seguir borrando los dos documentos', async () => {
+  const batch = writeBatch(alice);
+  batch.delete(doc(alice, 'users/alice/following/bob'));
+  batch.delete(doc(alice, 'users/bob/followers/alice'));
+  await assertSucceeds(batch.commit());
+  assert.equal((await getDoc(doc(alice, 'users/alice/following/bob'))).exists(), false);
+  assert.equal((await getDoc(doc(bob, 'users/bob/followers/alice'))).exists(), false);
 });
