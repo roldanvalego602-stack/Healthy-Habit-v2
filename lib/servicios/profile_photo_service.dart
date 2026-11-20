@@ -128,6 +128,8 @@ class ProfilePhotoService {
       }
     } on FirebaseException catch (error) {
       throw explainFirebaseError(error, stage: 'subida a Storage');
+    } on ProfilePhotoException {
+      rethrow;
     } catch (_) {
       throw const ProfilePhotoException(
         'No se completó la subida a Storage. Comprueba la conexión.',
