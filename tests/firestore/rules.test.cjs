@@ -500,3 +500,55 @@ test('integración: progreso y logs anidados son legibles únicamente para su pr
   await assertFails(getDocs(collection(bob,
     'users/economy/user_habits/water/attempts/a1/logs')));
 });
+
+test('alta legítima de perfil comienza con 0 XP y 100 Habit Coins', async () => {
+  const ref = doc(env.authenticatedContext('newbie').firestore(), 'users/newbie');
+  await assertSucceeds(setDoc(ref, {
+    uid: 'newbie', name: 'Nuevo usuario', username: 'newbie',
+    email: 'newbie@example.test', level: 1, xp: 0,
+    habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test('el alta no puede fabricar XP, monedas ni inventario', async () => {
+  const ref = doc(env.authenticatedContext('cheater').firestore(), 'users/cheater');
+  const base = {
+    uid: 'cheater', name: 'Cheater', username: 'cheater',
+    email: 'cheater@example.test', level: 1, xp: 0,
+    habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  };
+  await assertFails(setDoc(ref, { ...base, xp: 100000 }));
+  await assertFails(setDoc(ref, { ...base, habitCoins: 9999 }));
+  await assertFails(setDoc(ref, { ...base, shopInventory: ['crown'] }));
+  await assertFails(setDoc(ref, { ...base, uid: 'otro' }));
+});
+
+test('se puede equipar una prenda gratuita sin comprarla', async () => {
+  await assertSucceeds(updateDoc(doc(economy, 'users/economy'), {
+    shopEquipped: { ojos: 'sunglasses', cuello: 'bandana' },
+  }));
+});
+
+test('el equipamiento rechaza artículos no adquiridos y ranuras incorrectas', async () => {
+  await assertFails(updateDoc(doc(economy, 'users/economy'), {
+    shopEquipped: { cabeza: 'crown' },
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    shopEquipped: { cuello: 'crown' },
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    shopEquipped: { cabeza: 'item_falso' },
+  }));
+});
+
+test('equipar y restablecer el aspecto conserva la propiedad comprada', async () => {
+  const ref = doc(buyer, 'users/buyer');
+  await assertSucceeds(updateDoc(ref, {
+    shopEquipped: { cabeza: 'crown', ojos: 'sunglasses' },
+  }));
+  await assertSucceeds(updateDoc(ref, { shopEquipped: {} }));
+  const state = (await getDoc(ref)).data();
+  assert.deepEqual(state.shopInventory, ['crown']);
+});
