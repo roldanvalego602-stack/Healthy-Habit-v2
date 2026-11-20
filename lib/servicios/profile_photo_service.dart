@@ -138,6 +138,7 @@ class ProfilePhotoService {
     try {
       await userRef.set({
         'photoUrl': url,
+        'profileAvatarStyle': 'foto',
         'profilePhotoPath': object.fullPath,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
