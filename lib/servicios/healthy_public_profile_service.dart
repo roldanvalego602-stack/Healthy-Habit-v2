@@ -88,7 +88,12 @@ class HealthyPublicProfileService {
       'username': stringValue('username', 'usuario'),
       'photoUrl': stringValue('photoUrl', '', maxLength: 2048),
       'bio': stringValue('bio', '', maxLength: 300),
-      'title': stringValue('title', 'Cultivador de constancia'),
+      // La personalización del perfil propio utiliza «profileTitle».
+      // Mantener fallback a «title» para cuentas creadas anteriormente.
+      'title': stringValue(
+        'profileTitle',
+        stringValue('title', 'Cultivador de constancia'),
+      ),
       'xp': positiveInt('xp', positiveInt('currentXp', 0)),
       'currentXp': positiveInt('currentXp', positiveInt('xp', 0)),
       'level': positiveInt('level', 1),
