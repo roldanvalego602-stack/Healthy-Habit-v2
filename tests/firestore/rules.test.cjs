@@ -295,3 +295,26 @@ test('una compra no puede introducir otros cambios de perfil o XP', async () => 
     xp: 300000,
   }));
 });
+
+test('compras malformadas no permiten introducir inventario de otro tipo', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    shopInventory: 'crown',
+    habitCoins: 0,
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    shopInventory: { crown: true },
+    habitCoins: 0,
+  }));
+});
+
+test('saldo sin inventario y campos externos a la compra siguen sujetos a validación', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 1,
+    shopInventory: null,
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 1,
+    shopInventory: arrayUnion('cap'),
+    level: 999,
+  }));
+});
