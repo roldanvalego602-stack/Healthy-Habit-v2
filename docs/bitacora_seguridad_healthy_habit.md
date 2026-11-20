@@ -197,3 +197,13 @@ Se revisaron `lib/páginas/logros/logros_screen.dart` y `logros_service.dart`. E
 **Validación pendiente en Flutter:** ejecutar `flutter analyze --no-fatal-infos lib`, abrir Logros con 0 y varios logros conseguidos, alternar filtros, revisar modo claro/oscuro y tamaño pequeño; probar presentación de «Colección completa» en una colección de prueba. La implementación se revisó a nivel de código mediante GitHub, no se ha compilado en un dispositivo.
 
 La ronda previa de reglas permanece confirmada en 60/60; **no desplegar candidata** hasta resolver riesgos pendientes.
+
+## Desarrollo de demo — recorrido desde Inicio (20-nov-2026)
+
+Se confirmó mediante referencias de Splash, login y registro que la pantalla usada al iniciar sesión es `HomeScreen2` en `lib/páginas/inicio.dart`, no la variante `HomeScreen` presente en `lib/main.dart`.
+
+Se integró una tarjeta de accesos directos **«Tu recorrido saludable»** en el inicio real, con tres destinos conectados: **Registrar** cambia a la pestaña Hábitos (`onHabits`), **Progreso** abre `ProgresoScreen` y **Logros** abre `LogrosScreen`. Presentación adaptativa a los colores claro/oscuro, iconos, botones accesibles mediante Material/InkWell, y diseño compacto para móvil. La tarjeta no computa ni concede recompensas ni contiene datos ficticios.
+
+**Validación pendiente:** `flutter analyze --no-fatal-infos lib`; iniciar sesión, abrir cada acceso desde Inicio, regresar con botón atrás desde Progreso/Logros, registrar un hábito en Hábitos y verificar que al volver el perfil actualice estadísticas y logros. Probar pantalla estrecha y tema oscuro. Esta entrega no fue compilada ni revisada visualmente en un dispositivo.
+
+**Reglas:** sin cambios; suite anterior 60/60 aprobada; NO desplegar la candidata debido a riesgos económicos pendientes.
