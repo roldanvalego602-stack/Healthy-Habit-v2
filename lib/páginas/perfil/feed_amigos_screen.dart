@@ -30,9 +30,6 @@ class FeedAmigosScreen extends StatefulWidget {
 }
 
 class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
-  FirebaseFirestore get _db =>
-      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
-
   String? get _uid => AmigosServicio.uidActual;
 
   @override
