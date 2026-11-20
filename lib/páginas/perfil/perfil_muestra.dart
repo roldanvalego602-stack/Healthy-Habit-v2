@@ -6,6 +6,7 @@ import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
 import 'amigos_servicio.dart';
+import '../logros/logros_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -223,6 +224,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _visibleAchievements(
                             own: isOwnProfile,
                             visibility: achievementsVisibility,
+                            data: data,
                           ),
                           const SizedBox(height: 28),
                           _mascotSupportCard(name),
@@ -552,13 +554,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _visibleAchievements({
     required bool own,
     required String visibility,
+    required Map<String, dynamic> data,
   }) {
     Widget content() => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle('Logros destacados'),
         const SizedBox(height: 14),
-        _achievementsCard(),
+        _achievementsCard(data),
       ],
     );
 
@@ -594,35 +597,48 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _achievementsCard() {
+  /// Solo se muestran insignias deducibles de los datos publicados
+  /// (nivel, XP y racha compartida); nunca medallas ficticias.
+  Widget _achievementsCard(Map<String, dynamic> data) {
+    const visibleTypes = {'nivel', 'xp', 'racha'};
+    final visible = LogrosService.catalogo.where((definition) {
+      if (!visibleTypes.contains(definition.tipo)) return false;
+      return LogrosService.obtenido(
+        definition,
+        LogrosService.progreso(definition, data, 0, 0, const <String>{}),
+      );
+    }).take(3).toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _achievement(
-            Icons.water_drop_outlined,
-            'Gota constante',
-            const Color(0xFF62B7DD),
-          ),
-          _achievement(Icons.local_fire_department_outlined, 'En llamas', gold),
-          _achievement(
-            Icons.spa_outlined,
-            'Primer brote',
-            const Color(0xFF369B7B),
-          ),
-        ],
-      ),
+      child: visible.isEmpty
+          ? Text(
+              'Todavía no hay insignias compartidas de nivel, XP o racha.',
+              style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12),
+            )
+          : Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                for (final logro in visible)
+                  _achievement(
+                    logro.icono,
+                    logro.nombre,
+                    HealthyAdaptive.accent,
+                  ),
+              ],
+            ),
     );
   }
 
   Widget _achievement(IconData icon, String name, Color color) {
-    return Column(
-      children: [
+    return SizedBox(
+      width: 95,
+      child: Column(children: [
         Container(
           width: 58,
           height: 64,
@@ -636,13 +652,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         const SizedBox(height: 8),
         Text(
           name,
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: navy,
             fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
         ),
-      ],
+      ]),
     );
   }
 
