@@ -149,7 +149,7 @@ class ProfesionalesScreen extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () => _llamar(context, profesional),
+                        onPressed: profesional.esEjemplo ? null : () => _llamar(context, profesional),
                         icon: const Icon(Icons.call_outlined),
                         label: const Text('Llamar'),
                       ),
@@ -342,7 +342,7 @@ class ProfesionalesScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           InkWell(
-            onTap: () => _llamar(context, profesional),
+            onTap: profesional.esEjemplo ? null : () => _llamar(context, profesional),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -380,7 +380,7 @@ class ProfesionalesScreen extends StatelessWidget {
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton.icon(
-                    onPressed: () => _whatsapp(context, profesional),
+                    onPressed: profesional.esEjemplo ? null : () => _whatsapp(context, profesional),
                     icon: const Icon(Icons.chat_outlined, size: 18),
                     label: const Text(
                       'WhatsApp',
@@ -406,7 +406,7 @@ class ProfesionalesScreen extends StatelessWidget {
                 child: SizedBox(
                   height: 44,
                   child: OutlinedButton.icon(
-                    onPressed: () => _correo(context, profesional),
+                    onPressed: profesional.esEjemplo ? null : () => _correo(context, profesional),
                     icon: const Icon(Icons.email_outlined, size: 17),
                     label: const Text(
                       'Correo',
