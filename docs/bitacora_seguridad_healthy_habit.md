@@ -119,3 +119,17 @@ Se agregaron **dos pruebas de caracterización**, que esperan rechazo de descuen
 **Corrección:** la prueba ahora lee el saldo y la versión actuales con `getDoc`, conserva las monedas intactas, incrementa `habitMutationVersion` y verifica los valores finales. Se mantiene un caso negativo para cobros de activación inventados. **Suite esperada: 51 pruebas, pendiente de repetirse**.
 
 **Lección técnica:** una prueba de integración debe establecer o leer su estado inicial; los fixtures compartidos pueden ocultar dependencias entre pruebas. No se modificaron reglas candidatas, reglas de producción ni lógica Flutter. El bloqueo de penalizaciones por cancelación y la falsificación de XP/HC siguen abiertos.
+
+## Etapa 12 — penalizaciones atómicas de hábitos difíciles (20-nov-2026)
+
+**Validado por el usuario: 51 de 51 pruebas aprobadas.** Se implementó una excepción delimitada de débito en `firestore.candidate.rules` y se actualizó `lib/páginas/habitos/habit_action_service.dart` para incluir un marcador `habitCancellation` exclusivamente cuando se cobra la penalización.
+
+La autorización utiliza `get()` y `getAfter()` para comprobar **en la misma transacción**:
+- El hábito estaba activo, es de dificultad `Difícil` y conserva el identificador del intento activo.
+- El hábito y el intento quedan `cancelled`; las marcas de tiempo coinciden con el servidor y no se alteran otros campos de esos documentos.
+- `habitCoins` disminuye exactamente `min(saldo_previo, 25)`; `habitMutationVersion` sube en uno y el marcador apunta al intento.
+- No se pueden mezclar cambios de inventario o XP con esta operación de débito.
+
+Se añadieron **seis pruebas**: cancelación válida, ausencia de cambio de intento, importe falsificado, hábito sencillo, intento de segundo cobro y saldo inferior a 25. **Nuevo total esperado: 57**, pendiente de ejecutar en el emulador. La anterior prueba negativa de cobro sin justificación permanece.
+
+**Limitaciones importantes:** `user_habits` sigue admitiendo escrituras amplias del propietario, incluidos estados anteriores; este cambio valida el débito concreto pero no establece autoridad completa sobre la historia de hábitos. Los incrementos arbitrarios de `xp` y `habitCoins` siguen permitidos y la aplicación requiere pruebas manuales con Firebase Emulator. No se han desplegado reglas de producción.
