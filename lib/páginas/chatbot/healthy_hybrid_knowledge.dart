@@ -178,7 +178,17 @@ class HealthyHybridKnowledge {
     if (operational.text.isNotEmpty || operational.action.isNotEmpty) {
       return null;
     }
-    final index = _index ?? await load();
+    // Un asset ausente no debe inutilizar el chat ni sus acciones.
+    late final HealthyKnowledgeIndex index;
+    try {
+      index = _index ?? await load();
+    } catch (_) {
+      return const HealthyAssistantReply(
+        'Mi base educativa no está disponible en este momento. '
+        'Puedes seguir usando tus hábitos, perfil y tienda; '
+        'intenta consultar este tema nuevamente más tarde.',
+      );
+    }
     if (!index.looksEducational(input)) return null;
     final match = index.search(input);
     if (match == null) {
