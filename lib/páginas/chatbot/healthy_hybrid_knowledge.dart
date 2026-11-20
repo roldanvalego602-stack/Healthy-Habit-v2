@@ -62,7 +62,7 @@ class HealthyKnowledgeIndex {
     'puedo', 'debo', 'quiero', 'sobre', 'son', 'mas', 'muy', 'hace',
     'hacer', 'dame', 'dime', 'esta', 'este', 'esto', 'algun', 'algunas',
     'algunos', 'me', 'mi', 'mis', 'tu', 'sus', 'se', 'en', 'la', 'el',
-    'un', 'de', 'es', 'y', 'a', 'o', 'lo', 'le', 'te', 'se', 'ser',
+    'un', 'de', 'es', 'y', 'a', 'o', 'lo', 'le', 'te', 'ser',
   };
 
   static String normalize(String value) {
