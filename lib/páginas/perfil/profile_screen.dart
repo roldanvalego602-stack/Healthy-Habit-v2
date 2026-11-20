@@ -107,7 +107,8 @@ class ProfileScreen extends StatelessWidget {
         final username = _string(
           data['username'],
         ).replaceFirst(RegExp(r'^@+'), '');
-        final email = _string(data['email'], fallback: user.email ?? '');
+        // Firebase Auth es la referencia del correo actual verificado.
+        final email = _string(user.email, fallback: _string(data['email']));
         final level = _integer(data['level'], fallback: 1);
         final xp = _integer(data['xp']);
         final coins = _integer(data['habitCoins']);
@@ -996,7 +997,10 @@ class ProfileScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      Expanded(child: Text('ESTANTE · MIS LOGROS',
+                      Expanded(child: Text(
+                        'ESTANTE · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: muted,
                           fontWeight: FontWeight.w800, fontSize: 11))),
                       Text('$obtained de $total',
