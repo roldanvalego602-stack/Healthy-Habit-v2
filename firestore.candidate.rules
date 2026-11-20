@@ -367,7 +367,7 @@ service cloud.firestore {
       allow get, list: if authenticated();
       allow create, update: if owner(uid)
         && request.resource.data.keys().hasOnly([
-          'name', 'username', 'photoUrl', 'profileAvatarStyle', 'bio', 'title',
+          'name', 'username', 'photoUrl', 'profileAvatarStyle', 'profileBanner', 'bio', 'title',
           'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
           'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
           'nextAchievementProgress', 'settings'
@@ -375,6 +375,8 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['name', 'username', 'xp'])
         && request.resource.data.name is string
         && request.resource.data.username is string
+        && request.resource.data.get('profileBanner', 'Amanecer')
+          in ['Amanecer', 'Bosque', 'Océano', 'Atardecer']
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
         && request.resource.data.get('profileAvatarStyle', 'foto')
