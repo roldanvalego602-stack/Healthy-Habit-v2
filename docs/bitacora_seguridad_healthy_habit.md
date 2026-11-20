@@ -99,3 +99,15 @@ En cada actualización, anotar: fecha, objetivo, archivos cambiados, resultado d
 Se agregaron **dos pruebas de caracterización**, que esperan rechazo de descuentos ajenos a la tienda. **Total esperado: 50**, pendiente de ejecutar. **Son pruebas de bloqueo conocido, no de la funcionalidad correcta**. Al diseñar la autorización de las transacciones de hábitos, habrá que cambiar los casos a éxito esperado y añadir casos de falsificación y cobros repetidos.
 
 **No se modificaron las reglas** en esta etapa para evitar autorizar descuentos arbitrarios. La economía continúa sin autoridad de servidor y el aumento unilateral de monedas/XP sigue permitido. No desplegar.
+
+## Etapa 11 — Resultado 50/50 y corrección del modelo de costos (20-nov-2026)
+
+**Confirmación del usuario:** 50/50 pruebas del emulador aprobadas (0 fallidas). Las dos pruebas de la etapa anterior caracterizaban el rechazo de débitos no comerciales: una negativa esperada NO prueba compatibilidad.
+
+**Hallazgo de revisión de código:** `lib/páginas/habitos/catalogo.dart` crea **todos los hábitos oficiales con `coinCost: 0`** mediante el helper `_habit`. Por tanto la activación normal del catálogo actual **no descuenta Habit Coins**; el caso de cobro de activación con costo solo ocurriría si se cambia el catálogo en el futuro. Se corrigió la suite para permitir el cambio de `habitMutationVersion` y `habitSlots` sin descontar monedas, y se conservó un caso negativo que rechaza un débito inventado. El verdadero débito legítimo no comercial en el catálogo vigente es la **cancelación de hábito difícil**, cuyo cobro está limitado a 25 Habit Coins por `HabitActionService.cancellationFee`.
+
+**Suite esperada: 51 pruebas**, pendiente de ejecutar. Los test nuevos no garantizan que la transacción integral de alta de hábitos con intento esté cubierta; lo único comprobado será la modificación compatible del perfil. La penalización sigue bloqueada por las reglas, tal como registran los tests de caracterización.
+
+**Decisión de seguridad:** no se abrió ningún permiso amplio de débito. Autorizar cancelaciones requerirá verificar de manera atómica un intento `inProgress` que pase a `cancelled`, un catálogo difícil reconocido, saldo correcto y prevención de cobros repetidos, no únicamente aceptar un decremento de hasta 25. El cliente aún controla escrituras de intentos y el saldo/XP propio, de modo que una regla parcialmente validada no resolvería toda la economía.
+
+**Archivos cambiados en esta etapa:** `tests/firestore/rules.test.cjs` y documentación. No se cambiaron `firestore.candidate.rules`, `firestore.rules` ni los flujos de Flutter.
