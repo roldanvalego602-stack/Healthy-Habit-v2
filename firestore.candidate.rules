@@ -52,21 +52,29 @@ service cloud.firestore {
       }.get(id, -1);
     }
 
+    // Separar la validación de tipos evita evaluar removeAll() sobre
+    // listas ausentes o valores malformados. Firestore usa cortocircuito.
     function validInventoryChange() {
+      return request.resource.data.keys().hasAll(['shopInventory', 'habitCoins'])
+        && resource.data.keys().hasAll(['habitCoins'])
+        && request.resource.data.shopInventory is list
+        && resource.data.get('shopInventory', []) is list
+        && request.resource.data.habitCoins is int
+        && resource.data.habitCoins is int
+        && validInventoryDetails();
+    }
+
+    function validInventoryDetails() {
       let beforeItems = resource.data.get('shopInventory', []);
       let afterItems = request.resource.data.shopInventory;
       let additions = afterItems.removeAll(beforeItems);
       let price = additions.size() == 1 ? shopPrice(additions[0]) : -1;
-      return beforeItems is list
-        && afterItems is list
-        && afterItems.hasAll(beforeItems)
+      return afterItems.hasAll(beforeItems)
         && afterItems.size() == beforeItems.size() + 1
         && additions.size() == 1
         && price > 0
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['habitCoins', 'shopInventory'])
-        && request.resource.data.habitCoins is int
-        && resource.data.habitCoins is int
         && resource.data.habitCoins >= price
         && request.resource.data.habitCoins == resource.data.habitCoins - price;
     }
