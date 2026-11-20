@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 class ProfesionalesScreen extends StatelessWidget {
   const ProfesionalesScreen({super.key});
 
-  // Sustituye estos datos de demostración por contactos reales autorizados.
+  // Estos perfiles son ejemplos: nunca deben poder iniciarse llamadas a ellos.
   static const _profesionales = <_Profesional>[
     _Profesional(
       nombre: 'Laura Méndez',
@@ -43,6 +43,10 @@ class ProfesionalesScreen extends StatelessWidget {
   }
 
   Future<void> _llamar(BuildContext context, _Profesional profesional) async {
+    if (profesional.esEjemplo) {
+      _mostrarError(context, 'Contacto de ejemplo: aún no hay un número verificado.');
+      return;
+    }
     final numero = profesional.telefono.replaceAll(RegExp(r'[^\d+]'), '');
     if (numero.isEmpty) {
       _mostrarError(context, 'Este profesional no tiene teléfono registrado.');
@@ -56,6 +60,10 @@ class ProfesionalesScreen extends StatelessWidget {
   }
 
   Future<void> _whatsapp(BuildContext context, _Profesional profesional) async {
+    if (profesional.esEjemplo) {
+      _mostrarError(context, 'Contacto de ejemplo: WhatsApp no está disponible.');
+      return;
+    }
     final numero = profesional.telefono.replaceAll(RegExp(r'\D'), '');
     if (numero.isEmpty) {
       _mostrarError(context, 'Este profesional no tiene teléfono registrado.');
@@ -72,6 +80,10 @@ class ProfesionalesScreen extends StatelessWidget {
   }
 
   Future<void> _correo(BuildContext context, _Profesional profesional) async {
+    if (profesional.esEjemplo) {
+      _mostrarError(context, 'Contacto de ejemplo: todavía no existe un correo verificado.');
+      return;
+    }
     if (profesional.correo.trim().isEmpty) {
       _mostrarError(
         context,
@@ -142,12 +154,12 @@ class ProfesionalesScreen extends StatelessWidget {
                         label: const Text('Llamar'),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => _whatsapp(context, profesional),
+                        onPressed: profesional.esEjemplo ? null : () => _whatsapp(context, profesional),
                         icon: const Icon(Icons.chat_outlined),
                         label: const Text('WhatsApp'),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => _correo(context, profesional),
+                        onPressed: profesional.esEjemplo ? null : () => _correo(context, profesional),
                         icon: const Icon(Icons.email_outlined),
                         label: const Text('Correo'),
                       ),
@@ -202,11 +214,26 @@ class ProfesionalesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Habla con profesionales de la salud para obtener resultados óptimos y saludables.',
+              'Directorio demostrativo. Aún no tenemos profesionales verificados ni citas disponibles desde Healthy Habit.',
               style: TextStyle(
                 fontSize: 13,
                 color: HealthyAdaptive.muted,
                 height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: HealthyAdaptive.yellow,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                'Los nombres, horarios, teléfonos y correos siguientes son ejemplos. '
+                'No representan profesionales afiliados y las acciones de contacto están deshabilitadas.',
+                style: TextStyle(color: HealthyAdaptive.text,
+                  fontWeight: FontWeight.w600, fontSize: 12),
               ),
             ),
             const SizedBox(height: 20),
@@ -421,6 +448,8 @@ class _Profesional {
   final String telefono;
   final String correo;
   final String horario;
+  bool get esEjemplo => correo.endsWith('@example.com') ||
+      telefono.startsWith('+111');
 
   const _Profesional({
     required this.nombre,
