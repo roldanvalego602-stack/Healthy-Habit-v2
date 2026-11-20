@@ -409,6 +409,7 @@ class ProfileScreen extends StatelessWidget {
                                 ? data['photoUrl']?.toString() ?? ''
                                 : FirebaseAuth.instance.currentUser
                                         ?.photoURL ?? '',
+                            preset: _string(data['profileAvatarStyle'], fallback: 'foto'),
                             size: 86,
                           ),
                         ),
