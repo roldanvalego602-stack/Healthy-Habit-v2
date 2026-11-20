@@ -7,7 +7,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, getDocs, collection } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp } = require('firebase/firestore');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -113,4 +113,60 @@ test('campos privados no se pueden introducir en perfiles públicos', async () =
   await assertFails(updateDoc(doc(alice, 'public_profiles/alice'), {
     settings: { analizarHistorialIA: true },
   }));
+});
+
+test('solicitud se envía en batch y destinatario puede leerla', async () => {
+  const batch = writeBatch(alice);
+  batch.set(doc(alice, 'users/bob/solicitudes/alice'), {
+    createdAt: serverTimestamp(),
+  });
+  batch.set(doc(alice, 'users/alice/solicitudes_enviadas/bob'), {
+    createdAt: serverTimestamp(),
+  });
+  await assertSucceeds(batch.commit());
+  await assertSucceeds(getDoc(doc(bob, 'users/bob/solicitudes/alice')));
+  await assertFails(getDoc(doc(alice, 'users/bob/solicitudes/alice')));
+});
+
+test('solicitudes unilaterales, falsificadas o entre terceros están prohibidas', async () => {
+  await assertFails(setDoc(doc(alice, 'users/bob/solicitudes/alice'), {
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(alice, 'users/bob/solicitudes/charlie'), {
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(alice, 'users/alice/solicitudes_enviadas/bob'), {
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test('no se puede seguir sin solicitud previa aceptada', async () => {
+  await assertFails(setDoc(doc(alice, 'users/alice/following/bob'), {
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(bob, 'users/bob/followers/alice'), {
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test('el destinatario acepta solicitud y se crean ambos reflejos de seguimiento', async () => {
+  const batch = writeBatch(bob);
+  batch.set(doc(bob, 'users/alice/following/bob'), {
+    createdAt: serverTimestamp(),
+  });
+  batch.set(doc(bob, 'users/bob/followers/alice'), {
+    createdAt: serverTimestamp(),
+  });
+  batch.delete(doc(bob, 'users/bob/solicitudes/alice'));
+  batch.delete(doc(bob, 'users/alice/solicitudes_enviadas/bob'));
+  await assertSucceeds(batch.commit());
+  await assertSucceeds(getDoc(doc(alice, 'users/alice/following/bob')));
+  await assertSucceeds(getDoc(doc(bob, 'users/bob/followers/alice')));
+});
+
+test('no es posible crear seguidores unilateralmente ni leer listas privadas ajenas', async () => {
+  await assertFails(setDoc(doc(alice, 'users/bob/followers/alice'), {
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(getDocs(collection(alice, 'users/bob/followers')));
 });
