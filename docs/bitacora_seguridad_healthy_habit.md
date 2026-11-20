@@ -207,3 +207,13 @@ Se integró una tarjeta de accesos directos **«Tu recorrido saludable»** en el
 **Validación pendiente:** `flutter analyze --no-fatal-infos lib`; iniciar sesión, abrir cada acceso desde Inicio, regresar con botón atrás desde Progreso/Logros, registrar un hábito en Hábitos y verificar que al volver el perfil actualice estadísticas y logros. Probar pantalla estrecha y tema oscuro. Esta entrega no fue compilada ni revisada visualmente en un dispositivo.
 
 **Reglas:** sin cambios; suite anterior 60/60 aprobada; NO desplegar la candidata debido a riesgos económicos pendientes.
+
+## Desarrollo de demo — corrección del primer registro desde Inicio (20-nov-2026)
+
+**Hallazgo funcional:** `HabitActionService.execute` al activar un hábito escribía `lastAttemptId` y `latestStatus: inProgress`, pero `HomeScreen2` intentaba navegar a `RegistrarHabitoScreen` mediante `latestAttemptId`. Ese campo se guardaba solo después del primer registro, con lo que la misión del inicio presentaba «Ver hábitos» en lugar de «Registrar sesión» justo tras activar el hábito.
+
+**Correcciones integradas:** en `lib/páginas/habitos/habit_action_service.dart`, la creación de intento ahora guarda también `latestAttemptId`, `latestProgress: 0` y `latestTarget: attempt.target` en la misma transacción existente. En `lib/páginas/inicio.dart`, la pantalla admite `lastAttemptId` como respaldo para intentos previos y `target` como respaldo de `latestTarget`. No se alteraron la economía, los requisitos de activación, los estados del intento, ni las reglas.
+
+**Validación manual pendiente:** `flutter analyze --no-fatal-infos lib`; con usuario de prueba activar un hábito nunca registrado, volver a Inicio y pulsar «Registrar sesión»; confirmar que se abre el intento correcto con progreso inicial 0/meta del catálogo; guardar la primera sesión y verificar actualización de progreso en Inicio y Mi progreso; repetir con un documento anterior que solo tenga `lastAttemptId`. Este cambio no se compiló localmente.
+
+**Riesgos de seguridad pendientes:** siguen documentados; no desplegar `firestore.candidate.rules`; el último resultado de emulador aportado es 60/60.
