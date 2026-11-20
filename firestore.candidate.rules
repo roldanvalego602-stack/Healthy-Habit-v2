@@ -91,6 +91,57 @@ service cloud.firestore {
         && ((!(inventoryChanged || coinsDecreased)) || validInventoryChange());
     }
 
+    // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
+    // verificables. Una escritura del cliente no puede autenticar progreso.
+    function demoChallengeCreate() {
+      return request.resource.data.keys().hasAll([
+        'title', 'status', 'currentProgress', 'totalProgress',
+        'xpReward', 'hcReward', 'demoSeed', 'progressVerified',
+        'progressSource', 'createdAt'
+      ])
+      && request.resource.data.demoSeed == true
+      && request.resource.data.progressVerified == false
+      && request.resource.data.progressSource == 'demo'
+      && request.resource.data.status in ['available', 'locked']
+      && request.resource.data.currentProgress == 0
+      && request.resource.data.totalProgress is int
+      && request.resource.data.totalProgress > 0
+      && request.resource.data.totalProgress <= 365
+      && request.resource.data.xpReward is int
+      && request.resource.data.xpReward >= 0
+      && request.resource.data.xpReward <= 150
+      && request.resource.data.hcReward is int
+      && request.resource.data.hcReward >= 0
+      && request.resource.data.hcReward <= 50
+      && request.resource.data.createdAt == request.time;
+    }
+
+    function demoChallengeAccept() {
+      return resource.data.get('demoSeed', false) == true
+        && resource.data.get('progressVerified', false) == false
+        && resource.data.get('progressSource', '') == 'demo'
+        && resource.data.status == 'available'
+        && request.resource.data.status == 'inProgress'
+        && request.resource.data.acceptedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptedAt']);
+    }
+
+    function trustedChallengeClaim() {
+      return resource.data.get('demoSeed', true) == false
+        && resource.data.get('progressVerified', false) == true
+        && resource.data.get('progressSource', '') == 'habit_records'
+        && resource.data.status == 'completed'
+        && resource.data.currentProgress is int
+        && resource.data.totalProgress is int
+        && resource.data.totalProgress > 0
+        && resource.data.currentProgress >= resource.data.totalProgress
+        && request.resource.data.status == 'claimed'
+        && request.resource.data.claimedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'claimedAt']);
+    }
+
     match /users/{uid} {
       allow get: if owner(uid);
       allow list: if false;
@@ -107,8 +158,12 @@ service cloud.firestore {
       match /achievements/{path=**} {
         allow read, write: if owner(uid);
       }
-      match /challenges/{path=**} {
-        allow read, write: if owner(uid);
+      match /challenges/{challengeId} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && demoChallengeCreate();
+        allow update: if owner(uid)
+          && (demoChallengeAccept() || trustedChallengeClaim());
+        allow delete: if false;
       }
       // Lista de amistades local de la ficha de perfil (no autoritativa).
       match /friends/{friendId} {
