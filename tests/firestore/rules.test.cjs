@@ -7,7 +7,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp, deleteDoc } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, getDocs, collection, writeBatch, serverTimestamp, deleteDoc, arrayUnion } = require('firebase/firestore');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -15,6 +15,7 @@ let env;
 let alice;
 let bob;
 let anonymous;
+let buyer;
 
 before(async () => {
   env = await initializeTestEnvironment({
@@ -31,11 +32,16 @@ before(async () => {
   alice = env.authenticatedContext('alice').firestore();
   bob = env.authenticatedContext('bob').firestore();
   anonymous = env.unauthenticatedContext().firestore();
+  buyer = env.authenticatedContext('buyer').firestore();
 
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, 'users/alice'), {
       name: 'Alice', xp: 50, habitCoins: 10,
+    });
+    await setDoc(doc(db, 'users/buyer'), {
+      name: 'Buyer', xp: 0, habitCoins: 500,
+      shopInventory: [], shopEquipped: {},
     });
     await setDoc(doc(db, 'users/bob'), {
       name: 'Bob', xp: 100, habitCoins: 25,
@@ -221,4 +227,53 @@ test('el seguidor puede dejar de seguir borrando los dos documentos', async () =
   await assertSucceeds(batch.commit());
   assert.equal((await getDoc(doc(alice, 'users/alice/following/bob'))).exists(), false);
   assert.equal((await getDoc(doc(bob, 'users/bob/followers/alice'))).exists(), false);
+});
+
+test('compra legítima descuenta el precio real del catálogo', async () => {
+  await assertSucceeds(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 320,
+    shopInventory: arrayUnion('crown'),
+  }));
+  const result = await getDoc(doc(buyer, 'users/buyer'));
+  assert.equal(result.data().habitCoins, 320);
+  assert.deepEqual(result.data().shopInventory, ['crown']);
+});
+
+test('se rechazan inventario gratis, precio reducido y artículo inexistente', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    shopInventory: arrayUnion('cape'),
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 310,
+    shopInventory: arrayUnion('cape'),
+  }));
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 300,
+    shopInventory: arrayUnion('desconocido'),
+  }));
+});
+
+test('se rechaza adquirir varios productos en la misma actualización', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 100,
+    shopInventory: arrayUnion('mint_scarf', 'cape'),
+  }));
+});
+
+test('no se puede comprar dos veces un artículo ya adquirido', async () => {
+  await assertFails(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 140,
+    shopInventory: arrayUnion('crown'),
+  }));
+});
+
+test('el saldo del propio usuario sigue siendo falsificable: riesgo pendiente', async () => {
+  // Este éxito NO es deseable en una solución final. Documenta explícitamente
+  // que el cliente aún puede inflar Habit Coins sin tocar el inventario.
+  await assertSucceeds(updateDoc(doc(buyer, 'users/buyer'), {
+    habitCoins: 100000,
+  }));
+  await assertSucceeds(updateDoc(doc(buyer, 'users/buyer'), {
+    xp: 999999,
+  }));
 });
