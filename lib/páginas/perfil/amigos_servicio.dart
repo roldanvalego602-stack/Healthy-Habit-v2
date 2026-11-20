@@ -208,7 +208,7 @@ class AmigosServicio {
       final bloque = ids.sublist(i, math.min(i + 30, ids.length));
       final snap =
           await _db
-              .collection('users')
+              .collection('public_profiles')
               .where(FieldPath.documentId, whereIn: bloque)
               .get();
       for (final doc in snap.docs) {
