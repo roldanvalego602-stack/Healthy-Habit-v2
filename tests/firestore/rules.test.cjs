@@ -552,3 +552,22 @@ test('equipar y restablecer el aspecto conserva la propiedad comprada', async ()
   const state = (await getDoc(ref)).data();
   assert.deepEqual(state.shopInventory, ['crown']);
 });
+
+test('compatibilidad pendiente: activar un hábito de pago exige un descuento no comercial', async () => {
+  // HabitActionService.execute usa habitCoins y habitMutationVersion al
+  // activar un hábito con costo. La candidata actual lo bloquea.
+  // Esta prueba documenta el bloqueo; al implementar una política segura
+  // de activación, cambiar assertFails por assertSucceeds y validar getAfter.
+  await assertFails(updateDoc(doc(economy, 'users/economy'), {
+    habitCoins: 40, habitSlots: 3, habitMutationVersion: 1,
+  }));
+});
+
+test('compatibilidad pendiente: penalización por abandonar un hábito difícil', async () => {
+  // La cancelación usa una transacción que también actualiza attempt y habit.
+  // El perfil requiere un descuento ajeno al inventario de tienda.
+  // Debe admitirse solo si el intento cambia legítimamente a cancelled.
+  await assertFails(updateDoc(doc(economy, 'users/economy'), {
+    habitCoins: 25, habitMutationVersion: 1,
+  }));
+});
