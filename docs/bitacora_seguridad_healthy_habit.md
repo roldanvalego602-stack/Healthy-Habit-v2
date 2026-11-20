@@ -133,3 +133,15 @@ La autorización utiliza `get()` y `getAfter()` para comprobar **en la misma tra
 Se añadieron **seis pruebas**: cancelación válida, ausencia de cambio de intento, importe falsificado, hábito sencillo, intento de segundo cobro y saldo inferior a 25. **Nuevo total esperado: 57**, pendiente de ejecutar en el emulador. La anterior prueba negativa de cobro sin justificación permanece.
 
 **Limitaciones importantes:** `user_habits` sigue admitiendo escrituras amplias del propietario, incluidos estados anteriores; este cambio valida el débito concreto pero no establece autoridad completa sobre la historia de hábitos. Los incrementos arbitrarios de `xp` y `habitCoins` siguen permitidos y la aplicación requiere pruebas manuales con Firebase Emulator. No se han desplegado reglas de producción.
+
+## Etapa 13 — optimización del evaluador de reglas (20-nov-2026)
+
+**Resultado confirmado por el usuario:** 57/57 casos aprobados, incluyendo las seis pruebas de cancelación; **sin embargo**, el log del emulador contiene múltiples rechazos por **límite de 1,000 expresiones evaluadas**, especialmente en compras o débitos inválidos. Estos errores revelan una debilidad de la implementación; el resultado verde de `assertFails` no garantiza que el rechazo se haya producido por la condición prevista.
+
+**Cambio realizado únicamente en `firestore.candidate.rules`:** se reescribió `validOwnerUpdate(uid)` para discriminar anticipadamente tres caminos: (a) cambios normales que no alteran inventario, saldo a la baja ni marcador de cancelación, (b) compras que cambian inventario y pasan `validInventoryChange()`, (c) cancelaciones que reducen saldo, no tocan inventario, cambian `habitCancellation` y pasan `validHabitCancellation(uid)`. De esta forma, las compras fallidas no evalúan los costosos `get()`/`getAfter()` de intentos.
+
+**Pruebas nuevas:** 3 casos de regresión para compra inválida sin marcador, marcador falso sin descuento y débito sin marcador. **Suite esperada: 60**, pendiente de ejecutar. Debe revisarse **tanto el total de tests como la ausencia de `maximum of 1000 expressions`**; si el límite persiste, el resultado no se considerará completamente resuelto.
+
+**Riesgo pendiente principal:** sigue siendo posible incrementar unilateralmente `xp` y `habitCoins` en `users/{uid}`; las recompensas de `registrar_habito_screen.dart` y `desafios_screen.dart` se computan desde Flutter, y las colecciones de logs son editables por el propietario. No se ha modificado el código de recompensas en esta etapa para evitar bloquear registros legítimos. La validación anti-fraude integral requiere definir una autoridad confiable o una estrategia de demo con riesgo explícito.
+
+**Archivos cambiados:** `firestore.candidate.rules`, `tests/firestore/rules.test.cjs`, bitácora y auditoría. Reglas de producción sin desplegar.
