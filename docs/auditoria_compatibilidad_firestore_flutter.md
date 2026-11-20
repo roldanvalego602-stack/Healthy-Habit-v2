@@ -100,3 +100,11 @@ La inspección de `lib/páginas/habitos/catalogo.dart` demuestra que el helper `
 Una regla específica permite descuentos por cancelación solo si la transacción actualiza de forma atómica el perfil, el hábito y el intento activo. El marcador `habitCancellation` fue añadido a `HabitActionService.execute` en cancelaciones con cobro. La regla verifica `getAfter()`, dificultad, estados anteriores y posteriores, tiempo de servidor, costo exacto y versión.
 
 **Seis pruebas nuevas, total esperado 57, pendientes de ejecución.** Continúan sin resolverse la manipulación de XP/HC por el propietario y las escrituras amplias de historial, por lo que esto NO significa que la economía o la actividad de usuarios estén certificadas.
+
+## Etapa 13: error de máximo de expresiones en reglas
+
+El resultado más reciente de la suite es **57/57 aprobado**. El log presenta `Unable to evaluate the expression as the maximum of 1000 expressions to evaluate has been reached` en algunos casos negativos de compra y cancelación. Esto **no debe confundirse** con un rechazo correctamente validado.
+
+Se modificó `validOwnerUpdate` para elegir entre transacción ordinaria, compra y cancelación antes de entrar a validadores costosos que acceden a documentos con `getAfter()`; se añadieron 3 regresiones. **60 pruebas previstas, no ejecutadas aún.** Confirmar también que desaparece ese mensaje de límite de expresiones.
+
+El principal riesgo sin resolver sigue siendo el autoaumento de XP y Habit Coins; una solución de confianza exige definir el origen seguro de premios, no solo verificar incrementos calculados en cliente.
