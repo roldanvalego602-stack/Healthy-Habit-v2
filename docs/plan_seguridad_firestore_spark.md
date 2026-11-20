@@ -179,3 +179,16 @@ Los dos vectores restantes son independientes de la validación del inventario:
 **Restricción de diseño:** no prohibir todas las modificaciones de `xp` y `habitCoins` sin modificar simultáneamente las transacciones de `registrar_habito_screen.dart` y `desafios_screen.dart`. Rompería el registro y los canjes legítimos. La economía plenamente resistente a clientes modificados requiere autoridad externa (backend confiable) o un modelo sustancialmente más restrictivo y validado por Firestore Rules, con límites explícitos sobre pruebas de acciones humanas. Para la entrega en Spark, documentar cualquier garantía parcial, no presentar la economía como infalsificable.
 
 **Operación segura:** continuar en emulador; `firebase.json` y reglas de producción no se han modificado en este cambio.
+
+## Sexta etapa — contratos de recompensas (sin cambios de producción)
+
+El usuario confirmó **27/27 pruebas del emulador aprobadas**. Las trazas `PERMISSION_DENIED` en casos negativos son esperadas; aún existen mensajes `evaluation error` que requieren revisión separada antes del despliegue.
+
+Se agregaron tres pruebas para registrar contratos observables:
+1. Actualización conjunta de perfil, intento y log de hábito, conservando los 10 XP legítimos.
+2. Reclamación de un desafío completado, con actualización conjunta de XP, Habit Coins y estado.
+3. Prueba explícita de vulnerabilidad: el propietario todavía puede fabricar un documento de desafío `completed` con premios y progreso falsos.
+
+**Suite esperada: 30 pruebas**. Estos tests de compatibilidad no equivalen a protección contra un cliente modificado; por ahora son una línea base para diseñar reglas más estrictas sin romper hábitos o tienda. Si se cambia la política de XP, estas pruebas deberán ampliarse para comprobar valores, límites y documentos relacionados mediante `getAfter()`.
+
+**Próximo bloqueo de arquitectura:** el flujo de desafíos permite crear y editar el origen de las recompensas desde Flutter. Antes de cerrar la escritura directa de XP/HC hay que decidir una autoridad de premios y revisar funciones que crean/actualizan desafíos. Ningún cambio sobre la colección de producción o sobre `firebase.json` se realizó aquí.
