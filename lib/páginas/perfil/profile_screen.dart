@@ -8,6 +8,7 @@ import '../../tema/healthy_coin.dart';
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
 import '../logros/logros_screen.dart';
+import '../logros/logros_service.dart';
 import '../estadisticas/progreso_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'configuracion_screen.dart';
@@ -155,7 +156,7 @@ class ProfileScreen extends StatelessWidget {
                     () => _open(context, const LogrosScreen()),
                   ),
                   const SizedBox(height: 14),
-                  _achievementsCard(userRef, context),
+                  _achievementsCard(userRef, context, data),
                   const SizedBox(height: 12),
                   _sectionTitle('Tu mes, paso a paso', null, null),
                   const SizedBox(height: 14),
@@ -948,139 +949,106 @@ class ProfileScreen extends StatelessWidget {
         ],
       );
 
+  /// Los mismos cálculos que LogrosScreen, sin otorgar recompensas.
   Widget _achievementsCard(
     DocumentReference<Map<String, dynamic>> userRef,
     BuildContext context,
-  ) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: userRef.collection('achievements').doc('primer_paso').snapshots(),
-      builder: (context, snapshot) {
-        final unlocked = snapshot.data?.exists ?? false;
-        return InkWell(
-          onTap: () => _open(context, const LogrosScreen()),
-          borderRadius: BorderRadius.circular(25),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(25),
+    Map<String, dynamic> profile,
+  ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    stream: userRef.collection('user_habits').snapshots(),
+    builder: (context, habitsSnapshot) =>
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: userRef.collection('achievements').snapshots(),
+        builder: (context, badgesSnapshot) {
+          if (habitsSnapshot.hasError || badgesSnapshot.hasError) {
+            return ListTile(
+              title: const Text('No se pudieron consultar tus logros'),
+              onTap: () => _open(context, const LogrosScreen()),
+            );
+          }
+          if (!habitsSnapshot.hasData || !badgesSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final habits = habitsSnapshot.data!.docs;
+          final completed = habits.where(
+            (doc) => doc.data()['latestStatus'] == 'completed',
+          ).length;
+          final ids = badgesSnapshot.data!.docs.map((doc) => doc.id).toSet();
+          final obtained = LogrosService.catalogo.where((def) =>
+            LogrosService.obtenido(def,
+              LogrosService.progreso(def, profile, habits.length, completed, ids),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ).length;
+          final next = LogrosService.siguiente(
+            profile, habits.length, completed, ids,
+          );
+          final total = LogrosService.catalogo.length;
+          final fraction = total == 0 ? 0.0 : obtained / total;
+          return Material(
+            color: HealthyAdaptive.surface,
+            borderRadius: BorderRadius.circular(24),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () => _open(context, const LogrosScreen()),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ESTANTE · MIS LOGROS',
-                      style: TextStyle(
-                        color: muted,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                    Text(
-                      snapshot.hasError
-                          ? 'Sin conexión'
-                          : unlocked
-                          ? '1 desbloqueado'
-                          : '0 desbloqueados',
-                      style: const TextStyle(
-                        color: green,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      width: 62,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color:
-                            unlocked
-                                ? HealthyAdaptive.mint
-                                : HealthyAdaptive.surfaceAlt,
-                        border: Border.all(
-                          color: unlocked ? green : muted,
-                          width: 1.8,
+                    Row(children: [
+                      Expanded(child: Text('ESTANTE · MIS LOGROS',
+                        style: TextStyle(color: muted,
+                          fontWeight: FontWeight.w800, fontSize: 11))),
+                      Text('$obtained de $total',
+                        style: TextStyle(color: HealthyAdaptive.accent,
+                          fontWeight: FontWeight.w900)),
+                    ]),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Container(
+                        width: 64, height: 64,
+                        decoration: BoxDecoration(
+                          color: HealthyAdaptive.mint,
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        child: Icon(next?.icono ?? Icons.workspace_premium_rounded,
+                          color: HealthyAdaptive.accent, size: 32),
                       ),
-                      child: Icon(
-                        unlocked
-                            ? Icons.workspace_premium_rounded
-                            : Icons.lock_outline,
-                        color: unlocked ? green : muted,
-                        size: 35,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Primer paso',
-                            style: TextStyle(
-                              color: navy,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          Text(next?.nombre ?? '¡Colección completa!',
+                            style: TextStyle(color: navy,
+                              fontSize: 15, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 5),
-                          Text(
-                            unlocked
-                                ? '¡Logro desbloqueado!'
-                                : 'Registra tu primer hábito',
-                            style: TextStyle(color: muted, fontSize: 12),
-                          ),
-                          const SizedBox(height: 5),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('+25 XP · ',
-                                style: TextStyle(color: green,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                              HealthyCoinAmount(amount: '+10', size: 16,
-                                suffix: ' Habit Coins',
-                                style: TextStyle(color: green,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                            ],
-                          ),
+                          Text(next?.descripcion ??
+                              'Has alcanzado todos los objetivos disponibles.',
+                            style: TextStyle(color: muted, fontSize: 12)),
                         ],
+                      )),
+                      Icon(Icons.chevron_right_rounded, color: muted),
+                    ]),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: fraction, minHeight: 7,
+                        backgroundColor: HealthyAdaptive.border,
+                        color: HealthyAdaptive.accent,
                       ),
                     ),
-                    Icon(Icons.chevron_right, color: muted),
+                    const SizedBox(height: 8),
+                    Text('Toca para ver los detalles de tus insignias',
+                      style: TextStyle(color: muted, fontSize: 11)),
                   ],
                 ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: LinearProgressIndicator(
-                    value: unlocked ? 1 : 0,
-                    minHeight: 5,
-                    backgroundColor: HealthyAdaptive.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(green),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Toca para ver todos los logros y desafíos.',
-                  style: TextStyle(color: muted, fontSize: 11),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      ),
+  );
 
   Widget _specialAchievements() => Row(
     children: [
