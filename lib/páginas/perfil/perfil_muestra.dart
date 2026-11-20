@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
 import 'amigos_servicio.dart';
@@ -212,6 +213,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             name: name,
                             photoUrl: photoUrl,
                             avatarStyle: _readString(data, 'profileAvatarStyle', 'foto'),
+                            bannerStyle: _readString(data, 'profileBanner', 'Amanecer'),
                             username: username,
                             bio: bio,
                             title: title,
@@ -250,6 +252,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     required String name,
     required String photoUrl,
     required String avatarStyle,
+    required String bannerStyle,
     required String username,
     required String bio,
     required String title,
@@ -283,18 +286,30 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Align(
-              alignment: Alignment.topLeft,
-              child: Text(
-                'PERFIL PÚBLICO',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+            clipBehavior: Clip.antiAlias,
+            child: Stack(children: [
+              if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
+                Positioned.fill(
+                  child: Image.asset(
+                    HealthyAssetCatalog.banners[bannerStyle]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        const SizedBox.shrink(),
+                  ),
+                ),
+              const Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  'PERFIL PÚBLICO',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-            ),
+            ]),
           ),
           Transform.translate(
             offset: const Offset(0, -40),
