@@ -167,3 +167,11 @@ El estado vacío de `feed_amigos_screen.dart` reutiliza ahora `SocialActionButto
 Archivos modificados: `lib/páginas/perfil/social_action_button.dart` y `lib/páginas/perfil/feed_amigos_screen.dart`.
 
 **Validación pendiente en dispositivo:** `flutter analyze --no-fatal-infos lib`; desde Buscar amigos, enviar y cancelar solicitud; desde un perfil público, agregar y quitar amigo; comprobar que durante la operación se muestra carga y, tras el cambio confirmado por los streams, se anima el nuevo estado. Respetar ajuste de reducción de movimiento. La última suite de reglas permanece en 60/60 aprobadas, sin nuevos cambios de reglas.
+
+## Desarrollo de demo — resultados visibles de registrar hábitos (20-nov-2026)
+
+En `lib/páginas/habitos/registrar_habito_screen.dart` se amplió exclusivamente el resultado que devuelve la transacción confirmada de Firestore con `xpGanado`, `monedasGanadas`, `progresoNuevo` y `meta`. El banner de `HealthyCelebration` muestra ahora, por ejemplo, `+10 XP · 2/7 registros`; si se entregó una recompensa de nivel, agrega la cantidad **real** de Habit Coins. El orden de mensajes prioriza nivel obtenido, hábito completado, racha y registro común.
+
+No se modificaron fórmulas de XP, cálculo de monedas, rachas, evidencia, transacciones, permisos ni reglas. Se conserva la condición de mostrar celebración solo después de un commit exitoso; **no es una protección antifraude**.
+
+**Pruebas funcionales pendientes en Flutter:** registro sin evidencia (+10 XP), registro con evidencia válida (+15 XP), último registro que completa una meta, subida de nivel y crédito de monedas, operación fallida que no debe presentar celebración. Ejecutar `flutter analyze --no-fatal-infos lib` y validar con cuenta de demostración. Las reglas candidatas siguen sin desplegar; último resultado de reglas confirmado: 60/60.
