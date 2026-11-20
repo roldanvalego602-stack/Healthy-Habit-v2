@@ -107,3 +107,9 @@ git fetch origin
 git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
 firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
 ```
+
+## Ampliación de pruebas sociales (20-nov-2026)
+
+Las primeras 14 pruebas (incluidas las cinco sociales) pasaron en el emulador, confirmado por el usuario. Se añadieron **cuatro casos pendientes de ejecutar** en `tests/firestore/rules.test.cjs`: cancelar una solicitud (con sus dos reflejos), rechazar una solicitud, impedir eliminación unilateral de un seguimiento y dejar de seguir mediante batch. Suite esperada: 18 pruebas.
+
+El servicio social de Flutter conserva sus operaciones originales por batches; la política de Firebase sigue como candidata local y NO está desplegada. Verificar `flutter analyze`, `flutter test` y pruebas manuales con dos cuentas de prueba antes de cualquier publicación.
