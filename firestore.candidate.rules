@@ -79,6 +79,66 @@ service cloud.firestore {
         && request.resource.data.habitCoins == resource.data.habitCoins - price;
     }
 
+    // El alta inicial coincide con FirebaseService.saveUserData.
+    // No se aceptan saldos ni XP iniciales determinados por el cliente.
+    function validInitialUser(uid) {
+      return owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.username is string
+        && request.resource.data.username.size() > 0
+        && request.resource.data.username.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.level == 1
+        && request.resource.data.xp == 0
+        && request.resource.data.habitCoins == 100
+        && request.resource.data.currentStreak == 0
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Validar *todas* las ranuras, no solo la que cambió. Se permiten los
+    // dos cosméticos gratuitos, sin agregarlos al inventario de pago.
+    function validEquippedSlot(look, inventory, slot, ids) {
+      return !(slot in look)
+        || (look[slot] in ids
+          && (inventory.hasAny([look[slot]])
+            || look[slot] in ['sunglasses', 'bandana']));
+    }
+
+    function validEquipped() {
+      return request.resource.data.shopEquipped is map
+        && request.resource.data.get('shopInventory', []) is list
+        && validEquippedDetails();
+    }
+
+    function validEquippedDetails() {
+      let look = request.resource.data.shopEquipped;
+      let inventory = request.resource.data.get('shopInventory', []);
+      return look.keys().hasOnly([
+          'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda'
+        ])
+        && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame'])
+        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner'])
+        && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
+        && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar'])
+        && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana'])
+        && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears'])
+        && validEquippedSlot(look, inventory, 'aura', ['mint_aura'])
+        && validEquippedSlot(look, inventory, 'espalda', ['cape']);
+    }
+
     function validOwnerUpdate(uid) {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       let currentBalance = resource.data.get('habitCoins', 0);
@@ -88,6 +148,7 @@ service cloud.firestore {
         && currentBalance is int && nextBalance is int
         && nextBalance < currentBalance;
       return owner(uid)
+        && (!changed.hasAny(['shopEquipped']) || validEquipped())
         && ((!(inventoryChanged || coinsDecreased)) || validInventoryChange());
     }
 
@@ -145,7 +206,8 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if owner(uid);
       allow list: if false;
-      allow create, delete: if owner(uid);
+      allow create: if validInitialUser(uid);
+      allow delete: if owner(uid);
       allow update: if validOwnerUpdate(uid);
 
       // Datos privados: sin autorización comodín sobre relaciones sociales.
