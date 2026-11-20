@@ -61,8 +61,10 @@ void main() {
     test('solo publica identificadores de avatar predeterminado permitidos', () {
       final valid = HealthyPublicProfileService.project({
         'profileAvatarStyle': 'naturaleza',
+        'photoUrl': 'https://example.test/foto-anterior.jpg',
       });
       expect(valid['profileAvatarStyle'], 'naturaleza');
+      expect(valid['photoUrl'], isEmpty);
       final invalid = HealthyPublicProfileService.project({
         'profileAvatarStyle': 'archivo://privado',
       });
