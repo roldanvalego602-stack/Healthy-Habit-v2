@@ -1,10 +1,10 @@
 # Bitácora de seguridad de Healthy Habit
 
 **Actualizada:** 20 de noviembre de 2026  
-**Estado:** auditoría en curso; reglas candidatas solo para emulador. **NO DESPLEGAR.**  
+**Estado:** pausa de auditoría para priorizar desarrollo de la demo; reglas candidatas solo para emulador. **NO DESPLEGAR.**  
 **Repositorio:** `roldanvalego602-stack/Healthy-Habit-v2`  
 **Rama:** `feature/mr-healthy-voice-knowledge-motion`  
-**Último resultado confirmado por el usuario:** **39/39 pruebas aprobadas (0 fallidas)**.
+**Último resultado confirmado por el usuario:** **60/60 pruebas aprobadas (0 fallidas)**.
 
 ## ¿Qué estamos haciendo y por qué?
 
@@ -145,3 +145,15 @@ Se añadieron **seis pruebas**: cancelación válida, ausencia de cambio de inte
 **Riesgo pendiente principal:** sigue siendo posible incrementar unilateralmente `xp` y `habitCoins` en `users/{uid}`; las recompensas de `registrar_habito_screen.dart` y `desafios_screen.dart` se computan desde Flutter, y las colecciones de logs son editables por el propietario. No se ha modificado el código de recompensas en esta etapa para evitar bloquear registros legítimos. La validación anti-fraude integral requiere definir una autoridad confiable o una estrategia de demo con riesgo explícito.
 
 **Archivos cambiados:** `firestore.candidate.rules`, `tests/firestore/rules.test.cjs`, bitácora y auditoría. Reglas de producción sin desplegar.
+
+## Cierre temporal de la ronda de seguridad y retorno a desarrollo (20-nov-2026)
+
+**Resultado aportado por el usuario:** 60 de 60 tests aprobados; 0 fallos, 0 omitidos, salida 0. En este registro ya no aparece el mensaje `maximum of 1000 expressions`; varios rechazos negativos siguen mostrando `evaluation error`, por lo que todavía se requieren revisiones específicas si se prepara despliegue.
+
+**Decisión:** detener la creación de pruebas rutinarias y priorizar las funciones visibles de Healthy Habit para la evaluación. Este es un **cierre de la ronda de pruebas**, no de la auditoría integral de seguridad.
+
+**Bloqueadores para producción:** `firestore.rules` no se ha cambiado y mantiene permisos excesivamente amplios; `firestore.candidate.rules` **no se debe desplegar** sin resolver el autoincremento arbitrario de `xp` y `habitCoins`, el historial de hábitos falsificable, la validación del cliente y la prueba con usuarios reales de emulador. El ranking y las recompensas no son anti-trampas. La arquitectura actual de recompensas en Flutter no puede certificar estos valores por sí misma.
+
+**Retorno a desarrollo:** `lib/páginas/catalogo/datos/catalogo_datos.dart` referenciaba 9 archivos JPG, pero las 9 ilustraciones SVG equivalentes ya existían en `assets/images/catalogo/`. Se corrigieron sus rutas a `.svg`; las pantallas `catalogo_screen.dart` y `catalogo_detalle_screen.dart` ya disponen de `SvgPicture.asset` y `flutter_svg` está declarado en `pubspec.yaml`. Cambio pendiente de revisión visual en Flutter. No se cambió producción.
+
+**Validación mínima posterior:** `flutter analyze --no-fatal-infos lib` y abrir las 9 tarjetas del catálogo y detalles. No es necesario volver a ejecutar 60 pruebas de reglas hasta realizar nuevos cambios de seguridad.
