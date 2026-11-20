@@ -185,3 +185,15 @@ Se revisó `lib/páginas/estadisticas/progreso_screen.dart`. La fuente de datos 
 **Pendiente validar en Flutter:** `flutter analyze --no-fatal-infos lib` y revisión visual en móvil (tema claro/oscuro, pantalla pequeña, cuenta sin registros, cuenta con siete días de actividad, cambio de mes y pull-to-refresh). Este cambio no ha pasado por compilación local ni un test de interfaz; solo se revisó el código en GitHub.
 
 **Estado de seguridad sin cambios:** ronda de pruebas de reglas cerrada temporalmente en 60/60; fraude de XP/HC e historial siguen abiertos y `firestore.candidate.rules` no debe desplegarse.
+
+## Desarrollo de demo — siguiente objetivo de Logros (20-nov-2026)
+
+Se revisaron `lib/páginas/logros/logros_screen.dart` y `logros_service.dart`. El catálogo existente tiene 12 definiciones y calcula progreso mediante los datos actuales de perfil, hábitos y medallas; las insignias son principalmente visuales y no acreditan recompensas nuevas.
+
+**Mejoras integradas:** tarjeta «Tu próximo objetivo» que selecciona entre metas no conseguidas la que tiene mayor proporción de progreso (desempate por meta numérica), y enseña insignia bloqueada, nombre, descripción, barra animada, avance y cantidad restante. Si no existen metas pendientes y sí hay catálogo, muestra «Colección completa». La lista de tarjetas cambia suavemente con `AnimatedSwitcher` entre Todos / Conseguidos / Pendientes. Todas las animaciones respetan `HealthyVisualEffects.duration` para modo Lite/reducción de movimiento.
+
+**Sin modificaciones** a `LogrosService.progreso`, datos guardados, escrituras en Firebase, desbloqueo de medallas, XP, Habit Coins o reglas de seguridad. La sugerencia de objetivo es solo una heurística de interfaz, no un cálculo de recompensa.
+
+**Validación pendiente en Flutter:** ejecutar `flutter analyze --no-fatal-infos lib`, abrir Logros con 0 y varios logros conseguidos, alternar filtros, revisar modo claro/oscuro y tamaño pequeño; probar presentación de «Colección completa» en una colección de prueba. La implementación se revisó a nivel de código mediante GitHub, no se ha compilado en un dispositivo.
+
+La ronda previa de reglas permanece confirmada en 60/60; **no desplegar candidata** hasta resolver riesgos pendientes.
