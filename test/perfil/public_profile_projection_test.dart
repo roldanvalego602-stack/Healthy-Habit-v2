@@ -58,6 +58,17 @@ void main() {
       expect(result['settings'].containsKey('modoDiscreto'), false);
     });
 
+    test('solo publica identificadores de avatar predeterminado permitidos', () {
+      final valid = HealthyPublicProfileService.project({
+        'profileAvatarStyle': 'naturaleza',
+      });
+      expect(valid['profileAvatarStyle'], 'naturaleza');
+      final invalid = HealthyPublicProfileService.project({
+        'profileAvatarStyle': 'archivo://privado',
+      });
+      expect(invalid['profileAvatarStyle'], 'foto');
+    });
+
     test('mantiene compatibilidad con títulos guardados anteriormente', () {
       final result = HealthyPublicProfileService.project({
         'title': 'Cultivador de constancia',
