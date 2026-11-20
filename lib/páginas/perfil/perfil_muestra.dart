@@ -71,7 +71,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   Future<void> _toggleFriendship(bool isFollowing, bool isPending) async {
     if (_currentUser == null || _currentUser!.uid == widget.userId ||
-        _isLoading) return;
+        _isLoading) {
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       if (isFollowing) {
