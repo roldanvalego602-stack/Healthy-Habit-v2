@@ -94,3 +94,9 @@ Se añadieron dos pruebas de caracterización de la denegación actual; **total 
 La inspección de `lib/páginas/habitos/catalogo.dart` demuestra que el helper `_habit` configura `coinCost: 0` en **todos los hábitos oficiales actuales**. Por ello la activación desde el catálogo vigente no requiere abrir permisos de débito. La regla solo bloquea un posible futuro hábito con costo. Se sustituyó la prueba de «activación de pago» por una de activación sin débito y una prueba que rechaza un cobro inventado. **Total esperado: 51 pruebas**, aún sin ejecutar.
 
 **Bloqueo vigente:** el abandono de un hábito difícil sí genera una penalización de hasta 25 monedas; `HabitActionService.execute` actualiza en una transacción el intento, el hábito y el perfil. La candidata todavía lo rechaza. La implementación segura requiere asociar la operación a los tres documentos y a un costo de catálogo, sin permitir que un cliente fabrique una cancelación o cobre múltiples veces. La falsificación de XP/HC sigue abierta y debe resolverse por separado.
+
+## Mitigación candidata de cancelación de hábito difícil
+
+Una regla específica permite descuentos por cancelación solo si la transacción actualiza de forma atómica el perfil, el hábito y el intento activo. El marcador `habitCancellation` fue añadido a `HabitActionService.execute` en cancelaciones con cobro. La regla verifica `getAfter()`, dificultad, estados anteriores y posteriores, tiempo de servidor, costo exacto y versión.
+
+**Seis pruebas nuevas, total esperado 57, pendientes de ejecución.** Continúan sin resolverse la manipulación de XP/HC por el propietario y las escrituras amplias de historial, por lo que esto NO significa que la economía o la actividad de usuarios estén certificadas.
