@@ -34,48 +34,53 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(target)/followers/$(follower);
     }
 
-    // Validación del inventario de tienda: el cliente no decide precios.
-    // Es una mitigación parcial: el saldo y la XP aún provienen del cliente.
-    function purchaseItem(id, price) {
+    // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
+    function shopPrice(id) {
+      return {
+        'avatar_frame': 120,
+        'banner': 120,
+        'streak_guard': 300,
+        'achievement_display': 200,
+        'elite_avatar': 140,
+        'mint_scarf': 180,
+        'cap': 100,
+        'crown': 180,
+        'mint_aura': 120,
+        'cape': 200,
+        'pixel_glasses': 80,
+        'cat_ears': 150
+      }.get(id, -1);
+    }
+
+    function validInventoryChange() {
       let beforeItems = resource.data.get('shopInventory', []);
       let afterItems = request.resource.data.shopInventory;
-      return afterItems is list
-        && beforeItems is list
-        && !beforeItems.hasAny([id])
-        && afterItems.hasAny([id])
+      let additions = afterItems.removeAll(beforeItems);
+      let price = additions.size() == 1 ? shopPrice(additions[0]) : -1;
+      return beforeItems is list
+        && afterItems is list
         && afterItems.hasAll(beforeItems)
         && afterItems.size() == beforeItems.size() + 1
+        && additions.size() == 1
+        && price > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'shopInventory'])
         && request.resource.data.habitCoins is int
         && resource.data.habitCoins is int
         && resource.data.habitCoins >= price
         && request.resource.data.habitCoins == resource.data.habitCoins - price;
     }
 
-    function validInventoryChange() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['habitCoins', 'shopInventory'])
-        && (
-          purchaseItem('avatar_frame', 120) ||
-          purchaseItem('banner', 120) ||
-          purchaseItem('streak_guard', 300) ||
-          purchaseItem('achievement_display', 200) ||
-          purchaseItem('elite_avatar', 140) ||
-          purchaseItem('mint_scarf', 180) ||
-          purchaseItem('cap', 100) ||
-          purchaseItem('crown', 180) ||
-          purchaseItem('mint_aura', 120) ||
-          purchaseItem('cape', 200) ||
-          purchaseItem('pixel_glasses', 80) ||
-          purchaseItem('cat_ears', 150)
-        );
-    }
-
     function validOwnerUpdate(uid) {
-      return owner(uid) && (
-        !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['shopInventory'])
-        || validInventoryChange()
-      );
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let currentBalance = resource.data.get('habitCoins', 0);
+      let nextBalance = request.resource.data.get('habitCoins', 0);
+      let inventoryChanged = changed.hasAny(['shopInventory']);
+      let coinsDecreased = changed.hasAny(['habitCoins'])
+        && currentBalance is int && nextBalance is int
+        && nextBalance < currentBalance;
+      return owner(uid)
+        && ((!(inventoryChanged || coinsDecreased)) || validInventoryChange());
     }
 
     match /users/{uid} {
