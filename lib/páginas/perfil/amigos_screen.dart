@@ -614,6 +614,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                 children: [
               HealthyProfileAvatar(
                 photoUrl: d['photoUrl']?.toString(),
+                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
                 size: 50,
               ),
               const SizedBox(width: 12),
