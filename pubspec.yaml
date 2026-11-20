@@ -55,6 +55,9 @@ flutter:
     - "assets/monedas/h coin.png"
     - "assets/monedas/h coin premium.png"
     - assets/images/catalogo/
+    - assets/avatares/
+    - assets/banners/
+    - assets/vestimenta/
 
 flutter_launcher_icons:
   min_sdk_android: 21
