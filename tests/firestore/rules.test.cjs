@@ -587,3 +587,80 @@ test('compatibilidad pendiente: penalización por abandonar un hábito difícil'
     habitCoins: 25, habitMutationVersion: 1,
   }));
 });
+
+async function seedCancellationScenario(uid, difficulty = 'Difícil', coins = 60) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `users/${uid}`), {
+      uid, habitCoins: coins, habitMutationVersion: 0, xp: 0,
+    });
+    await setDoc(doc(db, `users/${uid}/user_habits/alim_007`), {
+      difficulty, lastAttemptId: 'try1',
+      lastStatus: 'inProgress', latestStatus: 'inProgress',
+    });
+    await setDoc(doc(db, `users/${uid}/user_habits/alim_007/attempts/try1`), {
+      habitId: 'alim_007', status: 'inProgress', progress: 2, target: 30,
+    });
+  });
+  return env.authenticatedContext(uid).firestore();
+}
+
+function cancellationBatch(db, uid, penalty = 25, options = {}) {
+  const batch = writeBatch(db);
+  const userRef = doc(db, `users/${uid}`);
+  const habitRef = doc(db, `users/${uid}/user_habits/alim_007`);
+  const attemptRef = doc(db, `users/${uid}/user_habits/alim_007/attempts/try1`);
+  batch.update(userRef, {
+    habitCoins: options.balanceAfter ?? 60 - penalty,
+    habitMutationVersion: 1,
+    habitCancellation: { habitId: 'alim_007', attemptId: 'try1', version: 1 },
+  });
+  if (!options.omitHabit) batch.update(habitRef, {
+    lastStatus: 'cancelled', latestStatus: 'cancelled',
+    updatedAt: serverTimestamp(),
+  });
+  if (!options.omitAttempt) batch.update(attemptRef, {
+    status: 'cancelled', cancelledAt: serverTimestamp(),
+    cancellationPenalty: penalty,
+  });
+  return batch;
+}
+
+test('cancelar un hábito difícil descuenta 25 HC en una operación atómica', async () => {
+  const db = await seedCancellationScenario('cancel-ok');
+  await assertSucceeds(cancellationBatch(db, 'cancel-ok').commit());
+  const user = (await getDoc(doc(db, 'users/cancel-ok'))).data();
+  assert.equal(user.habitCoins, 35);
+  assert.equal(user.habitMutationVersion, 1);
+});
+
+test('un débito con marcador no se autoriza si falta cambiar el intento', async () => {
+  const db = await seedCancellationScenario('cancel-no-attempt');
+  await assertFails(cancellationBatch(db, 'cancel-no-attempt', 25, {
+    omitAttempt: true,
+  }).commit());
+});
+
+test('una cancelación no permite penalización arbitraria ni saldo incorrecto', async () => {
+  const db = await seedCancellationScenario('cancel-wrong-fee');
+  await assertFails(cancellationBatch(db, 'cancel-wrong-fee', 10).commit());
+  await assertFails(cancellationBatch(db, 'cancel-wrong-fee', 25, {
+    balanceAfter: 0,
+  }).commit());
+});
+
+test('el usuario no puede cobrar por abandonar un hábito sencillo', async () => {
+  const db = await seedCancellationScenario('cancel-easy', 'Sencillo');
+  await assertFails(cancellationBatch(db, 'cancel-easy').commit());
+});
+
+test('no se puede descontar dos veces el mismo abandono', async () => {
+  const db = await seedCancellationScenario('cancel-repeat');
+  await assertSucceeds(cancellationBatch(db, 'cancel-repeat').commit());
+  const next = writeBatch(db);
+  next.update(doc(db, 'users/cancel-repeat'), {
+    habitCoins: 10, habitMutationVersion: 2,
+    habitCancellation: { habitId: 'alim_007', attemptId: 'try1', version: 2 },
+  });
+  await assertFails(next.commit());
+});
