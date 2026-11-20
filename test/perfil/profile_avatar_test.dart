@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:healthy_habit/p%C3%A1ginas/perfil/profile_avatar.dart';
+import '../../lib/páginas/perfil/profile_avatar.dart';
 
 void main() {
   testWidgets('avatar naturaleza se muestra sin foto ni Storage', (tester) async {
