@@ -251,3 +251,9 @@ firebase emulators:exec --config firebase.emulator.json --only firestore --proje
 flutter run
 ```
 Probar edición de nombre, usuario, biografía, foto (si Storage está disponible), avatar gratuito, título, estante, banner, armario, seguimiento/solicitudes con dos cuentas, logros, resumen mensual, configuración y enlaces externos.
+
+### Ajuste final de privacidad de avatar (20-nov-2026)
+
+Cuando `profileAvatarStyle` no es `foto`, la proyección pública `HealthyPublicProfileService.project` publica `photoUrl: ''`, aunque la cuenta conserve una foto en privado para poder volver a mostrarla. Esta medida evita que el perfil público exponga una URL antigua cuando el usuario eligió un avatar de naturaleza, agua o energía. La prueba `public_profile_projection_test.dart` incluye esta regresión. No se modifica Firebase Storage ni se borra la fotografía por cambiar de estilo.
+
+**Último estado de validación:** implementación integrada en GitHub, aún sin ejecutar `flutter analyze`, `flutter test` ni 61 pruebas de Firestore en el equipo del usuario. No declarar la página «100 % verificada» hasta recibir esas salidas y completar la prueba manual de dos cuentas.
