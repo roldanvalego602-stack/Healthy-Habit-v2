@@ -10,9 +10,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
-import 'healthy_knowledge_base.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
+import 'healthy_hybrid_knowledge.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
@@ -78,6 +78,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
+  final HealthyHybridKnowledge _hybridKnowledge = HealthyHybridKnowledge();
   final HealthyConversationService _conversation =
       const HealthyConversationService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
@@ -680,25 +681,35 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 habits: _habitosPerfil, lastTopic: _lastTopic,
                 lastHabitTitle: _lastHabitTitle,
                 lastShopItemId: _lastShopItemId);
-            final knowledge = const HealthyWellnessKnowledgeBase().answer(text);
-            if (knowledge != null) intent = const HealthyAssistantReply('');
             final toneCommand = NutriRespuestasService.contiene(text, const [
               'cambia tu humor', 'modo serio', 'modo divertido',
               'modo motivador', 'modo tranquilo', 'modo amigable',
             ]);
-            response = toneCommand
-                ? _respuestas.responder(text, nombre: _primerNombre, perfil: _perfil)
-                : (knowledge != null
-                    ? _respuestas.responder(text, nombre: _primerNombre, perfil: _perfil)
-                    : intent.text.isNotEmpty
-                ? intent.text
-                : _conversation.reply(
-                    text,
-                    name: _primerNombre,
-                    previousUserMessage: lastUserPrompt,
-                  ) ??
-                  _respuestas.responder(
-                    text, nombre: _primerNombre, perfil: _perfil));
+            // Prioridad: seguridad/calculadora → acciones de la app →
+            // búsqueda educativa estructurada → conversación general.
+            // Ninguna ficha del dataset realiza operaciones sobre Firebase.
+            if (toneCommand) {
+              response = _respuestas.responder(
+                text, nombre: _primerNombre, perfil: _perfil);
+            } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
+              response = intent.text;
+            } else {
+              final educational = await _hybridKnowledge.answer(
+                text, operational: intent,
+              );
+              if (educational != null) {
+                intent = educational;
+                response = educational.text;
+              } else {
+                response = _conversation.reply(
+                      text,
+                      name: _primerNombre,
+                      previousUserMessage: lastUserPrompt,
+                    ) ??
+                    _respuestas.responder(
+                      text, nombre: _primerNombre, perfil: _perfil);
+              }
+            }
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
