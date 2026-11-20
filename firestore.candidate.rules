@@ -205,12 +205,17 @@ service cloud.firestore {
       let coinsDecreased = changed.hasAny(['habitCoins'])
         && currentBalance is int && nextBalance is int
         && nextBalance < currentBalance;
+      // Seleccionar la vía antes de llamar a validadores profundos.
+      // Una compra inválida nunca debe disparar get()/getAfter() de hábitos.
+      let cancellationChanged = changed.hasAny(['habitCancellation']);
       return owner(uid)
         && (!changed.hasAny(['shopEquipped']) || validEquipped())
-        && (!changed.hasAny(['habitCancellation']) || validHabitCancellation(uid))
-        && ((!(inventoryChanged || coinsDecreased))
-          || validInventoryChange()
-          || (coinsDecreased && !inventoryChanged && validHabitCancellation(uid)));
+        && (
+          (!inventoryChanged && !coinsDecreased && !cancellationChanged)
+          || (inventoryChanged && validInventoryChange() && !cancellationChanged)
+          || (coinsDecreased && !inventoryChanged && cancellationChanged
+            && validHabitCancellation(uid))
+        );
     }
 
     // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
