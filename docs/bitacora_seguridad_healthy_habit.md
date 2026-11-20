@@ -111,3 +111,11 @@ Se agregaron **dos pruebas de caracterización**, que esperan rechazo de descuen
 **Decisión de seguridad:** no se abrió ningún permiso amplio de débito. Autorizar cancelaciones requerirá verificar de manera atómica un intento `inProgress` que pase a `cancelled`, un catálogo difícil reconocido, saldo correcto y prevención de cobros repetidos, no únicamente aceptar un decremento de hasta 25. El cliente aún controla escrituras de intentos y el saldo/XP propio, de modo que una regla parcialmente validada no resolvería toda la economía.
 
 **Archivos cambiados en esta etapa:** `tests/firestore/rules.test.cjs` y documentación. No se cambiaron `firestore.candidate.rules`, `firestore.rules` ni los flujos de Flutter.
+
+## Etapa 11 — corrección de prueba con estado compartido (20-nov-2026)
+
+**Resultado recibido:** 51 pruebas ejecutadas, 50 aprobadas, 1 fallida: `activación vigente sin costo: versión y cupos no necesitan descontar HC`. No se trata de una regresión comprobada de la regla. El fixture `users/economy` comienza con 50 monedas, pero una prueba anterior de reclamación de desafío las eleva a **60**. La prueba de activación escribía `habitCoins: 50`, provocando un descuento involuntario de 10 monedas que `validOwnerUpdate` rechaza correctamente.
+
+**Corrección:** la prueba ahora lee el saldo y la versión actuales con `getDoc`, conserva las monedas intactas, incrementa `habitMutationVersion` y verifica los valores finales. Se mantiene un caso negativo para cobros de activación inventados. **Suite esperada: 51 pruebas, pendiente de repetirse**.
+
+**Lección técnica:** una prueba de integración debe establecer o leer su estado inicial; los fixtures compartidos pueden ocultar dependencias entre pruebas. No se modificaron reglas candidatas, reglas de producción ni lógica Flutter. El bloqueo de penalizaciones por cancelación y la falsificación de XP/HC siguen abiertos.
