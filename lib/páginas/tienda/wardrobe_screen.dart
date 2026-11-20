@@ -243,6 +243,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     final head = shopItemById(eq['cabeza'] ?? '');
     final eye = eq['ojos'];
     final neck = eq['cuello'];
+    final torso = shopItemById(eq['torso'] ?? '');
+    final held = shopItemById(eq['mano'] ?? '');
+    final back = shopItemById(eq['espalda'] ?? '');
     final cape = eq['espalda'] == 'cape';
     final aura = eq['aura'] == 'mint_aura';
     final names = eq.entries
@@ -311,6 +314,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                       ),
                     ),
                   ),
+                if (back?.id == 'leaf_backpack')
+                  Positioned(
+                    right: 8, top: 110,
+                    child: ShopItemArtwork(item: back!, size: 110),
+                  ),
                 Image.asset(
                   'assets/mascot/healthy.png',
                   height: 260,
@@ -322,21 +330,39 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         color: green,
                       ),
                 ),
+                if (torso != null)
+                  Positioned(
+                    top: 148,
+                    child: ShopItemArtwork(item: torso, size: 122),
+                  ),
                 if (head != null)
                   Positioned(
-                    top: 5,
-                    child: Text(
-                      head.emoji,
-                      style: const TextStyle(fontSize: 49),
+                    top: head.id == 'leaf_headphones' ? 17 : 5,
+                    child: ShopItemArtwork(
+                      item: head,
+                      size: head.id == 'leaf_headphones' ? 145 : 125,
                     ),
                   ),
                 if (eye != null)
                   Positioned(
-                    top: 160,
-                    child: Text(
-                      eye == 'sunglasses' ? '🕶️' : '🤓',
-                      style: const TextStyle(fontSize: 48),
+                    top: 143,
+                    child: ShopItemArtwork(
+                      item: shopItemById(eye)!,
+                      size: 95,
                     ),
+                  ),
+                if (neck == 'wellness_medal')
+                  Positioned(
+                    top: 188,
+                    child: ShopItemArtwork(
+                      item: shopItemById(neck!)!,
+                      size: 75,
+                    ),
+                  ),
+                if (held != null)
+                  Positioned(
+                    right: 9, top: 172,
+                    child: ShopItemArtwork(item: held, size: 77),
                   ),
                 if (neck == 'bandana' || neck == 'mint_scarf')
                   Positioned(
