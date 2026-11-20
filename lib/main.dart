@@ -10,6 +10,7 @@ import 'tema/healthy_motion.dart';
 import 'tema/healthy_float.dart';
 import 'servicios/preferencias_app.dart';
 import 'servicios/healthy_reminders_service.dart';
+import 'servicios/healthy_public_profile_service.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -72,6 +73,7 @@ Future<void> main() async {
     });
   }
 
+  HealthyPublicProfileService.instance.start();
   runApp(const HabitTrackerApp());
 }
 
