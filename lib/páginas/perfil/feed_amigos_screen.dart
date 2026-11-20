@@ -290,6 +290,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                     children: [
                       HealthyProfileAvatar(
                         photoUrl: d['photoUrl']?.toString(),
+                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
                         size: 44,
                       ),
                       const SizedBox(width: 12),
