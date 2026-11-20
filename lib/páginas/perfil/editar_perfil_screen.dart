@@ -28,6 +28,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   bool _guardando = false;
   bool _subiendoFoto = false;
   String? _photoUrl;
+  String _avatarStyle = 'foto';
   final ProfilePhotoService _photoService = ProfilePhotoService();
   String? _errorCarga;
   int _cargaActual = 0;
@@ -81,6 +82,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       _photoUrl = data.containsKey('photoUrl')
           ? data['photoUrl']?.toString() ?? ''
           : user.photoURL ?? '';
+      _avatarStyle = _texto(data['profileAvatarStyle'], 'foto');
       setState(() {
         _cargando = false;
         _errorCarga = null;
@@ -142,6 +144,61 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
           'imagen válida y comprueba tu conexión.');
     } finally {
       if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
+
+  Future<void> _elegirAvatar() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    const styles = <String, String>{
+      'foto': 'Fotografía o clásico',
+      'naturaleza': 'Naturaleza',
+      'agua': 'Hidratación',
+      'energia': 'Energía',
+    };
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const ListTile(title: Text('Elegir avatar'),
+            subtitle: Text('No necesita Firebase Storage.')),
+          for (final item in styles.entries)
+            ListTile(
+              leading: Icon(switch (item.key) {
+                'naturaleza' => Icons.spa_rounded,
+                'agua' => Icons.water_drop_rounded,
+                'energia' => Icons.bolt_rounded,
+                _ => Icons.person_rounded,
+              }, color: HealthyAdaptive.accent),
+              title: Text(item.value),
+              trailing: _avatarStyle == item.key
+                  ? Icon(Icons.check_rounded, color: HealthyAdaptive.accent)
+                  : null,
+              onTap: () => Navigator.pop(sheetContext, item.key),
+            ),
+        ]),
+      ),
+    );
+    if (selected == null || !mounted || selected == _avatarStyle) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _mensaje('Inicia sesión nuevamente para editar tu avatar.');
+      return;
+    }
+    setState(() => _guardando = true);
+    try {
+      await _db.collection('users').doc(user.uid).set({
+        'profileAvatarStyle': selected,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _avatarStyle = selected);
+      _mensaje('Avatar actualizado.');
+    } catch (_) {
+      _mensaje('No se pudo cambiar el avatar. Revisa tu conexión.');
+    } finally {
+      if (mounted) setState(() => _guardando = false);
     }
   }
 
@@ -337,6 +394,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                                       ),
                                       child: HealthyProfileAvatar(
                                         photoUrl: _photoUrl,
+                                        preset: _avatarStyle,
                                         size: 96,
                                       ),
                                     ),
@@ -391,6 +449,12 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                                 label: const Text('Quitar foto'),
                               ),
                             ],
+                            OutlinedButton.icon(
+                              onPressed: _guardando || _subiendoFoto ? null : _elegirAvatar,
+                              icon: const Icon(Icons.face_retouching_natural_rounded),
+                              label: const Text('Elegir avatar sin foto'),
+                            ),
+                            const SizedBox(height: 6),
                             Text(
                               'La fotografía se guarda al subirla.',
                               style: TextStyle(
