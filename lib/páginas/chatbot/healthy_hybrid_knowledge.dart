@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-import 'healthy_assistant_engine.dart';
+import 'healthy_assistant_reply.dart';
 
 /// Ficha educativa estructurada. No contiene órdenes ni acceso a Firestore.
 class HealthyKnowledgeCard {
