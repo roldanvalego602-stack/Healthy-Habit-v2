@@ -323,6 +323,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
                                       children: [
                                     HealthyProfileAvatar(
                                       photoUrl: datos['photoUrl']?.toString(),
+                         preset: datos['profileAvatarStyle']?.toString() ?? 'foto',
                                       size: 48,
                                     ),
                                     const SizedBox(width: 12),
