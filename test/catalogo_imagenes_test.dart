@@ -44,7 +44,7 @@ void main() {
                 item.imagen,
                 key: ValueKey(item.id),
                 fit: BoxFit.cover,
-                semanticsLabel: item.titulo,
+                semanticLabel: item.titulo,
               ),
             ),
           ),
