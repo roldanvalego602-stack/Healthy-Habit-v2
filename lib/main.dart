@@ -39,12 +39,8 @@ Future<void> main() async {
 
   debugPrint('Firestore databaseId: ${firestore.databaseId}');
 
-  try {
-    await firestore.collection('users').limit(1).get();
-    debugPrint('Firestore: conexión de lectura correcta');
-  } catch (e) {
-    debugPrint('Firestore: error de lectura: $e');
-  }
+  // No consultar toda la colección users: contiene perfiles privados.
+  // La conexión se verificará mediante lecturas autorizadas en cada pantalla.
 
   firestoreDb = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
