@@ -1,6 +1,6 @@
 // CANDIDATA SOLO PARA EMULADOR. No desplegar en producción.
-// Aisla la información privada, pero todavía NO soporta ranking/social
-// ni impide la manipulación de XP/monedas por el propio propietario.
+// Aisla información privada; el flujo social usa batches con documentos espejo.
+// NO impide la manipulación de XP/monedas por el propio propietario.
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,13 +12,103 @@ service cloud.firestore {
       return authenticated() && request.auth.uid == uid;
     }
 
+    function socialPayload() {
+      return request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.keys().hasAll(['createdAt'])
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function incomingRef(recipient, sender) {
+      return /databases/$(database)/documents/users/$(recipient)/solicitudes/$(sender);
+    }
+
+    function sentRef(sender, recipient) {
+      return /databases/$(database)/documents/users/$(sender)/solicitudes_enviadas/$(recipient);
+    }
+
+    function followingRef(follower, target) {
+      return /databases/$(database)/documents/users/$(follower)/following/$(target);
+    }
+
+    function followerRef(target, follower) {
+      return /databases/$(database)/documents/users/$(target)/followers/$(follower);
+    }
+
     match /users/{uid} {
       allow get: if owner(uid);
       allow list: if false;
       allow create, update, delete: if owner(uid);
 
-      match /{path=**} {
+      // Datos privados: sin autorización comodín sobre relaciones sociales.
+      match /user_habits/{path=**} {
         allow read, write: if owner(uid);
+      }
+      match /temporary_habit_evidence/{evidenceId} {
+        allow read, write: if owner(uid);
+      }
+      match /achievements/{path=**} {
+        allow read, write: if owner(uid);
+      }
+      match /challenges/{path=**} {
+        allow read, write: if owner(uid);
+      }
+      // Lista de amistades local de la ficha de perfil (no autoritativa).
+      match /friends/{friendId} {
+        allow read, write: if owner(uid);
+      }
+
+      // Solicitudes entrantes: sólo emisor crea; emisor o receptor retira.
+      match /solicitudes/{sender} {
+        allow get, list: if owner(uid);
+        allow create: if authenticated()
+          && request.auth.uid == sender && sender != uid
+          && socialPayload()
+          && getAfter(sentRef(sender, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (request.auth.uid == sender || owner(uid))
+          && !existsAfter(sentRef(sender, uid));
+      }
+
+      // Espejo en la cuenta del emisor de la solicitud.
+      match /solicitudes_enviadas/{recipient} {
+        allow get, list: if owner(uid);
+        allow create: if owner(uid) && uid != recipient
+          && socialPayload()
+          && getAfter(incomingRef(recipient, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == recipient)
+          && !existsAfter(incomingRef(recipient, uid));
+      }
+
+      // following está en la cuenta del seguidor. La relación se crea
+      // únicamente por el receptor de una solicitud pendiente.
+      match /following/{target} {
+        allow get, list: if owner(uid);
+        allow create: if authenticated()
+          && request.auth.uid == target && target != uid
+          && socialPayload()
+          && exists(incomingRef(target, uid))
+          && !existsAfter(incomingRef(target, uid))
+          && getAfter(followerRef(target, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == target)
+          && !existsAfter(followerRef(target, uid));
+      }
+
+      match /followers/{follower} {
+        // La consulta puntual permite verificar si me sigue este usuario;
+        // las listas completas se limitan al propietario.
+        allow get: if owner(uid) ||
+          (authenticated() && request.auth.uid == follower);
+        allow list: if owner(uid);
+        allow create: if owner(uid) && uid != follower
+          && socialPayload()
+          && exists(incomingRef(uid, follower))
+          && !existsAfter(incomingRef(uid, follower))
+          && getAfter(followingRef(follower, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == follower)
+          && !existsAfter(followingRef(follower, uid));
       }
     }
 
