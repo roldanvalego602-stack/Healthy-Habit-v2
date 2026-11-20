@@ -274,42 +274,43 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 130,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF174D4B), Color(0xFF498A75)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(children: [
-              if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
-                Positioned.fill(
-                  child: Image.asset(
+              child: Stack(fit: StackFit.expand, children: [
+                if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
+                  Image.asset(
                     HealthyAssetCatalog.banners[bannerStyle]!,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stack) =>
-                        const SizedBox.shrink(),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                            ),
+                          ),
+                        ),
+                  )
+                else
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                      ),
+                    ),
+                  ),
+                const Positioned(
+                  left: 12, top: 10,
+                  child: Text('PERFIL PÚBLICO',
+                    style: TextStyle(color: Colors.white, fontSize: 10,
+                      fontWeight: FontWeight.w800, letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)]),
                   ),
                 ),
-              const Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  'PERFIL PÚBLICO',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ]),
+              ]),
+            ),
           ),
           Transform.translate(
             offset: const Offset(0, -40),
