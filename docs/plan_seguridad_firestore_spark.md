@@ -192,3 +192,11 @@ Se agregaron tres pruebas para registrar contratos observables:
 **Suite esperada: 30 pruebas**. Estos tests de compatibilidad no equivalen a protección contra un cliente modificado; por ahora son una línea base para diseñar reglas más estrictas sin romper hábitos o tienda. Si se cambia la política de XP, estas pruebas deberán ampliarse para comprobar valores, límites y documentos relacionados mediante `getAfter()`.
 
 **Próximo bloqueo de arquitectura:** el flujo de desafíos permite crear y editar el origen de las recompensas desde Flutter. Antes de cerrar la escritura directa de XP/HC hay que decidir una autoridad de premios y revisar funciones que crean/actualizan desafíos. Ningún cambio sobre la colección de producción o sobre `firebase.json` se realizó aquí.
+
+## Séptima etapa — protección del origen de desafíos (candidata)
+
+El usuario confirmó **30/30 pruebas aprobadas**. Se añadieron reglas específicas de `users/{uid}/challenges/{challengeId}` para limitar la creación por clientes a desafíos de demostración (`demoSeed: true`, `progressVerified: false`, `progressSource: demo`) con progreso inicial cero, premios acotados y estado `available` o `locked`. El cliente puede aceptar desafíos demo modificando únicamente `status` y `acceptedAt`, pero no puede declararlos completados ni verificarlos. No puede borrar desafíos. Se permite marcar `claimed` solo un desafío que **ya estaba** verificado y completado (por una autoridad distinta del cliente), con modificación únicamente de `status` y `claimedAt`. Esto **no implementa** aún el proceso que produce progreso verificado.
+
+La prueba anterior que documentaba la creación fraudulenta ahora exige su rechazo; se agregan cuatro pruebas sobre alta/aceptación demo, intento de modificación de recompensas y verificación, borrado y creación directamente verificada. **Total esperado: 34 pruebas** en el emulador, todavía sin ejecutar.
+
+**Limitaciones abiertas:** los premios de desafíos verificados preexistentes aún pueden sumarse arbitrariamente en `users/{uid}` porque no está protegida la transacción de economía; el usuario todavía puede modificar XP/HC directamente. Los datos creados con reglas antiguas no quedan automáticamente validados ni saneados. Deben auditarse colecciones globales y flujos de app antes del despliegue. No publicar esta candidata.
