@@ -76,6 +76,7 @@ class HealthyPublicProfileService {
 
     final rawSettings = privateData['settings'];
     final settings = rawSettings is Map ? rawSettings : <String, dynamic>{};
+    final shareStreak = settings['mostrarRachaAmigos'] != false;
     final visibility = settings['visibilidadLogros'];
     final achievementsVisibility =
         visibility == 'Todos' || visibility == 'Solo yo' || visibility == 'Solo amigos'
@@ -91,17 +92,16 @@ class HealthyPublicProfileService {
       'xp': positiveInt('xp', positiveInt('currentXp', 0)),
       'currentXp': positiveInt('currentXp', positiveInt('xp', 0)),
       'level': positiveInt('level', 1),
-      'currentStreak': positiveInt('currentStreak', 0),
-      'streakDays': positiveInt('streakDays', 0),
+      'currentStreak': shareStreak ? positiveInt('currentStreak', 0) : 0,
+      'streakDays': shareStreak ? positiveInt('streakDays', 0) : 0,
       'completedHabits': positiveInt('completedHabits', 0),
       'nextLevelXp': positiveInt('nextLevelXp', 1000),
-      'nextAchievementTitle': stringValue('nextAchievementTitle', ''),
-      'nextAchievementProgress': privateData['nextAchievementProgress'] is num
-          ? (privateData['nextAchievementProgress'] as num).clamp(0, 1)
-          : 0,
+      // No exponer progreso de logros privados en la colección pública.
+      'nextAchievementTitle': '',
+      'nextAchievementProgress': 0,
       // Sólo estas dos preferencias controlan información pública.
       'settings': {
-        'mostrarRachaAmigos': settings['mostrarRachaAmigos'] != false,
+        'mostrarRachaAmigos': shareStreak,
         'visibilidadLogros': achievementsVisibility,
       },
     };
