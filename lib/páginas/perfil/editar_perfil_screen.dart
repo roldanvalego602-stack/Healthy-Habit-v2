@@ -132,7 +132,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       setState(() => _subiendoFoto = true);
       final url = await _photoService.upload(selected);
       if (!mounted) return;
-      setState(() => _photoUrl = url);
+      setState(() { _photoUrl = url; _avatarStyle = 'foto'; });
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
       _mensaje(error.message);
