@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'profile_avatar.dart';
+import 'social_action_button.dart';
 
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -173,25 +174,10 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             ),
             if (accion != null && onAccion != null) ...[
               const SizedBox(height: 18),
-              SizedBox(
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: onAccion,
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: Text(
-                    accion,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _C.mint,
-                    foregroundColor: const Color(0xFF14382E),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
+              SocialActionButton(
+                label: accion,
+                icon: Icons.person_add_alt_1_rounded,
+                onPressed: onAccion,
               ),
             ],
           ],
