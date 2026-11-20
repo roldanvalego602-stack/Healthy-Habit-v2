@@ -461,3 +461,42 @@ test('nadie puede reasignar destinatario ni eliminar una reacción', async () =>
   }));
   await assertFails(deleteDoc(doc(bob, 'interactions/reaction-1')));
 });
+
+test('integración: equipar artículos propios modifica solo el perfil privado', async () => {
+  await assertSucceeds(updateDoc(doc(buyer, 'users/buyer'), {
+    shopEquipped: { cabeza: 'crown' },
+  }));
+  await assertFails(updateDoc(doc(alice, 'users/buyer'), {
+    shopEquipped: { cabeza: 'crown' },
+  }));
+});
+
+test('integración: actualizar nombre y preferencias del perfil no necesita modificar economía', async () => {
+  await assertSucceeds(updateDoc(doc(economy, 'users/economy'), {
+    name: 'Nuevo nombre',
+    settings: { mostrarRachaAmigos: false },
+  }));
+  await assertFails(updateDoc(doc(bob, 'users/economy'), {
+    name: 'Suplantación',
+  }));
+});
+
+test('integración: evidencias temporales siguen privadas y son eliminables por su dueño', async () => {
+  const ref = doc(economy, 'users/economy/temporary_habit_evidence/e-1');
+  await assertSucceeds(setDoc(ref, {
+    userId: 'economy', imageBase64: 'imagen-de-prueba',
+  }));
+  await assertFails(getDoc(doc(bob, 'users/economy/temporary_habit_evidence/e-1')));
+  await assertSucceeds(deleteDoc(ref));
+});
+
+test('integración: progreso y logs anidados son legibles únicamente para su propietario', async () => {
+  const attempt = doc(economy, 'users/economy/user_habits/water/attempts/a1');
+  const logs = collection(economy,
+    'users/economy/user_habits/water/attempts/a1/logs');
+  await assertSucceeds(getDoc(attempt));
+  await assertSucceeds(getDocs(logs));
+  await assertFails(getDoc(doc(bob, 'users/economy/user_habits/water/attempts/a1')));
+  await assertFails(getDocs(collection(bob,
+    'users/economy/user_habits/water/attempts/a1/logs')));
+});
