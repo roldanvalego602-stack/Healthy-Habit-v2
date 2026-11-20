@@ -331,60 +331,49 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 150,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(
-                colors: _bannerColors(
-                  _string(data['profileBanner'], fallback: 'Amanecer'),
-                ),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
+              child: Stack(fit: StackFit.expand, children: [
+                // Una sola superficie de banner: PNG o degradado de reserva.
                 if (HealthyAssetCatalog.banners.containsKey(
-                  _string(data['profileBanner'], fallback: 'Amanecer')))
-                  Positioned.fill(
-                    child: Image.asset(
-                      HealthyAssetCatalog.banners[
-                        _string(data['profileBanner'], fallback: 'Amanecer')]!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+                    _string(data['profileBanner'], fallback: 'Amanecer')))
+                  Image.asset(
+                    HealthyAssetCatalog.banners[
+                      _string(data['profileBanner'], fallback: 'Amanecer')]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => DecoratedBox(
+                      decoration: BoxDecoration(gradient: LinearGradient(
+                        colors: _bannerColors(_string(data['profileBanner'],
+                            fallback: 'Amanecer')),
+                      )),
                     ),
+                  )
+                else
+                  DecoratedBox(
+                    decoration: BoxDecoration(gradient: LinearGradient(
+                      colors: _bannerColors(_string(data['profileBanner'],
+                          fallback: 'Amanecer')),
+                    )),
                   ),
-                Align(
-                  alignment: Alignment.topLeft,
+                Positioned(
+                  left: 13,
+                  top: 12,
                   child: Text(
-                    _string(
-                      data['profileBanner'],
-                      fallback: 'Amanecer',
-                    ).toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white70,
+                    _string(data['profileBanner'], fallback: 'Amanecer')
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF6D989),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+              ]),
             ),
           ),
           Transform.translate(
