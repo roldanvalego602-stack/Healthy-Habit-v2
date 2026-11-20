@@ -129,7 +129,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(widget.userId).snapshots(),
+      stream: _db.collection(isOwnAccount(widget.userId) ? 'users' : 'public_profiles').doc(widget.userId).snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
 
