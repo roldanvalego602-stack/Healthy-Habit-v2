@@ -157,3 +157,13 @@ Se añadieron **seis pruebas**: cancelación válida, ausencia de cambio de inte
 **Retorno a desarrollo:** `lib/páginas/catalogo/datos/catalogo_datos.dart` referenciaba 9 archivos JPG, pero las 9 ilustraciones SVG equivalentes ya existían en `assets/images/catalogo/`. Se corrigieron sus rutas a `.svg`; las pantallas `catalogo_screen.dart` y `catalogo_detalle_screen.dart` ya disponen de `SvgPicture.asset` y `flutter_svg` está declarado en `pubspec.yaml`. Cambio pendiente de revisión visual en Flutter. No se cambió producción.
 
 **Validación mínima posterior:** `flutter analyze --no-fatal-infos lib` y abrir las 9 tarjetas del catálogo y detalles. No es necesario volver a ejecutar 60 pruebas de reglas hasta realizar nuevos cambios de seguridad.
+
+## Desarrollo de demo — microinteracciones sociales (20-nov-2026)
+
+Retomando el desarrollo visible para la evaluación, se verificó que el módulo social ya usa el componente reutilizable `SocialActionButton` con bloqueo de doble pulsación, animación de presión, indicador de carga y cambio de texto según el estado recibido de Firebase. Se mejoró la transición de contenido mediante entrada combinada de deslizamiento, opacidad y escala (180 ms), respetando la preferencia de movimiento reducido.
+
+El estado vacío de `feed_amigos_screen.dart` reutiliza ahora `SocialActionButton` en su invitación a buscar/agregar amistades, sustituyendo un botón `ElevatedButton.icon` no uniforme. **No se alteraron las operaciones Firestore ni los permisos de seguridad.**
+
+Archivos modificados: `lib/páginas/perfil/social_action_button.dart` y `lib/páginas/perfil/feed_amigos_screen.dart`.
+
+**Validación pendiente en dispositivo:** `flutter analyze --no-fatal-infos lib`; desde Buscar amigos, enviar y cancelar solicitud; desde un perfil público, agregar y quitar amigo; comprobar que durante la operación se muestra carga y, tras el cambio confirmado por los streams, se anima el nuevo estado. Respetar ajuste de reducción de movimiento. La última suite de reglas permanece en 60/60 aprobadas, sin nuevos cambios de reglas.
