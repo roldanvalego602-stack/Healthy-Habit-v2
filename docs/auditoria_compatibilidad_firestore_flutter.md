@@ -88,3 +88,9 @@ El código real de penalizaciones está centralizado en `lib/páginas/habitos/ha
 Una activación puede reducir saldo por `habit.coinCost` y escribir en la misma transacción el perfil, la definición de hábito y el intento inicial. Una cancelación de hábito difícil puede descontar hasta 25 Habit Coins, incrementando `habitMutationVersion` y cambiando el intento a `cancelled`. `firestore.candidate.rules` restringe actualmente todo débito no vinculado a compras y bloquearía estas operaciones.
 
 Se añadieron dos pruebas de caracterización de la denegación actual; **total esperado: 50**, pendiente de ejecutar. Próximo paso: diseñar transiciones atómicas con comprobación de `getAfter` y límites de catálogo, sin abrir la opción de descuentos arbitrarios. Se mantienen las limitaciones de XP e ingresos autodeclarados.
+
+## Corrección al diagnóstico de activaciones (etapa 11)
+
+La inspección de `lib/páginas/habitos/catalogo.dart` demuestra que el helper `_habit` configura `coinCost: 0` en **todos los hábitos oficiales actuales**. Por ello la activación desde el catálogo vigente no requiere abrir permisos de débito. La regla solo bloquea un posible futuro hábito con costo. Se sustituyó la prueba de «activación de pago» por una de activación sin débito y una prueba que rechaza un cobro inventado. **Total esperado: 51 pruebas**, aún sin ejecutar.
+
+**Bloqueo vigente:** el abandono de un hábito difícil sí genera una penalización de hasta 25 monedas; `HabitActionService.execute` actualiza en una transacción el intento, el hábito y el perfil. La candidata todavía lo rechaza. La implementación segura requiere asociar la operación a los tres documentos y a un costo de catálogo, sin permitir que un cliente fabrique una cancelación o cobre múltiples veces. La falsificación de XP/HC sigue abierta y debe resolverse por separado.
