@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
+import 'amigos_servicio.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -45,7 +46,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
-  DocumentReference<Map<String, dynamic>>? get _friendRef {
+  DocumentReference<Map<String, dynamic>>? get _followingRef {
     final currentUser = _currentUser;
     if (currentUser == null || currentUser.uid == widget.userId) {
       return null;
@@ -58,51 +59,42 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         .doc(widget.userId);
   }
 
-  Future<void> _toggleFriendship(bool isFriend) async {
+  DocumentReference<Map<String, dynamic>>? get _pendingRef {
     final currentUser = _currentUser;
-    final friendRef = _friendRef;
-
-    if (currentUser == null || friendRef == null) {
-      _showMessage('Inicia sesión para agregar amigos.');
-      return;
+    if (currentUser == null || currentUser.uid == widget.userId) {
+      return null;
     }
+    return _db.collection('users').doc(currentUser.uid)
+        .collection('solicitudes_enviadas').doc(widget.userId);
+  }
 
+  Future<void> _toggleFriendship(bool isFollowing, bool isPending) async {
+    if (_currentUser == null || _currentUser!.uid == widget.userId ||
+        _isLoading) return;
     setState(() => _isLoading = true);
-
     try {
-      if (isFriend) {
-        await friendRef.delete();
+      if (isFollowing) {
+        await AmigosServicio.dejarDeSeguir(widget.userId);
+      } else if (isPending) {
+        await AmigosServicio.cancelarSolicitud(widget.userId);
       } else {
-        await friendRef.set({
-          'uid': widget.userId,
-          'name': widget.name,
-          'username': widget.username,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        await AmigosServicio.enviarSolicitud(widget.userId);
       }
-
       if (!mounted) return;
-
-      _showMessage(
-        isFriend
-            ? 'Has eliminado a ${widget.name} de tus amigos.'
-            : '¡Agregaste a ${widget.name} a tus amigos!',
-      );
+      _showMessage(isFollowing
+          ? 'Dejaste de seguir a ${widget.name}.'
+          : isPending
+              ? 'Solicitud cancelada.'
+              : 'Solicitud enviada a ${widget.name}.');
     } on FirebaseException catch (e) {
       if (!mounted) return;
-
-      _showMessage(
-        e.code == 'permission-denied'
-            ? 'Firestore no permite esta operación. Revisa las reglas.'
-            : 'No se pudo actualizar tu lista de amigos.',
-      );
+      _showMessage(e.code == 'permission-denied'
+          ? 'Esta acción no está permitida por Firestore.'
+          : 'No se pudo completar la solicitud. Inténtalo de nuevo.');
     } catch (_) {
-      if (!mounted) return;
-      _showMessage('Ocurrió un error al actualizar tus amigos.');
+      if (mounted) _showMessage('No se pudo completar la acción.');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -168,7 +160,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
         final currentUser = _currentUser;
         final isOwnProfile = currentUser?.uid == widget.userId;
-        final friendRef = _friendRef;
+        final friendRef = _followingRef;
 
         return Scaffold(
           backgroundColor: background,
@@ -376,28 +368,37 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child:
-                        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                          stream: friendRef.snapshots(),
-                          builder: (context, snapshot) {
-                            final isFriend = snapshot.data?.exists ?? false;
-
+                    child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: friendRef.snapshots(),
+                      builder: (context, followingSnapshot) {
+                        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                          stream: _pendingRef!.snapshots(),
+                          builder: (context, pendingSnapshot) {
+                            final isFollowing = followingSnapshot.data?.exists ?? false;
+                            final isPending = pendingSnapshot.data?.exists ?? false;
+                            final ready = followingSnapshot.hasData &&
+                                pendingSnapshot.hasData &&
+                                !followingSnapshot.hasError &&
+                                !pendingSnapshot.hasError;
                             return SizedBox(
                               width: double.infinity,
                               child: SocialActionButton(
-                                label: isFriend ? 'Amigos' : 'Agregar amigo',
-                                icon: isFriend
-                                    ? Icons.check_circle_rounded
+                                label: isFollowing ? 'Siguiendo'
+                                    : isPending ? 'Pendiente' : 'Agregar amigo',
+                                icon: isFollowing ? Icons.check_circle_rounded
+                                    : isPending ? Icons.schedule_rounded
                                     : Icons.person_add_rounded,
-                                outlined: isFriend,
-                                busy: _isLoading,
-                                onPressed: _isLoading || snapshot.hasError
+                                outlined: isFollowing || isPending,
+                                busy: _isLoading || !ready,
+                                onPressed: !ready || _isLoading
                                     ? null
-                                    : () => _toggleFriendship(isFriend),
+                                    : () => _toggleFriendship(isFollowing, isPending),
                               ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ],
