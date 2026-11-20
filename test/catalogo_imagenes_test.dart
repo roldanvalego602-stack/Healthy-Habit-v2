@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:healthy_habit/páginas/catalogo/datos/catalogo_datos.dart';
 
 void main() {
@@ -13,20 +12,19 @@ void main() {
     ...consejosCatalogo,
   ];
 
-  test('los nueve artículos apuntan a imágenes SVG locales únicas', () async {
+  test('los nueve artículos apuntan a imágenes JPG locales únicas', () async {
     expect(items.length, 9);
     expect(items.map((e) => e.imagen).toSet().length, items.length);
 
     for (final item in items) {
       expect(item.imagen, startsWith('assets/images/catalogo/'));
-      expect(item.imagen, endsWith('.svg'));
-      final file = await rootBundle.loadString(item.imagen);
-      expect(file, contains('<svg'), reason: item.id);
-      expect(file, contains('</svg>'), reason: item.id);
+      expect(item.imagen.toLowerCase(), endsWith('.jpg'));
+      final bytes = await rootBundle.load(item.imagen);
+      expect(bytes.lengthInBytes, greaterThan(0), reason: item.id);
     }
   });
 
-  testWidgets('las nueve ilustraciones se pueden renderizar en Flutter',
+  testWidgets('las nueve fotografías se pueden renderizar en Flutter',
       (tester) async {
     tester.view.physicalSize = const Size(360, 780);
     tester.view.devicePixelRatio = 1;
@@ -42,7 +40,7 @@ void main() {
             child: SizedBox(
               width: 320,
               height: 180,
-              child: SvgPicture.asset(
+              child: Image.asset(
                 item.imagen,
                 key: ValueKey(item.id),
                 fit: BoxFit.cover,
