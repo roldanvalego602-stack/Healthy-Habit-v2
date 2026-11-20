@@ -58,6 +58,7 @@ flutter:
     - assets/avatares/
     - assets/banners/
     - assets/vestimenta/
+    - assets/knowledge/
 
 flutter_launcher_icons:
   min_sdk_android: 21
