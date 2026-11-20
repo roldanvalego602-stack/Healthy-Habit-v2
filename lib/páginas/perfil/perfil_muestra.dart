@@ -577,7 +577,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ),
       child: Text(
         'Los logros de este usuario son privados.',
-        style: TextStyle(color: muted),
+        style: TextStyle(color: HealthyAdaptive.muted),
       ),
     );
 
