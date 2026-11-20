@@ -305,3 +305,23 @@ flutter run
 ```
 
 Probar tres banners con y sin foto, público y propio; equipar gafas y gorra con nueva captura; probar subida de fotografía JPEG y compartir el nuevo diagnóstico exacto si falla. No modificar `firestore.rules` ni desplegar `storage.candidate.rules` automáticamente.
+
+## Mr. Healthy — arquitectura híbrida de conocimiento v1 (20-nov-2026)
+
+**Implementación en rama de desarrollo, sin despliegue a producción.** Se añadió `assets/knowledge/mr_healthy_es_v1.json` (40 fichas estructuradas en español, con ID, categoría, título, alias, etiquetas, respuesta y referencia), registrado en `pubspec.yaml`. El buscador `healthy_hybrid_knowledge.dart` realiza normalización, recuperación léxica ponderada y rechazo de coincidencias poco claras; no es IA generativa ni embedding semántico.
+
+El contrato de respuesta `HealthyAssistantReply` ahora reside en `healthy_assistant_reply.dart`. `healthy_assistant_engine.dart` conserva la lógica de navegación y acciones de Hábitos, Tienda, Perfil, estadísticas, desafíos y catálogo; **no incorpora datos del dataset ni permite ejecutar operaciones a través de fichas**. `nutrichat.dart` aplica prioridad: moderación/cálculos/clima → acciones de la app → consulta educativa → conversación. Se retiró la búsqueda antigua de respuestas educativas de `nutri_respuestas_service.dart` para evitar sobrescrituras entre dos bases. Las respuestas del dataset dan fuentes honestas y rechazan inventar valores nutricionales por porción.
+
+**Pruebas agregadas, pendientes de ejecutar:** `test/chatbot/healthy_hybrid_knowledge_test.dart` incluye carga del asset, IDs, alias, formulaciones distintas, rechazo de términos fuera de tema, ausencia de cifras inventadas, fuentes permitidas y prioridad de operaciones. Guía completa en `docs/mr_healthy_arquitectura_hibrida.md`.
+
+**Validación sugerida:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/chatbot/healthy_hybrid_knowledge_test.dart
+flutter run
+```
+
+**Limitaciones:** búsquedas con sinónimos no incluidos aún pueden fallar; fichas y procedencia deben recibir revisión editorial antes de distribución; no hay entrenamiento de modelo, conexión a APIs generativas ni recuperación semántica neuronal. No se modificaron reglas de Firestore, XP ni Habit Coins.
