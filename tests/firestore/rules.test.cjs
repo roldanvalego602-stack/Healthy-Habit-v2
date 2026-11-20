@@ -664,3 +664,11 @@ test('no se puede descontar dos veces el mismo abandono', async () => {
   });
   await assertFails(next.commit());
 });
+
+test('si el saldo es menor de 25 HC se descuenta solo el saldo disponible', async () => {
+  const db = await seedCancellationScenario('cancel-low-balance', 'Difícil', 12);
+  await assertSucceeds(cancellationBatch(db, 'cancel-low-balance', 12, {
+    balanceAfter: 0,
+  }).commit());
+  assert.equal((await getDoc(doc(db, 'users/cancel-low-balance'))).data().habitCoins, 0);
+});
