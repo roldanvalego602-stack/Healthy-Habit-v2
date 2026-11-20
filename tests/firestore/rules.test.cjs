@@ -708,3 +708,34 @@ test('perfil público: avatar predeterminado válido y rechazo de valor arbitrar
     profileAvatarStyle: 'javascript:valor-falso',
   }));
 });
+
+test('se compra y equipa banda deportiva con precio y ranura autorizados', async () => {
+  const ref = doc(buyer, 'users/buyer');
+  await assertSucceeds(updateDoc(ref, {
+    habitCoins: 430,
+    shopInventory: arrayUnion('sports_headband'),
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    shopEquipped: { cabeza: 'sports_headband' },
+  }));
+  const data = (await getDoc(ref)).data();
+  assert.equal(data.habitCoins, 430);
+  assert.equal(data.shopEquipped.cabeza, 'sports_headband');
+});
+
+test('no se puede falsificar precio ni equipar un artículo en otra ranura', async () => {
+  const ref = doc(buyer, 'users/buyer');
+  await assertFails(updateDoc(ref, {
+    habitCoins: 499,
+    shopInventory: arrayUnion('leaf_hoodie'),
+  }));
+  await assertFails(updateDoc(ref, {
+    shopEquipped: { cabeza: 'leaf_hoodie' },
+  }));
+});
+
+test('perfil público acepta banners definidos y rechaza identificadores arbitrarios', async () => {
+  const ref = doc(alice, 'public_profiles/alice');
+  await assertSucceeds(updateDoc(ref, { profileBanner: 'Bosque' }));
+  await assertFails(updateDoc(ref, { profileBanner: '../private' }));
+});
