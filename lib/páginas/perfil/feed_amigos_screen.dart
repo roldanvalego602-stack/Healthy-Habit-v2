@@ -242,7 +242,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(uid).snapshots(),
+      stream: _db.collection('public_profiles').doc(uid).snapshots(),
       builder: (context, snap) {
         if (!snap.hasData || !snap.data!.exists) {
           return const SizedBox.shrink();
