@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
@@ -344,8 +345,19 @@ class ProfileScreen extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
+                if (HealthyAssetCatalog.banners.containsKey(
+                  _string(data['profileBanner'], fallback: 'Amanecer')))
+                  Positioned.fill(
+                    child: Image.asset(
+                      HealthyAssetCatalog.banners[
+                        _string(data['profileBanner'], fallback: 'Amanecer')]!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+                    ),
+                  ),
                 Align(
                   alignment: Alignment.topLeft,
                   child: Text(
