@@ -64,3 +64,28 @@ Si falla por requerir Java o descargar componentes, comprobar Java 21 y conectiv
 Las pruebas esperan: propietario lee/crea sus propios documentos; usuario A no lee perfil, evidencia ni registros de B; A no modifica saldo de B; no se permite listar `users`; `system` no es editable; usuarios sin sesión no leen perfiles.
 
 **Advertencia:** Estas pruebas NO validan compras, ranking, amistades o manipulación de economía propia. Una suite que pase no autoriza desplegar las reglas; hacen falta migración de datos públicos y pruebas de las transacciones reales. La app instalada en el teléfono NO debe conectarse accidentalmente al emulador de demo.
+
+## Migración incremental hacia `public_profiles` (20-nov-2026)
+
+**Código incorporado en la rama de trabajo; NO desplegado y sin pruebas Flutter ejecutadas por el asistente.**
+
+- `HealthyPublicProfileService` escucha los cambios del documento privado del usuario autenticado y crea/actualiza `public_profiles/{uid}` con nombre, username, foto, bio, título y estadísticas publicables; excluye correo, inventario, monedas, historial, evidencias, configuración interna y progreso de logros privados.
+- La preferencia `mostrarRachaAmigos=false` hace que las rachas públicas se registren como cero, no solo que se oculten en pantalla.
+- Ranking, búsqueda de amigos, feed, vista pública y `AmigosServicio.perfiles` consultan `public_profiles`. La ficha propia permanece leyendo `users/{miUid}`.
+- La candidata local permite a cualquier usuario autenticado leer/listar `public_profiles`, pero solo al propietario publicar su documento, limitado a claves seleccionadas. No es una política anti-trampas: XP público sigue viniendo de un cliente y debe verificarse con una arquitectura autoritativa si se desea clasificación competitiva.
+- El llenado de `public_profiles` es gradual: **solo aparecerán en ranking y búsqueda aquellos usuarios que abran la versión actualizada y sincronicen su perfil**. No se ha ejecutado una migración masiva ni se han consultado documentos privados ajenos. En una demo todos los usuarios de prueba deben iniciar sesión después de actualizar.
+- Las reglas candidatas aún NO incluyen permiso para el flujo social entre dos cuentas (`solicitudes`, `following`, `followers`). No publicarlas hasta completar y probar ese flujo.
+- En producción siguen activas las reglas generales inseguras comunicadas por el usuario. La migración de lecturas de Flutter por sí sola NO protege documentos privados mientras el catch-all de producción permanezca.
+
+### Comprobaciones recomendadas
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter analyze --no-fatal-infos lib test
+flutter test test/healthy_public_profile_service_test.dart
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+flutter run
+```
+
+Con dos usuarios de prueba, iniciar sesión en la versión nueva en ambas cuentas; confirmar ranking, búsqueda, vistas públicas, ocultación de rachas y perfil propio. Las pruebas del emulador verifican permisos básicos, NO la totalidad de flujos Flutter. **No ejecutar `firebase deploy` aún.**
