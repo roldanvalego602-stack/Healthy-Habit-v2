@@ -113,3 +113,17 @@ firebase emulators:exec --config firebase.emulator.json --only firestore --proje
 Las primeras 14 pruebas (incluidas las cinco sociales) pasaron en el emulador, confirmado por el usuario. Se añadieron **cuatro casos pendientes de ejecutar** en `tests/firestore/rules.test.cjs`: cancelar una solicitud (con sus dos reflejos), rechazar una solicitud, impedir eliminación unilateral de un seguimiento y dejar de seguir mediante batch. Suite esperada: 18 pruebas.
 
 El servicio social de Flutter conserva sus operaciones originales por batches; la política de Firebase sigue como candidata local y NO está desplegada. Verificar `flutter analyze`, `flutter test` y pruebas manuales con dos cuentas de prueba antes de cualquier publicación.
+
+## Auditoría de economía (20-nov-2026, sin cambio de reglas)
+
+**18/18 pruebas de reglas sociales aprobadas en emulador, resultado confirmado por el usuario.** El siguiente bloqueo antes de producción es la economía:
+
+- `registrar_habito_screen.dart`: cada log otorga 10 XP sin evidencia o 15 XP con evidencia. La misma transacción escribe `users/{uid}.xp`, `currentXp`, `level`, `habitCoins`, `claimedLevelRewards` y rachas; escribe `attempts/{id}`, `logs/{id}` y posible evidencia.
+- `desafios_screen.dart`: cuando un desafío cumple su política en Flutter, la transacción incrementa `users/{uid}.xp` y `habitCoins`, y cambia `challenges/{id}.status` a `claimed`. La validación cliente puede eludirse con solicitudes directas.
+- `shop_service.dart`: comprar descuenta `habitCoins` y agrega un artículo a `shopInventory` en una transacción; equipar actualiza `shopEquipped`. El catálogo de precios se define en Flutter y no es fuente de confianza para Firestore Rules.
+
+**Vulnerabilidad demostrable por inspección:** `firestore.candidate.rules` permite `allow update: if owner(uid)` en `users/{uid}`. Un usuario autenticado puede cambiar sus propios `habitCoins`, `xp`, `level` e inventario arbitrariamente mediante un cliente modificado, saltándose la aplicación. Las reglas de producción actuales son incluso más permisivas. Ninguna de las 18 pruebas anteriores aborda este ataque.
+
+**Criterio de aceptación antes de publicar:** (1) operaciones de perfil cotidiano nunca permiten modificar economía por accidente; (2) compras válidas descuentan el precio correcto y añaden exactamente el artículo; (3) un cliente modificado no puede aumentar saldo/XP arbitrariamente ni reclamar repetidamente; (4) registros válidos siguen operando; (5) el resultado puede ejecutarse en Spark sin funciones desplegadas.
+
+**Decisión de arquitectura pendiente:** Firestore Rules no puede confiar en constantes y cálculos del código Flutter; para una economía enteramente autoritativa se necesita un servidor de confianza. En Spark puede optarse por límites, contadores por operaciones y validaciones con `getAfter()`, aclarando que no se elimina todo riesgo de trampas, o por un backend alojado en otro servicio. No bloquear compras normales ni publicar reglas incompletas. La siguiente fase consiste en modelar esas transiciones y añadir casos negativos al emulador.
