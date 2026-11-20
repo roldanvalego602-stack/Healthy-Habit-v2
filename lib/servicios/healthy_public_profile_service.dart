@@ -97,6 +97,10 @@ class HealthyPublicProfileService {
           ? stringValue('photoUrl', '', maxLength: 2048)
           : '',
       'profileAvatarStyle': avatarStyle,
+      'profileBanner': ['Amanecer', 'Bosque', 'Océano', 'Atardecer']
+              .contains(privateData['profileBanner'])
+          ? privateData['profileBanner']
+          : 'Amanecer',
       'bio': stringValue('bio', '', maxLength: 300),
       // La personalización del perfil propio utiliza «profileTitle».
       // Mantener fallback a «title» para cuentas creadas anteriormente.
