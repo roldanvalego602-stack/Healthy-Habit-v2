@@ -257,3 +257,27 @@ Probar edición de nombre, usuario, biografía, foto (si Storage está disponibl
 Cuando `profileAvatarStyle` no es `foto`, la proyección pública `HealthyPublicProfileService.project` publica `photoUrl: ''`, aunque la cuenta conserve una foto en privado para poder volver a mostrarla. Esta medida evita que el perfil público exponga una URL antigua cuando el usuario eligió un avatar de naturaleza, agua o energía. La prueba `public_profile_projection_test.dart` incluye esta regresión. No se modifica Firebase Storage ni se borra la fotografía por cambiar de estilo.
 
 **Último estado de validación:** implementación integrada en GitHub, aún sin ejecutar `flutter analyze`, `flutter test` ni 61 pruebas de Firestore en el equipo del usuario. No declarar la página «100 % verificada» hasta recibir esas salidas y completar la prueba manual de dos cuentas.
+
+## Integración de recursos visuales subidos por el equipo (20-nov-2026)
+
+**Origen confirmado:** existen los directorios `assets/avatares/`, `assets/banners/` y `assets/vestimenta/` en la rama `feature/mr-healthy-voice-knowledge-motion`. Se registraron como assets de Flutter en `pubspec.yaml` y se centralizaron sus rutas en `lib/tema/healthy_asset_catalog.dart`.
+
+**Avatares:** `HealthyProfileAvatar` muestra imágenes PNG reales para los estilos `naturaleza` (avatar 2), `agua` (avatar 3) y `energia` (avatar 4); conserva la fotografía por URL cuando el estilo es `foto`, con respaldo gráfico si falla la carga. La ilustración `avatares.png` no se utiliza como avatar individual por no haberse verificado que sea una imagen de una sola persona; requiere revisar/cortar si es una lámina.
+
+**Banners:** las variantes `Amanecer`, `Bosque` y `Océano` ahora muestran `banner.png`, `banner 2.png` y `banner 3.png` en el perfil privado y público. La opción existente `Atardecer` mantiene un degradado de respaldo. `HealthyPublicProfileService.project` sincroniza `profileBanner` únicamente si coincide con esas cuatro etiquetas; `firestore.candidate.rules` valida el campo.
+
+**Accesorios:** las 8 imágenes `Gafas.png`, `Gorra.png`, `Medalla.png`, `Termo.png`, `audifonos.png`, `banda.png`, `mochila.png`, `sudadera.png` se muestran mediante `ShopItemArtwork` en Tienda, carrusel, detalles y Armario. Los existentes `sunglasses` y `cap` reutilizan sus IDs y precios previos; se agregaron `sports_headband` (70 HC/cabeza), `leaf_headphones` (140 HC/cabeza), `leaf_hoodie` (200 HC/torso), `wellness_medal` (100 HC/cuello), `water_bottle` (90 HC/mano) y `leaf_backpack` (170 HC/espalda). El armario muestra sus PNG superpuestos en posiciones estimadas sobre Mr. Healthy; se debe ajustar visualmente cada uno con el PNG real en Android para evitar superposiciones incorrectas.
+
+**Reglas candidatas:** `shopPrice`, `validEquippedDetails` y la lista de campos de `public_profiles` se ampliaron con los IDs, precios y ranuras nuevos. **No se modificaron las reglas de producción y la economía antifraude sigue pendiente.** Se agregaron tres tests de emulador (compra, rechazo de fraude/ranura y banner), por lo que el total esperado pasa de 61 a **64 pruebas pendientes de ejecutar**. Se añadieron cuatro tests de catálogo y assets en `test/tienda/shop_assets_test.dart`; se adaptaron dos tests anteriores de avatar para comprobar `AssetImage` en vez de iconos.
+
+**Validación obligatoria:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/perfil test/tienda
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+flutter run
+```
+Verificar carga real de los tres banners, las imágenes de avatar, los ocho accesorios en tienda y armario, compra/equipamiento/desequipamiento, persistencia tras reiniciar, alineación con cuerpo de Mr. Healthy y tema oscuro. El diseño de overlays requiere revisión visual. Este cambio se editó en GitHub sin Flutter SDK ni emulador disponibles en el entorno; no afirmar compilación o pruebas aprobadas.
