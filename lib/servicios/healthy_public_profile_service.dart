@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,7 +20,7 @@ class HealthyPublicProfileService {
   StreamSubscription<User?>? _authSubscription;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSubscription;
   String? _activeUid;
-  Map<String, dynamic>? _lastProjection;
+  String? _lastProjectionJson;
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -33,7 +34,7 @@ class HealthyPublicProfileService {
     _userSubscription?.cancel();
     _userSubscription = null;
     _activeUid = user?.uid;
-    _lastProjection = null;
+    _lastProjectionJson = null;
     if (user == null) return;
 
     final uid = user.uid;
@@ -41,11 +42,12 @@ class HealthyPublicProfileService {
       (snapshot) async {
         if (!snapshot.exists || _activeUid != uid) return;
         final projection = project(snapshot.data() ?? {});
-        if (mapEquals(_lastProjection, projection)) return;
+        final projectionJson = jsonEncode(projection);
+        if (_lastProjectionJson == projectionJson) return;
         try {
           // El ID es el UID autenticado: las reglas no permiten editar otros.
           await _db.collection('public_profiles').doc(uid).set(projection);
-          if (_activeUid == uid) _lastProjection = projection;
+          if (_activeUid == uid) _lastProjectionJson = projectionJson;
         } catch (error) {
           debugPrint('Perfil público: no se pudo sincronizar: $error');
         }
@@ -60,8 +62,10 @@ class HealthyPublicProfileService {
     String stringValue(String key, String fallback, {int maxLength = 120}) {
       final raw = privateData[key];
       final value = raw is String ? raw.trim() : '';
-      return (value.isEmpty ? fallback : value)
-          .substring(0, (value.isEmpty ? fallback : value).length.clamp(0, maxLength));
+      final sanitized = value.isEmpty ? fallback : value;
+      return sanitized.length > maxLength
+          ? sanitized.substring(0, maxLength)
+          : sanitized;
     }
 
     int positiveInt(String key, int fallback) {
