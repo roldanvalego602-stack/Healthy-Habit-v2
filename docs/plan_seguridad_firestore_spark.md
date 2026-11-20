@@ -164,3 +164,18 @@ Resultado reportado por el usuario: 22 pruebas aprobadas y una fallida (`no se p
 Corrección candidata: catálogo expresado como `rules.Map.get()`; el artículo añadido se obtiene como diferencia de listas mediante `removeAll()`. Cualquier reducción de `habitCoins` o modificación de `shopInventory` debe satisfacer la validación de compra. Esto evita la reducción sin compra y la segunda compra sin artículo nuevo, sin agotar la evaluación con 12 comparaciones repetidas. La referencia oficial de Firebase confirma que ambos métodos forman parte del lenguaje de reglas: https://firebase.google.com/docs/reference/rules/rules.List y https://firebase.google.com/docs/reference/rules/rules.Map.
 
 Se añadieron dos pruebas nuevas para débitos sin adquisición y compras mezcladas con XP arbitraria. **La suite esperada ahora es de 25 pruebas, pendiente de ejecutar.** La prueba de vulnerabilidad conocida que incrementa libremente el saldo y XP sigue demostrando un problema pendiente; las reglas aún no están listas para desplegar.
+
+## Validación de payloads malformados y límite de confianza (20-nov-2026)
+
+El usuario confirmó **25/25 tests aprobados** en el emulador. Varios rechazos mostraron `evaluation error at L90:24` porque `validInventoryDetails` intentaba hacer `removeAll` aun con el campo `shopInventory` ausente o malformado. Se separaron condiciones de existencia/tipo (`validInventoryChange`) y cálculos de listas (`validInventoryDetails`) para rechazar esas solicitudes sin realizar operaciones sobre tipos inválidos. Se añadieron dos casos adversarios. **Total esperado: 27 pruebas, pendientes de ejecutar en el emulador.**
+
+### Límite de confianza por resolver
+
+Los dos vectores restantes son independientes de la validación del inventario:
+
+1. **Autoinflación:** `users/{uid}` sigue admitiendo un aumento directo de `xp` y `habitCoins` sin adjuntar un registro o desafío válido. La prueba de vulnerabilidad conocida verifica ese hecho.
+2. **Falsificación de origen:** `user_habits/{path=**}` y `challenges/{path=**}` permiten al propietario crear intentos, logs y estados arbitrarios. Vincular la recompensa a uno de esos documentos en `getAfter()` no demostraría, por sí solo, que sea auténtico.
+
+**Restricción de diseño:** no prohibir todas las modificaciones de `xp` y `habitCoins` sin modificar simultáneamente las transacciones de `registrar_habito_screen.dart` y `desafios_screen.dart`. Rompería el registro y los canjes legítimos. La economía plenamente resistente a clientes modificados requiere autoridad externa (backend confiable) o un modelo sustancialmente más restrictivo y validado por Firestore Rules, con límites explícitos sobre pruebas de acciones humanas. Para la entrega en Spark, documentar cualquier garantía parcial, no presentar la economía como infalsificable.
+
+**Operación segura:** continuar en emulador; `firebase.json` y reglas de producción no se han modificado en este cambio.
