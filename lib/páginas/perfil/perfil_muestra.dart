@@ -209,6 +209,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _publicProfileCard(
                             name: name,
                             photoUrl: photoUrl,
+                            avatarStyle: _readString(data, 'profileAvatarStyle', 'foto'),
                             username: username,
                             bio: bio,
                             title: title,
@@ -246,6 +247,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _publicProfileCard({
     required String name,
     required String photoUrl,
+    required String avatarStyle,
     required String username,
     required String bio,
     required String title,
@@ -307,6 +309,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                   child: HealthyProfileAvatar(
                     photoUrl: photoUrl,
+                    preset: avatarStyle,
                     size: 80,
                   ),
                 ),
