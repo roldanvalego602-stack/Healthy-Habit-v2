@@ -281,3 +281,27 @@ firebase emulators:exec --config firebase.emulator.json --only firestore --proje
 flutter run
 ```
 Verificar carga real de los tres banners, las imágenes de avatar, los ocho accesorios en tienda y armario, compra/equipamiento/desequipamiento, persistencia tras reiniciar, alineación con cuerpo de Mr. Healthy y tema oscuro. El diseño de overlays requiere revisión visual. Este cambio se editó en GitHub sin Flutter SDK ni emulador disponibles en el entorno; no afirmar compilación o pruebas aprobadas.
+
+## Corrección visual y diagnóstico de fotografía — capturas del dispositivo (20-nov-2026)
+
+**Evidencia aportada:** Perfil privado mostraba el banner PNG junto al círculo amarillo decorativo antiguo; en Editar Perfil la subida falló con `Firebase: object-not-found` durante «subida a Storage»; en Armario las gafas se renderizaban debajo de los ojos de Mr. Healthy.
+
+**Correcciones integradas en GitHub:**
+
+- `profile_screen.dart` y `perfil_muestra.dart`: banner único de 150/130 px con `ClipRRect`, un solo `Image.asset` en `StackFit.expand`, sin degradados ni círculo decorativo superpuestos. Degradado de reserva solo para estilos sin PNG o errores de carga. Se preserva la etiqueta de banner con sombra para contraste.
+- `wardrobe_screen.dart`: se reconstruyó la vista previa sobre un lienzo lógico de 280×275 escalable mediante `FittedBox`. Accesorios de espalda detrás de la ilustración y capas de frente sobre el cuerpo. Gafas movidas a `top: 107` en vez de `143`, alineación distinta por categoría, sin alterar datos de compra/equipamiento. Ajustes son aproximados y requieren nueva captura para afinación.
+- `profile_photo_service.dart`: comprobación explícita del bucket de configuración, verificación de que `putData` terminó con `TaskState.success`, conservación de excepciones específicas y explicación para `object-not-found` distinguiendo el estadio. El bucket configurado en Flutter es `cloud-firestore-d8c61.firebasestorage.app`; **esto no garantiza que esté creado o disponible en Firebase Console**. Se agregó `storage.candidate.rules` con permiso autenticado para `users/{uid}/profile/avatar_<timestamp>.jpg`, límite de 3 MB, MIME `image/jpeg`, sin actualizaciones, eliminación por propietario, sin acceso al resto. **NO se ha desplegado ni integrado a producción**. Tests de diagnóstico de errores en `test/perfil/profile_photo_error_test.dart`.
+
+**Bloqueo externo:** Cloud Storage for Firebase exige un bucket real y plan Blaze. La configuración y las reglas en GitHub no crean ni habilitan automáticamente el bucket ni activan facturación. Si la cuenta continúa devolviendo `object-not-found` durante `putData`, hay que consultar Firebase Console → Storage para confirmar bucket, facturación y reglas efectivas, y ejecutar una prueba de subida desde el dispositivo. No inventar un éxito sin esa verificación.
+
+**Validación pendiente en dispositivo:**
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter analyze --no-fatal-infos lib
+flutter test test/perfil test/tienda
+flutter run
+```
+
+Probar tres banners con y sin foto, público y propio; equipar gafas y gorra con nueva captura; probar subida de fotografía JPEG y compartir el nuevo diagnóstico exacto si falla. No modificar `firestore.rules` ni desplegar `storage.candidate.rules` automáticamente.
