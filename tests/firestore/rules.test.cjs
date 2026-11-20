@@ -698,3 +698,13 @@ test('regresión: débito sin marcador no dispara la validación de cancelación
   const before = (await getDoc(user)).data();
   await assertFails(updateDoc(user, { habitCoins: before.habitCoins - 1 }));
 });
+
+test('perfil público: avatar predeterminado válido y rechazo de valor arbitrario', async () => {
+  const publicProfile = doc(alice, 'public_profiles/alice');
+  await assertSucceeds(updateDoc(publicProfile, {
+    profileAvatarStyle: 'naturaleza',
+  }));
+  await assertFails(updateDoc(publicProfile, {
+    profileAvatarStyle: 'javascript:valor-falso',
+  }));
+});
