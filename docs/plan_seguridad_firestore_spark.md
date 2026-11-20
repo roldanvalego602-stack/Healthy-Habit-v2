@@ -89,3 +89,21 @@ flutter run
 ```
 
 Con dos usuarios de prueba, iniciar sesión en la versión nueva en ambas cuentas; confirmar ranking, búsqueda, vistas públicas, ocultación de rachas y perfil propio. Las pruebas del emulador verifican permisos básicos, NO la totalidad de flujos Flutter. **No ejecutar `firebase deploy` aún.**
+
+## Candidata de seguridad social (20-nov-2026)
+
+La candidata `firestore.candidate.rules` ya no usa una autorización recursiva genérica para todas las subcolecciones de `users`. Enumera colecciones privadas y añade reglas específicas para `solicitudes`, `solicitudes_enviadas`, `following` y `followers`.
+
+Las creaciones de solicitudes y seguidores verifican documentos espejo del mismo batch mediante `getAfter()`; los seguimientos nuevos exigen una solicitud previa y su retirada en el batch. Las lecturas de listas de solicitudes/seguidores se limitan al propietario; consultas puntuales permiten comprobaciones de vínculo para el usuario interesado. Las eliminaciones exigen la eliminación simultánea del espejo.
+
+Se añadieron cinco pruebas de redes sociales al emulador: envío válido, falsificación, seguimiento sin solicitud, aceptación válida y acceso ilegítimo a seguidores. **Pendiente ejecutar la suite completa (14 casos) y verificar aceptación/rechazo/cancelación y dejar de seguir desde Flutter.**
+
+Limitación: colecciones privadas enumeradas temporalmente (`user_habits`, `temporary_habit_evidence`, `achievements`, `challenges`, `friends`). Antes de desplegar habrá que localizar y especificar otras colecciones que utiliza la app (incluidas interacciones globales), y asegurar que las consultas y escrituras esperadas pasen. Los datos de XP y monedas siguen vulnerables a autoediciones por el propietario. No desplegar.
+
+Para ejecutar las 14 pruebas con el emulador local:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+```
