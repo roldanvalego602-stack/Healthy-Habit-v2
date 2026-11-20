@@ -127,3 +127,32 @@ El servicio social de Flutter conserva sus operaciones originales por batches; l
 **Criterio de aceptación antes de publicar:** (1) operaciones de perfil cotidiano nunca permiten modificar economía por accidente; (2) compras válidas descuentan el precio correcto y añaden exactamente el artículo; (3) un cliente modificado no puede aumentar saldo/XP arbitrariamente ni reclamar repetidamente; (4) registros válidos siguen operando; (5) el resultado puede ejecutarse en Spark sin funciones desplegadas.
 
 **Decisión de arquitectura pendiente:** Firestore Rules no puede confiar en constantes y cálculos del código Flutter; para una economía enteramente autoritativa se necesita un servidor de confianza. En Spark puede optarse por límites, contadores por operaciones y validaciones con `getAfter()`, aclarando que no se elimina todo riesgo de trampas, o por un backend alojado en otro servicio. No bloquear compras normales ni publicar reglas incompletas. La siguiente fase consiste en modelar esas transiciones y añadir casos negativos al emulador.
+
+## Primera mitigación de compras en la candidata local (20-nov-2026)
+
+Se añadió `validInventoryChange()` a `firestore.candidate.rules` para actualizaciones de `users/{uid}` que cambien `shopInventory`.
+
+Las reglas exigen:
+- Dueño autenticado, un único artículo nuevo, mantener los artículos existentes.
+- Artículo conocido del catálogo pagado y precio exacto de `ShopService` (12 productos con precio mayor a cero).
+- Saldo entero suficiente y decremento igual al precio, sin editar otros campos en esa operación.
+- Los dos artículos gratuitos (sunglasses, bandana) no requieren compra: `ShopState.owns` ya los considera propios de manera virtual.
+
+Se han agregado **cinco pruebas nuevas**: compra legítima, artículos falsos/descuento, compra múltiple, duplicado y un *test de vulnerabilidad conocida* que demuestra que el propio usuario aún puede inflar su saldo y XP en una actualización independiente. **Total esperado ahora: 23 casos**. Esta última prueba pasa precisamente porque la vulnerabilidad aún existe; no confundirla con garantía de seguridad.
+
+### Limitaciones no resueltas
+
+1. El usuario todavía puede alterar su propia economía directamente en `users/{uid}` si no cambia `shopInventory`, o manipular recompensas de hábitos/desafíos. Ningún cambio de esta fase demuestra integridad monetaria total.
+2. La lógica completa de XP/HC en Spark exige diseñar validación de transacciones de recompensa enlazada con registros, o cambiar a backend confiable. Incluso con validaciones en reglas no se verifica que la actividad física/alimentaria haya ocurrido.
+3. El precio del catálogo está duplicado en reglas y Flutter, por lo que **cada cambio de precio requiere actualizar ambos y añadir pruebas**.
+4. La candidata sigue sin estar lista para producción por coberturas pendientes de colecciones y operaciones, además de la vulnerabilidad económica conocida.
+
+Para ejecutar la nueva suite:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+```
+
+No desplegar `firestore.candidate.rules` ni alterar las reglas actuales hasta cerrar todas las brechas y completar regresión con Flutter.
