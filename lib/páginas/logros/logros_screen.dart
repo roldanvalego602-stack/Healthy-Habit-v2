@@ -111,6 +111,15 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
     final unlocked = widget.items.where((i) => i.obtenido).length;
     final total = widget.items.length;
     final ratio = total == 0 ? 0.0 : unlocked / total;
+    // Elegir el objetivo pendiente más cercano sin conceder recompensas.
+    // Priorizar progreso ya iniciado; desempatar de manera determinista.
+    final pending = widget.items.where((i) => !i.obtenido).toList()
+      ..sort((a, b) {
+        final byProgress = b.proporcion.compareTo(a.proporcion);
+        if (byProgress != 0) return byProgress;
+        return a.definicion.meta.compareTo(b.definicion.meta);
+      });
+    final next = pending.isEmpty ? null : pending.first;
     final items = widget.items.where((i) =>
       _filtro == _Filtro.todos ||
       (_filtro == _Filtro.conseguidos && i.obtenido) ||
@@ -163,6 +172,25 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
               ),
             ),
             const SizedBox(height: 12),
+            if (next != null) ...[
+              _NextAchievementCard(item: next),
+              const SizedBox(height: 12),
+            ] else if (total > 0)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _Palette.panel,
+                  border: Border.all(color: _Palette.gold.withValues(alpha: 0.4)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(children: [
+                  Icon(Icons.workspace_premium_rounded, color: _Palette.gold),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('¡Colección completa! Has alcanzado todas las metas disponibles.',
+                    style: TextStyle(color: _Palette.white, fontWeight: FontWeight.w700))),
+                ]),
+              ),
+            if (next == null && total > 0) const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
               child: OutlinedButton.icon(
@@ -202,16 +230,35 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
                   () => setState(() => _filtro = _Filtro.pendientes)),
               ]),
             const SizedBox(height: 15),
-            if (items.isEmpty)
-              Container(padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(color: _Palette.panel,
-                  borderRadius: BorderRadius.circular(12)),
-                child: Text('Todavía no hay logros en esta sección.',
-                  textAlign: TextAlign.center, style: TextStyle(color: _Palette.secondary)))
-            else
-              ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: LogroSteamCard(item: item))),
+            AnimatedSwitcher(
+              duration: HealthyVisualEffects.duration(
+                context, const Duration(milliseconds: 220)),
+              switchInCurve: Curves.easeOutCubic,
+              child: Column(
+                key: ValueKey(_filtro),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: items.isEmpty
+                    ? [
+                        Container(
+                          padding: const EdgeInsets.all(22),
+                          decoration: BoxDecoration(
+                            color: _Palette.panel,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text('Todavía no hay logros en esta sección.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: _Palette.secondary)),
+                        ),
+                      ]
+                    : [
+                        for (final item in items)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: LogroSteamCard(item: item),
+                          ),
+                      ],
+              ),
+            ),
             const SizedBox(height: 8),
             Text('Las insignias muestran progreso, sin generar XP ni monedas adicionales.',
               style: TextStyle(color: _Palette.secondary, fontSize: 12)),
@@ -221,6 +268,84 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
     );
   }
 }
+/// Siguiente meta sugerida a partir de los datos de progreso existentes.
+/// Presentación informativa: no escribe en Firebase ni acredita recompensas.
+class _NextAchievementCard extends StatelessWidget {
+  const _NextAchievementCard({required this.item});
+  final LogroVista item;
+
+  @override
+  Widget build(BuildContext context) {
+    final logro = item.definicion;
+    final progress = item.progreso.clamp(0, logro.meta);
+    final remaining = logro.meta - progress;
+    final tone = colorRareza(logro.rareza);
+    return Container(
+      key: const Key('logros-siguiente-meta'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _Palette.panel,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tone.withValues(alpha: 0.55)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.flag_rounded, color: tone, size: 19),
+          const SizedBox(width: 7),
+          Expanded(child: Text('TU PRÓXIMO OBJETIVO',
+            style: TextStyle(color: tone, fontWeight: FontWeight.w900,
+              fontSize: 12, letterSpacing: 0.8))),
+        ]),
+        const SizedBox(height: 12),
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          LogroInsignia(
+            rareza: logro.rareza,
+            icono: logro.icono,
+            desbloqueado: false,
+            size: 62,
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(logro.nombre, style: TextStyle(color: _Palette.white,
+                fontWeight: FontWeight.w800, fontSize: 15)),
+              const SizedBox(height: 4),
+              Text(logro.descripcion, style: TextStyle(
+                color: _Palette.secondary, fontSize: 12)),
+            ],
+          )),
+        ]),
+        const SizedBox(height: 14),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey('next-progress-${logro.id}-$progress'),
+            tween: Tween<double>(begin: 0, end: item.proporcion),
+            duration: HealthyVisualEffects.duration(
+              context, const Duration(milliseconds: 480)),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => LinearProgressIndicator(
+              value: value.clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: _Palette.bg,
+              color: tone,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: Text('$progress de ${logro.meta}',
+            style: TextStyle(color: _Palette.white, fontWeight: FontWeight.w700,
+              fontSize: 12))),
+          Text('Faltan $remaining',
+            style: TextStyle(color: _Palette.secondary, fontSize: 12)),
+        ]),
+      ]),
+    );
+  }
+}
+
 class _Chip extends StatelessWidget {
   const _Chip(this.label, this.selected, this.onTap);
   final String label;
