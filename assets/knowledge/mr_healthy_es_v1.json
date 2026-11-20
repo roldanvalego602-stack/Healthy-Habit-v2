@@ -72,7 +72,8 @@
         "proteinas",
         "alimentos con proteina",
         "fuentes de proteina",
-        "comidas proteicas"
+        "comidas proteicas",
+        "comer para ganar musculo"
       ],
       "tags": [
         "musculo",
@@ -183,7 +184,10 @@
         "plato equilibrado",
         "comida equilibrada",
         "comer balanceado",
-        "comida balanceada"
+        "comida balanceada",
+        "alimentacion saludable",
+        "alimentacion",
+        "mejorar alimentacion"
       ],
       "tags": [
         "verduras",
@@ -520,7 +524,9 @@
         "cena saludable",
         "ideas para cenar",
         "que cenar",
-        "cenar sano"
+        "cenar sano",
+        "cenar",
+        "que deberia cenar"
       ],
       "tags": [
         "comida",
@@ -806,7 +812,9 @@
       "aliases": [
         "entrenar en casa",
         "rutina en casa",
-        "ejercicios en casa"
+        "ejercicios en casa",
+        "ejercicio en casa",
+        "ejercicio que hacer en casa"
       ],
       "tags": [
         "caminar",
