@@ -34,9 +34,10 @@ La función `registerDemoOfficialHabit` está disponible **únicamente** cuando
 `FUNCTIONS_EMULATOR=true` y `GCLOUD_PROJECT=demo-healthy-habit`.
 
 El código transaccional está en `functions/habit_registration_transaction.js`.
-En este piloto se habilita exclusivamente `hidr_001` (agua al despertar):
-su objetivo de siete registros, frecuencia diaria y premio de **10 XP
-por registro sin evidencia** se definen en el servidor, nunca en la petición.
+La primera versión del piloto habilitó exclusivamente `hidr_001` (agua al despertar).
+El alcance actualizado con dos hábitos adicionales se detalla en el sexto paso.
+El objetivo, la frecuencia y el premio de **10 XP por registro sin evidencia**
+se definen en el servidor, nunca en la petición.
 
 La operación utiliza:
 - Un `operationId` único por registro (16 a 128 caracteres ASCII
@@ -107,13 +108,10 @@ máximo de registros por periodo. Tiene pruebas en
 `functions/tests/habit_period_policy.test.js`.
 
 **Restricción deliberada:** conocer los 36 hábitos NO significa habilitar
-su escritura. `registerDemoOfficialHabit` permanece limitado a
-`hidr_001`. La transacción experimental todavía aplica un único registro
-por día UTC, que no es correcto para hábitos que requieren 2 registros
-diarios o 3–5 semanales. Antes de ampliar la lista de hábitos habilitados
-es indispensable incorporar los contadores de periodos a una transacción
-atómica, reconciliar los registros históricos y definir cómo se tratan
-zonas horarias, tolerancias, periodos perdidos y repeticiones.
+todas sus escrituras. El sexto paso documenta los tres hábitos del piloto.
+Los contadores transaccionales cubren sus límites de frecuencia, pero aún
+falta reconciliar registros históricos y definir zonas horarias,
+tolerancias, periodos perdidos y repeticiones.
 
 El catálogo y la política de periodos son preparación **sin despliegue**.
 La aplicación Flutter y las reglas de producción permanecen intactas.
@@ -143,9 +141,8 @@ firebase emulators:exec --config firebase.emulator.json \
   "cd functions && npm run test:integration"
 ```
 
-**El habilitado sigue limitado a `hidr_001`.** En particular, los
-hábitos semanales y los diarios con varios registros aún NO se pueden
-registrar mediante este callable. El periodo UTC es exclusivamente una
+**Histórico:** hasta el quinto paso, el habilitado estaba limitado a
+`hidr_001`. El sexto paso amplía la lista a tres hábitos experimentales. El periodo UTC es exclusivamente una
 simplificación experimental y no sustituye la fecha local del usuario,
 los periodos de gracia, las rachas, ni la reconciliación histórica.
 Nunca desplegar esta prueba como registro funcional de producción.
