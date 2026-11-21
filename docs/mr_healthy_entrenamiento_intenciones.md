@@ -185,3 +185,29 @@ python3 tools/chat_intent_v2.py
 ### Restricciones de inferencia
 
 Este experimento sigue utilizando **datos sintéticos**, no pruebas reales de usuarios. Un pequeño conjunto adicional permite diagnosticar, pero no demuestra fiabilidad clínica, accesibilidad, seguridad estadística ni robustez frente a conversaciones prolongadas. Las fichas educativas continúan siendo la fuente de conocimiento, el modelo solo intenta clasificar intenciones. Antes de habilitarlo se requieren pruebas del sistema completo, consentimientos pertinentes para cualquier uso de conversaciones reales y validación de rutas sensibles.
+
+## 11. Resultado V2 en Ubuntu y corrección de prueba de fugas (20-nov-2026)
+
+Salida del usuario de `python3 tools/chat_intent_v2.py`:
+
+| Configuración | Exactitud | Macro-F1 | Cobertura | Errores críticos |
+|---|---:|---:|---:|---:|
+| `tfidf_raw` | 76.7 % | 0.829 | 80.0 % | 0 |
+| `tfidf_safety` | 76.7 % | 0.826 | 80.0 % | 0 |
+| `bayes_raw` | 90.0 % | 0.897 | 100.0 % | 1 |
+| `bayes_safety` | 81.7 % | 0.847 | 86.7 % | 0 |
+
+La configuración **`bayes_safety` se eligió únicamente en desarrollo**, pero se rechazó en el conjunto nuevo de 60 frases por quedar por debajo de macro-F1 0.85. `bayes_raw` supera esa cifra, pero presenta un error crítico. No se autoriza ninguno para producción ni se integra a Flutter.
+
+**Incidente de pruebas:** de las 28 pruebas de la suite, falló `test_rejects_leakage_of_previous_evaluation`: el test sustituía `V2` con `patch.object`, pero `v2_rows(path: Path = V2)` había capturado la ruta original al definirse. Así, la prueba no estaba leyendo el dataset adulterado. Se reparó la firma a `v2_rows(path: Path | None = None)` y `prepare(v2_path: Path | None = None)`, resolviendo la ruta en tiempo de llamada. La regresión ahora comprueba tanto inyección explícita como sustitución de ruta, y exige `ValueError` con «Fuga de evaluación». Este arreglo no modifica el dataset, los clasificadores ni el procedimiento estadístico que produjo los números anteriores.
+
+**Validación pendiente tras el arreglo:**
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_audit.py outputs/mr_healthy_intent_v2_report.json
+```
+
+El auditor acepta la estructura `models` del reporte V2 y presenta las confusiones por versión, permitiendo identificar la abstención y el error crítico del modelo sin filtro. Como este test V2 ya fue observado, **no optimizar parámetros contra sus 60 preguntas reservadas y volver a anunciar el resultado como no contaminado**. Reservar un tercer lote independiente para cualquier medición generalizable de una arquitectura modificada.
