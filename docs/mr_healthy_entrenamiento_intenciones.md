@@ -134,3 +134,27 @@ python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
 La salida incluye preguntas de test ya evaluadas. **No añadirlas sin más al entrenamiento ni ajustar reglas para memorizar sus respuestas**, porque ya no serían una evaluación realmente reservada. Para una nueva versión del clasificador, mejorar exclusivamente datos de desarrollo y obtener **un nuevo test independiente** antes de afirmar mejoría.
 
 **Plan siguiente:** (1) obtener distribución de errores con el auditor; (2) definir un conjunto adicional de ejemplos de desarrollo y casos adversariales sin usar el test anterior como referencia de ajuste; (3) comparar con pruebas nuevas independientes y buscar macro-F1 ≥ 0.85 con cero errores críticos; (4) integrar solamente como señal auxiliar tras validar acciones y confirmaciones en Flutter. La eliminación de cuenta continúa deshabilitada y el clasificador nunca ejecutará escrituras sensibles.
+
+## 9. Auditoría recibida y cortafuegos experimental (20-nov-2026)
+
+El usuario ejecutó las 15 pruebas unitarias correctamente y compartió la auditoría:
+
+| Modelo | Exactitud | Macro-F1 | Cobertura | Errores críticos |
+|---|---:|---:|---:|---:|
+| TF-IDF calibrado | 65.6 % | 0.708 | 82.2 % | 2 |
+| Naive Bayes | 68.9 % | 0.708 | 95.6 % | 5 |
+
+Errores relevantes: editar foto/perfil confundido con eliminar cuenta; consulta matemática confundida con eliminación de hábito; «Bórralo» y «No quiero ese» confundidos con eliminar cuenta. También existe confusión entre **agregar** y **eliminar** hábitos y entre saldo y tienda.
+
+Se añadieron `tools/chat_intent_safety.py` y `tools/test_chat_intent_safety.py`: un filtro **solo de rechazo** que, cuando la predicción del modelo apunta a `eliminar_cuenta`, `eliminar_habito` o `agregar_habito`, comprueba que el texto indique un verbo relevante y el objeto correspondiente. Si el objeto no está expresado, hay conflicto entre cuenta y hábitos o se trata de una referencia ambigua, devuelve `abstenerse`. Todas las salidas incluyen `may_execute_action: false`. **No se integra a Flutter ni sustituye las confirmaciones actuales.**
+
+Este filtro se diseñó tras conocer la evaluación v1, por lo que **no debemos utilizar ese mismo conjunto para presentar ganancias de precisión o seguridad generalizables**. Las pruebas unitarias de comportamiento del filtro tampoco constituyen prueba de eficacia en mensajes reales. Se necesita otro conjunto independiente antes de medir mejoras y considerar su adopción.
+
+Pruebas:
+
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_audit.py
+```
+
+El siguiente experimento debe incluir frases **nuevas** en español coloquial, errores tipográficos, solicitudes elípticas y temas no relacionados, con separación explícita de entrenamiento/desarrollo/test. No alterar los 90 ejemplos de `datasets/chat_intents_es_v1.json` para elevar artificialmente los indicadores.
