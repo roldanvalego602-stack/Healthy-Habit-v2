@@ -355,43 +355,54 @@ test("el día local de Monterrey no cambia al llegar medianoche UTC", async () =
   assert.equal(db.docs.get("users/alice").xp, 20);
 });
 
-test("las rachas se incrementan al completar el cupo y respetan la gracia", async () => {
+test("el hábito difícil reinicia la racha sin periodo de gracia", async () => {
   const db = seededMultiDb("bien_007");
-  const attempt = db.docs.get("users/alice/user_habits/bien_007/attempts/attempt-1");
-  attempt.lastCompletedPeriod = "day_2026-11-19";
-  attempt.periodStreak = 4;
-  await registerDemoHabit({db, ...multiArgs(
-    "bien_007", "grace_0001",
-  )});
-  assert.equal(db.docs.get(
-    "users/alice/user_habits/bien_007/attempts/attempt-1"
-  ).periodStreak, 4);
-  const last = await registerDemoHabit({db, ...multiArgs(
-    "bien_007", "grace_0002",
-  )});
-  assert.equal(last.periodStreak, 5);
-  assert.equal(db.docs.get(
-    "users/alice/user_habits/bien_007/attempts/attempt-1"
-  ).periodStreak, 5);
-  assert.equal(db.docs.get(
-    "users/alice/user_habits/bien_007/attempts/attempt-1"
-  ).gracePeriodsUsed, 1);
+  const path = "users/alice/user_habits/bien_007/attempts/attempt-1";
+  db.docs.get(path).lastCompletedPeriod = "day_2026-11-19";
+  db.docs.get(path).periodStreak = 4;
+  await registerDemoHabit({db, ...multiArgs("bien_007", "no_grace_0001")});
+  assert.equal(db.docs.get(path).periodStreak, 4);
+  const last = await registerDemoHabit({
+    db, ...multiArgs("bien_007", "no_grace_0002"),
+  });
+  assert.equal(last.periodStreak, 1);
+  assert.equal(db.docs.get(path).periodStreak, 1);
+  assert.equal(db.docs.get(path).gracePeriodsUsed, 0);
   assert.equal(db.docs.get("users/alice").xp, 20);
 });
 
-test("la racha se reinicia cuando los periodos omitidos superan la gracia", async () => {
-  const db = seededMultiDb("bien_007");
-  const attempt = db.docs.get("users/alice/user_habits/bien_007/attempts/attempt-1");
-  attempt.lastCompletedPeriod = "day_2026-11-18";
-  attempt.periodStreak = 6;
-  await registerDemoHabit({db, ...multiArgs("bien_007", "resetgrace_0001")});
-  const last = await registerDemoHabit({db, ...multiArgs(
-    "bien_007", "resetgrace_0002",
-  )});
-  assert.equal(last.periodStreak, 1);
-  assert.equal(db.docs.get(
-    "users/alice/user_habits/bien_007/attempts/attempt-1"
-  ).gracePeriodsUsed, 1);
+test("el hábito moderado tolera una semana omitida al completar tres registros", async () => {
+  const db = seededMultiDb("alim_004");
+  const path = "users/alice/user_habits/alim_004/attempts/attempt-1";
+  db.docs.get(path).lastCompletedPeriod = "week_2026-11-02";
+  db.docs.get(path).periodStreak = 4;
+  for (let n = 1; n <= 2; n++) {
+    await registerDemoHabit({
+      db, ...multiArgs("alim_004", `week_grace_000${n}`),
+    });
+    assert.equal(db.docs.get(path).periodStreak, 4);
+  }
+  const result = await registerDemoHabit({
+    db, ...multiArgs("alim_004", "week_grace_0003"),
+  });
+  assert.equal(result.periodStreak, 5);
+  assert.equal(db.docs.get(path).lastCompletedPeriod, "week_2026-11-16");
+  assert.equal(db.docs.get(path).gracePeriodsUsed, 1);
+  assert.equal(db.docs.get("users/alice").xp, 30);
+});
+
+test("el hábito moderado reinicia la racha al exceder una semana de gracia", async () => {
+  const db = seededMultiDb("alim_004");
+  const path = "users/alice/user_habits/alim_004/attempts/attempt-1";
+  db.docs.get(path).lastCompletedPeriod = "week_2026-10-26";
+  db.docs.get(path).periodStreak = 6;
+  for (let n = 1; n <= 3; n++) {
+    await registerDemoHabit({
+      db, ...multiArgs("alim_004", `reset_week_000${n}`),
+    });
+  }
+  assert.equal(db.docs.get(path).periodStreak, 1);
+  assert.equal(db.docs.get(path).gracePeriodsUsed, 1);
 });
 
 test("rechaza zonas distintas entre perfil, hábito e intento", async () => {
