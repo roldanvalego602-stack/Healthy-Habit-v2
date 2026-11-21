@@ -680,3 +680,64 @@ test('sistema anterior: no deben poder crearse nuevas relaciones followers', asy
   await assertFails(setDoc(doc(as('bob'),
     'users/bob/followers/alice'), {createdAt:serverTimestamp()}));
 });
+
+/* Requisitos de integridad de gamificación. Las reglas actuales
+ * permitirán varias de estas acciones: los fallos son hallazgos de
+ * seguridad, no problemas del test. Evitar producción hasta resolverlos.
+ */
+
+test('integridad: no puedo falsificar la finalización de mi hábito', async () => {
+  await seedUser();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/user_habits/agua'),
+      { latestStatus: 'inProgress', latestProgress: 0, latestTarget: 5 });
+  });
+  await assertFails(updateDoc(doc(as('alice'),
+    'users/alice/user_habits/agua'), {
+    latestStatus: 'completed', latestProgress: 5,
+  }));
+});
+
+test('integridad: no puedo acreditar a mano un intento completado', async () => {
+  await seedUser();
+  const ref = 'users/alice/user_habits/agua/attempts/primero';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), ref), {
+      status: 'inProgress', progress: 0, target: 5, xpEarned: 0,
+    });
+  });
+  await assertFails(updateDoc(doc(as('alice'), ref), {
+    status: 'completed', progress: 5, xpEarned: 5000,
+  }));
+});
+
+test('integridad: un registro fabricado no debe acreditar XP', async () => {
+  await seedUser();
+  const db = as('alice');
+  await assertFails(setDoc(doc(db,
+    'users/alice/user_habits/agua/attempts/primero/logs/falso'), {
+    xpEarned: 5000, progressAfter: 5, completed: true,
+    userId: 'alice', createdAt:serverTimestamp(),
+  }));
+});
+
+test('integridad: no se pueden registrar logros falsos de otra cuenta', async () => {
+  await assertFails(setDoc(doc(as('mallory'),
+    'users/alice/achievements/estrella'), { unlocked:true, xpReward:500 }));
+});
+
+test('integridad: una cuenta no debe autoadjudicarse un logro premium', async () => {
+  await seedUser();
+  await assertFails(setDoc(doc(as('alice'),
+    'users/alice/achievements/premium'), {
+    unlocked: true, verified: true, xpReward: 9999,
+  }));
+});
+
+test('integridad: no se pueden publicar estadísticas manipuladas', async () => {
+  await seedUser();
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    completedHabits: 99999,
+    currentStreak: 99999,
+  }));
+});
