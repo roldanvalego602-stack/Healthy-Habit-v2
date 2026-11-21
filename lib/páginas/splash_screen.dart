@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../servicios/shop_demo_bootstrap.dart';
 import 'package:flutter/material.dart';
 
 import 'inicio.dart';
@@ -64,6 +65,8 @@ class _SplashScreenState extends State<SplashScreen>
     final verified =
         user != null &&
         (user.emailVerified ||
+            (ShopDemoBootstrap.officialHabitsEnabled &&
+                user.isAnonymous) ||
             user.providerData.any((p) => p.providerId == 'google.com'));
 
     Navigator.of(context).pushReplacement(
