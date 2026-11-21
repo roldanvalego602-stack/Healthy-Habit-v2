@@ -78,7 +78,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     setState(() => _isLoading = true);
     try {
       if (isFollowing) {
-        await AmigosServicio.dejarDeSeguir(widget.userId);
+        await AmigosServicio.eliminarAmigo(widget.userId);
       } else if (isPending) {
         await AmigosServicio.cancelarSolicitud(widget.userId);
       } else {
@@ -86,7 +86,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       }
       if (!mounted) return;
       _showMessage(isFollowing
-          ? 'Dejaste de seguir a ${widget.name}.'
+          ? 'Eliminaste a ${widget.name} de tus amigos.'
           : isPending
               ? 'Solicitud cancelada.'
               : 'Solicitud enviada a ${widget.name}.');
@@ -406,7 +406,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             return SizedBox(
                               width: double.infinity,
                               child: SocialActionButton(
-                                label: isFollowing ? 'Siguiendo'
+                                label: isFollowing ? 'Amigos'
                                     : isPending ? 'Pendiente' : 'Agregar amigo',
                                 icon: isFollowing ? Icons.check_circle_rounded
                                     : isPending ? Icons.schedule_rounded
@@ -604,10 +604,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final viewer = _currentUser?.uid;
     if (viewer == null) return privateMessage();
 
-    // Una solicitud de seguimiento aceptada crea este documento.
+    // La aceptación de una amistad crea un documento recíproco.
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: _db.collection('users').doc(widget.userId)
-          .collection('followers').doc(viewer).snapshots(),
+          .collection('friends').doc(viewer).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) return privateMessage();
         if (!snapshot.hasData) {
