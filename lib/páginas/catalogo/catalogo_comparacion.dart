@@ -86,40 +86,58 @@ class CatalogoComparacion extends StatelessWidget {
                           elevation: 0,
                           color: color.surfaceContainerLowest,
                           clipBehavior: Clip.antiAlias,
-                          child: ListView(
-                            padding: const EdgeInsets.all(12),
+                          child: Column(
                             children: [
-                              CatalogoMedia(item: item, altura: 110),
-                              const SizedBox(height: 10),
-                              Text(item.titulo,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 5),
-                              Text(item.descripcion,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall),
-                              const SizedBox(height: 12),
-                              for (final campo in _campos) ...[
-                                Text(campo, style: theme.textTheme.labelSmall
-                                  ?.copyWith(color: color.onSurfaceVariant)),
-                                const SizedBox(height: 3),
-                                Text(_valor(item, campo),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w700)),
-                                const SizedBox(height: 9),
-                              ],
-                              const SizedBox(height: 6),
-                              FilledButton.tonalIcon(
-                                onPressed: () => onAbrir(item),
-                                icon: const Icon(Icons.open_in_new, size: 17),
-                                label: const Text('Ver ficha'),
+                              Expanded(
+                                child: ListView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      12, 12, 12, 4),
+                                  children: [
+                                    CatalogoMedia(item: item, altura: 110),
+                                    const SizedBox(height: 10),
+                                    Text(item.titulo,
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w800)),
+                                    const SizedBox(height: 5),
+                                    Text(item.descripcion,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall),
+                                    const SizedBox(height: 12),
+                                    for (final campo in _campos) ...[
+                                      Text(campo, style: theme.textTheme.labelSmall
+                                        ?.copyWith(color: color.onSurfaceVariant)),
+                                      const SizedBox(height: 3),
+                                      Text(_valor(item, campo),
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 9),
+                                    ],
+                                  ],
+                                ),
                               ),
-                              TextButton.icon(
-                                onPressed: () => onQuitar(item),
-                                icon: const Icon(Icons.remove_circle_outline,
-                                    size: 16),
-                                label: const Text('Quitar'),
+                              const Divider(height: 1),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                    12, 6, 12, 8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    FilledButton.tonalIcon(
+                                      onPressed: () => onAbrir(item),
+                                      icon: const Icon(Icons.open_in_new,
+                                          size: 17),
+                                      label: const Text('Ver ficha'),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () => onQuitar(item),
+                                      icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 16),
+                                      label: const Text('Quitar'),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
