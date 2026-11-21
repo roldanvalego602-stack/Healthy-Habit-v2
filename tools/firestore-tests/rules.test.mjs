@@ -322,3 +322,40 @@ test('el destinatario puede rechazar reacciones desde su perfil público', async
     tipo: 'reaccion', toUid: 'bob',
   }));
 });
+
+test('perfil público respeta el XP almacenado y no publica uno distinto', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'),
+      { name: 'Alice', xp: 20, habitCoins: 100 });
+  });
+  const publicData = {
+    name: 'Alice', username: 'alice', xp: 20, settings: {},
+  };
+  await assertSucceeds(setDoc(doc(as('alice'), 'public_profiles/alice'),
+    publicData));
+  await assertFails(updateDoc(doc(as('alice'), 'public_profiles/alice'),
+    { xp: 999999 }));
+});
+
+test('evidencia temporal se guarda sólo por su dueño con caducidad', async () => {
+  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/temporary_habit_evidence/log-1'), {
+    userId: 'alice', habitId: 'hidr_001', attemptId: 'one',
+    logId: 'log-1', imageBase64: 'dGVzdA==',
+    contentType: 'image/jpeg', createdAt: serverTimestamp(),
+    expiresAt: expiry,
+  }));
+  await assertFails(getDoc(doc(as('mallory'),
+    'users/alice/temporary_habit_evidence/log-1')));
+});
+
+test('no se puede crear evidencia de un usuario diferente', async () => {
+  await assertFails(setDoc(doc(as('alice'),
+    'users/alice/temporary_habit_evidence/forged'), {
+    userId: 'bob', habitId: 'hidr_001', attemptId: 'one',
+    logId: 'forged', imageBase64: 'dGVzdA==',
+    contentType: 'image/jpeg', createdAt: serverTimestamp(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  }));
+});
