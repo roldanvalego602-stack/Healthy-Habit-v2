@@ -74,6 +74,10 @@ function completedPeriodStreak({
     throw new HabitCalendarError("Periodo actual inválido.");
   }
   const currentIndex = dateIndex(currentKey.slice(prefix.length));
+  if (frequency === "weekly" &&
+      new Date(currentIndex * 86400000).getUTCDay() !== 1) {
+    throw new HabitCalendarError("La semana debe comenzar el lunes.");
+  }
   if (previousKey === null) {
     return {streak: 1, missedPeriods: 0, graceApplied: 0};
   }
@@ -81,6 +85,10 @@ function completedPeriodStreak({
     throw new HabitCalendarError("Periodo anterior inválido.");
   }
   const previousIndex = dateIndex(previousKey.slice(prefix.length));
+  if (frequency === "weekly" &&
+      new Date(previousIndex * 86400000).getUTCDay() !== 1) {
+    throw new HabitCalendarError("La semana anterior debe empezar el lunes.");
+  }
   const elapsed = currentIndex - previousIndex;
   const unit = frequency === "daily" ? 1 : 7;
   if (elapsed <= 0 || elapsed % unit !== 0) {
