@@ -624,7 +624,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     final popular = carouselId == 'habits-popular-carousel';
     final pager = popular ? _popularPager : _suggestedPager;
     final page = (popular ? _popularPage : _suggestedPage)
-        .clamp(0, habits.length - 1);
+        .clamp(0, habits.length - 1).toInt();
     return Column(
       key: ValueKey(carouselId),
       children: [
