@@ -4,9 +4,11 @@ import '../../tema/healthy_theme.dart';
 
 class HabitInteractionCard extends StatefulWidget {
   const HabitInteractionCard({super.key, required this.type, required this.target,
-    required this.unit, required this.onChanged, this.enabled = true});
+    required this.unit, required this.onChanged, this.enabled = true,
+    this.initialValue = 0});
   final String type, unit;
   final int target;
+  final int initialValue;
   final bool enabled;
   final void Function(bool completed, int value) onChanged;
   @override
@@ -17,6 +19,16 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   final Stopwatch _watch = Stopwatch();
   Timer? _ticker;
   int _count = 0, _seconds = 0;
+  int _baseSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialValue.clamp(0, widget.target);
+    _count = initial;
+    _seconds = initial;
+    _baseSeconds = initial;
+  }
   bool get _timed => widget.type == 'timer' || widget.type == 'stopwatch';
   bool get _water => !_timed && widget.unit.trim().toLowerCase() == 'ml';
   int get _target => widget.target.clamp(1, 86400);
@@ -26,7 +38,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   void _notify() => widget.onChanged(_done, _value);
   void _tick(Timer timer) {
     if (!mounted) return;
-    final value = _watch.elapsed.inSeconds;
+    final value = _baseSeconds + _watch.elapsed.inSeconds;
     if (value == _seconds) return;
     setState(() => _seconds = value);
     if (_done) { _watch.stop(); _ticker?.cancel(); }
