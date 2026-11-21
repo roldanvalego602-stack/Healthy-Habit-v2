@@ -8,12 +8,12 @@ const {
 } = require("./habit_registration_policy");
 
 // El catálogo oficial está replicado desde Dart y cubre 36 hábitos.
-// La transacción sigue limitada a hidr_001 mientras se implementan
-// las reglas de frecuencia para los otros 35 hábitos.
+// Solo tres hábitos de prueba están habilitados en el emulador:
+// uno de un registro diario, uno de dos diarios y uno de tres semanales.
 const {SERVER_CATALOG} = require("./official_habit_catalog");
 const {utcPeriodKey, checkPeriodRegistration, HabitPeriodError} =
   require("./habit_period_policy");
-const PILOT_IDS = new Set(["hidr_001"]);
+const PILOT_IDS = new Set(["hidr_001", "bien_007", "alim_004"]);
 const LEVELS = Object.freeze([
   [0, 0], [100, 25], [250, 25], [450, 25], [700, 50],
   [1000, 50], [1350, 50], [1750, 50], [2200, 75],
@@ -122,6 +122,9 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
   const dayRef = attemptRef.collection("registration_days").doc(date);
   const periodRef = attemptRef.collection("registration_periods").doc(periodKey);
   const logRef = attemptRef.collection("logs").doc(ids.operationId);
+  // Solo el piloto heredado hidr_001 utiliza una marca de un registro
+  // por día. Los demás hábitos se rigen por el contador del periodo.
+  const usesLegacyDailyMarker = ids.habitId === "hidr_001";
 
   return db.runTransaction(async (tx) => {
     // TODAS las lecturas van antes de las escrituras.
@@ -129,7 +132,9 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
       periodSnap] =
       await Promise.all([
         tx.get(operationRef), tx.get(userRef), tx.get(habitRef),
-        tx.get(attemptRef), tx.get(dayRef), tx.get(periodRef),
+        tx.get(attemptRef),
+        usesLegacyDailyMarker ? tx.get(dayRef) : Promise.resolve(null),
+        tx.get(periodRef),
       ]);
     if (operationSnap.exists) {
       const existing = operationSnap.data();
@@ -158,7 +163,7 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
       );
     }
     // La marca diaria del piloto anterior sigue siendo válida.
-    if (daySnap.exists) {
+    if (usesLegacyDailyMarker && daySnap.exists) {
       throw new RegistrationPolicyError(
         "failed-precondition", "Ya registraste este hábito hoy (UTC)."
       );
@@ -191,9 +196,11 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
       registrationPeriod: periodKey,
       periodCount: periodResult.periodCountAfter,
     };
-    tx.create(dayRef, {
-      operationId: ids.operationId, createdAt: FieldValue.serverTimestamp(),
-    });
+    if (usesLegacyDailyMarker) {
+      tx.create(dayRef, {
+        operationId: ids.operationId, createdAt: FieldValue.serverTimestamp(),
+      });
+    }
     const periodData = {
       count: periodResult.periodCountAfter,
       lastOperationId: ids.operationId,
