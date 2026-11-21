@@ -398,6 +398,63 @@ del ranking público. Las reglas estrictas son una especificación
 ejecutable de la seguridad deseada, no todavía una configuración
 lista para producción.
 
+## Duodécimo paso: compras idempotentes con Admin SDK (solo emulador)
+
+Se añade `functions/official_shop_catalog.js` con los **20 artículos**
+del catálogo actual de `lib/páginas/tienda/shop_service.dart`:
+**18 artículos pagados y dos gratuitos** (`sunglasses`, `bandana`).
+El catálogo del servidor es la fuente de precios para la transacción;
+`functions/tests/shop_purchase_transaction.test.js` comprueba
+automáticamente su paridad con la declaración de Flutter.
+
+`functions/shop_purchase_transaction.js` implementa
+`purchaseDemoShopItem`, publicado como callable del mismo nombre
+**solo en Functions Emulator y proyecto demo-healthy-habit**.
+Petición: `{itemId, operationId}` (identificador de operación de
+16–128 caracteres). No recibe precios, saldos ni inventarios del
+cliente. Rechaza artículos gratuitos, duplicados, inventarios
+inválidos y saldos insuficientes.
+
+La transacción lee el perfil y la operación idempotente,
+valida precio y estado del inventario y escribe conjuntamente
+`users/{uid}.habitCoins`, `shopInventory` y
+`shop_purchase_operations/{operationId}`. Un reintento con la
+misma operación y artículo devuelve el resultado guardado.
+Solicitudes simultáneas no deben poder gastar más saldo del
+disponible ni adquirir dos veces el mismo artículo. El propietario
+únicamente recibe sus propios cambios.
+
+**Semántica de `streak_guard`:** Flutter actualmente lo representa
+en el inventario como artículo único. El piloto replica esa
+semántica y **no habilita consumos, recargas ni protección de rachas**
+hasta definir un sistema separado de consumibles.
+
+Se agregaron ocho pruebas unitarias de catálogo, compras y casos
+malformados, cinco pruebas de integración en el emulador sobre
+idempotencia, concurrencia, falta de saldo e aislamiento de usuario,
+y una comprobación adicional a las reglas estrictas que prohíbe
+que el cliente cree documentos `shop_purchase_operations`.
+
+Comandos de validación desde la raíz del repositorio:
+
+```bash
+cd functions && npm test && cd ..
+firebase emulators:exec --config firebase.emulator.json \
+  --project demo-healthy-habit --only firestore \
+  "cd functions && npm run test:integration"
+firebase emulators:exec --config firebase.strict-habits.emulator.json \
+  --project demo-healthy-habit-strict --only firestore \
+  "cd tests/firestore && npm run test:strict"
+```
+
+**No desplegar:** `ShopService.buy` todavía escribe directamente
+en Firestore, y la tienda actual sigue utilizando las reglas
+candidatas. El callable del piloto no se conecta a Flutter y
+se deshabilita fuera del emulador. Para producción hará falta
+migrar el cliente y todas las otras vías de escritura de economía,
+revisar el canje de consumibles y coordinar el despliegue de
+reglas estrictas en la misma versión.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
