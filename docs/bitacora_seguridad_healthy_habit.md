@@ -358,3 +358,18 @@ python3 tools/chat_intent_train.py --predict "¿Cuántas monedas me quedan?"
 ```
 
 Ver guía `docs/mr_healthy_entrenamiento_intenciones.md`. La prioridad es corregir confusiones en datos/desarrollo y comparar contra reglas actuales sin optimizar sobre la evaluación reservada. Seguridad y reglas de Firestore/Storage permanecen sin cambios.
+
+## Mr. Healthy — comparativa supervisada v2 (20-nov-2026)
+
+Se añadió `tools/chat_intent_compare.py`, que contrasta un **Naive Bayes multinomial** entrenado sobre n-gramas con el centroide TF-IDF existente, manteniendo 180 frases iniciales de ajuste, 45 frases `dev` para calibración y selección, y las 90 frases `test` reservadas para evaluación final. Los dos modelos se reentrenan después con las 225 frases `train` y se evalúan con los mismos 90 casos; **la elección se toma solo con métricas de desarrollo** y penaliza prioritariamente los errores críticos.
+
+Se añadieron pruebas del comparador en `tools/test_chat_intent_compare.py` y el workflow `.github/workflows/mr_healthy_intent_benchmark.yml`, que ejecuta tests y genera informes JSON descargables de ambos clasificadores. Un puntaje insuficiente se registra como rechazo experimental (código 2), sin desplegar nada.
+
+**Comando de validación:**
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_train.py
+python3 tools/chat_intent_compare.py
+```
+
+**Pendiente:** obtener salidas locales o GitHub Actions para cuantificar diferencias reales. No se modificó `nutrichat.dart`, `HealthyAssistantEngine` ni ninguna configuración de Firebase en esta etapa. Los clasificadores permanecen desconectados de la app hasta superar criterios y evaluación de uso real. Detalles en `docs/mr_healthy_entrenamiento_intenciones.md`.
