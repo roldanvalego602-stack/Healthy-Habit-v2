@@ -198,27 +198,40 @@ class _AmigosScreenState extends State<AmigosScreen> {
           }
           final a = incoming.data!.docs.map((d) => d.id).toList();
           final b = outgoing.data!.docs.map((d) => d.id).toList();
-          return Column(children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text('Recibidas (${a.length}) · Enviadas (${b.length})',
-                style: const TextStyle(fontWeight: FontWeight.w800)),
-            ),
-            Expanded(child: a.isEmpty && b.isEmpty
-              ? _error('No tienes solicitudes pendientes.')
-              : ListView(children: [
+          if (a.isEmpty && b.isEmpty) {
+            return _error('No tienes solicitudes pendientes.');
+          }
+          final all = <String>{...a, ...b}.toList();
+          return FutureBuilder<Map<String, Map<String, dynamic>>>(
+            future: AmigosServicio.perfiles(all),
+            builder: (context, profiles) {
+              if (profiles.hasError) return _error(
+                'No se pudieron consultar los perfiles de las solicitudes.');
+              if (!profiles.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final data = profiles.data!;
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                children: [
                   if (a.isNotEmpty) ...[
-                    const ListTile(title: Text('Solicitudes recibidas')),
-                    SizedBox(height: a.length * 145.0,
-                      child: _list(a, 'incoming')),
+                    ListTile(title: Text('Recibidas (${a.length})',
+                      style: const TextStyle(fontWeight: FontWeight.w800))),
+                    for (final id in a)
+                      if (data.containsKey(id))
+                        _person(id, data[id]!, 'incoming'),
                   ],
                   if (b.isNotEmpty) ...[
-                    const ListTile(title: Text('Solicitudes enviadas')),
-                    SizedBox(height: b.length * 145.0,
-                      child: _list(b, 'outgoing')),
+                    ListTile(title: Text('Enviadas (${b.length})',
+                      style: const TextStyle(fontWeight: FontWeight.w800))),
+                    for (final id in b)
+                      if (data.containsKey(id))
+                        _person(id, data[id]!, 'outgoing'),
                   ],
-                ])),
-          ]);
+                ],
+              );
+            },
+          );
         },
       );
     },
