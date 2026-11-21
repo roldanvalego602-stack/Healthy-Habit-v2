@@ -96,9 +96,22 @@ class CatalogoExplorador {
     return ['Todos', ...tags];
   }
 
-  // La representación "plato" es una exploración editorial de categorías;
-  // NO implica proporciones dietéticas prescritas por la app.
+  // Grupos educativos, no proporciones de una recomendación dietética.
+  static String grupoPlato(CatalogoItem item) {
+    final group = grupoAlimento(item);
+    if (group == 'Frutas y verduras') return 'Frutas y verduras';
+    if (group == 'Cereales integrales' || group == 'Cereales') {
+      return 'Cereales';
+    }
+    if (group == 'Leguminosas' || group == 'Alimentos de origen animal') {
+      return 'Leguminosas y origen animal';
+    }
+    return 'Otros alimentos';
+  }
+
   static String grupoAlimento(CatalogoItem item) {
+    final explicit = item.detalles['Grupo del plato'];
+    if (explicit != null && explicit.isNotEmpty) return explicit;
     switch (item.id) {
       case 'avena': return 'Cereales integrales';
       case 'lentejas': return 'Leguminosas';
@@ -107,13 +120,25 @@ class CatalogoExplorador {
     }
   }
 
+  static String zonaEjercicio(CatalogoItem item) {
+    final tags = item.etiquetas;
+    final muscular = normalizar(item.detalles['Grupo muscular'] ?? '');
+    if (tags.contains('Flexibilidad')) return 'Flexibilidad';
+    if (tags.contains('Brazos') || tags.contains('Pecho') ||
+        muscular.contains('brazos')) return 'Tren superior';
+    if (tags.contains('Piernas') || tags.contains('Glúteos') ||
+        muscular.contains('piernas')) return 'Tren inferior';
+    if (tags.contains('Zona media') || muscular.contains('zona media')) {
+      return 'Zona media';
+    }
+    return 'Cardio y movilidad';
+  }
+
   static String grupoExploracion(CatalogoItem item) {
     if (item.categoria == 'Alimentos') return grupoAlimento(item);
-    if (item.categoria == 'Ejercicios') {
-      return item.detalles['Grupo muscular'] ??
-          (item.etiquetas.isEmpty ? 'Movimiento' : item.etiquetas.first);
-    }
-    if (item.etiquetas.contains('Sueño')) return 'Sueño y recuperación';
+    if (item.categoria == 'Ejercicios') return zonaEjercicio(item);
+    if (item.etiquetas.contains('Sueño') ||
+        item.etiquetas.contains('Recuperación')) return 'Sueño y recuperación';
     if (item.etiquetas.contains('Seguridad')) return 'Prevención y seguridad';
     return 'Bienestar cotidiano';
   }
