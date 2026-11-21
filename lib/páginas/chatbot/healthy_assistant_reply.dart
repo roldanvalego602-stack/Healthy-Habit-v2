@@ -7,10 +7,13 @@ class HealthyAssistantReply {
     this.action = '',
     this.actionArgument = '',
     this.card = '',
+    this.knowledgeId = '',
   });
 
   final String text;
   final String action;
   final String actionArgument;
   final String card;
+  /// Identificador educativo para seguimiento contextual, nunca una acción.
+  final String knowledgeId;
 }
