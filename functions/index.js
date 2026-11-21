@@ -359,3 +359,36 @@ exports.previewOfficialHabitRegistration = onCall(
     }
   }
 );
+
+
+// PILOTO SEPARADO: registro atómico solo en emulador y proyecto demo.
+// No sustituye a Flutter ni permite escrituras en el proyecto real.
+const {registerDemoHabit} = require("./habit_registration_transaction");
+
+exports.registerDemoOfficialHabit = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition",
+        "El registro de prueba solo funciona en el emulador demo."
+      );
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError(
+        "unauthenticated", "Inicia sesión de prueba para continuar."
+      );
+    }
+    try {
+      return await registerDemoHabit({
+        db, uid: request.auth.uid, data: request.data,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
