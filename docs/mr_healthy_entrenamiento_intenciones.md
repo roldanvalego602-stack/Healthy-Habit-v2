@@ -74,3 +74,37 @@ Entre las confusiones preliminares estaban saldo frente a tienda, edición frent
 - No utilizar el conjunto reservado de 90 preguntas para ajustar palabras clave o hiperparámetros: se degradaría la validez de la evaluación.
 
 **Próximo hito:** revisar informe de Python y matriz de confusión, enriquecer ejemplos de desarrollo y comparar un segundo modelo ligero con las mismas separaciones de entrenamiento. Solo después considerar uso del clasificador como señal adicional, nunca como autoridad, en `HealthyAssistantEngine`.
+
+## 7. Segunda etapa: comparar un modelo supervisado adicional
+
+Se añadió `tools/chat_intent_compare.py`, que entrena un **Naive Bayes multinomial** a partir de las mismas expresiones etiquetadas y lo contrasta con el clasificador de centroides TF-IDF. Ambos utilizan exclusivamente bibliotecas estándar de Python. Los dos modelos ajustan pesos a partir de ejemplos; ninguno es un modelo generativo ni entiende semántica neuronal.
+
+**Protocolo:**
+1. De las 225 frases de entrenamiento, reservar 45 para calibración/desarrollo y usar 180 para ajustar y escoger configuraciones de los dos modelos.
+2. Seleccionar alfa, umbrales y modelo favorito mediante métricas de **desarrollo**, penalizando primero predicciones potencialmente destructivas.
+3. Entrenar cada modelo final con las 225 frases `train`, aplicando los parámetros elegidos.
+4. Evaluar por separado ambos modelos finales con las 90 frases `test`; publicar exactitud, macro-F1, abstenciones, cobertura, matriz de confusión y errores críticos. **No elegir modelos ni umbrales a partir de esos 90 resultados.**
+5. Mantener todo **fuera de Flutter y Firebase**. El ganador experimental no puede escribir en la base de datos ni suplantar confirmaciones.
+
+Para ejecutar:
+
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_train.py
+python3 tools/chat_intent_compare.py
+```
+
+La comparación guarda `outputs/mr_healthy_intent_comparison_v1.json`. Si devuelve código 2, el experimento no alcanzó los objetivos y **no debe integrarse**. Las pruebas comprueban separación entre desarrollo y evaluación, predicciones deterministas, abstención cuando no hay coincidencia y que no se devuelvan acciones ni identificadores de cuenta.
+
+### Ejecución automática
+
+También existe `.github/workflows/mr_healthy_intent_benchmark.yml`, que se dispara al cambiar datasets o herramientas de entrenamiento en la rama de trabajo, o manualmente desde GitHub Actions. Ejecuta pruebas, genera informes del clasificador original y la comparación, y publica dos JSON como artefactos descargables durante 14 días. Un modelo que no alcance el umbral **no se incorpora a la aplicación**; un error de código sí debería marcar el workflow como fallido.
+
+**Estado de validación:** cambios integrados en GitHub. No atribuir puntajes nuevos ni afirmar pruebas aprobadas hasta obtener la ejecución local o los resultados del workflow.
+
+### Límites de este benchmark
+
+- La distribución de 6 frases de evaluación por clase es pequeña. No extraer conclusiones de seguridad para cuentas reales con un solo conjunto.
+- Aunque un clasificador supere métricas, la autorización de hábitos/tienda/cuenta debe continuar en los servicios existentes y nunca basarse exclusivamente en la predicción estadística.
+- Los mensajes breves como «bórralo», o «¿y ese?» dependen de contexto: evaluar con `datasets/chat_dialogues_es_v1.json` una vez implementado un estado conversacional explícito, no simular que el modelo de un solo turno tiene memoria.
+- No afinar las reglas o los ejemplos entrenados con conocimiento de las frases del conjunto `test` usado para medir. Al incorporar nuevos casos, preservar un nuevo conjunto verdaderamente reservado.
