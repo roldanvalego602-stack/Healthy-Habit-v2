@@ -437,6 +437,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Solo agregados anónimos publicados por procesos con privilegios
+    // administrativos. Nunca se admiten escrituras desde un cliente.
+    // Regla CANDIDATA para probar exclusivamente en el emulador.
+    match /public_habit_popularity/{habitId} {
+      allow get, list: if authenticated();
+      allow create, update, delete: if false;
+    }
+
     match /system/{path=**} {
       allow read: if authenticated();
       allow write: if false;
