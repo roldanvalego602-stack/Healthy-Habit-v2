@@ -183,12 +183,12 @@ class ProfilePhotoService {
     }
     if (code == 'object-not-found') {
       return ProfilePhotoException(
-        'Storage respondió que el objeto no existe durante $stage. '
-        'Si sucede al subir una foto nueva, verifica en Firebase Console '
-        'que el bucket esté creado y activo y que el proyecto tenga '
-        'facturación Blaze; revisa además la ruta y las reglas '
-        'users/{uid}/profile/. Bucket configurado: '
-        '${Firebase.app().options.storageBucket ?? "sin configurar"}.',
+        'La foto no se pudo subir (Storage: object-not-found). '
+        'Comprueba en Firebase Console > Storage que el bucket '
+        '${Firebase.app().options.storageBucket ?? "sin configurar"} '
+        'exista, esté activo y coincida con el configurado en la app. '
+        'Si no está creado, revisa los requisitos del plan Blaze. '
+        'Si existe, revisa las reglas para tu usuario.',
         code: code,
       );
     }
