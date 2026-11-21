@@ -138,7 +138,8 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
       if (mounted) setState(() => _errorFoto = error.message);
-      _mensaje(error.message);
+      // El mensaje queda visible junto a la foto; evitar duplicarlo
+      // en un SnackBar que ocupe media pantalla en Android.
     } on PlatformException catch (error) {
       if (mounted) setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
       _mensaje('No se pudo acceder a cámara o galería '
