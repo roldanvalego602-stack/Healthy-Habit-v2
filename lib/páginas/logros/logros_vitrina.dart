@@ -60,7 +60,7 @@ class VitrinaRarezas extends StatelessWidget {
                     color: dark ? const Color(0xFF1B2935) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: colorRareza(RarezaLogro.values[i]).withOpacity(0.65),
+                      color: colorRareza(RarezaLogro.values[i]).withValues(alpha: 0.65),
                     ),
                   ),
                   padding: const EdgeInsets.all(12),
