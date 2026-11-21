@@ -78,8 +78,17 @@ class InteractionService {
 
   /// Marcar una reacción como leída
   Future<void> marcarComoLeida(String interactionId) async {
-    await _interactionsRef.doc(interactionId).update({
-      'leido': true,
+    final me = FirebaseAuth.instance.currentUser?.uid;
+    if (me == null) throw StateError('Inicia sesión.');
+    final ref = _interactionsRef.doc(interactionId);
+    await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists || (doc.data() as Map<String, dynamic>?)?['toUid'] != me) {
+        throw StateError('Solo el destinatario puede leer esta reacción.');
+      }
+      tx.update(ref, {'leido': true});
     });
   }
 
