@@ -104,3 +104,44 @@ npm --prefix functions test
 No cambia las ocho vulnerabilidades actuales hasta que las escrituras
 directas de Flutter se bloqueen de forma coordinada con un servidor
 disponible para producción.
+
+## Etapa 3: integración con Firestore Emulator real
+
+El archivo `functions/tests/habit_registration.integration.js` contiene
+seis escenarios adicionales específicos de
+`registerOfficialHabitTransaction`:
+1. Registro + reintento para cada uno de los 36 hábitos.
+2. Dos operaciones diferentes en el mismo día de un hábito diario.
+3. Dos llamadas simultáneas con el mismo ID.
+4. Pago de una recompensa de nivel exactamente una vez.
+5. Rechazo de montos y parámetros de verificación manipulados.
+6. Rechazo de un intento cancelado.
+
+Estas pruebas usan **Firebase Admin SDK contra el emulador**,
+sin exponer un endpoint oficial y sin desplegar funciones. Las llamadas
+Admin SDK omiten Firestore Security Rules: las pruebas comprueban
+consistencia transaccional, NO cierran los ocho fallos de autorización
+del cliente ni certifican la protección en producción.
+
+**Forma recomendada (emuladores apagados previamente):**
+
+```bash
+firebase emulators:exec --config firebase.emulator.json \\
+  --project demo-healthy-habit --only firestore \\
+  "cd functions && npm run test:integration"
+```
+
+El comando `emulators:exec` crea un emulador de Firestore aislado,
+ejecuta las pruebas y detiene el proceso al finalizar. Si ya existe
+un emulador en el puerto 8080, cerrarlo con Ctrl+C antes.
+Los tests utilizan cuentas ficticias cuyos IDs comienzan por
+`integration-`.
+
+**Alcance no cubierto:** pruebas del cliente Flutter conectado a Auth
+Emulator; integración de activación/cancelación para los 36 hábitos,
+registro con evidencia, ajuste de estadísticas, migración de perfiles
+históricos y denegación de escritura cliente de recompensas.
+
+**Condición de avance:** sólo después de obtener un informe de
+integración satisfactorio debe considerarse integrar con Flutter,
+sin desplegar a Spark.
