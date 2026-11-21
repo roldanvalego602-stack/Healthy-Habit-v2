@@ -58,15 +58,6 @@ class AmigosServicio {
         .collection('friends').doc(otroUid));
     batch.delete(_db.collection('users').doc(otroUid)
         .collection('friends').doc(yo));
-    // Limpieza de vínculos heredados de seguimiento si existen.
-    batch.delete(_db.collection('users').doc(yo)
-        .collection('following').doc(otroUid));
-    batch.delete(_db.collection('users').doc(otroUid)
-        .collection('followers').doc(yo));
-    batch.delete(_db.collection('users').doc(otroUid)
-        .collection('following').doc(yo));
-    batch.delete(_db.collection('users').doc(yo)
-        .collection('followers').doc(otroUid));
     await batch.commit();
   }
 
