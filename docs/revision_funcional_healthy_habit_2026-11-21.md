@@ -137,3 +137,46 @@ Probar también en teléfono Android real: navegación, desbordamiento
 horizontal, cambios de vista, flujo de rutina con varios ejercicios,
 ambas modalidades de registro, fotografía, avisos y configuración
 de la cuenta. No modificar datos de producción innecesariamente.
+
+
+## Ajustes posteriores detectados en Android — 21 de noviembre
+
+- **Rutinas:** ahora `Crear y guardar mi rutina` es la acción principal
+  dentro de Mis rutinas personales. La meta de una sola actividad queda
+  como acción secundaria, bajo «Otras opciones». Se conserva el editor
+  multiejercicio y el botón final de guardado.
+- **Catálogo:** al escoger un sector de plato, el título, su descripción
+  y el mapa se sustituyen juntos mediante `AnimatedSwitcher` por una
+  lista de resultados. El primer elemento es visible directamente
+  (no detrás de un grupo `ExpansionTile`). Se ofrece volver al selector.
+  Prueba: `test/catalogo_navegacion_visual_test.dart`.
+- **Perfil:** en el teléfono apareció `storage/object-not-found`
+  durante `putData`. El archivo de configuración especifica el bucket
+  `cloud-firestore-d8c61.firebasestorage.app`, pero un nombre escrito
+  en `firebase_options.dart` **no demuestra que el bucket exista**.
+  No se cambian reglas de acceso ni configuración remota a ciegas.
+  Se acortó el diagnóstico y se evitó mostrar a la vez un error
+  persistente y un SnackBar con el mismo texto.
+
+### Comprobación obligatoria en Firebase Console
+
+1. Abrir proyecto `cloud-firestore-d8c61` → Storage.
+2. Confirmar si el bucket fue creado y está activo.
+3. Comparar su **nombre exacto** con
+   `cloud-firestore-d8c61.firebasestorage.app`.
+4. Si no se puede crear, revisar el plan y los requisitos vigentes
+   de Cloud Storage. No activar facturación sin evaluar costos.
+5. Si existe y coincide, revisar reglas de Storage para
+   `users/{uid}/profile/`, autenticación del usuario y errores
+   detallados de SDK. No conceder acceso público para probar.
+
+Esta verificación debe realizarla quien administre Firebase; ni la
+captura ni el repositorio permiten confirmar el estado del bucket.
+
+```bash
+flutter analyze lib/páginas/habitos/personal_routines_screen.dart
+flutter analyze lib/páginas/catalogo
+flutter analyze lib/páginas/perfil/editar_perfil_screen.dart
+flutter analyze lib/servicios/profile_photo_service.dart
+flutter test test/catalogo_navegacion_visual_test.dart
+```
