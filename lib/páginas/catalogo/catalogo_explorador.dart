@@ -143,6 +143,9 @@ class CatalogoExplorador {
   }
 
   static String grupoExploracion(CatalogoItem item) {
+    if (item.categoria == 'Bebidas') {
+      return item.detalles['Grupo de bebida'] ?? 'Otras bebidas';
+    }
     if (item.categoria == 'Alimentos') {
       return grupoAlimento(item);
     }
