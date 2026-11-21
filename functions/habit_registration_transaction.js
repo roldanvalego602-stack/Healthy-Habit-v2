@@ -7,17 +7,11 @@ const {
   RegistrationPolicyError,
 } = require("./habit_registration_policy");
 
-// Primera migración experimental: un hábito, cuya configuración coincide
-// con catalogo.dart. Rechazar cualquier otro hasta versionar todo el catálogo.
-const SERVER_CATALOG = Object.freeze({
-  hidr_001: Object.freeze({
-    title: "Beber agua al despertar",
-    category: "Hidratación",
-    target: 7,
-    frequencyType: "daily",
-    registrationsPerPeriod: 1,
-  }),
-});
+// El catálogo oficial está replicado desde Dart y cubre 36 hábitos.
+// La transacción sigue limitada a hidr_001 mientras se implementan
+// las reglas de frecuencia para los otros 35 hábitos.
+const {SERVER_CATALOG} = require("./official_habit_catalog");
+const PILOT_IDS = new Set(["hidr_001"]);
 const LEVELS = Object.freeze([
   [0, 0], [100, 25], [250, 25], [450, 25], [700, 50],
   [1000, 50], [1350, 50], [1750, 50], [2200, 75],
@@ -29,7 +23,8 @@ const OPERATION_ID = /^[A-Za-z0-9_-]{16,128}$/;
 
 function validateDemoRegistration(data) {
   const ids = validateRegistrationRequest(data);
-  if (!Object.hasOwn(SERVER_CATALOG, ids.habitId)) {
+  if (!Object.hasOwn(SERVER_CATALOG, ids.habitId) ||
+      !PILOT_IDS.has(ids.habitId)) {
     throw new RegistrationPolicyError(
       "failed-precondition", "Hábito aún no habilitado para el piloto."
     );
