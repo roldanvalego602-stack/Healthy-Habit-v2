@@ -363,13 +363,19 @@ test("las rachas se incrementan al completar el cupo y respetan la gracia", asyn
   await registerDemoHabit({db, ...multiArgs(
     "bien_007", "grace_0001",
   )});
-  assert.equal(attempt.periodStreak, 4);
+  assert.equal(db.docs.get(
+    "users/alice/user_habits/bien_007/attempts/attempt-1"
+  ).periodStreak, 4);
   const last = await registerDemoHabit({db, ...multiArgs(
     "bien_007", "grace_0002",
   )});
   assert.equal(last.periodStreak, 5);
-  assert.equal(attempt.periodStreak, 5);
-  assert.equal(attempt.gracePeriodsUsed, 1);
+  assert.equal(db.docs.get(
+    "users/alice/user_habits/bien_007/attempts/attempt-1"
+  ).periodStreak, 5);
+  assert.equal(db.docs.get(
+    "users/alice/user_habits/bien_007/attempts/attempt-1"
+  ).gracePeriodsUsed, 1);
   assert.equal(db.docs.get("users/alice").xp, 20);
 });
 
@@ -383,7 +389,9 @@ test("la racha se reinicia cuando los periodos omitidos superan la gracia", asyn
     "bien_007", "resetgrace_0002",
   )});
   assert.equal(last.periodStreak, 1);
-  assert.equal(attempt.gracePeriodsUsed, 1);
+  assert.equal(db.docs.get(
+    "users/alice/user_habits/bien_007/attempts/attempt-1"
+  ).gracePeriodsUsed, 1);
 });
 
 test("rechaza zonas distintas entre perfil, hábito e intento", async () => {
