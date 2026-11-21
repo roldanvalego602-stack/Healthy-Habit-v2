@@ -8,6 +8,7 @@ import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
 import 'habit_action_service.dart';
+import 'habit_popularity_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 import 'personal_routines_screen.dart';
@@ -42,6 +43,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool showingFullCatalog = false;
   bool loading = true;
   bool saving = false;
+  bool loadingPopularity = false;
+  List<HabitPopularity> popularMetrics = [];
+  final HabitPopularityService _popularityService = const HabitPopularityService();
   int xp = 0;
   int coins = 0;
   int level = 1;
@@ -80,6 +84,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       searchController.text = widget.initialSearch.trim();
     }
     _load();
+    _loadPopularity();
   }
 
   @override
@@ -171,6 +176,39 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
+  Future<void> _loadPopularity() async {
+    if (!mounted) return;
+    setState(() => loadingPopularity = true);
+    try {
+      final values = await _popularityService.fetchVerified();
+      if (!mounted) return;
+      setState(() {
+        popularMetrics = values;
+        loadingPopularity = false;
+      });
+    } catch (error) {
+      // Es información opcional: permisos insuficientes, falta de red o una
+      // colección aún no publicada no impiden usar los hábitos oficiales.
+      debugPrint('Estadísticas de popularidad no disponibles: $error');
+      if (mounted) {
+        setState(() {
+          popularMetrics = [];
+          loadingPopularity = false;
+        });
+      }
+    }
+  }
+
+  List<Habit> get _popularHabits {
+    final visible = {
+      for (final habit in visibleRecommendations) habit.id: habit,
+    };
+    return [
+      for (final score in popularMetrics)
+        if (visible.containsKey(score.habitId)) visible[score.habitId]!,
+    ].take(8).toList();
+  }
+
   Future<void> _confirmAddHabit(Habit habit) async {
     if (saving) return;
     late final HabitActionPreview preview;
@@ -183,47 +221,138 @@ class _HabitsScreenState extends State<HabitsScreen> {
     if (!mounted) return;
     final accepted = await showDialog<bool>(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(habit.title),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Dificultad: ${habit.difficulty}'),
-                const SizedBox(height: 8),
-                Text('Sesiones necesarias: ${habit.target}'),
-                const SizedBox(height: 8),
-                Text('Recompensa: ${habit.xp} XP'),
-                if (habit.coinCost > 0) ...[
-                  const SizedBox(height: 8),
-                  const Text('Costo para adquirirlo:'),
-                  HealthyCoinAmount(amount: '${habit.coinCost}',
-                    size: 20, suffix: ' Habit Coins'),
-                ],
-                if (_isDifficult(habit)) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Si lo abandonas, la penalización será de hasta 25 Habit Coins.',
+      builder: (dialogContext) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: categoryBg(habit.category),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(categoryIcon(habit.category),
+                  color: categoryInk(habit.category), size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(habit.title,
+                  style: const TextStyle(fontSize: 20,
+                      fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(habit.subtitle,
+                  style: TextStyle(color: HealthyAdaptive.muted)),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  Chip(
+                    avatar: Icon(Icons.category_outlined, size: 17,
+                        color: categoryInk(habit.category)),
+                    label: Text(habit.category),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.speed_rounded, size: 17),
+                    label: Text(habit.difficulty),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.event_repeat_rounded, size: 17),
+                    label: Text(habit.frequencyType == 'daily'
+                        ? 'Diario' : 'Semanal'),
                   ),
                 ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Volver'),
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Aceptar hábito'),
+              const SizedBox(height: 14),
+              _habitDetailRow(Icons.flag_outlined,
+                  'Objetivo', '${habit.target} registros en total'),
+              const SizedBox(height: 10),
+              _habitDetailRow(Icons.calendar_today_outlined,
+                  'Duración', '${habit.durationPeriods} periodos'),
+              const SizedBox(height: 10),
+              _habitDetailRow(Icons.bolt_rounded,
+                  'Recompensa del catálogo', '${habit.xp} XP'),
+              if (habit.coinCost > 0) ...[
+                const SizedBox(height: 12),
+                const Text('Costo para adquirirlo:'),
+                HealthyCoinAmount(amount: '${habit.coinCost}',
+                    size: 20, suffix: ' Habit Coins'),
+              ],
+              if (_isDifficult(habit)) ...[
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        color: HealthyAdaptive.muted, size: 19),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Abandonar un hábito difícil puede costar '
+                        'hasta 25 Habit Coins.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                'La recompensa real por registro depende de las '
+                'reglas de evidencia.',
+                style: TextStyle(
+                    color: HealthyAdaptive.muted, fontSize: 11),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton.icon(
+            key: const ValueKey('confirm-official-habit'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.add_task_rounded),
+            label: const Text('Aceptar hábito'),
+          ),
+        ],
+      ),
     );
     if (accepted == true && mounted) {
       await addHabit(habit, preview: preview);
     }
+  }
+
+  Widget _habitDetailRow(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: HealthyAdaptive.accent),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(label, style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: HealthyAdaptive.text,
+          )),
+        ),
+        Flexible(
+          child: Text(value, textAlign: TextAlign.right,
+              style: TextStyle(color: HealthyAdaptive.muted)),
+        ),
+      ],
+    );
   }
 
   bool _isDifficult(Habit habit) {
@@ -647,6 +776,25 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           else
                             _twoRowRecommendationCarousel(_suggestedHabits),
 
+                          if (!showingFullCatalog) ...[
+                            const SizedBox(height: 24),
+                            _sectionHeader('Hábitos populares', ''),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Basados en activaciones verificadas de la comunidad.',
+                              style: TextStyle(color: muted, fontSize: 12),
+                            ),
+                            const SizedBox(height: 12),
+                            if (loadingPopularity)
+                              const Center(child: CircularProgressIndicator())
+                            else if (_popularHabits.isEmpty)
+                              _empty(
+                                'Aún no hay estadísticas públicas verificadas. '
+                                'Los hábitos populares aparecerán cuando estén disponibles.',
+                              )
+                            else
+                              _twoRowRecommendationCarousel(_popularHabits),
+                          ],
                           const SizedBox(height: 18),
                           _encouragement(),
                         ],
