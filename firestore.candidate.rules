@@ -46,6 +46,7 @@ service cloud.firestore {
         && socialPayload()
         && exists(incomingRef(recipient, sender))
         && !existsAfter(incomingRef(recipient, sender))
+        && !existsAfter(sentRef(sender, recipient))
         && existsAfter(friendsRef(otherUid, uid))
         && getAfter(friendsRef(otherUid, uid)).data == request.resource.data;
     }
