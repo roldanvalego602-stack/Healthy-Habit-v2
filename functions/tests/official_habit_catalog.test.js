@@ -64,15 +64,17 @@ test("reglas derivadas de nivel, XP, gracia y coste siguen sincronizadas", () =>
   }
 });
 
-test("el piloto aún no permite escrituras para hábitos nuevos", () => {
+test("el piloto solo permite los tres hábitos experimentales", () => {
   const {validateDemoRegistration} =
     require("../habit_registration_transaction");
-  assert.doesNotThrow(() => validateDemoRegistration({
-    habitId: "hidr_001", attemptId: "attempt-1",
-    operationId: "pilot_attempt_0001",
-  }));
+  const allowed = ["hidr_001", "bien_007", "alim_004"];
+  for (const habitId of allowed) {
+    assert.doesNotThrow(() => validateDemoRegistration({
+      habitId, attemptId: "attempt-1", operationId: "pilot_attempt_0001",
+    }));
+  }
   for (const habitId of Object.keys(SERVER_CATALOG)) {
-    if (habitId === "hidr_001") continue;
+    if (allowed.includes(habitId)) continue;
     assert.throws(() => validateDemoRegistration({
       habitId, attemptId: "attempt-1", operationId: "pilot_attempt_0001",
     }), /no habilitado para el piloto/);
