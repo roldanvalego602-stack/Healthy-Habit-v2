@@ -128,6 +128,24 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
         await _service.responder(id, aceptar: false);
       } else if (action == 'cancel') {
         await _service.cancelar(id);
+      } else if (action == 'finish') {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Terminar hábito en pareja'),
+            content: const Text(
+              'Dejarán de realizar este hábito juntos. '
+              'Los hábitos y registros personales se conservan.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Terminar')),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        await _service.terminar(id);
       } else if (action == 'activate') {
         final ok = await showDialog<bool>(context: context,
           builder: (context) => AlertDialog(
@@ -220,6 +238,12 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
                       ) : null,
                       icon: const Icon(Icons.add_task_rounded),
                       label: const Text('Activar mi hábito'),
+                    ),
+                  if (item.data()['status'] == 'aceptada')
+                    TextButton(
+                      onPressed: _busy == null ? () =>
+                        _act(item.id, '', 'finish') : null,
+                      child: const Text('Terminar pareja'),
                     ),
                 ]),
               ]),
