@@ -260,6 +260,45 @@ auditar cambios de calendario para evitar reiniciar contadores
 ilegítimamente. No se modificó el cliente Flutter ni se desplegaron
 reglas.
 
+## Noveno paso: activación por Admin SDK (solo emulador)
+
+`functions/habit_activation_transaction.js` implementa
+`activateDemoHabit`, disponible también mediante la callable
+`activateDemoOfficialHabit` **solo** si
+`FUNCTIONS_EMULATOR=true` y `GCLOUD_PROJECT=demo-healthy-habit`.
+
+La petición autenticada `{habitId,attemptId,operationId}` admite únicamente
+`hidr_001`, `bien_007` y `alim_004`. Los identificadores deben
+ser únicos e idempotentes (16–128 caracteres). No se reciben XP,
+costes, requisitos, progreso ni propiedades del hábito desde el cliente.
+
+En una transacción de Admin SDK se leen perfil, hábito, intento nuevo,
+intento anterior, consulta de hábitos activos y operación idempotente.
+Se validan espacios, desbloqueo por nivel, saldo, repetibilidad,
+enfriamiento y estado del último intento; después se crea el intento,
+actualiza el índice de hábito y el contador de mutaciones del perfil,
+y guarda la operación de activación. La consulta de hábitos activos
+utiliza `latestStatus == inProgress` como en el esquema existente.
+
+Para los pilotos `bien_007` y `alim_004` se copia el calendario de
+perfil a hábito e intento al activar. La activación heredada de
+`hidr_001` sigue en UTC. Esto permite comprobar la compatibilidad
+de la activación y el primer registro en el emulador, pero todavía
+no constituye una migración de perfiles reales.
+
+Se añadieron pruebas unitarias en
+`functions/tests/habit_activation_transaction.test.js` y
+cuatro pruebas de integración adicionales: reintentos, competencia
+por el último espacio, nivel insuficiente y primer registro con
+el mismo calendario.
+
+**Riesgos pendientes:** los campos de economía y de estado aún son
+escribibles por clientes bajo las reglas candidatas. Las validaciones
+de nivel, espacios y estado del servidor no pueden considerarse
+confiables en producción hasta migrar cancelación, registro y
+activación junto con reglas revisadas. Esta funcionalidad no se usa
+desde Flutter y no debe desplegarse como una activación pública.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
