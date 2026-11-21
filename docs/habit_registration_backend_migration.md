@@ -66,7 +66,7 @@ estadísticas públicas verificadas**.
 
 ## Pruebas de integración de Firestore (tercer paso)
 
-Se añadió `functions/tests/habit_registration_integration.test.js`,
+Se añadió `functions/tests/habit_registration.integration.js`,
 que utiliza Firestore Admin SDK contra **Firestore Emulator real**, no un
 repositorio simulado. Estas pruebas no se ejecutan en `npm test` para evitar
 dependencias accidentales de emuladores durante las pruebas unitarias.
