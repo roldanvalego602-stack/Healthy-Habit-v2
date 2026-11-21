@@ -11,8 +11,10 @@ const {
 // Solo tres hábitos de prueba están habilitados en el emulador:
 // uno de un registro diario, uno de dos diarios y uno de tres semanales.
 const {SERVER_CATALOG} = require("./official_habit_catalog");
-const {utcPeriodKey, checkPeriodRegistration, HabitPeriodError} =
+const {checkPeriodRegistration, HabitPeriodError} =
   require("./habit_period_policy");
+const {periodKeyForZone, completedPeriodStreak, validateTimeZone,
+  HabitCalendarError} = require("./habit_calendar_policy");
 const PILOT_IDS = new Set(["hidr_001", "bien_007", "alim_004"]);
 const LEVELS = Object.freeze([
   [0, 0], [100, 25], [250, 25], [450, 25], [700, 50],
@@ -112,29 +114,25 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
   const ids = validateDemoRegistration(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const date = utcDay(now);
-  const periodKey = utcPeriodKey(now, catalog.frequencyType);
-  const userRef = db.collection("users").doc(uid);
+   const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(ids.habitId);
   const attemptRef = habitRef.collection("attempts").doc(ids.attemptId);
   const operationRef = userRef.collection("registration_operations")
     .doc(ids.operationId);
   // Compatibilidad con marcas del piloto previo: consultar ambas rutas.
   const dayRef = attemptRef.collection("registration_days").doc(date);
-  const periodRef = attemptRef.collection("registration_periods").doc(periodKey);
-  const logRef = attemptRef.collection("logs").doc(ids.operationId);
+   const logRef = attemptRef.collection("logs").doc(ids.operationId);
   // Solo el piloto heredado hidr_001 utiliza una marca de un registro
   // por día. Los demás hábitos se rigen por el contador del periodo.
   const usesLegacyDailyMarker = ids.habitId === "hidr_001";
 
   return db.runTransaction(async (tx) => {
     // TODAS las lecturas van antes de las escrituras.
-    const [operationSnap, userSnap, habitSnap, attemptSnap, daySnap,
-      periodSnap] =
+    const [operationSnap, userSnap, habitSnap, attemptSnap, daySnap] =
       await Promise.all([
         tx.get(operationRef), tx.get(userRef), tx.get(habitRef),
         tx.get(attemptRef),
         usesLegacyDailyMarker ? tx.get(dayRef) : Promise.resolve(null),
-        tx.get(periodRef),
       ]);
     if (operationSnap.exists) {
       const existing = operationSnap.data();
@@ -154,6 +152,34 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
     const eligible = registrationEligibility({
       habit, attempt, attemptId: ids.attemptId,
     });
+    // La zona horaria es configuración persistida y fijada por intento.
+    // Para fechas locales se exige concordancia en usuario y hábito.
+    // El modo histórico de hidr_001 conserva siempre el calendario UTC.
+    const zone = attempt.calendarTimeZone ?? "UTC";
+    let periodKey;
+    try {
+      validateTimeZone(zone);
+      if (usesLegacyDailyMarker && zone !== "UTC") {
+        throw new HabitCalendarError(
+          "El intento anterior debe conservar el calendario UTC."
+        );
+      }
+      if (zone !== "UTC" &&
+          (habit.calendarTimeZone !== zone ||
+           userSnap.data().calendarTimeZone !== zone)) {
+        throw new HabitCalendarError("La zona del intento no coincide.");
+      }
+      periodKey = periodKeyForZone(now, catalog.frequencyType, zone);
+    } catch (error) {
+      if (error instanceof HabitCalendarError) {
+        throw new RegistrationPolicyError("failed-precondition", error.message);
+      }
+      throw error;
+    }
+    const periodRef = attemptRef.collection("registration_periods")
+      .doc(periodKey);
+    // Leer contador antes de efectuar cualquier escritura transaccional.
+    const periodSnap = await tx.get(periodRef);
     if (attempt.target !== catalog.target ||
         habit.frequencyType !== catalog.frequencyType ||
         attempt.frequencyType !== catalog.frequencyType ||
@@ -182,6 +208,35 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
       }
       throw error;
     }
+    // Una racha solo avanza cuando se COMPLETA el cupo del periodo.
+    // Es independiente de la racha global de Flutter mientras sea piloto.
+    let streakUpdate = {};
+    if (periodResult.periodCountAfter === catalog.registrationsPerPeriod) {
+      try {
+        const streak = completedPeriodStreak({
+          previousKey: attempt.lastCompletedPeriod ?? null,
+          currentKey: periodKey,
+          frequency: catalog.frequencyType,
+          previousStreak: attempt.periodStreak ?? 0,
+          gracePeriods: catalog.gracePeriods,
+        });
+        streakUpdate = {
+          periodStreak: streak.streak,
+          lastCompletedPeriod: periodKey,
+          gracePeriodsUsed: (attempt.gracePeriodsUsed ?? 0) +
+            streak.graceApplied,
+        };
+        if (!Number.isSafeInteger(streakUpdate.gracePeriodsUsed) ||
+            streakUpdate.gracePeriodsUsed < 0) {
+          throw new HabitCalendarError("Gracia histórica inválida.");
+        }
+      } catch (error) {
+        if (error instanceof HabitCalendarError) {
+          throw new RegistrationPolicyError("failed-precondition", error.message);
+        }
+        throw error;
+      }
+    }
     const reward = calculateRegistrationReward({
       user: userSnap.data(), attempt, catalog,
     });
@@ -194,7 +249,10 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
       coinsAwarded: reward.coinsAwarded, level: reward.level,
       registrationDateUtc: date,
       registrationPeriod: periodKey,
+      calendarTimeZone: zone,
       periodCount: periodResult.periodCountAfter,
+      ...(Object.hasOwn(streakUpdate, "periodStreak") ?
+        {periodStreak: streakUpdate.periodStreak} : {}),
     };
     if (usesLegacyDailyMarker) {
       tx.create(dayRef, {
@@ -220,6 +278,7 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
     });
     tx.update(attemptRef, {
       progress, xpEarned: reward.attemptXp,
+      ...streakUpdate,
       updatedAt: FieldValue.serverTimestamp(),
       ...(completed ? {
         status: "completed", completedAt: FieldValue.serverTimestamp(),
