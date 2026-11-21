@@ -245,10 +245,11 @@ class CatalogoDetalleScreen extends StatelessWidget {
         .map(CatalogoExplorador.normalizar).toSet();
     final resultados = todos.where((otro) =>
         otro.id != item.id && otro.categoria == item.categoria).toList();
+    int puntos(CatalogoItem value) => value.etiquetas
+        .map(CatalogoExplorador.normalizar)
+        .where(claves.contains).length;
+    resultados.removeWhere((value) => puntos(value) == 0);
     resultados.sort((a, b) {
-      int puntos(CatalogoItem value) => value.etiquetas
-          .map(CatalogoExplorador.normalizar)
-          .where(claves.contains).length;
       final diferencia = puntos(b).compareTo(puntos(a));
       return diferencia == 0
           ? a.titulo.compareTo(b.titulo) : diferencia;
