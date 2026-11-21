@@ -842,7 +842,7 @@ class ProfileScreen extends StatelessWidget {
         return attempts.docs.length;
       }),
     );
-    return counts.fold<int>(0, (sum, count) => sum + count);
+    return counts.fold<int>(0, (total, amount) => total + amount);
   }
 
   Widget _statistics({
