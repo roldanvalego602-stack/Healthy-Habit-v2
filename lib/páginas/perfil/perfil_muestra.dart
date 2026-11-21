@@ -75,6 +75,22 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         _isLoading) {
       return;
     }
+    if (isFollowing) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar amigo'),
+          content: Text('¿Quieres eliminar a ${widget.name} de tus amigos?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar')),
+          ],
+        ),
+      );
+      if (confirm != true || !mounted) return;
+    }
     setState(() => _isLoading = true);
     try {
       if (isFollowing) {
