@@ -8,7 +8,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {initializeApp, deleteApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
-const {registerDemoHabit} = require("../habit_registration_transaction");
+const {registerDemoHabit, registerOfficialHabitTransaction} =
+  require("../habit_registration_transaction");
 const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
 const {activateDemoHabit} = require("../habit_activation_transaction");
 const {cancelDemoHabit} = require("../habit_cancellation_transaction");
@@ -694,6 +695,136 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
       purchaseArgs(uid, "cape", "shop_reject_000004")
     ));
     assert.equal((await ref.get()).data().habitCoins, 500);
+  });
+
+
+  // Motor oficial: real Firestore Emulator, sin endpoint ni proyecto real.
+  async function seedOfficial(uid, habitId, {xp = 0, coins = 100,
+    progress = 0} = {}) {
+    const {SERVER_CATALOG} = require("../official_habit_catalog");
+    const catalog = SERVER_CATALOG[habitId];
+    const docs = await seedMulti(uid, habitId);
+    await Promise.all([
+      docs.ref.update({
+        xp, currentXp: xp, level: xp >= 100 ? 2 : 1,
+        habitCoins: coins,
+      }),
+      docs.attempt.update({
+        habitId, progress, xpEarned: progress * catalog.xp,
+      }),
+    ]);
+    return docs;
+  }
+
+  function officialInput(uid, habitId, operationId, now = fixedDay) {
+    return {
+      db, uid, now,
+      data: {habitId, attemptId: "attempt-1", operationId},
+    };
+  }
+
+  test("motor oficial: Firestore acredita los 36 hábitos una vez", async () => {
+    const {SERVER_CATALOG} = require("../official_habit_catalog");
+    const ids = Object.keys(SERVER_CATALOG);
+    assert.equal(ids.length, 36);
+    for (const habitId of ids) {
+      const uid = `integration-official-${habitId}`;
+      const {ref, attempt} = await seedOfficial(uid, habitId);
+      const operationId = `official_register_${habitId}_0001`;
+      const input = officialInput(uid, habitId, operationId);
+      const result = await registerOfficialHabitTransaction(input);
+      const retry = await registerOfficialHabitTransaction(input);
+      const xp = SERVER_CATALOG[habitId].xp;
+      assert.equal(result.xpAwarded, xp, habitId);
+      assert.equal(retry.alreadyProcessed, true, habitId);
+      assert.equal((await ref.get()).data().xp, xp, habitId);
+      assert.equal((await attempt.get()).data().progress, 1, habitId);
+      assert.equal((await attempt.collection("logs").get()).size, 1, habitId);
+      assert.equal((await ref.collection("registration_operations").get()).size,
+        1, habitId);
+      assert.equal((await attempt.collection("registration_periods").get()).size,
+        1, habitId);
+    }
+  });
+
+  test("motor oficial: concurrencia con IDs distintos no duplica XP diarios", async () => {
+    const uid = "integration-official-concurrency";
+    const {ref, attempt} = await seedOfficial(uid, "alim_001");
+    const outcomes = await Promise.allSettled([
+      registerOfficialHabitTransaction(officialInput(
+        uid, "alim_001", "official_race_first_0001"
+      )),
+      registerOfficialHabitTransaction(officialInput(
+        uid, "alim_001", "official_race_second_0002"
+      )),
+    ]);
+    assert.equal(outcomes.filter((o) => o.status === "fulfilled").length, 1);
+    assert.equal((await ref.get()).data().xp, 10);
+    assert.equal((await attempt.get()).data().progress, 1);
+    assert.equal((await attempt.collection("logs").get()).size, 1);
+    assert.equal((await ref.collection("registration_operations").get()).size, 1);
+  });
+
+  test("motor oficial: concurrencia con el mismo ID es idempotente", async () => {
+    const uid = "integration-official-same-id";
+    const {ref, attempt} = await seedOfficial(uid, "bien_007");
+    const input = officialInput(
+      uid, "bien_007", "official_identical_0001"
+    );
+    const outcomes = await Promise.allSettled([
+      registerOfficialHabitTransaction(input),
+      registerOfficialHabitTransaction(input),
+    ]);
+    assert.ok(outcomes.some((o) => o.status === "fulfilled"));
+    assert.equal((await ref.get()).data().xp, 20);
+    assert.equal((await attempt.get()).data().progress, 1);
+    assert.equal((await attempt.collection("logs").get()).size, 1);
+    assert.equal((await ref.collection("registration_operations").get()).size, 1);
+  });
+
+  test("motor oficial: un nivel cruzado paga 25 monedas una sola vez", async () => {
+    const uid = "integration-official-level";
+    const {ref, attempt} = await seedOfficial(uid, "bien_007", {xp: 90});
+    const input = officialInput(
+      uid, "bien_007", "official_level_bonus_0001"
+    );
+    const first = await registerOfficialHabitTransaction(input);
+    const repeat = await registerOfficialHabitTransaction(input);
+    assert.equal(first.coinsAwarded, 25);
+    assert.equal(repeat.alreadyProcessed, true);
+    assert.equal((await ref.get()).data().xp, 110);
+    assert.equal((await ref.get()).data().habitCoins, 125);
+    assert.deepEqual((await ref.get()).data().claimedLevelRewards, [2]);
+    assert.equal((await attempt.collection("logs").get()).size, 1);
+  });
+
+  test("motor oficial: inyección económica no altera estado", async () => {
+    const uid = "integration-official-payload";
+    const {ref, attempt} = await seedOfficial(uid, "alim_001");
+    for (const key of ["xp", "habitCoins", "progress", "evidenceVerified"]) {
+      await assert.rejects(registerOfficialHabitTransaction({
+        ...officialInput(uid, "alim_001", `official_bad_${key}_0001`),
+        data: {
+          ...officialInput(uid, "alim_001", `official_bad_${key}_0001`).data,
+          [key]: 99999,
+        },
+      }));
+    }
+    assert.equal((await ref.get()).data().xp, 0);
+    assert.equal((await ref.get()).data().habitCoins, 100);
+    assert.equal((await attempt.get()).data().progress, 0);
+    assert.equal((await attempt.collection("logs").get()).size, 0);
+  });
+
+  test("motor oficial: intento cancelado no puede recibir premios", async () => {
+    const uid = "integration-official-cancelled";
+    const {ref, attempt} = await seedOfficial(uid, "alim_001");
+    await attempt.update({status: "cancelled"});
+    await assert.rejects(registerOfficialHabitTransaction(officialInput(
+      uid, "alim_001", "official_cancelled_0001"
+    )));
+    assert.equal((await ref.get()).data().xp, 0);
+    assert.equal((await attempt.collection("logs").get()).size, 0);
   });
 
 }
