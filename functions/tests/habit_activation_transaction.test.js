@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {validateActivation, validateActivationState} =
+const {validateActivation, validateOfficialActivation, validateActivationState} =
   require("../habit_activation_transaction");
 const {SERVER_CATALOG} = require("../official_habit_catalog");
 const {RegistrationPolicyError} = require("../habit_registration_policy");
@@ -85,4 +85,23 @@ test("una versión o secuencia alterada se rechaza antes de escribir", () => {
   assert.throws(() => validateActivationState({
     ...state, previousAttempt: {attemptNumber: -4},
   }), RegistrationPolicyError);
+});
+
+test("la activación oficial permite los 36 hábitos sin cambiar el piloto", () => {
+  assert.equal(Object.keys(SERVER_CATALOG).length, 36);
+  for (const habitId of Object.keys(SERVER_CATALOG)) {
+    const payload = {
+      habitId, attemptId: "official_attempt_0001",
+      operationId: "official_operation_0001",
+    };
+    assert.deepEqual(validateOfficialActivation(payload), payload);
+    if (!["hidr_001", "bien_007", "alim_004"].includes(habitId)) {
+      assert.throws(() => validateActivation(payload), RegistrationPolicyError);
+    }
+    for (const injected of ["xp", "habitCoins", "uid", "level"]) {
+      assert.throws(() => validateOfficialActivation({
+        ...payload, [injected]: 99999,
+      }), RegistrationPolicyError);
+    }
+  }
 });
