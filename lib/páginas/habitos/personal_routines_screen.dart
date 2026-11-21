@@ -895,36 +895,45 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                 '${_steps[index].target} ${_steps[index].unit}',
               ),
               leading: CircleAvatar(child: Text('${index + 1}')),
-              trailing: SizedBox(
-                width: widget.singleGoal ? 96 : 192,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      tooltip: 'Editar paso',
-                      icon: const Icon(Icons.edit_outlined, size: 19),
-                      onPressed: () => _editStep(index),
+              trailing: PopupMenuButton<String>(
+                tooltip: 'Opciones de actividad',
+                icon: const Icon(Icons.more_vert_rounded),
+                onSelected: (action) {
+                  switch (action) {
+                    case 'edit':
+                      _editStep(index);
+                      break;
+                    case 'up':
+                      _moveStep(index, -1);
+                      break;
+                    case 'down':
+                      _moveStep(index, 1);
+                      break;
+                    case 'remove':
+                      setState(() => _steps.removeAt(index));
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Editar actividad'),
+                  ),
+                  if (!widget.singleGoal && index > 0)
+                    const PopupMenuItem(
+                      value: 'up',
+                      child: Text('Subir paso'),
                     ),
-                    if (!widget.singleGoal) ...[
-                      IconButton(
-                        tooltip: 'Subir paso',
-                        onPressed: index == 0 ? null : () => _moveStep(index, -1),
-                        icon: const Icon(Icons.arrow_upward_rounded, size: 19),
-                      ),
-                      IconButton(
-                        tooltip: 'Bajar paso',
-                        onPressed: index == _steps.length - 1
-                            ? null : () => _moveStep(index, 1),
-                        icon: const Icon(Icons.arrow_downward_rounded, size: 19),
-                      ),
-                    ],
-                    IconButton(
-                      tooltip: 'Quitar paso',
-                      icon: const Icon(Icons.close, size: 19),
-                      onPressed: () => setState(() => _steps.removeAt(index)),
+                  if (!widget.singleGoal && index < _steps.length - 1)
+                    const PopupMenuItem(
+                      value: 'down',
+                      child: Text('Bajar paso'),
                     ),
-                  ],
-                ),
+                  const PopupMenuItem(
+                    value: 'remove',
+                    child: Text('Eliminar actividad'),
+                  ),
+                ],
               ),
             ),
           const SizedBox(height: 18),
