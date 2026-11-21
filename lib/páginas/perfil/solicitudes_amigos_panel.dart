@@ -13,13 +13,17 @@ class SolicitudesAmigosPanel extends StatelessWidget {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: AmigosServicio.solicitudesRecibidas(uid),
       builder: (context, snap) {
-        if (snap.hasError) return const Card(child: ListTile(
-          title: Text('No se pudieron consultar las solicitudes'),
-          subtitle: Text('Comprueba las reglas de Firestore.'),
-        ));
-        if (!snap.hasData) return const Card(child: ListTile(
-          title: Text('Consultando solicitudes de amistad...'),
-        ));
+        if (snap.hasError) {
+          return const Card(child: ListTile(
+            title: Text('No se pudieron consultar las solicitudes'),
+            subtitle: Text('Comprueba las reglas de Firestore.'),
+          ));
+        }
+        if (!snap.hasData) {
+          return const Card(child: ListTile(
+            title: Text('Consultando solicitudes de amistad...'),
+          ));
+        }
         final ids = snap.data!.docs.map((e) => e.id).toList();
         return Card(
           child: Padding(
