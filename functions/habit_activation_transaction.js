@@ -12,11 +12,23 @@ const ID = /^[A-Za-z0-9_-]{16,128}$/;
 const USER_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
 function validateActivation(data) {
+  return validateActivationPayload(data, false);
+}
+
+// Modo oficial interno: acepta 36 hábitos, pero NO expone endpoint.
+// El piloto público conserva exclusivamente sus 3 IDs.
+function validateOfficialActivation(data) {
+  return validateActivationPayload(data, true);
+}
+
+function validateActivationPayload(data, official) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new RegistrationPolicyError("invalid-argument", "Solicitud inválida.");
   }
   const {habitId, attemptId, operationId} = data;
-  if (!PILOT_IDS.has(habitId)) {
+  if (typeof habitId !== "string" ||
+      !Object.hasOwn(SERVER_CATALOG, habitId) ||
+      (!official && !PILOT_IDS.has(habitId))) {
     throw new RegistrationPolicyError(
       "failed-precondition", "Hábito fuera del piloto de activación."
     );
@@ -108,14 +120,20 @@ function validateActivationState({
   };
 }
 
-async function activateDemoHabit({db, uid, data, now = new Date()}) {
+async function activateHabitTransaction(
+  {db, uid, data, now = new Date()}, mode
+) {
   if (typeof uid !== "string" || !USER_ID.test(uid)) {
     throw new RegistrationPolicyError("unauthenticated", "Sesión inválida.");
   }
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
     throw new RegistrationPolicyError("invalid-argument", "Fecha inválida.");
   }
-  const {habitId, attemptId, operationId} = validateActivation(data);
+  if (mode !== "demo" && mode !== "official") {
+    throw new RegistrationPolicyError("invalid-argument", "Modo inválido.");
+  }
+  const {habitId, attemptId, operationId} = mode === "demo" ?
+    validateActivation(data) : validateOfficialActivation(data);
   const catalog = SERVER_CATALOG[habitId];
   const userRef = db.collection("users").doc(uid);
   const habits = userRef.collection("user_habits");
@@ -177,7 +195,10 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
       previousAttempt: previousSnap?.data() ?? null,
       catalog, now,
     });
-    const timeZone = habitId === "hidr_001" ? "UTC" :
+    // Únicamente la versión demo heredada de hidr_001 fija UTC.
+    // La ruta oficial permite calendario local persistido.
+    const legacyUtc = mode === "demo" && habitId === "hidr_001";
+    const timeZone = legacyUtc ? "UTC" :
       (user.calendarTimeZone ?? "UTC");
     try {
       validateTimeZone(timeZone);
@@ -189,7 +210,7 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
       }
       throw error;
     }
-    if (habitId === "hidr_001" && user.calendarTimeZone &&
+    if (legacyUtc && user.calendarTimeZone &&
         user.calendarTimeZone !== "UTC") {
       throw new RegistrationPolicyError(
         "failed-precondition", "El piloto heredado requiere UTC."
@@ -208,7 +229,7 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
     tx.update(userRef, {
       habitCoins: validated.coinsAfter,
       habitMutationVersion: validated.versionAfter,
-      ...(habitId !== "hidr_001" ? {calendarTimeZone: timeZone} : {}),
+      ...(!legacyUtc ? {calendarTimeZone: timeZone} : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.set(habitRef, {
@@ -216,7 +237,7 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
       lastAttemptId: attemptId, latestAttemptId: attemptId,
       lastStatus: "inProgress", latestStatus: "inProgress",
       latestProgress: 0, latestTarget: catalog.target,
-      ...(habitId !== "hidr_001" ? {calendarTimeZone: timeZone} : {}),
+      ...(!legacyUtc ? {calendarTimeZone: timeZone} : {}),
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
     tx.create(attemptRef, {
@@ -230,7 +251,7 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
       periodProgress: 0, streak: 0, longestStreak: 0,
       missedPeriods: 0, pendingRecoveries: 0,
       periodStreak: 0,
-      ...(habitId !== "hidr_001" ? {calendarTimeZone: timeZone} : {}),
+      ...(!legacyUtc ? {calendarTimeZone: timeZone} : {}),
     });
     tx.create(operationRef, {
       habitId, attemptId, result,
@@ -240,7 +261,17 @@ async function activateDemoHabit({db, uid, data, now = new Date()}) {
   });
 }
 
+function activateDemoHabit(args) {
+  return activateHabitTransaction(args, "demo");
+}
+
+function activateOfficialHabitTransaction(args) {
+  return activateHabitTransaction(args, "official");
+}
+
 module.exports = {
+  validateOfficialActivation,
+  activateOfficialHabitTransaction,
   validateActivation,
   validateActivationState,
   activateDemoHabit,
