@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Artefactos locales del entrenamiento de intenciones de Mr. Healthy
+/outputs/mr_healthy_intent_model_*.json
+/outputs/mr_healthy_intent_report_*.json
