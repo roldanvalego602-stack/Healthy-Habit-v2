@@ -17,8 +17,7 @@ before(async () => {
     projectId: 'demo-healthy-habit',
     firestore: {
       host: '127.0.0.1', port: 8080,
-      rules: readFileSync(resolve(process.cwd(),
-        'firestore.candidate.rules'), 'utf8'),
+      rules: readFileSync(resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname), 'utf8'),
     },
   });
 });
