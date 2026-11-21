@@ -118,6 +118,38 @@ zonas horarias, tolerancias, periodos perdidos y repeticiones.
 El catálogo y la política de periodos son preparación **sin despliegue**.
 La aplicación Flutter y las reglas de producción permanecen intactas.
 
+## Quinto paso: contador transaccional por periodo
+
+El piloto `registerDemoOfficialHabit` usa ahora la función de claves de
+`habit_period_policy.js` dentro de la transacción de Firestore Admin.
+Cada intento mantiene un documento
+`registration_periods/{day_YYYY-MM-DD|week_YYYY-MM-DD}` con el conteo
+de ese periodo. La lectura, el control del límite y la escritura del
+contador ocurren junto con la operación idempotente, el registro, el
+progreso y las recompensas, en **una sola transacción**.
+
+Se sigue escribiendo y comprobando `registration_days/YYYY-MM-DD`
+en el piloto diario para no aceptar dos registros en el mismo día
+cuando existen marcas heredadas anteriores a los contadores nuevos.
+
+Se añadieron tres pruebas unitarias y tres pruebas de integración contra
+Firestore Emulator sobre el cambio de día, el bloqueo de marcas
+heredadas y las peticiones concurrentes. Ejecutar:
+
+```bash
+cd functions && npm test && cd ..
+firebase emulators:exec --config firebase.emulator.json \
+  --project demo-healthy-habit --only firestore \
+  "cd functions && npm run test:integration"
+```
+
+**El habilitado sigue limitado a `hidr_001`.** En particular, los
+hábitos semanales y los diarios con varios registros aún NO se pueden
+registrar mediante este callable. El periodo UTC es exclusivamente una
+simplificación experimental y no sustituye la fecha local del usuario,
+los periodos de gracia, las rachas, ni la reconciliación histórica.
+Nunca desplegar esta prueba como registro funcional de producción.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
