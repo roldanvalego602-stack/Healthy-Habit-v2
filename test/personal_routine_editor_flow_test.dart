@@ -55,6 +55,10 @@ void main() {
     await _ensure(tester, find.text('Añadir ejercicio a la rutina'));
     await tester.tap(find.text('Añadir ejercicio a la rutina'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('routine-step-added-feedback')),
+      findsOneWidget);
+    // La confirmación es texto dentro del formulario: no tapa Guardar.
+    expect(find.byType(SnackBar), findsNothing);
 
     await _ensure(tester, find.byKey(
       const ValueKey('routine-new-exercise')));
