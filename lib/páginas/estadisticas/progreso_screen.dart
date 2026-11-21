@@ -267,17 +267,17 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
       byHabit.update(log.title, (v) => v + 1, ifAbsent: () => 1);
     }
     final last7 = List.generate(7, (i) => DateTime(today.year, today.month, today.day).subtract(Duration(days: 6-i)));
-    final weekly = last7.fold<int>(0, (sum, day) => sum + (daily[_key(day)] ?? 0));
+    final weekly = last7.fold<int>(0, (total, day) => total + (daily[_key(day)] ?? 0));
     final activeDays = last7.where((d) => (daily[_key(d)] ?? 0) > 0).length;
     final last7Keys = last7.map(_key).toSet();
     final weeklyXp = logs.where((log) => last7Keys.contains(_key(log.date)))
-        .fold<int>(0, (sum, log) => sum + log.xp);
+        .fold<int>(0, (total, log) => total + log.xp);
     final maxDaily = last7.fold<int>(1, (m, d) { final n = daily[_key(d)] ?? 0; return n > m ? n : m; });
     final sortedHabits = byHabit.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
     final monthLogs = logs.where((log) =>
         log.date.year == month.year && log.date.month == month.month).toList();
     final monthDays = monthLogs.map((log) => _key(log.date)).toSet().length;
-    final monthXp = monthLogs.fold<int>(0, (sum, log) => sum + log.xp);
+    final monthXp = monthLogs.fold<int>(0, (total, log) => total + log.xp);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final offset = DateTime(month.year, month.month, 1).weekday - 1;
     return Scaffold(
