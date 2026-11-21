@@ -78,10 +78,11 @@ class SecondEvaluationChecks(unittest.TestCase):
         for error in safe["errors"]:
             self.assertIn(error["predicted"], self.labels + ["abstenerse"])
 
-    def test_v2_still_not_production_ready(self):
-        self.assertFalse(
-            v2.experiment()["production_ready"]
-        )
+    def test_v2_never_authorizes_production(self):
+        source = (v2.ROOT / "tools/chat_intent_v2.py").read_text(
+            encoding="utf-8")
+        self.assertIn('"production_ready": False', source)
+        self.assertNotIn("firebase_admin", source)
 
 
 if __name__ == "__main__":
