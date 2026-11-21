@@ -62,6 +62,8 @@ jobs:
           elif [[ "$code" -ne 0 ]]; then
             exit "$code"
           fi
+      - name: Audit recognition separately from safe routing
+        run: python3 tools/chat_intent_policy_report.py
       - name: Upload benchmark reports (not for production)
         uses: actions/upload-artifact@v4
         with:
@@ -70,5 +72,6 @@ jobs:
             outputs/mr_healthy_intent_report_v1.json
             outputs/mr_healthy_intent_comparison_v1.json
             outputs/mr_healthy_intent_v2_report.json
+            outputs/mr_healthy_intent_policy_audit_v2.json
           retention-days: 14
           if-no-files-found: error
