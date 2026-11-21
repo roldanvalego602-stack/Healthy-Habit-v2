@@ -111,7 +111,9 @@ class CatalogoExplorador {
 
   static String grupoAlimento(CatalogoItem item) {
     final explicit = item.detalles['Grupo del plato'];
-    if (explicit != null && explicit.isNotEmpty) return explicit;
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
+    }
     switch (item.id) {
       case 'avena': return 'Cereales integrales';
       case 'lentejas': return 'Leguminosas';
@@ -123,11 +125,17 @@ class CatalogoExplorador {
   static String zonaEjercicio(CatalogoItem item) {
     final tags = item.etiquetas;
     final muscular = normalizar(item.detalles['Grupo muscular'] ?? '');
-    if (tags.contains('Flexibilidad')) return 'Flexibilidad';
+    if (tags.contains('Flexibilidad')) {
+      return 'Flexibilidad';
+    }
     if (tags.contains('Brazos') || tags.contains('Pecho') ||
-        muscular.contains('brazos')) return 'Tren superior';
+        muscular.contains('brazos')) {
+      return 'Tren superior';
+    }
     if (tags.contains('Piernas') || tags.contains('Glúteos') ||
-        muscular.contains('piernas')) return 'Tren inferior';
+        muscular.contains('piernas')) {
+      return 'Tren inferior';
+    }
     if (tags.contains('Zona media') || muscular.contains('zona media')) {
       return 'Zona media';
     }
@@ -135,11 +143,19 @@ class CatalogoExplorador {
   }
 
   static String grupoExploracion(CatalogoItem item) {
-    if (item.categoria == 'Alimentos') return grupoAlimento(item);
-    if (item.categoria == 'Ejercicios') return zonaEjercicio(item);
+    if (item.categoria == 'Alimentos') {
+      return grupoAlimento(item);
+    }
+    if (item.categoria == 'Ejercicios') {
+      return zonaEjercicio(item);
+    }
     if (item.etiquetas.contains('Sueño') ||
-        item.etiquetas.contains('Recuperación')) return 'Sueño y recuperación';
-    if (item.etiquetas.contains('Seguridad')) return 'Prevención y seguridad';
+        item.etiquetas.contains('Recuperación')) {
+      return 'Sueño y recuperación';
+    }
+    if (item.etiquetas.contains('Seguridad')) {
+      return 'Prevención y seguridad';
+    }
     return 'Bienestar cotidiano';
   }
 }
