@@ -90,6 +90,20 @@ void main() {
       expect(reply?.knowledgeId, 'huevo_jamon');
     });
 
+    test('«prepararlo con jamón» comprende un pronombre de seguimiento', () async {
+      final reply = await knowledge.answer('¿Puedo prepararlo con jamón?',
+        operational: const HealthyAssistantReply(''),
+        lastKnowledgeId: 'huevo_seguridad');
+      expect(reply?.knowledgeId, 'huevo_jamon');
+    });
+
+    test('seguridad del huevo ofrece enlace permitido a la FDA', () async {
+      final reply = await knowledge.answer('¿El huevo me hace daño?',
+        operational: const HealthyAssistantReply(''));
+      expect(reply?.action, 'source');
+      expect(reply?.actionArgument, startsWith('https://www.fda.gov/'));
+    });
+
     test('«y si me hace daño» retiene contexto sin repetir ficha', () async {
       final reply = await knowledge.answer('¿Y si me hace daño?',
         operational: const HealthyAssistantReply(''),
