@@ -43,8 +43,12 @@ class ComparisonChecks(unittest.TestCase):
 
     def test_model_abstains_with_unseen_tokens(self):
         model = comparison.MultinomialNaiveBayes.fit(self.fit, self.labels)
-        result = model.predict("xyzzzzyx xyzxyzzyyyy abczzzz")
+        result = model.predict("🪐☄️")
         self.assertEqual(result["intent"], "abstenerse")
+        # Cualquier frase, incluso si está en vocabulario, puede
+        # rechazarse mediante umbrales estrictos.
+        strict = model.predict("Quiero revisar mis monedas", 1.1, 1.1)
+        self.assertEqual(strict["intent"], "abstenerse")
 
     def test_probabilities_do_not_authorize_sensitive_actions(self):
         model = comparison.MultinomialNaiveBayes.fit(self.fit, self.labels)
