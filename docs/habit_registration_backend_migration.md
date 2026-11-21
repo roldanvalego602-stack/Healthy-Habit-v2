@@ -335,6 +335,69 @@ piloto, esto **no constituye seguridad de producción**. Falta
 reconciliar flujos de Flutter, reglas Firestore y permisos de escritura
 en un mismo despliegue controlado.
 
+## Undécimo paso: reglas estrictas aisladas y auditoría de compatibilidad
+
+Se añadió **`firestore.strict-habits.rules`**, derivado de la candidata,
+como un escenario estricto **separado** para Firestore Emulator. Ni
+`firebase.json` ni `firebase.emulator.json` se modificaron. El
+archivo `firebase.strict-habits.emulator.json` selecciona exclusivamente
+esta variante. No desplegarla todavía.
+
+### Cambios de autorización en el escenario estricto
+
+- `users/{uid}`: el propietario conserva lectura y edición de datos
+  personales básicos y cosméticos permitidos, pero no puede cambiar
+  `xp`, `currentXp`, `level`, `habitCoins`, `habitSlots`,
+  `habitMutationVersion`, rachas, calendario ni inventario. La
+  eliminación del perfil queda bloqueada para impedir restablecer saldos
+  mediante borrado y recreación.
+- `users/{uid}/user_habits/{path=**}`: el propietario puede leer,
+  pero no crear, modificar ni eliminar hábitos, intentos, logs y
+  contadores. Solo Admin SDK podrá mantenerlos en esta variante.
+- `users/{uid}/achievements/{path=**}`: lectura del propietario;
+  sin escritura cliente para premios.
+- `public_profiles/{uid}`: los campos de XP, nivel, rachas, hábitos
+  completados y predicciones de logro quedan inmóviles frente a
+  actualizaciones del propietario. Las altas nuevas solo permiten
+  métricas iniciales nulas y prohíben estadísticas de nivel/logro
+  inventadas. La eliminación también queda bloqueada.
+- Las subcolecciones `habit_activation_operations`,
+  `habit_cancellation_operations` y `registration_operations`
+  no reciben permisos de escritura cliente; siguen controladas por
+  el servidor.
+
+### Compatibilidad pendiente con Flutter
+
+Estas reglas **romperían intencionalmente** operaciones actuales:
+activación/cancelación por `HabitActionService`, registro desde
+`registrar_habito_screen.dart`, compra desde la tienda y actualización
+de XP/rachas/recompensas y estadísticas públicas por el cliente.
+Las compras de la tienda necesitan una API de servidor y pruebas
+antifraude antes de activar esta variante. Las reglas sociales,
+lecturas de hábitos, cosméticos ya adquiridos, creación inicial de
+perfil y cambios básicos de datos personales mantienen su estructura.
+
+La suite `tests/firestore/strict_habits.test.cjs` contiene nueve
+pruebas de acceso, falsificación de progreso, economía, premios,
+métricas públicas, operaciones privadas y compatibilidad de lecturas
+y personalización. Ejecutar **por separado** desde la raíz:
+
+```bash
+firebase emulators:exec \
+  --config firebase.strict-habits.emulator.json \
+  --project demo-healthy-habit-strict \
+  --only firestore \
+  "cd tests/firestore && npm run test:strict"
+```
+
+Este entorno utiliza otro proyecto demo y otras reglas; **no mezclar**
+con las pruebas anteriores `tests/firestore/rules.test.cjs`.
+Aunque pasen todas las pruebas, eso no autoriza un despliegue:
+faltan migrar la tienda, los flujos directos de Flutter, y la fuente
+del ranking público. Las reglas estrictas son una especificación
+ejecutable de la seguridad deseada, no todavía una configuración
+lista para producción.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
