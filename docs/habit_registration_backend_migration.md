@@ -174,6 +174,51 @@ los días de gracia, las rachas ni las evidencias. No deben habilitarse
 otros hábitos ni considerarse confiable la popularidad global hasta
 completar esas condiciones y bloquear las escrituras cliente.
 
+## Séptimo paso: calendario IANA, rachas y tolerancias (piloto)
+
+`functions/habit_calendar_policy.js` determina días civiles y semanas ISO
+en una zona IANA explícita (por ejemplo `America/Monterrey`) usando
+`Intl.DateTimeFormat`. No utiliza el huso horario del dispositivo cliente.
+Las pruebas incluyen medianoche UTC, horario de verano, semanas que
+cruzan el año, periodos omitidos y fechas inválidas.
+
+El piloto de escritura admite `calendarTimeZone` en el documento del
+**intento**. Cuando es distinto de `UTC`, exige que el mismo valor
+esté presente en el documento de usuario y en el hábito. No acepta
+la zona desde `request.data`. Los intentos antiguos sin zona explícita
+permanecen en UTC para no cambiar silenciosamente sus contadores;
+en particular `hidr_001` conserva las marcas de día heredadas y no
+acepta todavía una zona distinta de UTC.
+
+Cada intento mantiene una racha de **periodos completados**, separada de
+la racha global actual de Flutter:
+- `periodStreak`: incrementa solo cuando el contador del periodo
+  alcanza el cupo del catálogo (1, 2 o 3 registros del piloto).
+- `lastCompletedPeriod`: clave del último periodo completado.
+- `gracePeriodsUsed`: número acumulado de periodos omitidos tolerados
+  por el piloto, solo informativo; no entrega XP ni monedas.
+- La tolerancia `gracePeriods` viene del catálogo; si se omiten más
+  periodos que los tolerados, la racha del intento se reinicia a uno.
+
+Los tres campos se actualizan con la transacción que concede XP por
+registro, sin recompensar adicionalmente una tolerancia o completar el
+periodo. **No se aplica ningún cambio a `currentStreak` o
+`lastStreakDate` del perfil**, porque aún falta conciliar la semántica
+de racha global de Flutter.
+
+Las nuevas pruebas están en
+`functions/tests/habit_calendar_policy.test.js`, en el conjunto unitario
+de transacciones y en `functions/tests/habit_registration.integration.js`.
+
+**Límite de seguridad:** los documentos actuales de hábitos, intentos
+y perfil pueden ser escritos desde el cliente según las reglas
+candidatas. El bloqueo de zona se realiza como validación de consistencia,
+**no como garantía criptográfica de integridad**. Para producción deberá
+fijarse la zona mediante una operación administrada, manejar cambios de
+zona con un procedimiento de migración y proteger los campos de rachas
+y economía con reglas revisadas. El piloto solo se ejecuta en el
+emulador con proyecto demo; no publicarlo en producción.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
