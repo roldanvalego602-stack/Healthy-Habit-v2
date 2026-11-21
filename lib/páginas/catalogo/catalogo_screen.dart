@@ -5,6 +5,7 @@ import 'datos/catalogo_datos.dart';
 import 'detalles/catalogo_detalle_screen.dart';
 import 'modelos/catalogo_item.dart';
 import 'catalogo_explorador.dart';
+import 'catalogo_mapas.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -25,6 +26,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
   VistaCatalogo _vista = VistaCatalogo.lista;
   OrdenCatalogo _orden = OrdenCatalogo.relevancia;
   final Set<String> _comparar = <String>{};
+  String? _grupoVisual;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
           _filtro = 'Todos';
           _orden = OrdenCatalogo.relevancia;
           _comparar.clear();
+          _grupoVisual = null;
           _buscador.clear();
         });
       }
@@ -90,7 +93,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         ),
       );
 
-  Widget _imagen(CatalogoItem item, double altura) => ClipRRect(
+  Widget _imagen(CatalogoItem item, double altura) =>
+      item.imagen.isEmpty ? _imagenAlternativa(item, altura) : ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: item.imagen.endsWith('.svg')
             ? SvgPicture.asset(
@@ -211,8 +215,18 @@ class _CatalogoScreenState extends State<CatalogoScreen>
   );
 
   Widget _vistaExplorar(List<CatalogoItem> resultados) {
+    final elegidos = resultados.where((item) {
+      if (_grupoVisual == null) return true;
+      if (_tabs.index == 0) {
+        return CatalogoExplorador.grupoPlato(item) == _grupoVisual;
+      }
+      if (_tabs.index == 1) {
+        return CatalogoExplorador.zonaEjercicio(item) == _grupoVisual;
+      }
+      return true;
+    }).toList();
     final grupos = <String, List<CatalogoItem>>{};
-    for (final item in resultados) {
+    for (final item in elegidos) {
       grupos.putIfAbsent(CatalogoExplorador.grupoExploracion(item), () => [])
           .add(item);
     }
@@ -229,6 +243,24 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             ? 'Agrupación orientativa. No representa porciones ni una dieta.'
             : 'Elige un objetivo para conocer sus elementos.',
             style: TextStyle(color: _gris, fontSize: 12)),
+        const SizedBox(height: 14),
+        if (_tabs.index == 0)
+          MapaPlatoCatalogo(
+            seleccionado: _grupoVisual,
+            onSeleccionar: (value) =>
+                setState(() => _grupoVisual = value),
+          ),
+        if (_tabs.index == 1)
+          MapaMovimientoCatalogo(
+            seleccionado: _grupoVisual,
+            onSeleccionar: (value) =>
+                setState(() => _grupoVisual = value),
+          ),
+        if (_grupoVisual != null) ...[
+          const SizedBox(height: 14),
+          Text('${elegidos.length} elementos · $_grupoVisual',
+            style: TextStyle(color: _verde, fontWeight: FontWeight.w800)),
+        ],
         const SizedBox(height: 14),
         for (final group in grupos.entries) ...[
           Container(
@@ -433,8 +465,10 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               borderRadius: BorderRadius.circular(12),
               isSelected: [for (final value in VistaCatalogo.values)
                 value == _vista],
-              onPressed: (index) => setState(
-                  () => _vista = VistaCatalogo.values[index]),
+              onPressed: (index) => setState(() {
+                _vista = VistaCatalogo.values[index];
+                _grupoVisual = null;
+              }),
               children: const [
                 Tooltip(message: 'Lista', child: Icon(Icons.view_list, size: 19)),
                 Tooltip(message: 'Imágenes', child: Icon(Icons.grid_view, size: 19)),
@@ -457,7 +491,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         Expanded(child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 240),
           child: KeyedSubtree(
-            key: ValueKey('${_tabs.index}-$_vista-$_filtro-$_orden-${_buscador.text}'),
+            key: ValueKey('${_tabs.index}-$_vista-$_filtro-$_orden-${_buscador.text}-$_grupoVisual'),
             child: lista,
           ),
         )),
