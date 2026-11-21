@@ -34,8 +34,20 @@ void main() {
       home: Scaffold(body: GuiaPasosCatalogo(item: item)),
     ));
     expect(find.text('Paso 1 de 3'), findsOneWidget);
-    expect(tester.widget<TextButton>(find.widgetWithText(
-      TextButton, 'Anterior')).onPressed, isNull);
+    // TextButton.icon puede crear una subclase de TextButton: byType
+    // exige coincidencia exacta y no la encuentra. Verificamos por tipo.
+    final anterior = find.byWidgetPredicate(
+      (widget) => widget is TextButton &&
+          widget.onPressed == null,
+      description: 'botón Anterior deshabilitado al inicio',
+    );
+    expect(anterior, findsOneWidget);
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 2 de 3'), findsOneWidget);
+    await tester.tap(find.text('Anterior'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 1 de 3'), findsOneWidget);
     await tester.tap(find.text('Siguiente'));
     await tester.pumpAndSettle();
     expect(find.text('Paso 2 de 3'), findsOneWidget);
