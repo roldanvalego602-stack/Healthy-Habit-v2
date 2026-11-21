@@ -19,7 +19,8 @@ Rama: `feature/habits-discovery-routines`
 5. El feed ahora consulta amigos en lugar de `following` y muestra
    datos reales publicados en `public_profiles`: nivel, racha
    (cuando se permite), XP, hábitos completados y próximo logro cuando
-   exista. No lee listas privadas de hábitos ni fotografías de evidencia.
+   exista. También muestra hasta tres logros destacados deducidos de
+   métricas publicadas y respeta `visibilidadLogros: Solo yo`. No lee listas privadas de hábitos ni fotografías de evidencia.
 6. Las reacciones comprueban la identidad del remitente, amistad
    vigente y preferencia `permitirReacciones` antes de enviar.
    Se conserva el panel de reacciones recibidas y marcar como leída.
