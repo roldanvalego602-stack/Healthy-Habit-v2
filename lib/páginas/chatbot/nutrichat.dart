@@ -13,6 +13,7 @@ import 'nutri_respuestas_service.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_hybrid_knowledge.dart';
+import 'healthy_intent_router.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
@@ -85,6 +86,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final HealthyChatHistory _history = const HealthyChatHistory();
   String? _sessionId;
   String _lastTopic = '';
+  String _lastKnowledgeId = '';
   String _lastHabitTitle = '';
   String _lastShopItemId = '';
   bool _historyLoading = false;
@@ -277,6 +279,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
+      _lastKnowledgeId = '';
+        _lastKnowledgeId = '';
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -318,6 +322,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _manuallyStartedNew = true;
       _sessionId = null;
       _lastTopic = '';
+      _lastKnowledgeId = '';
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -655,7 +660,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
             response = error.message;
           }
         } else {
-          final requiresProfile = NutriRespuestasService.contiene(normalized, [
+          final requiresProfile = HealthyIntentRouter.asksForCoinBalance(text) ||
+              NutriRespuestasService.contiene(normalized, [
             'mi perfil','mis datos','mis estadisticas','mi progreso',
             'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
             'mis habitos','habitos activos','que habitos tengo',
@@ -696,11 +702,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
             } else {
               final educational = await _hybridKnowledge.answer(
                 text, operational: intent,
+                lastKnowledgeId: _lastKnowledgeId,
               );
               if (educational != null) {
                 intent = educational;
                 response = educational.text;
+                _lastKnowledgeId = educational.knowledgeId;
               } else {
+                _lastKnowledgeId = '';
                 response = _conversation.reply(
                       text,
                       name: _primerNombre,
@@ -710,6 +719,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       text, nombre: _primerNombre, perfil: _perfil);
               }
             }
+            if (intent.card != 'knowledge') _lastKnowledgeId = '';
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
