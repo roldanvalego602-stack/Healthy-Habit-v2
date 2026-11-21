@@ -7,6 +7,7 @@ import 'package:healthy_habit/p%C3%A1ginas/sesion/olvidar_contrasena.dart';
 import 'package:healthy_habit/servicios/autenticacion_servicio.dart';
 
 import 'signup_screen.dart';
+import '../../servicios/shop_demo_bootstrap.dart';
 import 'terminos_condiciones_screen.dart';
 import 'sobre_nosotros_screen.dart';
 
@@ -113,6 +114,25 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ocurrió un error al iniciar sesión.')),
       );
+    }
+  }
+
+  Future<void> _handleDemoLogin() async {
+    if (_isLoading || !ShopDemoBootstrap.officialHabitsEnabled) return;
+    setState(() => _isLoading = true);
+    try {
+      final user = await _authService.signInToIsolatedDemo();
+      if (!mounted || user == null) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen2()),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('No se pudo iniciar sesión de prueba: $error'),
+      ));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -334,10 +354,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 22),
 
-              SizedBox(
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _handleGoogleLogin,
+              if (ShopDemoBootstrap.officialHabitsEnabled)
+                SizedBox(
+                  height: 56,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading ? null : _handleDemoLogin,
+                    icon: const Icon(Icons.science_outlined),
+                    label: const Text('Entrar al entorno de pruebas'),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _handleGoogleLogin,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: HealthyAdaptive.surface,
                     side: BorderSide(color: AppColors.fieldBorder),
