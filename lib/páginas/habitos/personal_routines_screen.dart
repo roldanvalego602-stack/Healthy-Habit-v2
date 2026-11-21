@@ -268,7 +268,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
   Future<void> _create() async {
     final routine = await Navigator.push<PersonalRoutine>(
       context,
-      MaterialPageRoute(builder: (_) => const _RoutineEditor()),
+      MaterialPageRoute(builder: (_) => const PersonalRoutineEditor()),
     );
     if (routine == null || !mounted) return;
     try {
@@ -283,7 +283,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
     final edited = await Navigator.push<PersonalRoutine>(
       context,
       MaterialPageRoute(
-        builder: (_) => _RoutineEditor(
+        builder: (_) => PersonalRoutineEditor(
           existing: routine,
           singleGoal: routine.dailyGoal,
         ),
@@ -307,7 +307,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
     final goal = await Navigator.push<PersonalRoutine>(
       context,
       MaterialPageRoute(
-        builder: (_) => const _RoutineEditor(singleGoal: true),
+        builder: (_) => const PersonalRoutineEditor(singleGoal: true),
       ),
     );
     if (goal == null || !mounted) return;
@@ -678,17 +678,17 @@ class PersonalRoutineTemplates {
   ];
 }
 
-class _RoutineEditor extends StatefulWidget {
-  const _RoutineEditor({this.existing, this.singleGoal = false});
+class PersonalRoutineEditor extends StatefulWidget {
+  const PersonalRoutineEditor({this.existing, this.singleGoal = false});
 
   final PersonalRoutine? existing;
   final bool singleGoal;
 
   @override
-  State<_RoutineEditor> createState() => _RoutineEditorState();
+  State<PersonalRoutineEditor> createState() => _PersonalRoutineEditorState();
 }
 
-class _RoutineEditorState extends State<_RoutineEditor> {
+class _PersonalRoutineEditorState extends State<PersonalRoutineEditor> {
   final _title = TextEditingController();
   final _stepName = TextEditingController();
   final _goal = TextEditingController(text: '10');
