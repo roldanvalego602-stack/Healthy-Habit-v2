@@ -493,7 +493,11 @@ test('datos privados: otra cuenta no puede escribir evidencias', async () => {
 test('datos privados: propietario puede escribir evidencias temporales', async () => {
   await assertSucceeds(setDoc(doc(as('alice'),
     'users/alice/temporary_habit_evidence/uno'), {
-    imageBase64: 'x', expiresAt: new Date(),
+    userId: 'alice', habitId: 'agua', attemptId: 'intento',
+    logId: 'uno', imageBase64: 'AQID',
+    contentType: 'image/jpeg',
+    createdAt: serverTimestamp(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   }));
 });
 
@@ -566,6 +570,7 @@ function publicProfile() {
 }
 
 test('perfil público: puede crearse con campos válidos', async () => {
+  await seedUser();
   await assertSucceeds(setDoc(doc(as('alice'),
     'public_profiles/alice'), publicProfile()));
 });
@@ -584,11 +589,13 @@ test('perfil público: no puede editarse el perfil de otro usuario', async () =>
 });
 
 test('perfil público: no pueden publicarse claves desconocidas', async () => {
+  await seedUser();
   await assertFails(setDoc(doc(as('alice'), 'public_profiles/alice'),
     { ...publicProfile(), isAdministrator:true }));
 });
 
 test('perfil público: el titular no debe poder falsificar su XP público', async () => {
+  await seedUser();
   await assertFails(setDoc(doc(as('alice'), 'public_profiles/alice'),
     { ...publicProfile(), xp:999999 }));
 });
