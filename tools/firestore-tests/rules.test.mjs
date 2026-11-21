@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { doc, getDoc, setDoc, writeBatch, serverTimestamp, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
-const rulesPath = resolve(process.cwd(), 'firestore.candidate.rules');
+const rulesPath = resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname);
 let env;
 const as = (uid) => env.authenticatedContext(uid).firestore();
 
