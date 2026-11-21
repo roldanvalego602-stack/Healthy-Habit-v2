@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
@@ -210,8 +209,17 @@ def evaluate(model: CentroidClassifier, samples: list[dict],
     ]
     dangerous = [
         item for item in mistakes
-        if item["expected"] == "eliminar_cuenta" and
-        item["predicted"] == "eliminar_habito"
+        if (
+            item["expected"] == "eliminar_cuenta" and
+            item["predicted"] == "eliminar_habito"
+        ) or (
+            item["expected"] in {"ambiguo_necesita_aclaracion",
+                                "fuera_de_alcance"} and
+            item["predicted"] in {"eliminar_cuenta", "eliminar_habito"}
+        ) or (
+            item["expected"] == "editar_perfil" and
+            item["predicted"] == "eliminar_cuenta"
+        )
     ]
     return {"total": len(samples), "correct": correct,
             "accuracy": round(correct / len(samples), 4),
@@ -219,7 +227,12 @@ def evaluate(model: CentroidClassifier, samples: list[dict],
             "abstentions": abstentions,
             "macro_f1": round(sum(p["f1"] for p in by_class.values()) /
                               len(by_class), 4),
-            "critical_account_to_habit_errors": dangerous,
+            "critical_account_to_habit_errors": [
+                e for e in dangerous
+                if e["expected"] == "eliminar_cuenta" and
+                e["predicted"] == "eliminar_habito"
+            ],
+            "critical_routing_errors": dangerous,
             "by_class": by_class, "confusion": confusion, "errors": mistakes}
 
 
@@ -286,13 +299,13 @@ def main() -> int:
         len(training), len(dev), len(evaluation)))
     print("Exactitud test: {accuracy:.1%} | macro-F1: {macro_f1:.3f} | "
           "cobertura: {coverage:.1%} | abstenciones: {abstentions}".format(**result))
-    print("Errores críticos cuenta→hábito: {}".format(
-        len(result["critical_account_to_habit_errors"])))
+    print("Errores críticos de enrutamiento: {}".format(
+        len(result["critical_routing_errors"])))
     print("Modelo:", args.model)
     print("Informe:", args.report)
     # Falta de calidad NO elimina el reporte: el equipo puede analizar errores.
     # Código 2 indica que no debe proponerse integración como decisor único.
-    if result["critical_account_to_habit_errors"] or result["macro_f1"] < 0.7:
+    if result["critical_routing_errors"] or result["macro_f1"] < 0.85:
         print("REVISAR: métricas insuficientes para integración.", file=sys.stderr)
         return 2
     return 0
