@@ -4,6 +4,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import '../../servicios/shop_demo_bootstrap.dart';
+
 /// Puente experimental: nunca envía precios ni saldos al servidor.
 /// Requiere Firebase Auth, Firestore y Functions en un proyecto DEMO.
 class DemoShopPurchaseGateway {
@@ -51,8 +53,13 @@ class DemoShopPurchaseGateway {
     if (user == null) {
       throw StateError('Inicia sesión de prueba para comprar artículos.');
     }
-    if (emulatorHost.isEmpty || emulatorPort < 1 || emulatorPort > 65535) {
-      throw StateError('Configuración del emulador inválida.');
+    ShopDemoBootstrap.validateMode(
+      ShopDemoBootstrap.enabled, requested);
+    ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
+    ShopDemoBootstrap.validateHost(emulatorHost);
+    if (emulatorHost != ShopDemoBootstrap.host ||
+        emulatorPort != 5001) {
+      throw StateError('Host o puerto de Functions distinto del entorno demo.');
     }
     final key = '${user.uid}:$itemId';
     final operationId = _pending.putIfAbsent(key, _newOperationId);
