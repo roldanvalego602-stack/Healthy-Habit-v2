@@ -425,7 +425,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                   key: const ValueKey('personal-goal-create'),
                   onPressed: _createGoal,
                   icon: const Icon(Icons.flag_outlined),
-                  label: const Text('Crear meta personal'),
+                  label: const Text('Crear meta (una actividad)'),
                 ),
                 const SizedBox(height: 24),
                 if (_routines.isEmpty)
