@@ -1,0 +1,487 @@
+// REGLAS ESTRICTAS EXPERIMENTALES: SOLO PARA PRUEBAS EN EMULADOR.
+// No usar con Flutter actual: sus escrituras directas de economía,
+// hábitos, compras y estadísticas se rechazarán deliberadamente.
+// Probar por separado de firestore.candidate.rules; NO desplegar.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function authenticated() {
+      return request.auth != null;
+    }
+    function owner(uid) {
+      return authenticated() && request.auth.uid == uid;
+    }
+
+    function socialPayload() {
+      return request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.keys().hasAll(['createdAt'])
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function incomingRef(recipient, sender) {
+      return /databases/$(database)/documents/users/$(recipient)/solicitudes/$(sender);
+    }
+
+    function sentRef(sender, recipient) {
+      return /databases/$(database)/documents/users/$(sender)/solicitudes_enviadas/$(recipient);
+    }
+
+    function followingRef(follower, target) {
+      return /databases/$(database)/documents/users/$(follower)/following/$(target);
+    }
+
+    function followerRef(target, follower) {
+      return /databases/$(database)/documents/users/$(target)/followers/$(follower);
+    }
+
+    // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
+    function shopPrice(id) {
+      return {
+        'avatar_frame': 120,
+        'banner': 120,
+        'streak_guard': 300,
+        'achievement_display': 200,
+        'elite_avatar': 140,
+        'mint_scarf': 180,
+        'cap': 100,
+        'crown': 180,
+        'mint_aura': 120,
+        'cape': 200,
+        'pixel_glasses': 80,
+        'cat_ears': 150,
+        'sports_headband': 70,
+        'leaf_headphones': 140,
+        'leaf_hoodie': 200,
+        'wellness_medal': 100,
+        'water_bottle': 90,
+        'leaf_backpack': 170
+      }.get(id, -1);
+    }
+
+    // Separar la validación de tipos evita evaluar removeAll() sobre
+    // listas ausentes o valores malformados. Firestore usa cortocircuito.
+    function validInventoryChange() {
+      return request.resource.data.keys().hasAll(['shopInventory', 'habitCoins'])
+        && resource.data.keys().hasAll(['habitCoins'])
+        && request.resource.data.shopInventory is list
+        && resource.data.get('shopInventory', []) is list
+        && request.resource.data.habitCoins is int
+        && resource.data.habitCoins is int
+        && validInventoryDetails();
+    }
+
+    function validInventoryDetails() {
+      let beforeItems = resource.data.get('shopInventory', []);
+      let afterItems = request.resource.data.shopInventory;
+      let additions = afterItems.removeAll(beforeItems);
+      let price = additions.size() == 1 ? shopPrice(additions[0]) : -1;
+      return afterItems.hasAll(beforeItems)
+        && afterItems.size() == beforeItems.size() + 1
+        && additions.size() == 1
+        && price > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'shopInventory'])
+        && resource.data.habitCoins >= price
+        && request.resource.data.habitCoins == resource.data.habitCoins - price;
+    }
+
+    // El alta inicial coincide con FirebaseService.saveUserData.
+    // No se aceptan saldos ni XP iniciales determinados por el cliente.
+    function validInitialUser(uid) {
+      return owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.username is string
+        && request.resource.data.username.size() > 0
+        && request.resource.data.username.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.level == 1
+        && request.resource.data.xp == 0
+        && request.resource.data.habitCoins == 100
+        && request.resource.data.currentStreak == 0
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Validar *todas* las ranuras, no solo la que cambió. Se permiten los
+    // dos cosméticos gratuitos, sin agregarlos al inventario de pago.
+    function validEquippedSlot(look, inventory, slot, ids) {
+      return !(slot in look)
+        || (look[slot] in ids
+          && (inventory.hasAny([look[slot]])
+            || look[slot] in ['sunglasses', 'bandana']));
+    }
+
+    function validEquipped() {
+      return request.resource.data.shopEquipped is map
+        && request.resource.data.get('shopInventory', []) is list
+        && validEquippedDetails();
+    }
+
+    function validEquippedDetails() {
+      let look = request.resource.data.shopEquipped;
+      let inventory = request.resource.data.get('shopInventory', []);
+      return look.keys().hasOnly([
+          'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano'
+        ])
+        && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame'])
+        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner'])
+        && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
+        && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar'])
+        && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
+        && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones'])
+        && validEquippedSlot(look, inventory, 'aura', ['mint_aura'])
+        && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack'])
+        && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
+        && validEquippedSlot(look, inventory, 'mano', ['water_bottle']);
+    }
+
+    // Descuento por abandono: requiere que los DOS documentos del hábito
+    // cambien en el mismo commit, y que el intento estuviera en progreso.
+    // El catálogo de la app solo penaliza hábitos de dificultad Difícil.
+    function cancellationHabitPath(uid, habitId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId);
+    }
+
+    function cancellationAttemptPath(uid, habitId, attemptId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId)/attempts/$(attemptId);
+    }
+
+    function validHabitCancellation(uid) {
+      let marker = request.resource.data.get('habitCancellation', {});
+      return marker is map
+        && marker.keys().hasOnly(['habitId', 'attemptId', 'version'])
+        && marker.keys().hasAll(['habitId', 'attemptId', 'version'])
+        && marker.habitId is string
+        && marker.attemptId is string
+        && marker.version is int
+        && marker.habitId.size() > 0
+        && marker.attemptId.size() > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'habitMutationVersion', 'habitCancellation'])
+        && resource.data.get('habitMutationVersion', 0) is int
+        && request.resource.data.habitMutationVersion
+          == resource.data.get('habitMutationVersion', 0) + 1
+        && marker.version == request.resource.data.habitMutationVersion
+        && resource.data.habitCoins is int
+        && resource.data.habitCoins > 0
+        && validCancellationDocuments(uid, marker.habitId, marker.attemptId);
+    }
+
+    function validCancellationDocuments(uid, habitId, attemptId) {
+      let habitPath = cancellationHabitPath(uid, habitId);
+      let attemptPath = cancellationAttemptPath(uid, habitId, attemptId);
+      let habitBefore = get(habitPath).data;
+      let habitAfter = getAfter(habitPath).data;
+      let attemptBefore = get(attemptPath).data;
+      let attemptAfter = getAfter(attemptPath).data;
+      let fee = resource.data.habitCoins < 25
+        ? resource.data.habitCoins : 25;
+      return habitBefore.get('difficulty', '') == 'Difícil'
+        && habitBefore.get('lastAttemptId', '') == attemptId
+        && habitBefore.get('lastStatus', '') == 'inProgress'
+        && habitAfter.get('lastStatus', '') == 'cancelled'
+        && habitAfter.get('latestStatus', '') == 'cancelled'
+        && habitAfter.get('updatedAt', null) == request.time
+        && habitAfter.diff(habitBefore).affectedKeys()
+          .hasOnly(['lastStatus', 'latestStatus', 'updatedAt'])
+        && attemptBefore.get('status', '') == 'inProgress'
+        && attemptAfter.get('status', '') == 'cancelled'
+        && attemptAfter.get('cancelledAt', null) == request.time
+        && attemptAfter.get('cancellationPenalty', -1) == fee
+        && attemptAfter.diff(attemptBefore).affectedKeys()
+          .hasOnly(['status', 'cancelledAt', 'cancellationPenalty'])
+        && request.resource.data.habitCoins == resource.data.habitCoins - fee;
+    }
+
+    // Política de transición: datos personales seguros y cambios cosméticos
+    // existentes. XP, monedas, inventario, calendarios y rachas son
+    // exclusivamente de Admin SDK (bypass de reglas).
+    function strictOwnerUpdate(uid) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return owner(uid)
+        && changed.hasOnly([
+          'name', 'username', 'email', 'photoUrl', 'bio',
+          'settings', 'shopEquipped', 'profileAvatarStyle',
+          'profileBanner', 'title'
+        ])
+        && (!changed.hasAny(['shopEquipped']) || validEquipped());
+    }
+
+    function validOwnerUpdate(uid) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let currentBalance = resource.data.get('habitCoins', 0);
+      let nextBalance = request.resource.data.get('habitCoins', 0);
+      let inventoryChanged = changed.hasAny(['shopInventory']);
+      let coinsDecreased = changed.hasAny(['habitCoins'])
+        && currentBalance is int && nextBalance is int
+        && nextBalance < currentBalance;
+      // Seleccionar la vía antes de llamar a validadores profundos.
+      // Una compra inválida nunca debe disparar get()/getAfter() de hábitos.
+      let cancellationChanged = changed.hasAny(['habitCancellation']);
+      return owner(uid)
+        && (!changed.hasAny(['shopEquipped']) || validEquipped())
+        && (
+          (!inventoryChanged && !coinsDecreased && !cancellationChanged)
+          || (inventoryChanged && validInventoryChange() && !cancellationChanged)
+          || (coinsDecreased && !inventoryChanged && cancellationChanged
+            && validHabitCancellation(uid))
+        );
+    }
+
+    // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
+    // verificables. Una escritura del cliente no puede autenticar progreso.
+    function demoChallengeCreate() {
+      return request.resource.data.keys().hasAll([
+        'title', 'status', 'currentProgress', 'totalProgress',
+        'xpReward', 'hcReward', 'demoSeed', 'progressVerified',
+        'progressSource', 'createdAt'
+      ])
+      && request.resource.data.demoSeed == true
+      && request.resource.data.progressVerified == false
+      && request.resource.data.progressSource == 'demo'
+      && request.resource.data.status in ['available', 'locked']
+      && request.resource.data.currentProgress == 0
+      && request.resource.data.totalProgress is int
+      && request.resource.data.totalProgress > 0
+      && request.resource.data.totalProgress <= 365
+      && request.resource.data.xpReward is int
+      && request.resource.data.xpReward >= 0
+      && request.resource.data.xpReward <= 150
+      && request.resource.data.hcReward is int
+      && request.resource.data.hcReward >= 0
+      && request.resource.data.hcReward <= 50
+      && request.resource.data.createdAt == request.time;
+    }
+
+    function demoChallengeAccept() {
+      return resource.data.get('demoSeed', false) == true
+        && resource.data.get('progressVerified', false) == false
+        && resource.data.get('progressSource', '') == 'demo'
+        && resource.data.status == 'available'
+        && request.resource.data.status == 'inProgress'
+        && request.resource.data.acceptedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptedAt']);
+    }
+
+    function trustedChallengeClaim() {
+      return resource.data.get('demoSeed', true) == false
+        && resource.data.get('progressVerified', false) == true
+        && resource.data.get('progressSource', '') == 'habit_records'
+        && resource.data.status == 'completed'
+        && resource.data.currentProgress is int
+        && resource.data.totalProgress is int
+        && resource.data.totalProgress > 0
+        && resource.data.currentProgress >= resource.data.totalProgress
+        && request.resource.data.status == 'claimed'
+        && request.resource.data.claimedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'claimedAt']);
+    }
+
+    match /users/{uid} {
+      allow get: if owner(uid);
+      allow list: if false;
+      allow create: if validInitialUser(uid);
+      allow delete: if false;
+      allow update: if strictOwnerUpdate(uid);
+
+      // Datos privados: sin autorización comodín sobre relaciones sociales.
+      match /user_habits/{path=**} {
+        allow read: if owner(uid);
+        allow write: if false;
+      }
+      match /temporary_habit_evidence/{evidenceId} {
+        allow read, write: if owner(uid);
+      }
+      match /achievements/{path=**} {
+        allow read: if owner(uid);
+        allow write: if false;
+      }
+      match /challenges/{challengeId} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && demoChallengeCreate();
+        allow update: if owner(uid)
+          && (demoChallengeAccept() || trustedChallengeClaim());
+        allow delete: if false;
+      }
+      // Lista de amistades local de la ficha de perfil (no autoritativa).
+      match /friends/{friendId} {
+        allow read, write: if owner(uid);
+      }
+
+      // Solicitudes entrantes: sólo emisor crea; emisor o receptor retira.
+      match /solicitudes/{sender} {
+        allow get, list: if owner(uid);
+        allow create: if authenticated()
+          && request.auth.uid == sender && sender != uid
+          && socialPayload()
+          && getAfter(sentRef(sender, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (request.auth.uid == sender || owner(uid))
+          && !existsAfter(sentRef(sender, uid));
+      }
+
+      // Espejo en la cuenta del emisor de la solicitud.
+      match /solicitudes_enviadas/{recipient} {
+        allow get, list: if owner(uid);
+        allow create: if owner(uid) && uid != recipient
+          && socialPayload()
+          && getAfter(incomingRef(recipient, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == recipient)
+          && !existsAfter(incomingRef(recipient, uid));
+      }
+
+      // following está en la cuenta del seguidor. La relación se crea
+      // únicamente por el receptor de una solicitud pendiente.
+      match /following/{target} {
+        allow get, list: if owner(uid);
+        allow create: if authenticated()
+          && request.auth.uid == target && target != uid
+          && socialPayload()
+          && exists(incomingRef(target, uid))
+          && !existsAfter(incomingRef(target, uid))
+          && getAfter(followerRef(target, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == target)
+          && !existsAfter(followerRef(target, uid));
+      }
+
+      match /followers/{follower} {
+        // La consulta puntual permite verificar si me sigue este usuario;
+        // las listas completas se limitan al propietario.
+        allow get: if owner(uid) ||
+          (authenticated() && request.auth.uid == follower);
+        allow list: if owner(uid);
+        allow create: if owner(uid) && uid != follower
+          && socialPayload()
+          && exists(incomingRef(uid, follower))
+          && !existsAfter(incomingRef(uid, follower))
+          && getAfter(followingRef(follower, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == follower)
+          && !existsAfter(followingRef(follower, uid));
+      }
+    }
+
+    // Perfiles para ranking, búsqueda y vistas públicas. Ningún dato privado.
+    // El propietario aún controla XP: esto NO certifica un ranking anti-trampas.
+    match /public_profiles/{uid} {
+      allow get, list: if authenticated();
+      allow create, update: if owner(uid)
+        && ((resource == null
+          && request.resource.data.xp == 0
+          && request.resource.data.get('currentXp', 0) == 0
+          && request.resource.data.get('level', 1) == 1
+          && request.resource.data.get('currentStreak', 0) == 0
+          && request.resource.data.get('streakDays', 0) == 0
+          && request.resource.data.get('completedHabits', 0) == 0)
+          || (resource != null
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
+              'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
+              'nextAchievementProgress'
+            ])))
+        && request.resource.data.keys().hasOnly([
+          'name', 'username', 'photoUrl', 'profileAvatarStyle', 'profileBanner', 'bio', 'title',
+          'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
+          'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
+          'nextAchievementProgress', 'settings'
+        ])
+        && request.resource.data.keys().hasAll(['name', 'username', 'xp'])
+        && request.resource.data.name is string
+        && request.resource.data.username is string
+        && request.resource.data.get('profileBanner', 'Amanecer')
+          in ['Amanecer', 'Bosque', 'Océano', 'Atardecer']
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        && request.resource.data.get('profileAvatarStyle', 'foto')
+          in ['foto', 'naturaleza', 'agua', 'energia']
+        && request.resource.data.settings is map
+        && request.resource.data.settings.keys().hasOnly([
+          'mostrarRachaAmigos', 'visibilidadLogros'
+        ]);
+      allow delete: if false;
+    }
+
+    // Reacciones entre perfiles: el emisor crea, el destinatario consulta
+    // y puede marcar leído o responder. Nunca se exponen globalmente.
+    match /interactions/{interactionId} {
+      allow get, list: if authenticated()
+        && resource.data.toUid == request.auth.uid;
+      allow create: if authenticated()
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid.size() > 0
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.emoji is string
+        && request.resource.data.emoji.size() <= 16
+        && request.resource.data.emoji.size() > 0
+        && request.resource.data.challengeId is string
+        && request.resource.data.challengeId.size() <= 128
+        && request.resource.data.tipo == 'reaccion'
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt <= request.time
+        && request.resource.data.createdAt >= request.time - duration.value(5, 'm');
+      allow update: if authenticated()
+        && resource.data.toUid == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['leido'])
+            && request.resource.data.leido == true
+          )
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['estado', 'respondedAt'])
+            && request.resource.data.estado in ['aceptado', 'rechazado']
+            && request.resource.data.respondedAt == request.time
+          )
+        );
+      allow delete: if false;
+    }
+
+    // Solo agregados anónimos publicados por procesos con privilegios
+    // administrativos. Nunca se admiten escrituras desde un cliente.
+    // Regla CANDIDATA para probar exclusivamente en el emulador.
+    match /public_habit_popularity/{habitId} {
+      allow get, list: if authenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /system/{path=**} {
+      allow read: if authenticated();
+      allow write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
