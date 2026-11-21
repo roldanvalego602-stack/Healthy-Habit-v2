@@ -730,7 +730,18 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       text, nombre: _primerNombre, perfil: _perfil);
               }
             }
-            if (intent.card != 'knowledge') _chatContext.reset();
+            if (intent.card == 'catalog_item' &&
+                intent.actionArgument == 'huevo') {
+              // El catálogo también puede introducir un tema educativo.
+              // La siguiente pregunta podrá referirse al huevo sin repetirlo.
+              _chatContext.recordEducationalReply(
+                input: text,
+                knowledgeId: 'huevo',
+                previousReference: '',
+              );
+            } else if (intent.card != 'knowledge') {
+              _chatContext.reset();
+            }
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
