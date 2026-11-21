@@ -158,3 +158,39 @@ flutter test test/catalogo_detalle_interactivo_test.dart
 
 Probar visualmente en teléfono angosto y con escala de texto ampliada.
 No se modificó la pestaña de administración ni el backend.
+
+
+## Quinta etapa: comparación adaptativa y estados vacíos
+
+- La comparación anterior, presentada en una sola columna larga, se
+  reemplazó por `CatalogoComparacion`: una hoja inferior con tarjetas
+  desplazables horizontalmente, apta para dos o tres elementos.
+- Cada tarjeta permite abrir su ficha y quitarla de la selección; el
+  encabezado permite limpiar toda la comparación. Los elementos
+  seleccionados se mantienen al abrir una ficha.
+- Los campos se adaptan a alimentos (nutrientes y referencia),
+  ejercicios (grupo muscular, equipo, impacto) o consejos (objetivo,
+  frecuencia y lugar). Los valores inexistentes aparecen como
+  **Sin dato**. En alimentos no se infieren nutrientes.
+- Si la búsqueda no devuelve coincidencias, se presenta un estado
+  vacío con un botón para restablecer consulta, filtro y orden.
+- Se añadieron tres pruebas de widgets en
+  `test/catalogo_comparacion_test.dart` para campos y datos ausentes,
+  callbacks y controles de la comparación.
+
+### Validación sugerida
+
+```bash
+git fetch origin feature/habits-discovery-routines
+git merge --ff-only FETCH_HEAD
+flutter analyze lib/páginas/catalogo
+flutter test test/catalogo_explorador_test.dart
+flutter test test/catalogo_media_test.dart
+flutter test test/catalogo_detalle_interactivo_test.dart
+flutter test test/catalogo_comparacion_test.dart
+```
+
+La prueba de interfaz requiere además comprobar manualmente el
+comportamiento con dos y tres artículos en pantallas estrechas, con
+teclado abierto y escala de texto aumentada. Los cambios no afectan
+el modelo de hábitos, XP, Firebase ni las funciones de administración.
