@@ -99,6 +99,7 @@ class HealthyChatChallengesCard extends StatelessWidget {
               'Todavía no hay desafíos en tu cuenta. '
               'Abre Desafíos para cargar los disponibles.',
             style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12));
+          }
           final active = all.where((d) =>
               d.data()['status'] == 'inProgress').toList();
           final claimable = all.where((d) =>
