@@ -325,3 +325,19 @@ flutter run
 ```
 
 **Limitaciones:** búsquedas con sinónimos no incluidos aún pueden fallar; fichas y procedencia deben recibir revisión editorial antes de distribución; no hay entrenamiento de modelo, conexión a APIs generativas ni recuperación semántica neuronal. No se modificaron reglas de Firestore, XP ni Habit Coins.
+
+## Mr. Healthy — regresiones observadas en Android y correcciones (20-nov-2026)
+
+**Capturas del usuario:** «Cuántos monedas tengo?» no devolvía el saldo; «Quiero borrar mi cuenta» se confundía con abandonar un hábito; el chatbot daba fichas casi idénticas ante preguntas diferentes sobre huevo. En otra captura persiste `Storage: object-not-found`, incidencia independiente del chatbot y pendiente de resolución de bucket/permisos.
+
+**Correcciones en esta rama:**
+- Nuevo clasificador local `healthy_intent_router.dart` con precedencia de **eliminación de cuenta** y **consulta de saldo**. La solicitud de eliminación informa claramente que el borrado integral sigue deshabilitado; jamás toca datos ni redirige a eliminar un hábito.
+- `HealthyAssistantEngine.resolve` presenta el saldo real de `habitCoins` al reconocer variantes «mis monedas», «cuántas monedas», «Habit Coins», «saldo» y «dinero que me queda». `nutrichat.dart` solicita refrescar el perfil antes de responder sobre monedas con esas variantes. No inventa cifras.
+- Dataset educativo de **44 fichas**: cuatro temas nuevos de huevo (riesgo y alergias, huevo con jamón, cocción segura y frecuencia), con referencias oficiales FDA y OMS. El motor de recuperación prima las fichas específicas sobre el resumen general.
+- Contrato `HealthyAssistantReply` incluye `knowledgeId` para continuidad contextual. Preguntas como «¿Y si le pongo jamón?», «¿Y si me hace daño?» o «¿Puedo prepararlo con jamón?» después de hablar del huevo consultan el contexto correcto; «¿Qué más?» propone temas nuevos en vez de repetir el resumen. El contexto se elimina cuando se cambia de tema o conversación.
+- `healthy_assistant_engine.dart` evita interceptar preguntas alimentarias especializadas sobre el huevo con las fichas generales del Catálogo. La acción para abrir fuente oficial permite ahora dominio `www.fda.gov`, junto a OMS y USDA.
+- `test/chatbot/healthy_intent_regression_test.dart` con pruebas de frases tomadas de la experiencia real, variaciones, seguimiento y seguridad de la ruta de eliminación; se mantienen las pruebas existentes de `healthy_hybrid_knowledge_test.dart`.
+
+**Estado:** revisión de código y pruebas de puntuación de búsqueda reproducidas manualmente en la herramienta de trabajo; **Flutter analyze y flutter test todavía no ejecutados en el dispositivo del usuario**. No proclamar pruebas aprobadas sin ejecutar.
+
+**Validar:** `flutter analyze --no-fatal-infos lib`, `flutter test test/chatbot` y sesión Android siguiendo una conversación con cambios de intención. Firestore producción y reglas de Storage permanecen sin cambios.
