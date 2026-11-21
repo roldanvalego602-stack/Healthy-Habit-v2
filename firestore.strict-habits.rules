@@ -389,7 +389,11 @@ service cloud.firestore {
           && request.resource.data.get('level', 1) == 1
           && request.resource.data.get('currentStreak', 0) == 0
           && request.resource.data.get('streakDays', 0) == 0
-          && request.resource.data.get('completedHabits', 0) == 0)
+          && request.resource.data.get('completedHabits', 0) == 0
+          && !request.resource.data.keys().hasAny([
+            'nextLevelXp', 'nextAchievementTitle',
+            'nextAchievementProgress'
+          ]))
           || (resource != null
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
               'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
