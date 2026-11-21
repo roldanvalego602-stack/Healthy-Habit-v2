@@ -19,12 +19,50 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _probando = false;
   bool _sincronizando = false;
+  bool _probandoProgramacion = false;
   late Future<int?> _pendientes;
+  late Future<bool?> _permiso;
+  late Future<bool?> _pruebaPendiente;
 
   @override
   void initState() {
     super.initState();
+    _actualizarDiagnostico();
+  }
+
+  void _actualizarDiagnostico() {
     _pendientes = HealthyRemindersService.instance.pendingCount();
+    _permiso = HealthyRemindersService.instance.notificationsEnabled();
+    _pruebaPendiente =
+        HealthyRemindersService.instance.diagnosticPending();
+  }
+
+  Future<void> _refrescar() async {
+    if (!mounted) return;
+    setState(_actualizarDiagnostico);
+  }
+
+  Future<void> _probarProgramacion() async {
+    if (_probandoProgramacion) return;
+    setState(() => _probandoProgramacion = true);
+    try {
+      final scheduled =
+          await HealthyRemindersService.instance.scheduleDiagnosticTest();
+      _mensaje(scheduled
+          ? 'Prueba programada para dentro de aproximadamente 2 minutos. '
+            'Android puede retrasarla. Cierra la aplicación y comprueba '
+            'las notificaciones del sistema.'
+          : 'No se pudo programar: comprueba el permiso de notificaciones.');
+    } catch (error) {
+      _mensaje('Error de programación en Android: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _probandoProgramacion = false;
+          _actualizarDiagnostico();
+        });
+      }
+    }
   }
 
   DocumentReference<Map<String, dynamic>>? get _userRef {
@@ -48,7 +86,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final ok = await HealthyRemindersService.instance.sendTest();
       _mensaje(ok
-        ? 'Se envió la notificación de prueba a Android.'
+        ? 'Android aceptó la notificación inmediata. Revisa la bandeja.'
         : 'No se pudo enviar. Usa Android y permite notificaciones '
           'en los ajustes del sistema.');
     } catch (error) {
@@ -75,7 +113,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         setState(() {
           _sincronizando = false;
-          _pendientes = HealthyRemindersService.instance.pendingCount();
+          _actualizarDiagnostico();
         });
       }
     }
@@ -166,6 +204,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 );
                               },
                             ),
+                            const SizedBox(height: 10),
+                            FutureBuilder<bool?>(
+                              future: _permiso,
+                              builder: (context, permission) {
+                                if (permission.hasError) {
+                                  return Text('No se pudo comprobar el permiso.',
+                                    style: theme.textTheme.bodySmall);
+                                }
+                                if (!permission.hasData) {
+                                  return Text('Verificando permiso de Android...',
+                                    style: theme.textTheme.bodySmall);
+                                }
+                                return Text(
+                                  permission.data == true
+                                    ? 'Permiso del sistema: concedido'
+                                    : 'Permiso del sistema: desactivado',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed: _refrescar,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Actualizar diagnóstico'),
+                            ),
                             const SizedBox(height: 14),
                             FilledButton.icon(
                               onPressed: () => Navigator.of(context).push(
@@ -200,6 +265,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             icon: const Icon(Icons.notifications_outlined),
                             label: Text(_probando
                               ? 'Enviando...' : 'Enviar aviso de prueba'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            key: const ValueKey('reminders-test-scheduled'),
+                            onPressed: android && !_probandoProgramacion
+                                ? _probarProgramacion : null,
+                            icon: const Icon(Icons.schedule_rounded),
+                            label: Text(_probandoProgramacion
+                              ? 'Programando prueba...'
+                              : 'Probar aviso programado (+2 min)'),
+                          ),
+                          const SizedBox(height: 8),
+                          FutureBuilder<bool?>(
+                            future: _pruebaPendiente,
+                            builder: (context, pending) {
+                              if (pending.hasError) {
+                                return Text('No se pudo consultar la prueba '
+                                  'programada.',
+                                  style: theme.textTheme.bodySmall);
+                              }
+                              if (!pending.hasData) {
+                                return Text('Consultando prueba programada...',
+                                  style: theme.textTheme.bodySmall);
+                              }
+                              return Text(
+                                pending.data == true
+                                  ? 'Prueba programada: pendiente en Android.'
+                                  : 'No hay prueba programada pendiente.',
+                                style: theme.textTheme.bodySmall,
+                              );
+                            },
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
