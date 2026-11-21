@@ -162,6 +162,17 @@ class HealthyRemindersService {
     return true;
   }
 
+  /// Cantidad de recordatorios de Healthy Habit pendientes en Android.
+  /// No incluye notificaciones de otras aplicaciones.
+  Future<int?> pendingCount() async {
+    if (!supported) return null;
+    await initialize();
+    final requests = await _plugin.pendingNotificationRequests();
+    return requests.where((request) =>
+      request.id >= _firstId &&
+      request.id < _firstId + 3 * 10 + 8).length;
+  }
+
   Future<void> cancel() async {
     if (!supported) return;
     await initialize();
