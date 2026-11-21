@@ -15,7 +15,7 @@ from pathlib import Path
 import sys
 
 from chat_intent_train import (
-    CORPUS, ROOT, CentroidClassifier, choose_threshold, evaluate,
+    CORPUS, ROOT, CentroidClassifier, evaluate,
     features, validate,
 )
 
@@ -138,6 +138,34 @@ def score_development(model, development: list[dict], labels: list[str],
     }
 
 
+def choose_centroid_config(model: CentroidClassifier,
+                           development: list[dict],
+                           labels: list[str]):
+    """Calibra el primer modelo con la misma política de seguridad que Bayes."""
+    selected = None
+    for minimum in (0.0, 0.06, 0.10, 0.14, 0.18, 0.22, 0.28):
+        for margin in (0.0, 0.015, 0.03, 0.05, 0.08):
+            metrics = score_development(
+                model, development, labels, (minimum, margin)
+            )
+            priority = (
+                -metrics["critical_errors"],
+                metrics["macro_f1"],
+                metrics["accuracy"],
+                -metrics["abstentions"],
+                -minimum,
+                -margin,
+            )
+            if selected is None or priority > selected["priority"]:
+                selected = {
+                    "priority": priority,
+                    "cutoff": (minimum, margin),
+                    "dev": metrics,
+                }
+    assert selected is not None
+    return selected
+
+
 def choose_bayes_config(fit_rows: list[dict], development: list[dict],
                         labels: list[str]):
     selected = None
@@ -184,10 +212,11 @@ def compare(data_path: Path = CORPUS) -> dict:
     fit, development, training, test = split_training(rows, labels)
 
     centroid_calibration = CentroidClassifier.fit(fit, labels)
-    centroid_cutoff = choose_threshold(centroid_calibration, development)
-    centroid_dev = score_development(
-        centroid_calibration, development, labels, centroid_cutoff
+    centroid_config = choose_centroid_config(
+        centroid_calibration, development, labels
     )
+    centroid_cutoff = centroid_config["cutoff"]
+    centroid_dev = centroid_config["dev"]
 
     best_nb = choose_bayes_config(fit, development, labels)
     nb_dev = best_nb["dev"]
