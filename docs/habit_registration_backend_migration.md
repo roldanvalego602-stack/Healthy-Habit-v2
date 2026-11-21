@@ -487,6 +487,19 @@ una bifurcación al principio de `ShopService.buy`:
 proyectos reales, el contrato del payload y el estado deshabilitado
 de forma predeterminada.
 
+Se añadió `firebase.shop-demo.emulator.json` para arrancar juntos
+Auth, Firestore y Functions Emulator con el proyecto demo, sin
+reemplazar ninguna configuración existente:
+
+```bash
+firebase emulators:start --config firebase.shop-demo.emulator.json \
+  --project demo-healthy-habit --only auth,firestore,functions
+```
+
+Este comando **solo inicia servicios de prueba**; por sí mismo no
+conecta la aplicación Flutter a ellos. Tampoco inicializa cuentas ni
+datos en el emulador.
+
 **Limitación importante:** `lib/main.dart` y
 `lib/firebase_options.dart` **NO se modificaron**. Actualmente la
 app se inicia con el proyecto de producción, así que activar el
