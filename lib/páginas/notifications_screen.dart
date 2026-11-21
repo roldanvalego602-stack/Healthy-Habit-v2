@@ -1,32 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import '../../tema/healthy_theme.dart';
 
-class NotificationItem {
-  final String id;
-  final String title;
-  final String description;
-  String timeText;
-  final String actionText;
-  final IconData? iconData;
-  final String? assetPath;
-  final Color iconBgColor;
-  final Color iconColor;
-  bool isUnread;
+import '../tema/healthy_theme.dart';
+import '../servicios/healthy_reminders_service.dart';
+import 'perfil/configuracion_screen.dart';
 
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.timeText,
-    required this.actionText,
-    this.iconData,
-    this.assetPath,
-    required this.iconBgColor,
-    required this.iconColor,
-    this.isUnread = true,
-  });
-}
-
+/// Centro de recordatorios de la cuenta actual.
+/// No fabrica notificaciones sociales ni recompensas de demostración.
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -35,387 +17,189 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  // Paleta de colores oficial
-  static const Color green = Color(0xFF198568);
-  Color get navy => HealthyAdaptive.text;
-  Color get background => HealthyAdaptive.background;
-  Color get textMuted => HealthyAdaptive.muted;
-  Color get borderCard => HealthyAdaptive.border;
+  bool _probando = false;
+  bool _sincronizando = false;
 
-  // Lista de notificaciones mapeada a la imagen
-  final List<NotificationItem> todayNotifications = [
-    NotificationItem(
-      id: '1',
-      title: 'Tu misión te espera',
-      description: 'Un pequeño paso para hoy: dedica un momento a tu rutina.',
-      timeText: 'Hace 5 min · Sin leer',
-      actionText: 'Ver misión',
-      iconData: Icons.outlined_flag_rounded,
-      iconBgColor: HealthyAdaptive.mint,
-      iconColor: green,
-      isUnread: true,
-    ),
-    NotificationItem(
-      id: '2',
-      title: 'Tu racha necesita un paso',
-      description:
-          'Aún puedes registrar un hábito hoy. Si no llegas, mañana es otra oportunidad.',
-      timeText: 'Hace 20 min · Sin leer',
-      actionText: 'Ver mis hábitos',
-      iconData: Icons.local_fire_department_outlined,
-      iconBgColor: const Color(0xFFFDF0ED),
-      iconColor: const Color(0xFFE56A54),
-      isUnread: true,
-    ),
-    NotificationItem(
-      id: '3',
-      title: '¡Gota constante es tuya!',
-      description:
-          '7 días de hidratación. Tu nueva insignia ya está en la colección.',
-      timeText: 'Hace 1 h · Sin leer',
-      actionText: 'Ver logro',
-      iconData: Icons.verified_outlined,
-      iconBgColor: const Color(0xFFE2F3FB),
-      iconColor: const Color(0xFF459FCB),
-      isUnread: true,
-    ),
-    NotificationItem(
-      id: '4',
-      title: 'Una recompensa para ti',
-      description: 'Recibiste +30 Habit Coins por tu logro Gota constante.',
-      timeText: 'Hace 1 h · Sin leer',
-      actionText: 'Ver recompensa',
-      assetPath: 'assets/monedas/h coin.png',
-      iconBgColor: HealthyAdaptive.yellow,
-      iconColor: const Color(0xFFD5A33E),
-      isUnread: true,
-    ),
-  ];
-
-  final List<NotificationItem> thisWeekNotifications = [
-    NotificationItem(
-      id: '5',
-      title: 'Sofía te propone un desafío',
-      description: '7 días, pequeños pasos. Tú eliges si te unes.',
-      timeText: 'Ayer · 18:30 · Leído',
-      actionText: 'Ver invitación',
-      iconData: Icons.sports_kabaddi_outlined,
-      iconBgColor: const Color(0xFFF0E8FA),
-      iconColor: const Color(0xFF8C72C6),
-      isUnread: false,
-    ),
-    NotificationItem(
-      id: '6',
-      title: 'Ana quiere ser tu amiga',
-      description: 'Ana Torres · Nivel 12 · Nuevos comienzos',
-      timeText: 'Ayer · 12:10 · Leído',
-      actionText: 'Ver solicitud',
-      iconData: Icons.person_add_outlined,
-      iconBgColor: HealthyAdaptive.mint,
-      iconColor: green,
-      isUnread: false,
-    ),
-  ];
-
-  final List<NotificationItem> previousNotifications = [
-    NotificationItem(
-      id: '7',
-      title: 'Un nuevo look disponible',
-      description: 'Desbloqueaste el Pañuelo de emo. Pruébalo con Mr. Healthy.',
-      timeText: '16 oct · 10:15 · Leído',
-      actionText: 'Abrir armario',
-      iconData: Icons.checkroom_outlined,
-      iconBgColor: const Color(0xFFFFF5DC),
-      iconColor: const Color(0xFFD5A33E),
-      isUnread: false,
-    ),
-  ];
-
-  int get totalUnread {
-    return todayNotifications.where((n) => n.isUnread).length +
-        thisWeekNotifications.where((n) => n.isUnread).length +
-        previousNotifications.where((n) => n.isUnread).length;
+  DocumentReference<Map<String, dynamic>>? get _userRef {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    return FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default')
+        .collection('users').doc(user.uid);
   }
 
-  void markAllAsRead() {
-    setState(() {
-      for (var item in todayNotifications) {
-        item.isUnread = false;
-        item.timeText = item.timeText.replaceAll('Sin leer', 'Leído');
-      }
-      for (var item in thisWeekNotifications) {
-        item.isUnread = false;
-        item.timeText = item.timeText.replaceAll('Sin leer', 'Leído');
-      }
-      for (var item in previousNotifications) {
-        item.isUnread = false;
-        item.timeText = item.timeText.replaceAll('Sin leer', 'Leído');
-      }
-    });
+  void _mensaje(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _probar() async {
+    if (_probando) return;
+    setState(() => _probando = true);
+    try {
+      final ok = await HealthyRemindersService.instance.sendTest();
+      _mensaje(ok
+        ? 'Se envió la notificación de prueba a Android.'
+        : 'No se pudo enviar. Usa Android y permite notificaciones '
+          'en los ajustes del sistema.');
+    } catch (error) {
+      _mensaje('Falló la notificación de prueba: $error');
+    } finally {
+      if (mounted) setState(() => _probando = false);
+    }
+  }
+
+  Future<void> _reprogramar(Map<String, dynamic> settings) async {
+    if (_sincronizando) return;
+    setState(() => _sincronizando = true);
+    try {
+      final ok = await HealthyRemindersService.instance.synchronize(
+        settings, askPermission: true);
+      _mensaje(ok
+        ? 'Programación actualizada. Los avisos pueden demorarse por '
+          'las restricciones de batería de Android.'
+        : 'Android no concedió permisos, no admite esta función o '
+          'los avisos están bloqueados.');
+    } catch (error) {
+      _mensaje('No se pudieron programar los avisos: $error');
+    } finally {
+      if (mounted) setState(() => _sincronizando = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ref = _userRef;
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
-        backgroundColor: background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: navy),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Notificaciones',
-          style: TextStyle(
-            color: navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+        title: const Text('Notificaciones'),
+        backgroundColor: HealthyAdaptive.background,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Subheader de contador y 'Marcar como leído'
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.notifications_none_rounded,
-                        color: navy,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$totalUnread sin leer',
-                        style: TextStyle(
-                          color: navy,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: totalUnread > 0 ? markAllAsRead : null,
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'Marcar como leído',
-                      style: TextStyle(
-                        color: totalUnread > 0 ? green : textMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Seccion: Hoy
-              if (todayNotifications.isNotEmpty) ...[
-                _buildSectionHeader('Hoy'),
-                const SizedBox(height: 12),
-                ...todayNotifications.map(
-                  (item) => _buildNotificationCard(item),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Seccion: Esta semana
-              if (thisWeekNotifications.isNotEmpty) ...[
-                _buildSectionHeader('Esta semana'),
-                const SizedBox(height: 12),
-                ...thisWeekNotifications.map(
-                  (item) => _buildNotificationCard(item),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Seccion: Anteriores
-              if (previousNotifications.isNotEmpty) ...[
-                _buildSectionHeader('Anteriores'),
-                const SizedBox(height: 12),
-                ...previousNotifications.map(
-                  (item) => _buildNotificationCard(item),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Pie de página descriptivo
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    'Estás al día con tus pequeños grandes pasos.',
-                    style: TextStyle(
-                      color: textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w900,
-        color: navy,
-      ),
-    );
-  }
-
-  Widget _buildNotificationCard(NotificationItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: borderCard, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icono / Imagen miniatura de la notificación
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.iconBgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child:
-                      item.assetPath != null
-                          ? Image.asset(
-                            item.assetPath!,
-                            width: 22,
-                            height: 22,
-                            errorBuilder:
-                                (context, error, stackTrace) => Icon(
-                                  Icons.eco_rounded,
-                                  color: item.iconColor,
-                                  size: 22,
-                                ),
-                          )
-                          : Icon(
-                            item.iconData,
-                            color: item.iconColor,
-                            size: 22,
-                          ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Contenido principal (Título + Descripción)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: ref == null
+          ? const Center(child: Text('Inicia sesión para ver tus recordatorios.'))
+          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: ref.snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('No se pudieron consultar las preferencias. '
+                      'Comprueba tu conexión y permisos de Firestore.'),
+                  ));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final raw = snapshot.data?.data()?['settings'];
+                final settings = raw is Map
+                    ? Map<String, dynamic>.from(raw)
+                    : <String, dynamic>{};
+                final enabled = settings['permitirRecordatorios'] == true;
+                final horario =
+                    (settings['horarioRecordatorio'] ?? '09:00').toString();
+                final android = HealthyRemindersService.instance.supported;
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: navy,
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(enabled
+                              ? Icons.notifications_active_outlined
+                              : Icons.notifications_off_outlined,
+                              color: theme.colorScheme.primary, size: 38),
+                            const SizedBox(height: 12),
+                            Text(enabled
+                              ? 'Recordatorios activados en tu cuenta'
+                              : 'Recordatorios desactivados',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 6),
+                            Text('Horario base: $horario',
+                              style: theme.textTheme.bodyMedium),
+                            const SizedBox(height: 6),
+                            Text(android
+                              ? 'Los avisos se programan localmente en '
+                                'este teléfono. Requieren permiso de Android.'
+                              : 'Los recordatorios locales están disponibles '
+                                'en la aplicación Android, no en web.',
+                              style: theme.textTheme.bodySmall),
+                            const SizedBox(height: 14),
+                            FilledButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const SettingsScreen())),
+                              icon: const Icon(Icons.tune_rounded),
+                              label: const Text('Configurar recordatorios'),
                             ),
-                          ),
+                          ],
                         ),
-                        if (item.isUnread) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: green,
-                              shape: BoxShape.circle,
-                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Card(child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Comprobación en el dispositivo',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 9),
+                          Text('1. Activa recordatorios en Ajustes.\n'
+                            '2. Permite las notificaciones de Healthy Habit '
+                            'en Android.\n'
+                            '3. Envía un aviso de prueba.\n'
+                            '4. Si funciona, vuelve a programar la agenda.',
+                            style: theme.textTheme.bodyMedium),
+                          const SizedBox(height: 14),
+                          FilledButton.tonalIcon(
+                            onPressed: android && !_probando ? _probar : null,
+                            icon: const Icon(Icons.notifications_outlined),
+                            label: Text(_probando
+                              ? 'Enviando...' : 'Enviar aviso de prueba'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: android && enabled && !_sincronizando
+                                ? () => _reprogramar(settings) : null,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(_sincronizando
+                                ? 'Programando...' : 'Reprogramar avisos'),
                           ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.description,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: textMuted,
-                        height: 1.35,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
+                    )),
+                    const SizedBox(height: 14),
+                    Card(child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(
+                            'Esta pantalla muestra recordatorios y su '
+                            'configuración reales. La bandeja de eventos '
+                            'sociales, solicitudes y recompensas todavía '
+                            'no está conectada; no se muestran mensajes '
+                            'ficticios como si hubieran ocurrido.',
+                            style: theme.textTheme.bodySmall)),
+                        ],
+                      ),
+                    )),
                   ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Tiempo transcurrido
-          Text(
-            item.timeText,
-            style: TextStyle(
-              fontSize: 11,
-              color: textMuted,
-              fontWeight: FontWeight.w500,
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 12),
-
-          // Acciones de pie de tarjeta
-          InkWell(
-            onTap: () {
-              setState(() {
-                item.isUnread = false;
-                item.timeText = item.timeText.replaceAll('Sin leer', 'Leído');
-              });
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.actionText,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: green,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(Icons.north_east_rounded, size: 15, color: green),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
