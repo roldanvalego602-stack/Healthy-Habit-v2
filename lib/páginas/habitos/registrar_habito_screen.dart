@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
+import '../../servicios/official_habit_emulator_service.dart';
 import 'habit_interaction_card.dart';
 
 class RegistrarHabitoScreen extends StatefulWidget {
@@ -267,6 +268,41 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       _error = null;
     });
     try {
+      // El piloto de 36 hábitos registra únicamente actividades declaradas.
+      // Notas, actividades interactivas y fotos requieren un contrato de
+      // backend distinto; no se acreditan ni se pierden silenciosamente.
+      if (OfficialHabitEmulatorService.enabled) {
+        if (_bytesImagen != null || _notaController.text.trim().isNotEmpty ||
+            _interactionType != 'manual') {
+          throw StateError(
+            'El registro experimental solo admite actividades sin foto, '
+            'nota ni interacción especial. Estos datos se habilitarán '
+            'al integrar su almacenamiento seguro en el servidor.');
+        }
+        const service = OfficialHabitEmulatorService();
+        final response = await service.register(
+          habitId: habitoRef.id,
+          attemptId: attemptRef.id,
+          operationId: service.newOperationId(),
+        );
+        if (!mounted) return;
+        final xp = _leerEntero(response['xpAwarded'], 0);
+        final coins = _leerEntero(response['coinsAwarded'], 0);
+        final progress = _leerEntero(response['progress'], 0);
+        final target = _leerEntero(response['target'], _meta);
+        final completed = response['completed'] == true;
+        HealthyCelebration.show(
+          context,
+          title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
+          subtitle: '+$xp XP'
+              '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
+              ' · $progress/$target registros',
+          icon: completed
+              ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
+        );
+        Navigator.pop(context, true);
+        return;
+      }
       final usuarioRef = _userDoc;
       // Los registros pertenecen al intento, no directamente
       // al documento principal del hábito.
