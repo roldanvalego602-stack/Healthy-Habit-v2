@@ -40,7 +40,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
 
     final miUid = AmigosServicio.uidActual;
     if (miUid != null) {
-      _siguiendoSub = AmigosServicio.siguiendo(miUid).listen((snap) {
+      _siguiendoSub = AmigosServicio.amigos(miUid).listen((snap) {
         if (!mounted) return;
         setState(() => _siguiendo = snap.docs.map((d) => d.id).toSet());
       });
@@ -98,8 +98,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
         usernameConArroba.contains(_terminoBusqueda);
   }
 
-  /// Envía o cancela una solicitud; si ya se sigue a la persona, deja de
-  /// seguirla directamente (sin necesidad de solicitud para dejar de seguir).
+  /// Envía o cancela solicitudes; una amistad aceptada puede eliminarse.
   Future<void> _alternarSeguir(String uid, String nombre) async {
     if (_ocupados.contains(uid)) return;
 
@@ -110,8 +109,8 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     try {
       String mensaje;
       if (yaSigue) {
-        await AmigosServicio.dejarDeSeguir(uid);
-        mensaje = 'Dejaste de seguir a $nombre';
+        await AmigosServicio.eliminarAmigo(uid);
+        mensaje = 'Eliminaste a $nombre de tus amigos';
       } else if (pendiente) {
         await AmigosServicio.cancelarSolicitud(uid);
         mensaje = 'Cancelaste la solicitud a $nombre';
@@ -139,7 +138,7 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
     final ocupado = _ocupados.contains(uid);
     return SocialActionButton(
       compact: true,
-      label: siguiendo ? 'Siguiendo' : pendiente ? 'Pendiente' : 'Seguir',
+      label: siguiendo ? 'Amigos' : pendiente ? 'Pendiente' : 'Agregar amigo',
       icon: siguiendo ? Icons.check_rounded
           : pendiente ? Icons.schedule_rounded : Icons.person_add_alt_1_rounded,
       outlined: siguiendo || pendiente,
