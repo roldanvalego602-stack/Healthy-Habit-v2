@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -98,8 +97,7 @@ class HealthyRemindersService {
     final vibrate = settings['vibracionHaptica'] != false;
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        'healthy_reminders_s' + (playSound ? '1' : '0') +
-            '_v' + (vibrate ? '1' : '0'),
+        'healthy_reminders_s${playSound ? '1' : '0'}_v${vibrate ? '1' : '0'}',
         'Recordatorios de Healthy Habit',
         channelDescription: 'Avisos voluntarios para hábitos, rachas y desafíos',
         importance: Importance.defaultImportance,
