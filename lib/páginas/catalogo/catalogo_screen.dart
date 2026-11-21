@@ -444,6 +444,16 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             ),
           ]),
         ),
+        if (_tabs.index == 0 &&
+            CatalogoExplorador.campoOrden(_orden) != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 2, 18, 4),
+            child: Text(
+              'Valores aproximados por 100 g según la referencia de cada '
+              'ficha. Algunos alimentos se comparan crudos y otros cocidos.',
+              style: TextStyle(color: _gris, fontSize: 11),
+            ),
+          ),
         Expanded(child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 240),
           child: KeyedSubtree(
