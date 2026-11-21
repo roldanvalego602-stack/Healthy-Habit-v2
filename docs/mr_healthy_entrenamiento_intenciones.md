@@ -242,3 +242,39 @@ python3 tools/chat_intent_policy_report.py
 ```
 
 **Interpretación importante:** esta auditoría usa el conjunto V2/test que ya hemos inspeccionado; es diagnóstica, **no una tercera evaluación independiente ni una nueva mejora medida**. No se han afinado parámetros ni se han modificado el modelo, la política de rechazo o los datos para optimizar estos resultados. La próxima versión con cambios de algoritmo necesitará un nuevo conjunto de evaluación no observado; una eventual integración a Flutter mantendrá autenticación, autorizaciones del backend y confirmación explícita de acciones en rutas separadas.
+
+## 13. Auditoría de políticas validada y prototipo de diálogo
+
+El usuario confirmó que el conjunto de **30 pruebas Python pasó**. `tools/chat_intent_policy_report.py` observó retrospectivamente, sobre las 60 expresiones V2/test ya utilizadas:
+
+| Clasificador | Macro-F1 del reconocimiento | Bloqueos por política | Bloqueos legítimos | Errores sensibles sin bloquear |
+|---|---:|---:|---:|---:|
+| TF-IDF | 0.829 | 7 | 6 | 0 |
+| Naive Bayes | 0.897 | 8 | 5 | 0 |
+
+**Interpretación:** el rechazo redujo la disponibilidad de respuestas operativas, especialmente en solicitudes que la clasificación había reconocido correctamente. El recuento de cero errores sensibles sin bloquear **no demuestra seguridad estadística**; el corpus V2/test es pequeño y ya fue inspeccionado.
+
+### Separar comprensión, diálogo y acciones reales
+
+Se añadió el prototipo independiente `tools/chat_intent_dialogue.py` y `tools/test_chat_intent_dialogue.py`. El código conserva la **intención original predicha**, registra la **intención elegible tras la política** y define una acción conversacional como `clarify`, `open_review`, `explain_only` o `respond`. Esas acciones describen el **flujo sugerido de conversación**, no son llamadas a servicios. Nunca se ejecuta un cambio, se consulta información privada ni se autoriza una operación desde este prototipo (`may_execute_action: false`).
+
+Comportamiento ilustrativo:
+
+| Entrada | Intención sugerida | Resultado propuesto |
+|---|---|---|
+| Quiero agregar un hábito | `agregar_habito` | Ofrecer catálogo y confirmación |
+| Quiero eliminar un hábito | `eliminar_habito` | Preguntar qué hábito y solicitar confirmación |
+| Quiero borrar mi cuenta | `eliminar_cuenta` | Explicar que el borrado integral no está habilitado |
+| Bórralo | Predicción incierta/peligrosa | Solicitar aclaración, sin modificar datos |
+| Cambiar mi foto de perfil (mal clasificado como borrar cuenta) | `eliminar_cuenta` incorrecta | Solicitar aclaración, no eliminar |
+| Cuántas monedas tengo | `consultar_saldo` | Delegar al módulo autorizado de saldo, sin inventar cifra |
+
+**Límite:** este es un prototipo conversacional en Python, **no está integrado en `nutrichat.dart`**. No aprende automáticamente y no tiene memoria multi-turno real; el conjunto de 20 escenarios seguirá pendiente de evaluación en un futuro componente de contexto. Mantener autenticación, permisos Firestore, validación de operaciones, confirmación en UI y separación de datos como responsabilidades del backend/cliente, nunca del clasificador.
+
+Para ejecutar pruebas de prototipo:
+
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+```
+
+Las nuevas pruebas no afirman una mejora de exactitud o macro-F1. Los datos y clasificadores V1 y V2 se mantienen intactos. El siguiente hito será planificar un orquestador de sesión con referencias explícitas y pruebas de diálogo, conservando los controles actuales de Flutter, antes de evaluar un modelo de lenguaje preentrenado.
