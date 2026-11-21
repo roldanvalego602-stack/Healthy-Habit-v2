@@ -2,7 +2,7 @@ import { after, before, beforeEach, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, writeBatch, serverTimestamp, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch, serverTimestamp, updateDoc, deleteDoc, collection, query, where, getDocs, setLogLevel } from 'firebase/firestore';
 
 const rulesPath = resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname);
 let env;
@@ -358,4 +358,318 @@ test('no se puede crear evidencia de un usuario diferente', async () => {
     contentType: 'image/jpeg', createdAt: serverTimestamp(),
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   }));
+});
+
+/* -------------------------------------------------------
+ * Cobertura adicional: alta, economía, tienda, desafíos,
+ * datos privados, perfil público, interacciones y sistema.
+ * Los casos negativos son requisitos de seguridad: si fallan,
+ * NO publicar las reglas.
+ * ----------------------------------------------------- */
+
+async function seedUser(uid = 'alice', values = {}) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users', uid), {
+      uid, name: uid, username: uid, email: uid + '@example.test',
+      level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+      createdAt: new Date(), ...values,
+    });
+  });
+}
+
+function initialAccount(uid = 'alice') {
+  return {
+    uid, name: 'Alice', username: uid, email: uid + '@example.test',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  };
+}
+
+test('registro: propietario crea cuenta con saldos iniciales oficiales', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'), 'users', 'alice'),
+    initialAccount()));
+});
+
+test('registro: se rechazan monedas iniciales fabricadas', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'users', 'alice'),
+    { ...initialAccount(), habitCoins: 999999 }));
+});
+
+test('registro: se rechazan XP iniciales fabricados', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'users', 'alice'),
+    { ...initialAccount(), xp: 999999 }));
+});
+
+test('registro: no puedo crear la cuenta privada de otra persona', async () => {
+  await assertFails(setDoc(doc(as('mallory'), 'users', 'alice'),
+    initialAccount('alice')));
+});
+
+test('perfil: el titular puede modificar su nombre y biografía', async () => {
+  await seedUser();
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    name: 'Alicia', bio: 'Probando Healthy Habit',
+  }));
+});
+
+test('perfil: nadie puede editar los datos privados de otra persona', async () => {
+  await seedUser();
+  await assertFails(updateDoc(doc(as('mallory'), 'users', 'alice'), {
+    name: 'Suplantación',
+  }));
+});
+
+test('gamificación: no se puede regalar XP sin registro válido', async () => {
+  await seedUser();
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    xp: 999999, currentXp: 999999, level: 100,
+  }));
+});
+
+test('economía: no se pueden crear monedas desde el cliente', async () => {
+  await seedUser();
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    habitCoins: 999999,
+  }));
+});
+
+test('economía: no se pueden falsificar recompensas de niveles', async () => {
+  await seedUser();
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    claimedLevelRewards: [2,3,4,5,6,7,8,9,10,11,12],
+    habitCoins: 999999,
+  }));
+});
+
+test('tienda: compra válida descuenta exactamente el precio', async () => {
+  await seedUser('alice', { habitCoins: 250, shopInventory: [] });
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    habitCoins: 130,
+    shopInventory: ['avatar_frame'],
+  }));
+});
+
+test('tienda: una compra sin descontar monedas se rechaza', async () => {
+  await seedUser('alice', { habitCoins: 250, shopInventory: [] });
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    habitCoins: 250,
+    shopInventory: ['avatar_frame'],
+  }));
+});
+
+test('tienda: equipar un artículo que no se compró se rechaza', async () => {
+  await seedUser('alice', { shopInventory: [] });
+  await assertFails(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    shopEquipped: { perfil_marco: 'avatar_frame' },
+  }));
+});
+
+test('tienda: equipar un artículo adquirido está permitido', async () => {
+  await seedUser('alice', { shopInventory: ['avatar_frame'] });
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users', 'alice'), {
+    shopEquipped: { perfil_marco: 'avatar_frame' },
+  }));
+});
+
+test('datos privados: propietario accede a intentos y registros del hábito', async () => {
+  const ref = doc(as('alice'),
+    'users/alice/user_habits/agua/attempts/uno/logs/registro');
+  await assertSucceeds(setDoc(ref, {
+    note: 'Bebí agua', createdAt: serverTimestamp(),
+  }));
+  await assertSucceeds(getDoc(ref));
+});
+
+test('datos privados: otra cuenta no accede a registros de hábitos', async () => {
+  await assertFails(getDoc(doc(as('mallory'),
+    'users/alice/user_habits/agua/attempts/uno/logs/registro')));
+});
+
+test('datos privados: otra cuenta no puede escribir evidencias', async () => {
+  await assertFails(setDoc(doc(as('mallory'),
+    'users/alice/temporary_habit_evidence/uno'), {imageBase64:'x'}));
+});
+
+test('datos privados: propietario puede escribir evidencias temporales', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/temporary_habit_evidence/uno'), {
+    imageBase64: 'x', expiresAt: new Date(),
+  }));
+});
+
+test('datos privados: otra cuenta no lee logros privados', async () => {
+  await assertFails(getDoc(doc(as('mallory'),
+    'users/alice/achievements/nivel_dos')));
+});
+
+test('datos privados: no puedo escribir logros de otra cuenta', async () => {
+  await assertFails(setDoc(doc(as('mallory'),
+    'users/alice/achievements/nivel_dos'), {unlocked:true}));
+});
+
+test('datos privados: propietario puede escribir sus logros', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/achievements/nivel_dos'), {unlocked:true}));
+});
+
+function demoChallenge() {
+  return {
+    title: 'Desafío diario', status: 'available',
+    currentProgress: 0, totalProgress: 5,
+    xpReward: 10, hcReward: 5,
+    demoSeed: true, progressVerified: false,
+    progressSource: 'demo',
+    createdAt: serverTimestamp(),
+  };
+}
+
+test('desafíos: el propietario puede crear un desafío de demostración', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/challenges/daily'), demoChallenge()));
+});
+
+test('desafíos: no puede sembrarse un reto marcado como verificado', async () => {
+  await assertFails(setDoc(doc(as('alice'),
+    'users/alice/challenges/daily'),
+    { ...demoChallenge(), progressVerified: true }));
+});
+
+test('desafíos: un desafío de demostración puede aceptarse', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/challenges/daily'), demoChallenge()));
+  await assertSucceeds(updateDoc(doc(as('alice'),
+    'users/alice/challenges/daily'), {
+    status:'inProgress', acceptedAt:serverTimestamp(),
+  }));
+});
+
+test('desafíos: no se puede reclamar reto demostrativo sin progreso verificado', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'users/alice/challenges/daily'), demoChallenge()));
+  await assertFails(updateDoc(doc(as('alice'),
+    'users/alice/challenges/daily'), {
+    status:'claimed', claimedAt:serverTimestamp(),
+  }));
+});
+
+test('desafíos: un tercero no puede crear retos en otra cuenta', async () => {
+  await assertFails(setDoc(doc(as('mallory'),
+    'users/alice/challenges/daily'), demoChallenge()));
+});
+
+function publicProfile() {
+  return {
+    name:'Alice', username:'alice', xp:0,
+    settings:{ mostrarRachaAmigos:true, visibilidadLogros:'Solo amigos',
+      permitirReacciones:true },
+  };
+}
+
+test('perfil público: puede crearse con campos válidos', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'),
+    'public_profiles/alice'), publicProfile()));
+});
+
+test('perfil público: una cuenta autenticada puede consultar otro perfil', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'public_profiles/alice'),
+      publicProfile());
+  });
+  await assertSucceeds(getDoc(doc(as('bob'), 'public_profiles/alice')));
+});
+
+test('perfil público: no puede editarse el perfil de otro usuario', async () => {
+  await assertFails(setDoc(doc(as('mallory'),
+    'public_profiles/alice'), publicProfile()));
+});
+
+test('perfil público: no pueden publicarse claves desconocidas', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'public_profiles/alice'),
+    { ...publicProfile(), isAdministrator:true }));
+});
+
+test('perfil público: el titular no debe poder falsificar su XP público', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'public_profiles/alice'),
+    { ...publicProfile(), xp:999999 }));
+});
+
+test('perfiles públicos: una cuenta no autenticada no puede consultar', async () => {
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),
+    'public_profiles/alice')));
+});
+
+test('sistema: los usuarios pueden leer la configuración existente', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'system', 'global'), {version:1});
+  });
+  await assertSucceeds(getDoc(doc(as('alice'), 'system', 'global')));
+});
+
+test('sistema: ningún usuario normal puede cambiar la configuración', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'system', 'global'),
+    { isAdmin:true }));
+});
+
+test('agregados: el cliente no puede fabricar popularidad pública', async () => {
+  await assertFails(setDoc(doc(as('alice'),
+    'public_habit_popularity', 'agua'), { users:999999 }));
+});
+
+test('agregados: la consulta de popularidad pública está permitida', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'public_habit_popularity', 'agua'),
+      { users:10 });
+  });
+  await assertSucceeds(getDoc(doc(as('alice'),
+    'public_habit_popularity', 'agua')));
+});
+
+test('integridad: usuario anónimo no puede crear solicitudes', async () => {
+  const db=env.unauthenticatedContext().firestore();
+  await assertFails(setDoc(doc(db, 'users/bob/solicitudes/alice'),
+    { createdAt:serverTimestamp() }));
+});
+
+test('interacciones: el receptor puede marcar una reacción como leída', async () => {
+  await seedFriendship();
+  await assertSucceeds(setDoc(doc(as('alice'), 'interactions', 'reaction-r'), {
+    challengeId:'', createdAt:new Date(), emoji:'👏', estado:'enviado',
+    fromUid:'alice', leido:false, respondedAt:null, tipo:'reaccion',
+    toUid:'bob',
+  }));
+  await assertSucceeds(updateDoc(doc(as('bob'), 'interactions', 'reaction-r'),
+    {leido:true}));
+});
+
+test('interacciones: el remitente no puede marcar como leída su reacción', async () => {
+  await seedFriendship();
+  await assertSucceeds(setDoc(doc(as('alice'), 'interactions', 'reaction-r'), {
+    challengeId:'', createdAt:new Date(), emoji:'👏', estado:'enviado',
+    fromUid:'alice', leido:false, respondedAt:null, tipo:'reaccion',
+    toUid:'bob',
+  }));
+  await assertFails(updateDoc(doc(as('alice'), 'interactions', 'reaction-r'),
+    {leido:true}));
+});
+
+test('interacciones: consulta del destinatario filtrada por su UID', async () => {
+  await seedFriendship();
+  await assertSucceeds(setDoc(doc(as('alice'), 'interactions', 'reaction-r'), {
+    challengeId:'', createdAt:new Date(), emoji:'👏', estado:'enviado',
+    fromUid:'alice', leido:false, respondedAt:null, tipo:'reaccion',
+    toUid:'bob',
+  }));
+  await assertSucceeds(getDocs(query(
+    collection(as('bob'), 'interactions'),where('toUid','==','bob'))));
+  await assertFails(getDocs(collection(as('mallory'), 'interactions')));
+});
+
+test('sistema anterior: no deben poder crearse nuevas relaciones following', async () => {
+  await assertFails(setDoc(doc(as('alice'),
+    'users/alice/following/bob'), {createdAt:serverTimestamp()}));
+});
+
+test('sistema anterior: no deben poder crearse nuevas relaciones followers', async () => {
+  await assertFails(setDoc(doc(as('bob'),
+    'users/bob/followers/alice'), {createdAt:serverTimestamp()}));
 });
