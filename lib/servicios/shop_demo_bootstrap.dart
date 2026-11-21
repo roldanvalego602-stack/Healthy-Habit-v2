@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Contrato del modo aislado de tienda. No contiene credenciales reales.
 class ShopDemoBootstrap {
@@ -29,9 +30,11 @@ class ShopDemoBootstrap {
     }
   }
 
-  static const demoOptions = FirebaseOptions(
+  static FirebaseOptions get demoOptions => FirebaseOptions(
     apiKey: 'demo-api-key',
-    appId: '1:1234567890:web:demo-healthy-habit',
+    appId: kIsWeb
+        ? '1:1234567890:web:abcdef1234567890'
+        : '1:1234567890:android:abcdef1234567890',
     messagingSenderId: '1234567890',
     projectId: demoProjectId,
     authDomain: 'demo-healthy-habit.firebaseapp.com',
