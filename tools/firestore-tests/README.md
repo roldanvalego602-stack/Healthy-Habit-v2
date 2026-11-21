@@ -11,20 +11,19 @@ npm install --prefix tools/firestore-tests
 node --test tools/firestore-tests/rules.test.mjs
 ```
 
-Las pruebas **no están diseñadas para aprobar todas todavía**.
-Los casos de denegación y permiso señalan diferencias entre la política
-actual y los nuevos requisitos sociales. En particular:
+Las primeras siete pruebas identificaron dos fallos reales en la candidata:
+la creación unilateral de amistades estaba permitida y las invitaciones
+a hábitos en pareja estaban bloqueadas. El archivo
+`firestore.candidate.rules` **ya contiene correcciones propuestas**:
+amistades creadas de manera recíproca y atómica con una solicitud previa,
+invitaciones accesibles por participantes, reacciones restringidas a
+amigos y soporte de `permitirReacciones` en el perfil público.
 
-- La candidata existente permite escribir directamente en
-  `users/{uid}/friends/{friendId}` si el usuario es propietario.
-  Esto representa un agujero de autorización: se podría crear
-  unilateralmente una amistad sin solicitud.
-- El candidato anterior no declara
-  `shared_habit_invites/{inviteId}`, por lo que las invitaciones
-  reales a hábitos en pareja serán denegadas.
-- La política de reacciones existente **no exige una amistad**;
-  una prueba positiva entre amigos no demuestra que la validación
-  negativa esté implementada.
+Las pruebas actuales incluyen casos adversariales y operaciones
+recíprocas. No se han ejecutado en el ordenador del usuario después
+de estos cambios. Los siguientes resultados pueden mostrar nuevas
+incompatibilidades; deben resolverse dentro del emulador antes de
+considerar un despliegue.
 
 **Interpretación:** el texto de un test fallido debe guiar las
 correcciones; no se recomienda cambiar las reglas productivas
