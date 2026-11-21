@@ -27,6 +27,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   bool _cargando = true;
   bool _guardando = false;
   bool _subiendoFoto = false;
+  String? _errorFoto;
   String? _photoUrl;
   String _avatarStyle = 'foto';
   final ProfilePhotoService _photoService = ProfilePhotoService();
@@ -126,20 +127,24 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       ),
     );
     if (source == null || !mounted) return;
+    setState(() => _errorFoto = null);
     try {
       final selected = await _photoService.pick(source);
       if (selected == null || !mounted) return;
       setState(() => _subiendoFoto = true);
       final url = await _photoService.upload(selected);
       if (!mounted) return;
-      setState(() { _photoUrl = url; _avatarStyle = 'foto'; });
+      setState(() { _photoUrl = url; _avatarStyle = 'foto'; _errorFoto = null; });
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
+      setState(() => _errorFoto = error.message);
       _mensaje(error.message);
     } on PlatformException catch (error) {
+      setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
       _mensaje('No se pudo acceder a cámara o galería '
           '(código: ${error.code}). Revisa los permisos del dispositivo.');
-    } catch (_) {
+    } catch (error) {
+      setState(() => _errorFoto = 'Falló el procesamiento o la subida (${error.runtimeType}). Revisa Firebase Storage.');
       _mensaje('No fue posible procesar la foto. Revisa que sea una '
           'imagen válida y comprueba tu conexión.');
     } finally {
@@ -455,6 +460,25 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                               label: const Text('Elegir avatar sin foto'),
                             ),
                             const SizedBox(height: 6),
+                            if (_errorFoto != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                key: const ValueKey('profile-photo-error'),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(children: [
+                                  const Icon(Icons.error_outline_rounded,
+                                      color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(_errorFoto!,
+                                    style: const TextStyle(
+                                      color: Colors.red, fontSize: 12))),
+                                ]),
+                              ),
+                            ],
                             Text(
                               'La fotografía se guarda al subirla.',
                               style: TextStyle(
