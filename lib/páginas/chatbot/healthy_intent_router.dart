@@ -51,6 +51,15 @@ class HealthyIntentRouter {
           'cuenta de monedas']);
   }
 
+  static bool asksFocusedEggQuestion(String text) {
+    final q = normalize(text);
+    final egg = _containsAny(q, const ['huevo', 'huevos']);
+    if (!egg) return false;
+    return _containsAny(q, const ['jamon', 'hace dano', 'me hace dano',
+      'danino', 'peligroso', 'alergia', 'crudo', 'salmonella',
+      'cocinar', 'cocido', 'comer huevo diario', 'todos los dias']);
+  }
+
   static bool asksForHabitAction(String text) {
     final q = normalize(text);
     if (asksForAccountDeletion(text)) return false;
