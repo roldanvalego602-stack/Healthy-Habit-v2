@@ -158,6 +158,36 @@ void main() {
       expect(restored.completedDays, isEmpty);
     });
 
+    test('las plantillas conservan orden y herramientas compatibles', () {
+      for (final template in [
+        PersonalRoutineTemplates.strength,
+        PersonalRoutineTemplates.focus,
+        PersonalRoutineTemplates.mobility,
+      ]) {
+        expect(template, isNotEmpty);
+        expect(
+          template.every((step) => step.target > 0 &&
+              {'counter', 'timer', 'stopwatch'}.contains(step.type)),
+          isTrue,
+        );
+      }
+      expect(PersonalRoutineTemplates.strength.first.title, 'Sentadillas');
+      expect(PersonalRoutineTemplates.strength[1].type, 'timer');
+      expect(PersonalRoutineTemplates.focus.first.target, 1500);
+      expect(PersonalRoutineTemplates.mobility.last.title, 'Estiramiento');
+    });
+
+    test('una plantilla puede editarse sin mutar el original', () {
+      final steps = List<PersonalRoutineStep>.from(
+        PersonalRoutineTemplates.strength,
+      );
+      final moved = steps.removeAt(0);
+      steps.insert(1, moved);
+      expect(steps.first.title, 'Descanso');
+      expect(PersonalRoutineTemplates.strength.first.title, 'Sentadillas');
+      expect(steps, hasLength(3));
+    });
+
     test('normaliza herramientas y metas desconocidas', () {
       final step = PersonalRoutineStep.fromJson({
         'title': 'Actividad',
