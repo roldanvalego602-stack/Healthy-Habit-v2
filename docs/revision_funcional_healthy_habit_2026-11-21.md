@@ -180,3 +180,36 @@ flutter analyze lib/páginas/perfil/editar_perfil_screen.dart
 flutter analyze lib/servicios/profile_photo_service.dart
 flutter test test/catalogo_navegacion_visual_test.dart
 ```
+
+
+## Corrección de flujo: registro guiado y rutinas
+
+- `RegistrarHabitoScreen` pasa el `_interactionValue` acumulado a
+  `HabitInteractionCard.initialValue`. Si el usuario sale del primer
+  paso y regresa, el contador o los segundos completados se restauran.
+  Al abandonar el paso, el temporizador deja de contar hasta volver.
+- En el paso final, si falta completar la actividad interactiva,
+  se muestra una explicación y un control para regresar al primer paso.
+  La escritura del registro sigue sujeta a las validaciones y a la
+  transacción existentes en Firestore.
+- El editor de rutinas admite añadir varias actividades con un mensaje
+  de confirmación. Si al pulsar «Guardar rutina» hay un ejercicio
+  pendiente escrito, se valida y se añade antes de guardar; si es
+  inválido, se muestra un error y no se cierra el editor.
+- El editor se expone como `PersonalRoutineEditor` para pruebas de
+  widgets independientes de Firebase; el modelo y la persistencia
+  local de rutinas no cambian.
+- Pruebas nuevas:
+  `test/habit_interaction_navigation_test.dart` y
+  `test/personal_routine_editor_flow_test.dart`.
+
+```bash
+flutter analyze lib/páginas/habitos
+flutter test test/habit_interaction_navigation_test.dart
+flutter test test/personal_routine_editor_flow_test.dart
+flutter test test/personal_routines_test.dart
+```
+
+Estas pruebas están preparadas en GitHub; su ejecución en Android/Flutter
+local queda pendiente. Se conserva el trabajo que el usuario tiene
+guardado en Git stash.
