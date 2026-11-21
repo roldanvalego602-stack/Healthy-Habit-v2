@@ -482,3 +482,33 @@ exports.cancelDemoOfficialHabit = onCall(
     }
   }
 );
+
+
+// Piloto de compra de cosméticos desde Admin SDK (solo emulador demo).
+// No modifica ShopService de Flutter ni permite compras en producción.
+const {purchaseDemoShopItem} = require("./shop_purchase_transaction");
+
+exports.purchaseDemoShopItem = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition", "Las compras de prueba solo funcionan en el emulador demo."
+      );
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    try {
+      return await purchaseDemoShopItem({
+        db, uid: request.auth.uid, data: request.data,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
