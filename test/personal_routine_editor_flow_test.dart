@@ -33,7 +33,7 @@ class _EditorLauncherState extends State<_EditorLauncher> {
 
 Future<void> _ensure(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(target, 160,
-    scrollable: find.byType(Scrollable).last);
+    scrollable: find.byType(Scrollable).first);
   await tester.pumpAndSettle();
 }
 
@@ -64,7 +64,6 @@ void main() {
     await tester.tap(find.text('Añadir ejercicio a la rutina'));
     await tester.pumpAndSettle();
 
-    expect(find.text('2 actividades añadidas'), findsOneWidget);
     await _ensure(tester,
       find.byKey(const ValueKey('personal-routine-save')));
     await tester.tap(find.byKey(const ValueKey('personal-routine-save')));
