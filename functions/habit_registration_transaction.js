@@ -107,11 +107,22 @@ function utcDay(date) {
   return date.toISOString().slice(0, 10);
 }
 
-async function registerDemoHabit({db, uid, data, now = new Date()}) {
+// Motor transaccional compartido. El modo "official" está preparado
+// exclusivamente para pruebas de servidor: NO tiene endpoint desplegado.
+async function registerHabitTransaction(
+  {db, uid, data, now = new Date()}, mode
+) {
   if (typeof uid !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(uid)) {
     throw new RegistrationPolicyError("unauthenticated", "Sesión inválida.");
   }
-  const ids = validateDemoRegistration(data);
+  if (mode !== "demo" && mode !== "official") {
+    throw new RegistrationPolicyError("invalid-argument", "Modo inválido.");
+  }
+  // Carga diferida para evitar ciclo de importación con LEVELS/levelForXp.
+  const {parseOfficialRegistration} = mode === "official"
+    ? require("./official_habit_reward_policy") : {};
+  const ids = mode === "demo"
+    ? validateDemoRegistration(data) : parseOfficialRegistration(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const date = utcDay(now);
   const userRef = db.collection("users").doc(uid);
@@ -241,9 +252,14 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
         throw error;
       }
     }
-    const reward = calculateRegistrationReward({
-      user: userSnap.data(), attempt, catalog,
-    });
+    const reward = mode === "demo"
+      ? calculateRegistrationReward({
+        user: userSnap.data(), attempt, catalog,
+      })
+      : require("./official_habit_reward_policy").planOfficialReward({
+        data: ids, user: userSnap.data(), attempt,
+        periodCount: currentCount,
+      });
     const progress = periodResult.progressAfter;
     const completed = periodResult.completed;
     const result = {
@@ -308,7 +324,19 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
   });
 }
 
+// Conservar el contrato histórico del piloto y habilitar una ruta
+// programática independiente para las pruebas de los 36 hábitos.
+// IMPORTANTE: No publicar esta última mediante exports de index.js.
+function registerDemoHabit(args) {
+  return registerHabitTransaction(args, "demo");
+}
+
+function registerOfficialHabitTransaction(args) {
+  return registerHabitTransaction(args, "official");
+}
+
 module.exports = {
+  registerOfficialHabitTransaction,
   SERVER_CATALOG,
   LEVELS,
   validateDemoRegistration,
