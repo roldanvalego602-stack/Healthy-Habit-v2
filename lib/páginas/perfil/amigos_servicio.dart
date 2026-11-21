@@ -21,24 +21,6 @@ class AmigosServicio {
 
   static String? get uidActual => FirebaseAuth.instance.currentUser?.uid;
 
-  static Stream<QuerySnapshot<Map<String, dynamic>>> siguiendo(String uid) {
-    return _db
-        .collection('users')
-        .doc(uid)
-        .collection('following')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-  }
-
-  static Stream<QuerySnapshot<Map<String, dynamic>>> seguidores(String uid) {
-    return _db
-        .collection('users')
-        .doc(uid)
-        .collection('followers')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-  }
-
   /// Relación recíproca aceptada. Ya no existe el concepto de seguir.
   static Stream<QuerySnapshot<Map<String, dynamic>>> amigos(String uid) =>
       _db.collection('users').doc(uid).collection('friends')
@@ -58,7 +40,7 @@ class AmigosServicio {
     await batch.commit();
   }
 
-  /// Cantidad en vivo. [coleccion] = 'following' o 'followers'.
+  /// Cantidad en vivo de 'friends' o 'solicitudes'.
   static Stream<int> contar(String uid, String coleccion) {
     return _db
         .collection('users')
