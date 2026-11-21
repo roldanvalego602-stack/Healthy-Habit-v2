@@ -13,6 +13,7 @@ import 'habit_recommendation_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 import 'personal_routines_screen.dart';
+import 'habitos_en_pareja_screen.dart';
 import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
@@ -846,6 +847,23 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          Card(
+                            color: HealthyAdaptive.surface,
+                            child: ListTile(
+                              key: const ValueKey('shared-habits-entry'),
+                              leading: Icon(Icons.people_alt_outlined,
+                                color: green),
+                              title: const Text('Hábitos en pareja',
+                                style: TextStyle(fontWeight: FontWeight.w800)),
+                              subtitle: const Text(
+                                'Invita a un amigo y realicen el mismo hábito.'),
+                              trailing: const Icon(Icons.chevron_right_rounded),
+                              onTap: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) =>
+                                  const HabitosEnParejaScreen())),
+                            ),
+                          ),
                           const SizedBox(height: 20),
                           _categoryGrid(),
                           const SizedBox(height: 18),
@@ -1297,16 +1315,27 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: saving ? null : () => _confirmCancelHabit(entry),
-              icon: const Icon(Icons.cancel_outlined, size: 17),
-              label: const Text('Abandonar hábito'),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFAD5151),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 6,
+            children: [
+              TextButton.icon(
+                key: ValueKey('share-habit-${habit.id}'),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) =>
+                    HabitosEnParejaScreen(initialHabitId: habit.id))),
+                icon: const Icon(Icons.people_alt_outlined, size: 17),
+                label: const Text('En pareja'),
               ),
-            ),
+              TextButton.icon(
+                onPressed: saving ? null : () => _confirmCancelHabit(entry),
+                icon: const Icon(Icons.cancel_outlined, size: 17),
+                label: const Text('Abandonar hábito'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFAD5151),
+                ),
+              ),
+            ],
           ),
         ],
       ),
