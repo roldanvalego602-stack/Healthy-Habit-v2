@@ -91,3 +91,34 @@ accesibilidad y fallback si falta una imagen.
 
 No se modifican los datos oficiales de hábitos, Firebase ni el
 módulo de administración.
+
+
+## Tercera etapa: continuidad visual y limpieza del análisis
+
+- Se corrigieron las tres recomendaciones `curly_braces_in_flow_control_structures`
+  del explorador. No hubo cambios en los cálculos de filtros.
+- `CatalogoMedia` es ahora el elemento compartido para representar
+  fotografías, SVG o ilustraciones propias de reserva según el tipo
+  de ficha. Las fichas nuevas sin archivo no intentan cargar una ruta
+  vacía del bundle.
+- Tarjetas y ficha de detalle utilizan el mismo componente e
+  identificador `Hero` para una transición visual continua al abrir
+  el elemento.
+- La cuadrícula de imágenes responde a pantallas angostas
+  (una columna), teléfonos medianos (dos) y vistas amplias (tres).
+- Se añadió `test/catalogo_media_test.dart` para las ilustraciones
+  de reserva y la identificación de las transiciones.
+
+Validar:
+
+```bash
+flutter analyze lib/páginas/catalogo
+flutter test test/catalogo_explorador_test.dart
+flutter test test/catalogo_media_test.dart
+```
+
+Además de las pruebas, inspeccionar manualmente el catálogo en
+pantallas estrechas, el contraste en modo oscuro y la transición
+al detalle de fichas sin imagen. Los recursos visuales nuevos son
+ilustraciones integradas por código; no se han incluido fotografías
+ni se ha modificado el contenido nutricional.
