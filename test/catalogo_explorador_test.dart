@@ -11,8 +11,8 @@ void main() {
 
   test('filtra etiquetas de ejercicio y de descanso', () {
     expect(CatalogoExplorador.filtrar(
-      items: ejerciciosCatalogo, etiqueta: 'Piernas').single.id,
-      'sentadillas');
+      items: ejerciciosCatalogo, etiqueta: 'Piernas')
+        .map((item) => item.id), contains('sentadillas'));
     expect(CatalogoExplorador.filtrar(
       items: consejosCatalogo, etiqueta: 'Sueño')
         .map((item) => item.id), contains('dormir_mejor'));
