@@ -49,7 +49,7 @@ class PersonalRoutine {
               .toList()
           : <PersonalRoutineStep>[],
       completedSessions:
-          ((data['completedSessions'] as num?)?.toInt() ?? 0).clamp(0, 1000000),
+          ((data['completedSessions'] as num?)?.toInt() ?? 0).clamp(0, 1000000).toInt(),
     );
   }
 }
@@ -79,7 +79,7 @@ class PersonalRoutineStep {
     return PersonalRoutineStep(
       title: data['title']?.toString() ?? '',
       type: {'counter', 'timer', 'stopwatch'}.contains(kind) ? kind : 'counter',
-      target: ((data['target'] as num?)?.toInt() ?? 1).clamp(1, 86400),
+      target: ((data['target'] as num?)?.toInt() ?? 1).clamp(1, 86400).toInt(),
       unit: data['unit']?.toString() ?? 'repeticiones',
     );
   }
