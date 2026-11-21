@@ -33,6 +33,31 @@ service cloud.firestore {
     function followerRef(target, follower) {
       return /databases/$(database)/documents/users/$(target)/followers/$(follower);
     }
+    function friendsRef(uid, otherUid) {
+      return /databases/$(database)/documents/users/$(uid)/friends/$(otherUid);
+    }
+
+    function validFriendAcceptance(uid, otherUid) {
+      let recipient = request.auth.uid;
+      let sender = recipient == uid ? otherUid : uid;
+      return authenticated()
+        && uid != otherUid
+        && (recipient == uid || recipient == otherUid)
+        && socialPayload()
+        && exists(incomingRef(recipient, sender))
+        && !existsAfter(incomingRef(recipient, sender))
+        && existsAfter(friendsRef(otherUid, uid))
+        && getAfter(friendsRef(otherUid, uid)).data == request.resource.data;
+    }
+
+    // Cualquier participante puede eliminar la amistad si las dos
+    // copias desaparecen en el mismo lote.
+    function validFriendRemoval(uid, otherUid) {
+      return authenticated()
+        && uid != otherUid
+        && (request.auth.uid == uid || request.auth.uid == otherUid)
+        && !existsAfter(friendsRef(otherUid, uid));
+    }
 
     // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
     function shopPrice(id) {
@@ -301,9 +326,14 @@ service cloud.firestore {
           && (demoChallengeAccept() || trustedChallengeClaim());
         allow delete: if false;
       }
-      // Lista de amistades local de la ficha de perfil (no autoritativa).
+      // Una amistad es recíproca; ninguna cuenta puede crearla sola.
       match /friends/{friendId} {
-        allow read, write: if owner(uid);
+        allow get: if owner(uid) ||
+          (authenticated() && request.auth.uid == friendId);
+        allow list: if owner(uid);
+        allow create: if validFriendAcceptance(uid, friendId);
+        allow delete: if validFriendRemoval(uid, friendId);
+        allow update: if false;
       }
 
       // Solicitudes entrantes: sólo emisor crea; emisor o receptor retira.
@@ -383,7 +413,8 @@ service cloud.firestore {
           in ['foto', 'naturaleza', 'agua', 'energia']
         && request.resource.data.settings is map
         && request.resource.data.settings.keys().hasOnly([
-          'mostrarRachaAmigos', 'visibilidadLogros'
+          'mostrarRachaAmigos', 'visibilidadLogros',
+          'permitirReacciones'
         ]);
       allow delete: if owner(uid);
     }
@@ -406,6 +437,7 @@ service cloud.firestore {
         && request.resource.data.toUid is string
         && request.resource.data.toUid.size() > 0
         && request.resource.data.toUid != request.auth.uid
+        && exists(friendsRef(request.auth.uid, request.resource.data.toUid))
         && request.resource.data.emoji is string
         && request.resource.data.emoji.size() <= 16
         && request.resource.data.emoji.size() > 0
@@ -434,6 +466,67 @@ service cloud.firestore {
             && request.resource.data.respondedAt == request.time
           )
         );
+      allow delete: if false;
+    }
+
+
+    // Invitaciones voluntarias; sólo los participantes pueden consultar.
+    // El cliente no escribe XP ni progreso de otros usuarios aquí.
+    match /shared_habit_invites/{inviteId} {
+      function isMember(data) {
+        return authenticated()
+          && (request.auth.uid == data.senderUid ||
+              request.auth.uid == data.recipientUid);
+      }
+
+      function validInviteFields() {
+        return request.resource.data.keys().hasOnly([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.recipientUid is string
+          && request.resource.data.recipientUid.size() > 0
+          && request.resource.data.recipientUid != request.auth.uid
+          && request.resource.data.habitId is string
+          && request.resource.data.habitId.size() > 0
+          && request.resource.data.habitTitle is string
+          && request.resource.data.habitTitle.size() > 0
+          && request.resource.data.habitTitle.size() <= 120
+          && request.resource.data.status == 'pendiente'
+          && request.resource.data.resolvedAt == null
+          && request.resource.data.createdAt == request.time
+          && exists(friendsRef(request.auth.uid,
+              request.resource.data.recipientUid));
+      }
+
+      function validInviteTransition() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'resolvedAt'])
+          && request.resource.data.resolvedAt == request.time
+          && (
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.recipientUid
+              && request.resource.data.status in ['aceptada', 'rechazada']
+              && exists(friendsRef(request.auth.uid,
+                  resource.data.senderUid)))
+            ||
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.senderUid
+              && request.resource.data.status == 'cancelada')
+            ||
+            (resource.data.status == 'aceptada'
+              && request.resource.data.status == 'finalizada')
+          );
+      }
+
+      allow get, list: if isMember(resource.data);
+      allow create: if authenticated() && validInviteFields();
+      allow update: if isMember(resource.data) && validInviteTransition();
       allow delete: if false;
     }
 
