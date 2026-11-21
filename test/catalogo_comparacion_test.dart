@@ -44,6 +44,10 @@ void main() {
         ),
       ),
     ));
+    // Las acciones permanecen en el pie de la tarjeta: no hace falta
+    // recorrer su lista interna para interactuar con ellas.
+    expect(find.text('Ver ficha'), findsNWidgets(2));
+    expect(find.text('Quitar'), findsNWidgets(2));
     await tester.tap(find.text('Ver ficha').first);
     expect(opened, 'sentadillas');
     await tester.tap(find.text('Quitar').first);
