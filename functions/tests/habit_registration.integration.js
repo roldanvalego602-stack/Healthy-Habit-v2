@@ -289,4 +289,55 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal(counter.data().count, 2);
   });
 
+
+  test("zona Monterrey: medianoche UTC conserva el mismo día local", async () => {
+    const uid = "integration-monterrey-calendar";
+    const {ref, habit, attempt} = await seedMulti(uid, "bien_007");
+    await Promise.all([
+      ref.update({calendarTimeZone: "America/Monterrey"}),
+      habit.update({calendarTimeZone: "America/Monterrey"}),
+      attempt.update({calendarTimeZone: "America/Monterrey"}),
+    ]);
+    const first = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "local_calendar_0001",
+      new Date("2026-11-22T01:00:00Z")
+    ));
+    const second = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "local_calendar_0002",
+      new Date("2026-11-22T03:00:00Z")
+    ));
+    assert.equal(first.registrationPeriod, "day_2026-11-21");
+    assert.equal(second.registrationPeriod, "day_2026-11-21");
+    assert.equal(second.periodStreak, 1);
+    await assert.rejects(registerDemoHabit(inputMulti(
+      uid, "bien_007", "local_calendar_0003",
+      new Date("2026-11-22T04:00:00Z")
+    )));
+    assert.equal((await ref.get()).data().xp, 20);
+    assert.equal((await attempt.get()).data().periodStreak, 1);
+    assert.equal((await attempt.collection("registration_periods").get()).size, 1);
+  });
+
+  test("racha diaria: gracia usada una vez no concede XP extra", async () => {
+    const uid = "integration-grace-streak";
+    const {ref, attempt} = await seedMulti(uid, "bien_007");
+    await attempt.update({
+      lastCompletedPeriod: "day_2026-11-19", periodStreak: 4,
+      gracePeriodsUsed: 0,
+    });
+    await registerDemoHabit(inputMulti(
+      uid, "bien_007", "grace_period_0001"
+    ));
+    const firstState = (await attempt.get()).data();
+    assert.equal(firstState.periodStreak, 4);
+    const complete = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "grace_period_0002"
+    ));
+    assert.equal(complete.periodStreak, 5);
+    const finalState = (await attempt.get()).data();
+    assert.equal(finalState.lastCompletedPeriod, "day_2026-11-21");
+    assert.equal(finalState.gracePeriodsUsed, 1);
+    assert.equal((await ref.get()).data().xp, 20);
+  });
+
 }
