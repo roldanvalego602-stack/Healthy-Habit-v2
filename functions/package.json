@@ -8,7 +8,7 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "test": "node --test tests/*.test.js",
-    "test:integration": "node --test tests/habit_registration_integration.test.js"
+    "test:integration": "node --test tests/habit_registration.integration.js"
   },
   "engines": {
     "node": "24"
