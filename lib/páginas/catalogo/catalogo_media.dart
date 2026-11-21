@@ -33,6 +33,9 @@ class CatalogoMedia extends StatelessWidget {
       case 'garbanzos':
         return Icons.restaurant_rounded;
     }
+    if (item.categoria == 'Bebidas') {
+      return Icons.water_drop_rounded;
+    }
     if (item.categoria == 'Ejercicios') {
       return Icons.fitness_center_rounded;
     }
