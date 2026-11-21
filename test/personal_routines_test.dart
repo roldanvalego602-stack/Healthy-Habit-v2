@@ -85,6 +85,59 @@ void main() {
       expect(decoded.toJson().containsKey('xp'), isFalse);
     });
 
+    test('registra metas diarias por fecha sin duplicar progreso', () {
+      const goal = PersonalRoutine(
+        id: 'water-daily',
+        title: 'Agua diaria',
+        steps: [
+          PersonalRoutineStep(
+            title: 'Tomar agua',
+            type: 'counter',
+            target: 2000,
+            unit: 'ml',
+          ),
+        ],
+        dailyGoal: true,
+        completedSessions: 2,
+        completedDays: ['2026-11-18', '2026-11-19'],
+      );
+      expect(goal.completedOn(DateTime(2026, 11, 19)), isTrue);
+      expect(goal.completedOn(DateTime(2026, 11, 20)), isFalse);
+      final restored = PersonalRoutine.fromJson(goal.toJson());
+      expect(restored.dailyGoal, isTrue);
+      expect(restored.completedDays, hasLength(2));
+      expect(restored.completedOn(DateTime(2026, 11, 19)), isTrue);
+      expect(restored.toJson().containsKey('xp'), isFalse);
+    });
+
+    test('serializa el borrador del paso pendiente', () {
+      const draft = PersonalRoutineDraft(
+        date: '2026-11-20',
+        stepIndex: 2,
+        stepValue: 250,
+      );
+      final restored = PersonalRoutineDraft.fromJson(draft.toJson());
+      expect(restored.date, '2026-11-20');
+      expect(restored.stepIndex, 2);
+      expect(restored.stepValue, 250);
+      expect(restored.toJson().containsKey('habitCoins'), isFalse);
+    });
+
+    test('acepta rutinas antiguas sin historial diario', () {
+      final oldData = <String, dynamic>{
+        'id': 'legacy',
+        'title': 'Mi rutina',
+        'steps': [
+          {'title': 'Caminar', 'type': 'timer', 'target': 300, 'unit': 'segundos'},
+        ],
+        'completedSessions': 3,
+      };
+      final restored = PersonalRoutine.fromJson(oldData);
+      expect(restored.completedSessions, 3);
+      expect(restored.dailyGoal, isFalse);
+      expect(restored.completedDays, isEmpty);
+    });
+
     test('normaliza herramientas y metas desconocidas', () {
       final step = PersonalRoutineStep.fromJson({
         'title': 'Actividad',
