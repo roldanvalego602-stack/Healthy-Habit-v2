@@ -184,9 +184,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
       }
       await _tts.stop();
       await _speech.listen(
-        localeId: 'es_MX',
-        listenFor: const Duration(seconds: 25),
-        pauseFor: const Duration(seconds: 3),
+        listenOptions: stt.SpeechListenOptions(
+          localeId: 'es_MX',
+          listenFor: const Duration(seconds: 25),
+          pauseFor: const Duration(seconds: 3),
+        ),
         onResult: (result) {
           if (!mounted) return;
           messageController.value = TextEditingValue(
@@ -196,15 +198,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
           if (result.finalResult) setState(() => _listening = false);
         },
       );
-      if (mounted) setState(() {
-        _listening = true;
-        _voiceError = null;
-      });
+      if (mounted) {
+        setState(() {
+          _listening = true;
+          _voiceError = null;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
-        _listening = false;
-        _voiceError = 'No fue posible iniciar el micrófono.';
-      });
+      if (mounted) {
+        setState(() {
+          _listening = false;
+          _voiceError = 'No fue posible iniciar el micrófono.';
+        });
+      }
     }
   }
 
