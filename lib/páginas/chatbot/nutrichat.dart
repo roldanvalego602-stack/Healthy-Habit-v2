@@ -688,69 +688,72 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   'Indica qué hábito o cuenta y qué deseas hacer. '
                   'No realizaré cambios sin confirmación.';
               _chatContext.reset();
+              _lastTopic = '';
+              _lastHabitTitle = '';
+              _lastShopItemId = '';
             } else {
-            intent = _engine.resolve(text, profile: _perfil,
-                habits: _habitosPerfil, lastTopic: _lastTopic,
-                lastHabitTitle: _lastHabitTitle,
-                lastShopItemId: _lastShopItemId);
-            final toneCommand = NutriRespuestasService.contiene(text, const [
-              'cambia tu humor', 'modo serio', 'modo divertido',
-              'modo motivador', 'modo tranquilo', 'modo amigable',
-            ]);
-            // Prioridad: seguridad/calculadora → acciones de la app →
-            // búsqueda educativa estructurada → conversación general.
-            // Ninguna ficha del dataset realiza operaciones sobre Firebase.
-            if (toneCommand) {
-              response = _respuestas.responder(
-                text, nombre: _primerNombre, perfil: _perfil);
-            } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
-              response = intent.text;
-            } else {
-              final previousKnowledge = _chatContext.referenceFor(text);
-              final educational = await _hybridKnowledge.answer(
-                text, operational: intent,
-                lastKnowledgeId: previousKnowledge,
-              );
-              if (educational != null) {
-                intent = educational;
-                response = educational.text;
+              intent = _engine.resolve(text, profile: _perfil,
+                  habits: _habitosPerfil, lastTopic: _lastTopic,
+                  lastHabitTitle: _lastHabitTitle,
+                  lastShopItemId: _lastShopItemId);
+              final toneCommand = NutriRespuestasService.contiene(text, const [
+                'cambia tu humor', 'modo serio', 'modo divertido',
+                'modo motivador', 'modo tranquilo', 'modo amigable',
+              ]);
+              // Prioridad: seguridad/calculadora → acciones de la app →
+              // búsqueda educativa estructurada → conversación general.
+              // Ninguna ficha del dataset realiza operaciones sobre Firebase.
+              if (toneCommand) {
+                response = _respuestas.responder(
+                  text, nombre: _primerNombre, perfil: _perfil);
+              } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
+                response = intent.text;
+              } else {
+                final previousKnowledge = _chatContext.referenceFor(text);
+                final educational = await _hybridKnowledge.answer(
+                  text, operational: intent,
+                  lastKnowledgeId: previousKnowledge,
+                );
+                if (educational != null) {
+                  intent = educational;
+                  response = educational.text;
+                  _chatContext.recordEducationalReply(
+                    input: text,
+                    knowledgeId: educational.knowledgeId,
+                    previousReference: previousKnowledge,
+                  );
+                } else {
+                  _chatContext.reset();
+                  response = _conversation.reply(
+                        text,
+                        name: _primerNombre,
+                        previousUserMessage: lastUserPrompt,
+                      ) ??
+                      _respuestas.responder(
+                        text, nombre: _primerNombre, perfil: _perfil);
+                }
+              }
+              if (intent.card == 'catalog_item' &&
+                  intent.actionArgument == 'huevo') {
+                // El catálogo también puede introducir un tema educativo.
+                // La siguiente pregunta podrá referirse al huevo sin repetirlo.
                 _chatContext.recordEducationalReply(
                   input: text,
-                  knowledgeId: educational.knowledgeId,
-                  previousReference: previousKnowledge,
+                  knowledgeId: 'huevo',
+                  previousReference: '',
                 );
-              } else {
+              } else if (intent.card != 'knowledge') {
                 _chatContext.reset();
-                response = _conversation.reply(
-                      text,
-                      name: _primerNombre,
-                      previousUserMessage: lastUserPrompt,
-                    ) ??
-                    _respuestas.responder(
-                      text, nombre: _primerNombre, perfil: _perfil);
               }
-            }
-            if (intent.card == 'catalog_item' &&
-                intent.actionArgument == 'huevo') {
-              // El catálogo también puede introducir un tema educativo.
-              // La siguiente pregunta podrá referirse al huevo sin repetirlo.
-              _chatContext.recordEducationalReply(
-                input: text,
-                knowledgeId: 'huevo',
-                previousReference: '',
-              );
-            } else if (intent.card != 'knowledge') {
-              _chatContext.reset();
-            }
-            _lastTopic = _engine.topicFor(intent);
-            if (intent.action == 'habits' &&
-                intent.actionArgument.isNotEmpty) {
-              _lastHabitTitle = intent.actionArgument;
-            }
-            if (intent.card == 'shop_item' &&
-                intent.actionArgument.isNotEmpty) {
-              _lastShopItemId = intent.actionArgument;
-            }
+              _lastTopic = _engine.topicFor(intent);
+              if (intent.action == 'habits' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastHabitTitle = intent.actionArgument;
+              }
+              if (intent.card == 'shop_item' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastShopItemId = intent.actionArgument;
+              }
             } // Respuesta ordinaria (no orden elíptica).
           }
         }
