@@ -42,6 +42,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   String selectedDifficulty = 'Todos';
   bool searching = false;
   bool showingFullCatalog = false;
+  int _habitsView = 0;
   bool loading = true;
   bool saving = false;
   bool loadingPopularity = false;
@@ -642,6 +643,61 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
   }
 
+  Widget _vistasHabitos() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Cómo ver los hábitos', style: TextStyle(
+        color: navy, fontWeight: FontWeight.w700, fontSize: 12)),
+      const SizedBox(height: 8),
+      SegmentedButton<int>(
+        segments: const [
+          ButtonSegment(value: 0, icon: Icon(Icons.view_list_rounded),
+            label: Text('Lista')),
+          ButtonSegment(value: 1, icon: Icon(Icons.grid_view_rounded),
+            label: Text('Tarjetas')),
+          ButtonSegment(value: 2, icon: Icon(Icons.swipe_rounded),
+            label: Text('Deslizar')),
+        ],
+        selected: {_habitsView},
+        showSelectedIcon: false,
+        onSelectionChanged: (value) => setState(
+          () => _habitsView = value.first),
+      ),
+    ]),
+  );
+
+  Widget _vistaDeRecomendaciones(List<Habit> habits) {
+    if (_habitsView == 2) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Desliza a los lados para explorar', style: TextStyle(
+          fontSize: 12, color: muted)),
+        const SizedBox(height: 8),
+        _twoRowRecommendationCarousel(habits),
+      ]);
+    }
+    if (_habitsView == 1) {
+      return LayoutBuilder(builder: (context, constraints) =>
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: habits.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: constraints.maxWidth < 550 ? 1 : 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 255,
+          ),
+          itemBuilder: (_, index) => _recommendationCard(habits[index]),
+        ),
+      );
+    }
+    return Column(children: [
+      for (final habit in habits)
+        Padding(padding: const EdgeInsets.only(bottom: 12),
+          child: _recommendationCard(habit)),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -698,7 +754,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                           ),
                                         ),
                                         Text(
-                                          'Diseña tus pasos, contadores y descansos sin XP.',
+                                          'Crea rutinas con varios ejercicios, ordénalos y ejecútalos paso a paso. Se guardan en este dispositivo y no conceden XP.',
                                           style: TextStyle(
                                             color: muted,
                                             fontSize: 12,
@@ -768,7 +824,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                 label: Text(
                                   showingFullCatalog
                                       ? 'Ver sugeridos'
-                                      : 'Ver catálogo',
+                                      : 'Ver todos',
                                 ),
                               ),
                             ],
@@ -776,24 +832,17 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           const SizedBox(height: 6),
                           Text(
                             showingFullCatalog
-                                ? 'Explora todos los hábitos disponibles según tus filtros.'
-                                : _suggestionDescription(),
+                                ? 'Estás viendo todos los hábitos. Pulsa «Ver sugeridos» para volver a una selección personalizada.'
+                                : 'Estas son sugerencias para ti. Pulsa «Ver todos» para consultar todos los hábitos. ${_suggestionDescription()}',
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
                           const SizedBox(height: 14),
+                          _vistasHabitos(),
                           if (visibleRecommendations.isEmpty)
-                            _empty(
-                              'No hay hábitos disponibles con estos filtros.',
-                            )
-                          else if (showingFullCatalog)
-                            ...visibleRecommendations.map(
-                              (habit) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _recommendationCard(habit),
-                              ),
-                            )
+                            _empty('No hay hábitos disponibles con estos filtros.')
                           else
-                            _twoRowRecommendationCarousel(_suggestedHabits),
+                            _vistaDeRecomendaciones(showingFullCatalog
+                              ? visibleRecommendations : _suggestedHabits),
 
                           if (!showingFullCatalog) ...[
                             const SizedBox(height: 24),
