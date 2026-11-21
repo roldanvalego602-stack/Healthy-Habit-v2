@@ -139,7 +139,9 @@ class HealthyKnowledgeIndex {
       if (egg && ham && card.id == 'huevo_jamon') score += 55;
       if (egg && safety && card.id == 'huevo_seguridad') score += 45;
       if (egg && cooking && !ham &&
-          card.id == 'huevo_coccion') score += 40;
+          card.id == 'huevo_coccion') {
+        score += 40;
+      }
       if (score >= 10) ranked.add(HealthyKnowledgeMatch(card, score));
     }
     if (ranked.isEmpty) return null;
