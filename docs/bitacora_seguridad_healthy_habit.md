@@ -341,3 +341,20 @@ flutter run
 **Estado:** revisión de código y pruebas de puntuación de búsqueda reproducidas manualmente en la herramienta de trabajo; **Flutter analyze y flutter test todavía no ejecutados en el dispositivo del usuario**. No proclamar pruebas aprobadas sin ejecutar.
 
 **Validar:** `flutter analyze --no-fatal-infos lib`, `flutter test test/chatbot` y sesión Android siguiendo una conversación con cambios de intención. Firestore producción y reglas de Storage permanecen sin cambios.
+
+## Mr. Healthy — primera etapa de entrenamiento de intenciones (20-nov-2026)
+
+**Entregable en rama de desarrollo:** `datasets/chat_intents_es_v1.json` tiene 315 frases sintéticas etiquetadas en 15 intenciones: 225 `train` y 90 `test`. `datasets/chat_dialogues_es_v1.json` tiene 20 conversaciones (42 mensajes) para una futura evaluación de seguimiento. Ninguna expresión proviene de historiales privados.
+
+Se incorporó `tools/chat_intent_train.py`: clasificador TF-IDF de palabras, bigramas y n-gramas de caracteres con centroides entrenados, calibración interna solo en datos `train`, umbrales de abstención y evaluación test con matriz de confusión, precisión/recobrado/F1, macro-F1 y alertas de errores críticos. Genera modelo e informe en `outputs/` local (ignorado por Git). `tools/test_chat_intent_train.py` comprueba separación, integridad y determinismo.
+
+**Comprobación exploratoria:** una implementación equivalente en la herramienta de trabajo observó 66/90 respuestas correctas (73.3 %) sin abstención; no representa el resultado oficial de Python ni pasa el criterio de aceptación. El umbral de integración experimental requiere macro-F1 ≥ 0.85 y cero confusiones críticas, aun así no autoriza acciones. **El clasificador no está conectado al chatbot Flutter ni al backend**, por lo que no altera funcionamiento existente. No se entrenó un modelo generativo.
+
+**Próximos comandos del usuario:**
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_train.py' -v
+python3 tools/chat_intent_train.py
+python3 tools/chat_intent_train.py --predict "¿Cuántas monedas me quedan?"
+```
+
+Ver guía `docs/mr_healthy_entrenamiento_intenciones.md`. La prioridad es corregir confusiones en datos/desarrollo y comparar contra reglas actuales sin optimizar sobre la evaluación reservada. Seguridad y reglas de Firestore/Storage permanecen sin cambios.
