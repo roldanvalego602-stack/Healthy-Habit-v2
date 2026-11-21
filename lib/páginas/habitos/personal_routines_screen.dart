@@ -686,16 +686,90 @@ class _RoutineEditorState extends State<_RoutineEditor> {
 }
 
 class _RoutineRunner extends StatefulWidget {
-  const _RoutineRunner({required this.routine});
+  const _RoutineRunner({required this.routine, this.draft});
   final PersonalRoutine routine;
+  final PersonalRoutineDraft? draft;
 
   @override
   State<_RoutineRunner> createState() => _RoutineRunnerState();
 }
 
 class _RoutineRunnerState extends State<_RoutineRunner> {
+  final PersonalRoutinesStore _store = const PersonalRoutinesStore();
   int _step = 0;
+  int _stepValue = 0;
   bool _complete = false;
+  bool _advancing = false;
+  Future<void> _pendingWrite = Future<void>.value();
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = widget.draft;
+    if (saved == null || widget.routine.steps.isEmpty) return;
+    _step = saved.stepIndex.clamp(0, widget.routine.steps.length - 1).toInt();
+    _stepValue = saved.stepValue
+        .clamp(0, widget.routine.steps[_step].target).toInt();
+    _complete = _stepValue >= widget.routine.steps[_step].target;
+  }
+
+  void _progressChanged(bool complete, int value) {
+    if (!mounted || _advancing) return;
+    if (_complete != complete || _stepValue != value) {
+      setState(() {
+        _complete = complete;
+        _stepValue = value;
+      });
+    }
+    final saved = PersonalRoutineDraft(
+      date: PersonalRoutine.dateKey(DateTime.now()),
+      stepIndex: _step,
+      stepValue: value,
+    );
+    _pendingWrite = _pendingWrite
+        .then((_) => _store.saveDraft(widget.routine.id, saved))
+        .catchError((Object error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se guardó el avance: $error')),
+        );
+      }
+    });
+  }
+
+  Future<void> _nextStep() async {
+    if (!_complete || _advancing) return;
+    setState(() => _advancing = true);
+    try {
+      await _pendingWrite;
+      if (!mounted) return;
+      if (_step + 1 == widget.routine.steps.length) {
+        Navigator.pop(context, true);
+        return;
+      }
+      final nextIndex = _step + 1;
+      await _store.saveDraft(
+        widget.routine.id,
+        PersonalRoutineDraft(
+          date: PersonalRoutine.dateKey(DateTime.now()),
+          stepIndex: nextIndex,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _step = nextIndex;
+        _stepValue = 0;
+        _complete = false;
+        _advancing = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _advancing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo avanzar: $error')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -727,27 +801,13 @@ class _RoutineRunnerState extends State<_RoutineRunner> {
             type: step.type,
             target: step.target,
             unit: step.unit,
-            onChanged: (complete, _) {
-              if (mounted && complete != _complete) {
-                setState(() => _complete = complete);
-              }
-            },
+            initialValue: _stepValue,
+            onChanged: _progressChanged,
           ),
           const SizedBox(height: 20),
           FilledButton(
             key: const ValueKey('personal-routine-next'),
-            onPressed: _complete
-                ? () {
-                    if (_step + 1 == widget.routine.steps.length) {
-                      Navigator.pop(context, true);
-                    } else {
-                      setState(() {
-                        _step++;
-                        _complete = false;
-                      });
-                    }
-                  }
-                : null,
+            onPressed: _complete && !_advancing ? _nextStep : null,
             child: Text(
               _step + 1 == widget.routine.steps.length
                   ? 'Finalizar sesión'
