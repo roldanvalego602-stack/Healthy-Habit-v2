@@ -11,7 +11,6 @@ import 'perfil_muestra.dart';
 
 class _C {
   static const green = Color(0xFF198568);
-  static const mint = Color(0xFF8DE0C0);
   static Color get navy => HealthyAdaptive.text;
   static Color get background => HealthyAdaptive.background;
   static Color get grey => HealthyAdaptive.muted;
