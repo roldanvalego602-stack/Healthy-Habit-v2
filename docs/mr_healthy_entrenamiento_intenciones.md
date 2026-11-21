@@ -108,3 +108,29 @@ También existe `.github/workflows/mr_healthy_intent_benchmark.yml`, que se disp
 - Aunque un clasificador supere métricas, la autorización de hábitos/tienda/cuenta debe continuar en los servicios existentes y nunca basarse exclusivamente en la predicción estadística.
 - Los mensajes breves como «bórralo», o «¿y ese?» dependen de contexto: evaluar con `datasets/chat_dialogues_es_v1.json` una vez implementado un estado conversacional explícito, no simular que el modelo de un solo turno tiene memoria.
 - No afinar las reglas o los ejemplos entrenados con conocimiento de las frases del conjunto `test` usado para medir. Al incorporar nuevos casos, preservar un nuevo conjunto verdaderamente reservado.
+
+## 8. Resultados ejecutados en el equipo (20-nov-2026)
+
+El usuario ejecutó los scripts sobre el commit `d201fdb` y proporcionó la salida de consola:
+
+- **13/13 pruebas unitarias Python** aprobadas.
+- **Clasificador inicial TF-IDF**, sin abstención: exactitud **73.3 %**, macro-F1 **0.733**, cobertura **100 %**, **4 errores críticos**.
+- **Comparación con calibración de desarrollo:**
+  - TF-IDF: exactitud **65.6 %**, macro-F1 **0.708**, cobertura **82.2 %**, **2 errores críticos**.
+  - Naive Bayes multinomial: exactitud **68.9 %**, macro-F1 **0.708**, cobertura **95.6 %**, **5 errores críticos**.
+- El candidato seleccionado **solo mediante desarrollo** fue TF-IDF. Ninguno alcanzó el criterio de aprobación; ambos siguen desconectados de Flutter.
+- Las salidas `REVISAR` y `NO APROBADO` indican **rechazo por métricas**, no fallos en los tests unitarios.
+
+### Diagnóstico sin contaminar la evaluación
+
+Se incorporó `tools/chat_intent_audit.py`, que lee los JSON de resultados existentes y muestra clases con peor F1, pares de confusiones habituales y ejemplos críticos. No entrena, no selecciona parámetros y no cambia el corpus.
+
+```bash
+python3 tools/chat_intent_audit.py
+python3 tools/chat_intent_audit.py --json
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+```
+
+La salida incluye preguntas de test ya evaluadas. **No añadirlas sin más al entrenamiento ni ajustar reglas para memorizar sus respuestas**, porque ya no serían una evaluación realmente reservada. Para una nueva versión del clasificador, mejorar exclusivamente datos de desarrollo y obtener **un nuevo test independiente** antes de afirmar mejoría.
+
+**Plan siguiente:** (1) obtener distribución de errores con el auditor; (2) definir un conjunto adicional de ejemplos de desarrollo y casos adversariales sin usar el test anterior como referencia de ajuste; (3) comparar con pruebas nuevas independientes y buscar macro-F1 ≥ 0.85 con cero errores críticos; (4) integrar solamente como señal auxiliar tras validar acciones y confirmaciones en Flutter. La eliminación de cuenta continúa deshabilitada y el clasificador nunca ejecutará escrituras sensibles.
