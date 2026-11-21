@@ -738,20 +738,27 @@ class _RoutineEditorState extends State<_RoutineEditor> {
     super.dispose();
   }
 
-  void _addStep() {
+  bool _addStep({bool showConfirmation = true}) {
     final name = _stepName.text.trim();
     final target = int.tryParse(_goal.text.trim());
     if (widget.singleGoal && _steps.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Una meta personal tiene una sola actividad.')),
+        const SnackBar(content: Text(
+          'Una meta individual admite una sola actividad. '
+          'Elige «Crear rutina» para combinar varios ejercicios.',
+        )),
       );
-      return;
+      return false;
     }
-    if (name.isEmpty || target == null || target < 1 || target > 86400) {
+    if (name.isEmpty || target == null || target < 1 || target > 86400 ||
+        (_type == 'counter' && _unit.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un paso y una meta válida (1 a 86400).')),
+        const SnackBar(content: Text(
+          'Escribe una actividad, su cantidad válida y una unidad '
+          'antes de añadirla.',
+        )),
       );
-      return;
+      return false;
     }
     setState(() {
       _steps.add(PersonalRoutineStep(
@@ -762,6 +769,14 @@ class _RoutineEditorState extends State<_RoutineEditor> {
       ));
       _stepName.clear();
     });
+    if (showConfirmation) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('«$name» se añadió. '
+          'Ahora puedes agregar otro ejercicio o guardar tu rutina.'),
+        duration: const Duration(seconds: 3),
+      ));
+    }
+    return true;
   }
 
   Future<void> _editStep(int index) async {
@@ -776,7 +791,19 @@ class _RoutineEditorState extends State<_RoutineEditor> {
   }
 
   void _save() {
-    if (_title.text.trim().isEmpty || _steps.isEmpty ||
+    if (_title.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ponle un nombre a tu rutina.')),
+      );
+      return;
+    }
+    // Si quedó una actividad escrita, inclúyela antes de guardar.
+    // Así no se pierde al pulsar Guardar sin tocar Añadir ejercicio.
+    if (_stepName.text.trim().isNotEmpty &&
+        !_addStep(showConfirmation: false)) {
+      return;
+    }
+    if (_steps.isEmpty ||
         _steps.any((step) => step.title.isEmpty || step.unit.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Escribe un nombre y añade al menos un paso.')),
@@ -927,7 +954,8 @@ class _RoutineEditorState extends State<_RoutineEditor> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: widget.singleGoal && _steps.isNotEmpty ? null : _addStep,
+            onPressed: widget.singleGoal && _steps.isNotEmpty
+                ? null : () => _addStep(),
             icon: const Icon(Icons.add),
             label: Text(widget.singleGoal ? 'Establecer meta' : 'Añadir ejercicio a la rutina'),
           ),
