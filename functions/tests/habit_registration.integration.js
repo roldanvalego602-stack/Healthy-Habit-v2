@@ -11,8 +11,10 @@ const {getFirestore} = require("firebase-admin/firestore");
 const {registerDemoHabit, registerOfficialHabitTransaction} =
   require("../habit_registration_transaction");
 const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
-const {activateDemoHabit} = require("../habit_activation_transaction");
-const {cancelDemoHabit} = require("../habit_cancellation_transaction");
+const {activateDemoHabit, activateOfficialHabitTransaction} =
+  require("../habit_activation_transaction");
+const {cancelDemoHabit, cancelOfficialHabitTransaction} =
+  require("../habit_cancellation_transaction");
 const {purchaseDemoShopItem} = require("../shop_purchase_transaction");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST ||
@@ -825,6 +827,76 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     )));
     assert.equal((await ref.get()).data().xp, 0);
     assert.equal((await attempt.collection("logs").get()).size, 0);
+  });
+
+  test("motor oficial: activa y cancela los 36 hábitos con reintentos", async () => {
+    const {SERVER_CATALOG} = require("../official_habit_catalog");
+    const ids = Object.keys(SERVER_CATALOG);
+    assert.equal(ids.length, 36);
+    for (const habitId of ids) {
+      const uid = `integration-lifecycle-${habitId}`;
+      const user = await seedActivation(uid, {xp: 11000});
+      const attemptId = `official_attempt_${habitId}_01`;
+      const activateParams = {
+        db, uid,
+        data: {
+          habitId, attemptId,
+          operationId: `official_activation_${habitId}_01`,
+        },
+      };
+      const activated = await activateOfficialHabitTransaction(activateParams);
+      const activationRetry =
+        await activateOfficialHabitTransaction(activateParams);
+      assert.equal(activated.alreadyProcessed, false, habitId);
+      assert.equal(activationRetry.alreadyProcessed, true, habitId);
+      const habitRef = user.collection("user_habits").doc(habitId);
+      const attemptRef = habitRef.collection("attempts").doc(attemptId);
+      assert.equal((await attemptRef.get()).data().status, "inProgress",
+        habitId);
+      assert.equal((await attemptRef.get()).data().target,
+        SERVER_CATALOG[habitId].target, habitId);
+      const cancelParams = {
+        db, uid,
+        data: {
+          habitId, attemptId,
+          operationId: `official_cancel_${habitId}_01`,
+          maxPenalty: 25,
+        },
+      };
+      const cancelled = await cancelOfficialHabitTransaction(cancelParams);
+      const cancellationRetry =
+        await cancelOfficialHabitTransaction(cancelParams);
+      assert.equal(cancelled.alreadyProcessed, false, habitId);
+      assert.equal(cancellationRetry.alreadyProcessed, true, habitId);
+      assert.equal((await attemptRef.get()).data().status, "cancelled",
+        habitId);
+      const penalty = SERVER_CATALOG[habitId].difficulty === "Difícil" ? 25 : 0;
+      assert.equal(cancelled.chargedCoins, penalty, habitId);
+      assert.equal((await user.get()).data().habitCoins, 100 - penalty,
+        habitId);
+      assert.equal((await user.get()).data().habitMutationVersion, 2,
+        habitId);
+      assert.equal((await user.collection("habit_activation_operations").get()).size,
+        1, habitId);
+      assert.equal((await user.collection("habit_cancellation_operations").get()).size,
+        1, habitId);
+    }
+  });
+
+  test("motor oficial: dos activaciones simultáneas respetan un solo cupo", async () => {
+    const uid = "integration-official-activation-race";
+    const user = await seedActivation(uid, {slots: 1, xp: 11000});
+    const payloads = [
+      {habitId: "alim_001", attemptId: "official_attempt_race_01",
+        operationId: "official_activation_race_01"},
+      {habitId: "ener_002", attemptId: "official_attempt_race_02",
+        operationId: "official_activation_race_02"},
+    ];
+    const outcomes = await Promise.allSettled(payloads.map((data) =>
+      activateOfficialHabitTransaction({db, uid, data})));
+    assert.equal(outcomes.filter((o) => o.status === "fulfilled").length, 1);
+    assert.equal((await user.collection("user_habits").get()).size, 1);
+    assert.equal((await user.get()).data().habitMutationVersion, 1);
   });
 
 }
