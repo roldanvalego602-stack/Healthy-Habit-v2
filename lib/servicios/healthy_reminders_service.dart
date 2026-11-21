@@ -17,6 +17,7 @@ class HealthyRemindersService {
   int _revision = 0;
 
   static const int _firstId = 8100;
+  static const int _diagnosticId = 8198;
   static const List<String> _titles = [
     'Un paso para tus hábitos',
     'Cuida tu constancia',
@@ -171,6 +172,58 @@ class HealthyRemindersService {
     return requests.where((request) =>
       request.id >= _firstId &&
       request.id < _firstId + 3 * 10 + 8).length;
+  }
+
+  /// Consulta el estado del permiso sin solicitarlo.
+  Future<bool?> notificationsEnabled() async {
+    if (!supported) return null;
+    await initialize();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return android?.areNotificationsEnabled();
+  }
+
+  /// Programa una notificación de diagnóstico dentro de dos minutos.
+  /// Puede llegar más tarde por las restricciones energéticas de Android.
+  /// No cambia preferencias ni elimina los recordatorios cotidianos.
+  Future<bool> scheduleDiagnosticTest() async {
+    if (!supported) return false;
+    await initialize();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    final granted = await android?.requestNotificationsPermission();
+    if (granted == false || await android?.areNotificationsEnabled() == false) {
+      return false;
+    }
+    // La prueba se puede repetir sin acumular avisos de diagnóstico.
+    await _plugin.cancel(_diagnosticId);
+    final scheduledAt =
+        tz.TZDateTime.now(tz.local).add(const Duration(minutes: 2));
+    await _plugin.zonedSchedule(
+      _diagnosticId,
+      'Prueba programada de Healthy Habit',
+      'Android ejecutó el aviso de diagnóstico de esta aplicación.',
+      scheduledAt,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'healthy_habit_diagnostic_v1',
+          'Pruebas de recordatorios',
+          channelDescription: 'Prueba voluntaria de programación de avisos',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+    return true;
+  }
+
+  /// Comprueba si la prueba de dos minutos figura entre las pendientes.
+  Future<bool?> diagnosticPending() async {
+    if (!supported) return null;
+    await initialize();
+    final requests = await _plugin.pendingNotificationRequests();
+    return requests.any((request) => request.id == _diagnosticId);
   }
 
   Future<void> cancel() async {
