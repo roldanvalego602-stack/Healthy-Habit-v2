@@ -452,3 +452,33 @@ exports.activateDemoOfficialHabit = onCall(
     }
   }
 );
+
+
+// Cancelación piloto: descuento confirmado y operación idempotente.
+// Existen cero permisos de despliegue real; se limita al emulador demo.
+const {cancelDemoHabit} = require("./habit_cancellation_transaction");
+
+exports.cancelDemoOfficialHabit = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition", "La cancelación solo existe en el emulador demo."
+      );
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    try {
+      return await cancelDemoHabit({
+        db, uid: request.auth.uid, data: request.data,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
