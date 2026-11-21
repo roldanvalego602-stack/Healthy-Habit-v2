@@ -10,6 +10,7 @@ const {initializeApp, deleteApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const {registerDemoHabit} = require("../habit_registration_transaction");
 const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
+const {activateDemoHabit} = require("../habit_activation_transaction");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST ||
     process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
@@ -419,6 +420,91 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     ];
     assert.equal(new Set(values).size, 1);
     assert.ok(options.includes(values[0]));
+  });
+
+
+  async function seedActivation(uid, {slots = 3, xp = 100} = {}) {
+    const ref = db.collection("users").doc(uid);
+    await ref.set({
+      xp, currentXp: xp, habitCoins: 100,
+      habitSlots: slots, habitMutationVersion: 0,
+      claimedLevelRewards: [],
+      calendarTimeZone: "America/Monterrey",
+    });
+    return ref;
+  }
+
+  function activationArgs(uid, habitId, attemptId, operationId) {
+    return {db, uid, data: {habitId, attemptId, operationId}};
+  }
+
+  test("activación real crea un intento y admite reintento sin doble cargo", async () => {
+    const uid = "integration-activation-first";
+    const user = await seedActivation(uid);
+    const req = activationArgs(
+      uid, "alim_004", "activation_attempt_0001",
+      "activation_operation_0001"
+    );
+    const first = await activateDemoHabit(req);
+    const retry = await activateDemoHabit(req);
+    assert.equal(first.alreadyProcessed, false);
+    assert.equal(retry.alreadyProcessed, true);
+    assert.equal(retry.attemptId, first.attemptId);
+    const state = (await user.get()).data();
+    assert.equal(state.habitCoins, 100);
+    assert.equal(state.habitMutationVersion, 1);
+    const habit = user.collection("user_habits").doc("alim_004");
+    const attempt = habit.collection("attempts").doc(first.attemptId);
+    assert.equal((await attempt.get()).data().status, "inProgress");
+    assert.equal((await attempt.get()).data().target, 12);
+    assert.equal((await attempt.get()).data().calendarTimeZone,
+      "America/Monterrey");
+    assert.equal((await habit.get()).data().latestAttemptId, first.attemptId);
+    assert.equal((await user.collection("habit_activation_operations").get()).size, 1);
+  });
+
+  test("dos activaciones simultáneas no pueden ocupar el mismo espacio", async () => {
+    const uid = "integration-activation-slots";
+    const user = await seedActivation(uid, {slots: 1, xp: 11000});
+    const outcomes = await Promise.allSettled([
+      activateDemoHabit(activationArgs(uid, "alim_004",
+        "activation_attempt_0002", "activation_operation_0002")),
+      activateDemoHabit(activationArgs(uid, "bien_007",
+        "activation_attempt_0003", "activation_operation_0003")),
+    ]);
+    assert.equal(outcomes.filter((x) => x.status === "fulfilled").length, 1);
+    assert.equal((await user.collection("user_habits").get()).size, 1);
+    assert.equal((await user.get()).data().habitMutationVersion, 1);
+    assert.equal((await user.collection("habit_activation_operations").get()).size, 1);
+  });
+
+  test("no activa hábitos difíciles sin nivel ni altera economía", async () => {
+    const uid = "integration-activation-level";
+    const user = await seedActivation(uid, {xp: 0});
+    await assert.rejects(activateDemoHabit(activationArgs(
+      uid, "bien_007", "activation_attempt_0004",
+      "activation_operation_0004"
+    )));
+    assert.equal((await user.get()).data().habitMutationVersion, 0);
+    assert.equal((await user.get()).data().habitCoins, 100);
+    assert.equal((await user.collection("user_habits").get()).size, 0);
+  });
+
+  test("la activación y el primer registro usan el mismo calendario", async () => {
+    const uid = "integration-activation-to-registration";
+    const user = await seedActivation(uid, {xp: 100});
+    await activateDemoHabit(activationArgs(
+      uid, "alim_004", "activation_attempt_0005",
+      "activation_operation_0005"
+    ));
+    const result = await registerDemoHabit({
+      db, uid, now: new Date("2026-11-23T03:00:00Z"),
+      data: {habitId: "alim_004", attemptId: "activation_attempt_0005",
+        operationId: "registration_after_activation_0005"},
+    });
+    assert.equal(result.registrationPeriod, "week_2026-11-16");
+    assert.equal(result.calendarTimeZone, "America/Monterrey");
+    assert.equal((await user.get()).data().xp, 110);
   });
 
 }
