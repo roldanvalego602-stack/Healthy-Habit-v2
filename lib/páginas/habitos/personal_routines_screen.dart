@@ -436,11 +436,11 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                       ),
                     ),
                   ),
-                if (_routines.any((routine) => routine.dailyGoal))
+                if (_routines.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      'Tus metas diarias',
+                      'Tus metas y rutinas',
                       style: TextStyle(
                         color: HealthyAdaptive.text,
                         fontSize: 19,
@@ -918,7 +918,6 @@ class _RoutineRunnerState extends State<_RoutineRunner> {
                 .clamp(0.0, widget.routine.steps.length.toDouble())
                 .toDouble() / widget.routine.steps.length,
             minHeight: 8,
-            borderRadius: BorderRadius.circular(8),
           ),
           const SizedBox(height: 18),
           Text(
