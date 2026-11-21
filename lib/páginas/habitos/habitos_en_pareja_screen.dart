@@ -163,7 +163,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
           ),
         );
         if (ok != true) return;
-        await _service.activarHabito(habitId);
+        await _service.activarHabito(id);
       }
       _message(action == 'activate'
           ? 'Hábito activado en tu cuenta. Ya puedes registrar sesiones.'
@@ -235,7 +235,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
                     FilledButton.tonalIcon(
                       onPressed: _busy == null ? () => _act(
                         item.id,
-                        (item.data()['habitId'] ?? '').toString(),
+                        '',
                         'activate',
                       ) : null,
                       icon: const Icon(Icons.add_task_rounded),
