@@ -849,6 +849,107 @@
         "name": "Healthy Habit — orientación educativa general",
         "url": ""
       }
+    },
+    {
+      "id": "huevo_seguridad",
+      "category": "alimentacion",
+      "title": "¿El huevo puede hacer daño?",
+      "aliases": [
+        "huevo hace daño",
+        "comer huevo hace daño",
+        "es malo comer huevo",
+        "huevo es dañino",
+        "huevo puede enfermar",
+        "peligros del huevo",
+        "huevo me cae mal",
+        "huevo crudo es peligroso"
+      ],
+      "tags": [
+        "huevo",
+        "seguridad alimentaria",
+        "alergia",
+        "salmonela"
+      ],
+      "answer": "Para muchas personas, el huevo bien cocinado puede formar parte de una alimentación variada. Los principales riesgos incluyen alergia y enfermedades transmitidas por huevos crudos o poco cocidos. Refrigera y cocina bien el huevo, hasta que la clara y la yema estén firmes. Si presentas una reacción alérgica, consulta a un profesional; dificultad para respirar requiere atención urgente.",
+      "source": {
+        "name": "FDA — Seguridad del huevo",
+        "url": "https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety"
+      }
+    },
+    {
+      "id": "huevo_jamon",
+      "category": "alimentacion",
+      "title": "Preparar huevo con jamón",
+      "aliases": [
+        "huevo con jamon",
+        "preparar huevo con jamon",
+        "huevos con jamon",
+        "agregar jamon al huevo",
+        "ponerle jamon al huevo",
+        "hacer huevo y jamon",
+        "jamon con huevo",
+        "si le pongo jamon",
+        "si le agrego jamon"
+      ],
+      "tags": [
+        "huevo",
+        "jamon",
+        "preparacion",
+        "carne procesada"
+      ],
+      "answer": "Sí, puedes preparar huevo con jamón. Cocina bien el huevo y manipula los ingredientes de forma higiénica. El jamón suele ser una carne procesada, por lo que conviene consumirlo con moderación. Para variar puedes añadir verduras y, si te interesa reducir sodio, elegir preparaciones con menos embutidos. No hace falta eliminar un alimento por una sola combinación.",
+      "source": {
+        "name": "OMS — Carnes rojas y procesadas",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/cancer-carcinogenicity-of-the-consumption-of-red-meat-and-processed-meat/"
+      }
+    },
+    {
+      "id": "huevo_coccion",
+      "category": "alimentacion",
+      "title": "Cocción segura del huevo",
+      "aliases": [
+        "huevo crudo",
+        "huevo poco cocido",
+        "huevo bien cocido",
+        "cocinar huevo",
+        "como preparar huevo seguro",
+        "cocer huevo",
+        "salmonella en huevo"
+      ],
+      "tags": [
+        "huevo",
+        "preparacion",
+        "coccion",
+        "salmonella"
+      ],
+      "answer": "Para reducir el riesgo de salmonela, conserva los huevos según las indicaciones locales, evita contaminación cruzada y cocina hasta que la clara y la yema estén firmes. Para platillos que se consuman crudos o poco cocidos utiliza huevos o productos de huevo pasteurizados.",
+      "source": {
+        "name": "FDA — Seguridad del huevo",
+        "url": "https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety"
+      }
+    },
+    {
+      "id": "huevo_frecuencia",
+      "category": "alimentacion",
+      "title": "Frecuencia de consumo de huevo",
+      "aliases": [
+        "comer huevo diario",
+        "comer huevos todos los dias",
+        "cuantos huevos puedo comer",
+        "huevo todos los dias",
+        "comer mucho huevo"
+      ],
+      "tags": [
+        "huevo",
+        "frecuencia",
+        "alimentacion",
+        "colesterol"
+      ],
+      "answer": "La cantidad apropiada de huevo depende de tu alimentación total, antecedentes y situación de salud. No hay una cantidad universal adecuada para todos. Si tienes indicaciones médicas relacionadas con lípidos o alergias, consulta a un profesional para individualizar el consumo.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
     }
   ]
 }
