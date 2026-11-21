@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'profile_avatar.dart';
+import 'reaction_picker_dialog.dart';
 import 'social_action_button.dart';
 
 import 'amigos_servicio.dart';
@@ -413,6 +414,27 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 13),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      key: ValueKey('feed-encourage-$uid'),
+                      onPressed: () {
+                        final me = AmigosServicio.uidActual;
+                        if (me == null || me == uid) return;
+                        showDialog<void>(
+                          context: context,
+                          builder: (_) => ReactionPickerDialog(
+                            fromUid: me,
+                            toUid: uid,
+                            friendName: nombre,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_reaction_outlined, size: 18),
+                      label: const Text('Animar'),
+                    ),
+                  ),
                 ],
               ),
             ),
