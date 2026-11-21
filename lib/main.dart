@@ -11,6 +11,7 @@ import 'tema/healthy_float.dart';
 import 'servicios/preferencias_app.dart';
 import 'servicios/healthy_reminders_service.dart';
 import 'servicios/healthy_public_profile_service.dart';
+import 'servicios/shop_demo_bootstrap.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -31,11 +32,37 @@ Future<void> main() async {
   await HealthyThemeController.instance.load();
   await HealthyVisualController.instance.load();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  final firestore = FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'default',
+  // Modo demo aislado: el arranque falla si los flags no coinciden.
+  // Nunca se inicializa la app real cuando las compras demo están habilitadas.
+  ShopDemoBootstrap.validateMode(
+    ShopDemoBootstrap.enabled, ShopDemoBootstrap.purchaseEnabled);
+  if (ShopDemoBootstrap.enabled) {
+    ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
+    if (Firebase.apps.isNotEmpty) {
+      // Android puede haber inicializado el proyecto de google-services.json.
+      // No tomar una app de producción ni sustituirla silenciosamente.
+      throw StateError(
+        'Firebase ya está inicializado. Para el modo demo usa una '
+        'configuración nativa aislada sin proyecto real.');
+    }
+  }
+  await Firebase.initializeApp(
+    options: ShopDemoBootstrap.enabled
+        ? ShopDemoBootstrap.demoOptions
+        : DefaultFirebaseOptions.currentPlatform,
   );
+
+  final firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(), databaseId: 'default');
+
+  if (ShopDemoBootstrap.enabled) {
+    ShopDemoBootstrap.validateInitializedProject(
+      Firebase.app().options.projectId);
+    await FirebaseAuth.instance.useAuthEmulator(
+      ShopDemoBootstrap.host, 9099);
+    firestore.useFirestoreEmulator(ShopDemoBootstrap.host, 8080);
+    debugPrint('Healthy Habit: proyecto DEMO aislado, sin datos de producción.');
+  }
 
   debugPrint('Firestore databaseId: ${firestore.databaseId}');
 
