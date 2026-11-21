@@ -152,11 +152,13 @@ class _AmigosScreenState extends State<AmigosScreen> {
   }
 
   Widget _list(List<String> ids, String state) {
-    if (ids.isEmpty) return _error(state == 'friends'
-      ? 'Aún no tienes amigos. Busca personas y envía una solicitud.'
-      : state == 'incoming'
-        ? 'No hay solicitudes de amistad recibidas.'
-        : 'No tienes solicitudes enviadas pendientes.');
+    if (ids.isEmpty) {
+      return _error(state == 'friends'
+        ? 'Aún no tienes amigos. Busca personas y envía una solicitud.'
+        : state == 'incoming'
+          ? 'No hay solicitudes de amistad recibidas.'
+          : 'No tienes solicitudes enviadas pendientes.');
+    }
     return FutureBuilder<Map<String, Map<String, dynamic>>>(
       future: AmigosServicio.perfiles(ids),
       builder: (context, snapshot) {
@@ -186,13 +188,15 @@ class _AmigosScreenState extends State<AmigosScreen> {
       QuerySnapshot<Map<String, dynamic>>>(
     stream: AmigosServicio.solicitudesRecibidas(uid),
     builder: (context, incoming) {
-      if (incoming.hasError) return _error(
-        'No se pudieron consultar las solicitudes recibidas.');
+      if (incoming.hasError) {
+        return _error('No se pudieron consultar las solicitudes recibidas.');
+      }
       return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: AmigosServicio.solicitudesEnviadas(uid),
         builder: (context, outgoing) {
-          if (outgoing.hasError) return _error(
-            'No se pudieron consultar las solicitudes enviadas.');
+          if (outgoing.hasError) {
+            return _error('No se pudieron consultar las solicitudes enviadas.');
+          }
           if (!incoming.hasData || !outgoing.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -205,8 +209,9 @@ class _AmigosScreenState extends State<AmigosScreen> {
           return FutureBuilder<Map<String, Map<String, dynamic>>>(
             future: AmigosServicio.perfiles(all),
             builder: (context, profiles) {
-              if (profiles.hasError) return _error(
-                'No se pudieron consultar los perfiles de las solicitudes.');
+              if (profiles.hasError) {
+                return _error('No se pudieron consultar los perfiles de las solicitudes.');
+              }
               if (!profiles.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -273,9 +278,10 @@ class _AmigosScreenState extends State<AmigosScreen> {
               : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: AmigosServicio.amigos(uid),
                   builder: (context, snap) {
-                    if (snap.hasError) return _error(
-                      'No se pudo cargar tu lista de amigos. '
-                      'Comprueba las reglas de Firestore.');
+                    if (snap.hasError) {
+                      return _error('No se pudo cargar tu lista de amigos. '
+                        'Comprueba las reglas de Firestore.');
+                    }
                     if (!snap.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
