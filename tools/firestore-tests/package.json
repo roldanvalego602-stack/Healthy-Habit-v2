@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test rules.test.mjs"
+    "test": "node --test rules.test.mjs",
+    "test:release": "node --test rules.test.mjs security_release_gate.test.mjs"
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "6.0.0",
