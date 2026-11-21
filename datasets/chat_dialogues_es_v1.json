@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 1,
+  "language": "es-MX",
+  "purpose": "Escenarios conversacionales reservados para validación manual y futura memoria contextual; no se incorporan al entrenamiento ni a las métricas del clasificador de un solo turno.",
+  "scenarios": [
+    {
+      "id": "saldo_a_habitos",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Cuántas monedas llevo?",
+          "expectedIntent": "consultar_saldo"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Quiero agregar un hábito",
+          "expectedIntent": "agregar_habito"
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "Uno de caminar",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        }
+      ]
+    },
+    {
+      "id": "cuenta_no_habito",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero borrar mi cuenta",
+          "expectedIntent": "eliminar_cuenta"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Eso elimina mis registros?",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        }
+      ]
+    },
+    {
+      "id": "habito_no_cuenta",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero quitar el hábito de agua",
+          "expectedIntent": "eliminar_habito"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "No, mejor cancela",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        }
+      ]
+    },
+    {
+      "id": "huevo_jamon",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Háblame del huevo",
+          "expectedIntent": "consultar_nutricion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Y si lo preparo con jamón?",
+          "expectedIntent": "consultar_nutricion"
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "¿Es peligroso comerlo crudo?",
+          "expectedIntent": "consultar_nutricion"
+        }
+      ]
+    },
+    {
+      "id": "huevo_cuenta",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Qué nutrientes aporta el huevo?",
+          "expectedIntent": "consultar_nutricion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Y mis monedas?",
+          "expectedIntent": "consultar_saldo"
+        }
+      ]
+    },
+    {
+      "id": "comparacion_xp",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Cuántas Habit Coins tengo?",
+          "expectedIntent": "consultar_saldo"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Y cuántos XP?",
+          "expectedIntent": "consultar_xp_nivel"
+        }
+      ]
+    },
+    {
+      "id": "perfil_a_tienda",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero cambiar mi avatar",
+          "expectedIntent": "editar_perfil"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Puedo comprar una gorra?",
+          "expectedIntent": "abrir_tienda"
+        }
+      ]
+    },
+    {
+      "id": "nutricion_y_habito",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Qué es la fibra?",
+          "expectedIntent": "consultar_nutricion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Quiero iniciar un hábito para comer verduras",
+          "expectedIntent": "agregar_habito"
+        }
+      ]
+    },
+    {
+      "id": "descanso_a_estadisticas",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Dame ideas para dormir mejor",
+          "expectedIntent": "consultar_descanso_hidratacion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Cuántos días llevo de racha?",
+          "expectedIntent": "consultar_racha_progreso"
+        }
+      ]
+    },
+    {
+      "id": "salud_a_alcance",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Qué ejercicios puedo hacer en casa?",
+          "expectedIntent": "consultar_movimiento"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Quién ganó la copa del mundo?",
+          "expectedIntent": "fuera_de_alcance"
+        }
+      ]
+    },
+    {
+      "id": "recompensas",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Qué medallas he conseguido?",
+          "expectedIntent": "consultar_logros_desafios"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Llévame a la tienda de accesorios",
+          "expectedIntent": "abrir_tienda"
+        }
+      ]
+    },
+    {
+      "id": "pregunta_ambigua",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero cambiar algo",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Mi foto del perfil",
+          "expectedIntent": "editar_perfil"
+        }
+      ]
+    },
+    {
+      "id": "eliminar_ambigua",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Elimínalo",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Mi cuenta, no mis hábitos",
+          "expectedIntent": "eliminar_cuenta"
+        }
+      ]
+    },
+    {
+      "id": "tienda_saldo",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Cómo compro audífonos?",
+          "expectedIntent": "abrir_tienda"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Tengo saldo para comprarlos?",
+          "expectedIntent": "consultar_saldo"
+        }
+      ]
+    },
+    {
+      "id": "huevo_seguridad",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿El huevo me puede enfermar?",
+          "expectedIntent": "consultar_nutricion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Cómo debo cocinarlo?",
+          "expectedIntent": "consultar_nutricion"
+        }
+      ]
+    },
+    {
+      "id": "habitos_retos",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero conocer mis desafíos semanales",
+          "expectedIntent": "consultar_logros_desafios"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Cómo empiezo un hábito?",
+          "expectedIntent": "agregar_habito"
+        }
+      ]
+    },
+    {
+      "id": "movimiento_agua",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Cómo hago sentadillas?",
+          "expectedIntent": "consultar_movimiento"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Qué debo beber al entrenar?",
+          "expectedIntent": "consultar_descanso_hidratacion"
+        }
+      ]
+    },
+    {
+      "id": "no_accion_directa",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Quiero darme de baja de la app",
+          "expectedIntent": "eliminar_cuenta"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Hazlo ya",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        }
+      ]
+    },
+    {
+      "id": "catalogo",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Explícame qué hace Healthy Habit",
+          "expectedIntent": "ayuda_aplicacion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "¿Cuánto cuesta la medalla?",
+          "expectedIntent": "abrir_tienda"
+        }
+      ]
+    },
+    {
+      "id": "duda_sin_referente",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "¿Eso me hace daño?",
+          "expectedIntent": "ambiguo_necesita_aclaracion"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Me refiero al huevo poco cocido",
+          "expectedIntent": "consultar_nutricion"
+        }
+      ]
+    }
+  ]
+}
