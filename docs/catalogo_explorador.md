@@ -122,3 +122,39 @@ pantallas estrechas, el contraste en modo oscuro y la transición
 al detalle de fichas sin imagen. Los recursos visuales nuevos son
 ilustraciones integradas por código; no se han incluido fotografías
 ni se ha modificado el contenido nutricional.
+
+
+## Cuarta etapa: fichas de detalle interactivas
+
+- Las fichas alimentarias presentan `ResumenNutricionalCatalogo`, con
+  barras de proteína, grasas, carbohidratos y fibra **solo cuando
+  la ficha tiene cantidades en gramos**. Se informa el estado crudo o
+  cocido cuando existe referencia. Las barras no son porcentajes de
+  calorías ni recomendaciones dietéticas y la fibra no se suma como
+  macronutriente independiente al total.
+- Para ejercicios se incorporó `GuiaPasosCatalogo`: botón siguiente,
+  anterior y repetir, número de paso, barra de avance y transición
+  animada. Cambiar o recorrer pasos no modifica Firestore, rachas,
+  desafíos ni XP.
+- Se muestran hasta tres fichas relacionadas **con al menos una
+  etiqueta compartida** y de la misma categoría. Al pulsarlas se abre
+  la ficha correspondiente. En caso de no haber coincidencias, no
+  se muestra la sección.
+- Los datos importantes, beneficios, precauciones, fuentes y
+  vinculación meramente informativa con hábitos se conservan.
+- La nueva suite
+  `test/catalogo_detalle_interactivo_test.dart` contiene cuatro
+  pruebas de barras con datos, ausencia de números sin fuente,
+  navegación de pasos y ausencia de recompensas.
+
+Validación local desde la raíz:
+
+```bash
+flutter analyze lib/páginas/catalogo
+flutter test test/catalogo_explorador_test.dart
+flutter test test/catalogo_media_test.dart
+flutter test test/catalogo_detalle_interactivo_test.dart
+```
+
+Probar visualmente en teléfono angosto y con escala de texto ampliada.
+No se modificó la pestaña de administración ni el backend.
