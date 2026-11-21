@@ -2,7 +2,7 @@ import { after, before, beforeEach, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, writeBatch, serverTimestamp, updateDoc, deleteDoc, collection, query, where, getDocs, setLogLevel } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch, serverTimestamp, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 const rulesPath = resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname);
 let env;
