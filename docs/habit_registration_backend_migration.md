@@ -520,6 +520,81 @@ flutter test test/shop_purchase_gateway_test.dart
 Nunca habilitar el nuevo flujo por defecto hasta migrar las otras
 escrituras de economía del cliente y adoptar reglas estrictas.
 
+## Decimocuarto paso: arranque demo aislado de Flutter para compras E2E
+
+Se agregó `lib/servicios/shop_demo_bootstrap.dart` y una ruta de
+inicialización protegida en `lib/main.dart`.
+
+- **Modo normal:** sin flags `--dart-define`, la aplicación sigue usando
+  `DefaultFirebaseOptions.currentPlatform` y no cambia sus accesos.
+- **Modo experimental:** requiere conjuntamente
+  `HH_SHOP_DEMO_FIREBASE=true` y `HH_DEMO_SHOP_PURCHASE=true`.
+  Cualquier discrepancia aborta el arranque antes de inicializar
+  Firebase.
+- El proyecto demo usa identificadores **sintéticos**, no credenciales
+  ni el `projectId` real, y configura Auth Emulator 9099 y Firestore
+  Emulator 8080 **antes** de activar los listeners y las pantallas.
+  Functions se configura en el puente de tienda (puerto 5001).
+- El host de los tres servicios debe coincidir y estar limitado
+  a `127.0.0.1`, `localhost` o `10.0.2.2`.
+- Si Firebase ya estaba inicializado al iniciar en modo demo, el
+  arranque aborta en vez de reutilizar silenciosamente la app nativa
+  de producción.
+
+Pruebas rápidas sin emuladores:
+```bash
+flutter analyze lib/main.dart lib/servicios/shop_demo_bootstrap.dart \
+  lib/páginas/tienda/shop_purchase_gateway.dart
+flutter test test/shop_demo_bootstrap_test.dart
+flutter test test/shop_purchase_gateway_test.dart
+```
+
+Para probar el flujo de extremo a extremo desde **Chrome en el equipo
+de desarrollo** (la alternativa más sencilla por la configuración
+nativa preexistente en Android), usar dos terminales:
+
+```bash
+# Terminal 1, raíz del repo
+firebase emulators:start --config firebase.shop-demo.emulator.json \
+  --project demo-healthy-habit --only auth,firestore,functions
+```
+
+```bash
+# Terminal 2, raíz del repo
+flutter run -d chrome \
+  --dart-define=HH_SHOP_DEMO_FIREBASE=true \
+  --dart-define=HH_DEMO_SHOP_PURCHASE=true \
+  --dart-define=HH_EMULATOR_HOST=127.0.0.1 \
+  --dart-define=HH_FUNCTIONS_EMULATOR_HOST=127.0.0.1
+```
+
+No emplear cuentas reales. Crear un usuario de prueba con correo y
+contraseña desde la interfaz; la app requiere verificar su correo.
+En Auth Emulator se puede consultar la URL de verificación en la
+interfaz local (normalmente `http://127.0.0.1:4000`); completar la
+verificación y entrar con esa cuenta. El perfil nuevo parte de
+**100 Habit Coins**. Probar por ejemplo el artículo `water_bottle`
+(90 Habit Coins) y comprobar saldo 10 y que su ID aparezca en
+`shopInventory` del perfil. Repetir la compra debe impedir un
+segundo cobro; para probar saldo insuficiente elegir otro artículo
+pagado cuyo coste supere el saldo restante. Consultar la colección
+`users/{uid}/shop_purchase_operations` en Firestore Emulator.
+
+Advertencia sobre Android: `android/app/google-services.json` puede
+inicializar un default FirebaseApp real antes del código Dart; el
+arranque demo está diseñado para **abortar** en ese caso. No utilizar
+el archivo nativo real para probar cuentas o compras. La
+configuración de un sabor Android completamente aislado será una
+etapa independiente, si se necesita. No modificar el paquete Android
+ni desplegar funciones de prueba en la nube.
+
+**Alcance real:** pruebas de Flutter deben ejecutarse en el equipo;
+el flujo E2E todavía no se ha verificado aquí. El uso de
+`firestore.candidate.rules` sigue siendo intencional en este
+emulador aislado: la candidata no protege toda la economía de
+clientes. No migrar usuarios reales ni activar esta opción
+en una build distribuida.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
