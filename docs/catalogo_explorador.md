@@ -194,3 +194,19 @@ La prueba de interfaz requiere además comprobar manualmente el
 comportamiento con dos y tres artículos en pantallas estrechas, con
 teclado abierto y escala de texto aumentada. Los cambios no afectan
 el modelo de hábitos, XP, Firebase ni las funciones de administración.
+
+### Corrección de regresión en widgets de comparación
+
+La suite `test/catalogo_comparacion_test.dart` reveló que los botones
+`Ver ficha` y `Quitar` se encontraban al final del listado vertical
+interno de cada tarjeta. En una ventana de prueba o teléfono, las
+acciones quedaban sin construir o fuera de la vista inicial.
+
+Se separó el contenido desplazable del pie de acciones: los botones
+permanecen visibles mientras se desplazan los metadatos. La prueba
+comprueba su presencia y pulsación antes de confirmar callbacks.
+
+```bash
+flutter test test/catalogo_comparacion_test.dart
+flutter analyze lib/páginas/catalogo
+```
