@@ -96,6 +96,6 @@ class ProgresoHabitoCompartido {
 
   double get fraction {
     if (targetSessions <= 0) return 0;
-    return (completedSessions / targetSessions).clamp(0.0, 1.0);
+    return (completedSessions / targetSessions).clamp(0.0, 1.0).toDouble();
   }
 }
