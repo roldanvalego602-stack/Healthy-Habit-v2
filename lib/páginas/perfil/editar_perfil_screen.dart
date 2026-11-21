@@ -137,14 +137,14 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       setState(() { _photoUrl = url; _avatarStyle = 'foto'; _errorFoto = null; });
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
-      setState(() => _errorFoto = error.message);
+      if (mounted) setState(() => _errorFoto = error.message);
       _mensaje(error.message);
     } on PlatformException catch (error) {
-      setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
+      if (mounted) setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
       _mensaje('No se pudo acceder a cámara o galería '
           '(código: ${error.code}). Revisa los permisos del dispositivo.');
     } catch (error) {
-      setState(() => _errorFoto = 'Falló el procesamiento o la subida (${error.runtimeType}). Revisa Firebase Storage.');
+      if (mounted) setState(() => _errorFoto = 'Falló el procesamiento o la subida (${error.runtimeType}). Revisa Firebase Storage.');
       _mensaje('No fue posible procesar la foto. Revisa que sea una '
           'imagen válida y comprueba tu conexión.');
     } finally {
