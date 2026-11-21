@@ -6,6 +6,7 @@ import '../catalogo/modelos/catalogo_item.dart';
 import '../tienda/shop_service.dart';
 import '../niveles/levels_system.dart';
 import 'nutri_respuestas_service.dart';
+import 'healthy_intent_router.dart';
 
 /// Intenciones de alta confianza. No ejecuta cambios por cuenta del usuario.
 class HealthyAssistantEngine {
@@ -79,11 +80,32 @@ class HealthyAssistantEngine {
         '¿Estás en un lugar seguro ahora?');
     }
 
+    // Intenciones de cuenta y saldo primero; «borrar mi cuenta» nunca
+    // se interpreta como abandono de hábito, ni se ejecuta un borrado.
+    if (HealthyIntentRouter.asksForAccountDeletion(input)) {
+      return const HealthyAssistantReply(
+        'Si quieres eliminar tu cuenta de Healthy Habit, la opción está '
+        'en Configuración, pero actualmente está deshabilitada: '
+        'todavía falta implementar la eliminación segura de los datos '
+        'de Authentication, Firestore y evidencias. '
+        'No he eliminado tu cuenta ni tus hábitos.',
+      );
+    }
+    if (HealthyIntentRouter.asksForCoinBalance(input)) {
+      return HealthyAssistantReply(
+        'Tu saldo actual es de $coins Habit Coins. '
+        'Puedes usarlas en Tienda para canjear accesorios, '
+        'después de revisar el precio y confirmar la compra.',
+        action: 'profile',
+        card: 'profile',
+      );
+    }
+
     // Acciones de hábitos: solo recomendar y abrir la UI que valida cupos,
     // penalizaciones y confirmación explícita. Nunca escribir directamente.
-    if (has(['agrega','agregar','anade','anadir','activar','iniciar un habito',
-             'quiero empezar un habito','ponme un habito',
-             'elimina','eliminar','borrar','quitar','abandonar','cancelar habito',
+    if (HealthyIntentRouter.asksForHabitAction(input) ||
+        has(['iniciar un habito','quiero empezar un habito',
+             'ponme un habito','cancelar habito',
              'eliminalo','quitalo','agregalo','anadelo','activarlo'])) {
       final removing = has(['elimina','eliminar','borrar','quitar','abandonar','cancelar',
         'eliminalo','quitalo']);
