@@ -9,6 +9,7 @@ const assert = require("node:assert/strict");
 const {initializeApp, deleteApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const {registerDemoHabit} = require("../habit_registration_transaction");
+const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST ||
     process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
@@ -358,6 +359,66 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal(completed.periodStreak, 1);
     assert.equal((await attempt.get()).data().gracePeriodsUsed, 0);
     assert.equal((await ref.get()).data().xp, 20);
+  });
+
+
+  test("bloqueo de calendario antes del registro, con rechazo de cambio posterior", async () => {
+    const uid = "integration-calendar-lock";
+    const {ref, habit, attempt} = await seedMulti(uid, "bien_007");
+    const params = {db, uid, data: {
+      habitId: "bien_007", attemptId: "attempt-1",
+      timeZone: "America/Monterrey",
+    }};
+    const lock = await lockDemoHabitCalendar(params);
+    assert.equal(lock.alreadyConfigured, false);
+    const retry = await lockDemoHabitCalendar(params);
+    assert.equal(retry.alreadyConfigured, true);
+    for (const snapshot of [await ref.get(), await habit.get(),
+      await attempt.get()]) {
+      assert.equal(snapshot.data().calendarTimeZone, "America/Monterrey");
+    }
+    const result = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "calendar_lock_operation_001",
+      new Date("2026-11-22T01:00:00Z")
+    ));
+    assert.equal(result.registrationPeriod, "day_2026-11-21");
+    await assert.rejects(lockDemoHabitCalendar({
+      ...params, data: {...params.data, timeZone: "UTC"},
+    }));
+    assert.equal((await attempt.get()).data().progress, 1);
+    assert.equal((await ref.get()).data().xp, 10);
+  });
+
+  test("la activación rechaza intentos con registros existentes", async () => {
+    const uid = "integration-calendar-history";
+    const {ref, attempt} = await seedMulti(uid, "alim_004");
+    await registerDemoHabit(inputMulti(
+      uid, "alim_004", "historical_registration_001"
+    ));
+    await assert.rejects(lockDemoHabitCalendar({
+      db, uid, data: {habitId: "alim_004", attemptId: "attempt-1",
+        timeZone: "America/Monterrey"},
+    }));
+    assert.equal((await attempt.get()).data().calendarTimeZone, undefined);
+    assert.equal((await ref.get()).data().xp, 10);
+  });
+
+  test("dos bloqueos concurrentes de zonas distintas no se mezclan", async () => {
+    const uid = "integration-calendar-race";
+    const {ref, habit, attempt} = await seedMulti(uid, "alim_004");
+    const options = ["America/Monterrey", "UTC"];
+    const outcome = await Promise.allSettled(options.map((timeZone) =>
+      lockDemoHabitCalendar({db, uid, data: {
+        habitId: "alim_004", attemptId: "attempt-1", timeZone,
+      }})));
+    assert.equal(outcome.filter((o) => o.status === "fulfilled").length, 1);
+    const values = [
+      (await ref.get()).data().calendarTimeZone,
+      (await habit.get()).data().calendarTimeZone,
+      (await attempt.get()).data().calendarTimeZone,
+    ];
+    assert.equal(new Set(values).size, 1);
+    assert.ok(options.includes(values[0]));
   });
 
 }
