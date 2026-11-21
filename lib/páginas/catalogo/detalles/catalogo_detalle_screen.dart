@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../catalogo_media.dart';
 import '../../../tema/healthy_theme.dart';
 import '../modelos/catalogo_item.dart';
+import '../catalogo_explorador.dart';
+import '../datos/catalogo_datos.dart';
+import 'catalogo_detalle_interactivo.dart';
 
 class CatalogoDetalleScreen extends StatelessWidget {
   final CatalogoItem item;
@@ -83,6 +86,11 @@ class CatalogoDetalleScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (item.categoria == 'Alimentos') ...[
+            const SizedBox(height: 18),
+            _seccion('Información nutricional',
+                ResumenNutricionalCatalogo(item: item)),
+          ],
           if (item.detalles.isNotEmpty) ...[
             const SizedBox(height: 18),
             _seccion(
@@ -132,7 +140,9 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 : item.categoria == 'Alimentos'
                 ? 'Sugerencias de consumo'
                 : 'Acciones recomendadas',
-            _lista(item.pasos, Icons.arrow_forward_ios, numerada: true),
+            item.categoria == 'Ejercicios'
+                ? GuiaPasosCatalogo(item: item)
+                : _lista(item.pasos, Icons.arrow_forward_ios, numerada: true),
           ),
           const SizedBox(height: 18),
           _seccion(
@@ -169,6 +179,32 @@ class CatalogoDetalleScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (_relacionados.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _seccion(
+              'También puede interesarte',
+              Column(children: [
+                for (final relacionado in _relacionados)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: HealthyAdaptive.mint,
+                      child: Icon(CatalogoMedia.icono(relacionado),
+                          color: _verde),
+                    ),
+                    title: Text(relacionado.titulo),
+                    subtitle: Text(relacionado.categoria),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CatalogoDetalleScreen(
+                            item: relacionado),
+                      ),
+                    ),
+                  ),
+              ]),
+            ),
+          ],
           const SizedBox(height: 18),
           _seccion(
             'Fuente de referencia',
@@ -199,6 +235,25 @@ class CatalogoDetalleScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<CatalogoItem> get _relacionados {
+    final todos = <CatalogoItem>[
+      ...alimentosCatalogo, ...ejerciciosCatalogo, ...consejosCatalogo,
+    ];
+    final claves = item.etiquetas
+        .map(CatalogoExplorador.normalizar).toSet();
+    final resultados = todos.where((otro) =>
+        otro.id != item.id && otro.categoria == item.categoria).toList();
+    resultados.sort((a, b) {
+      int puntos(CatalogoItem value) => value.etiquetas
+          .map(CatalogoExplorador.normalizar)
+          .where(claves.contains).length;
+      final diferencia = puntos(b).compareTo(puntos(a));
+      return diferencia == 0
+          ? a.titulo.compareTo(b.titulo) : diferencia;
+    });
+    return resultados.take(3).toList();
   }
 
   Widget _chip(String s) => Container(
