@@ -5,6 +5,8 @@ import '../modelos/catalogo_item.dart';
 import '../catalogo_explorador.dart';
 import '../datos/catalogo_datos.dart';
 import 'catalogo_detalle_interactivo.dart';
+import 'catalogo_resumen.dart';
+import '../datos/bebidas_catalogo.dart';
 
 class CatalogoDetalleScreen extends StatelessWidget {
   final CatalogoItem item;
@@ -27,6 +29,13 @@ class CatalogoDetalleScreen extends StatelessWidget {
           item.categoria,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Consultar o resumir información',
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => _abrirResumen(context),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -73,6 +82,13 @@ class CatalogoDetalleScreen extends StatelessWidget {
                     color: _gris,
                     height: 1.5,
                   ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  key: const ValueKey('catalogo-resumir'),
+                  onPressed: () => _abrirResumen(context),
+                  icon: const Icon(Icons.summarize_outlined),
+                  label: const Text('Resumir o consultar un dato'),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
@@ -237,9 +253,22 @@ class CatalogoDetalleScreen extends StatelessWidget {
     );
   }
 
+  void _abrirResumen(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.7,
+        child: ResumenFichaCatalogo(item: item),
+      ),
+    );
+  }
+
   List<CatalogoItem> get _relacionados {
     final todos = <CatalogoItem>[
       ...alimentosCatalogo, ...ejerciciosCatalogo, ...consejosCatalogo,
+      ...bebidasCatalogo,
     ];
     final claves = item.etiquetas
         .map(CatalogoExplorador.normalizar).toSet();
