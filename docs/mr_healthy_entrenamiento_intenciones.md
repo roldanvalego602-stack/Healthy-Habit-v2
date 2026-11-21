@@ -278,3 +278,24 @@ python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
 ```
 
 Las nuevas pruebas no afirman una mejora de exactitud o macro-F1. Los datos y clasificadores V1 y V2 se mantienen intactos. El siguiente hito será planificar un orquestador de sesión con referencias explícitas y pruebas de diálogo, conservando los controles actuales de Flutter, antes de evaluar un modelo de lenguaje preentrenado.
+
+## 14. Primer prototipo de memoria de sesión (20-nov-2026)
+
+El usuario ha confirmado **38/38 pruebas de Python aprobadas** para el prototipo de diálogo anterior. Ahora se añadió `tools/chat_intent_session.py` junto con `tools/test_chat_intent_session.py` para validar **contexto conversacional de corta duración**.
+
+- `DialogueSession` mantiene solamente `topic` y una intención sensible pendiente. **El estado se conserva en memoria del proceso únicamente**, no se guarda en Firebase, disco o el historial de chats.
+- Un tema como «huevo» permite interpretar «¿Y si lo preparo con jamón?» y «¿Es peligroso comerlo crudo?» como continuaciones **educativas**. El prototipo envía una sugerencia `knowledge_lookup` y nunca redacta información clínica ni hace consultas reales a una base externa.
+- Una nueva intención explícita como «¿Y mis monedas?» **borra el tema anterior** y devuelve al módulo de perfil la consulta; no inventa ningún saldo.
+- Para hábitos o eliminación de cuenta, la sesión **nunca transforma una referencia elíptica en permiso operativo**. Preguntas como «bórralo» no se ejecutan; una referencia a un hábito puede conducir únicamente a pedir revisión y confirmación.
+- La orden «No, mejor cancela» limpia la solicitud pendiente sin modificar nada. `reset()` limpia el contexto al iniciar otra conversación.
+- Las **20 conversaciones existentes (42 mensajes)** son recorridas en una prueba de aislamiento. Se pasan las etiquetas esperadas como intenciones de entrada: **esto prueba estado y seguridad, no calcula accuracy real del clasificador en diálogos**.
+
+Validación local:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+```
+
+**Estado:** cambios implementados en la rama; las pruebas nuevas no se han ejecutado todavía en el equipo del usuario. No se han modificado `nutrichat.dart`, Firebase ni los modelos entrenados. Antes de integrar esta memoria a Flutter hay que modelar referencias por objetos reales, expiración por turnos, transparencia de estado y confirmación explícita de cada acción mediante el backend existente.
