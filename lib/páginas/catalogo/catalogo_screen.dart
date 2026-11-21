@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'catalogo_media.dart';
 import '../../tema/healthy_theme.dart';
 import 'datos/catalogo_datos.dart';
+import 'datos/bebidas_catalogo.dart';
+import 'catalogo_selector_bienestar.dart';
 import 'detalles/catalogo_detalle_screen.dart';
 import 'modelos/catalogo_item.dart';
 import 'catalogo_explorador.dart';
@@ -32,7 +34,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     _tabs.addListener(() {
       if (!_tabs.indexIsChanging && mounted) {
         setState(() {
@@ -59,8 +61,10 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         return alimentosCatalogo;
       case 1:
         return ejerciciosCatalogo;
-      default:
+      case 2:
         return consejosCatalogo;
+      default:
+        return bebidasCatalogo;
     }
   }
 
@@ -184,6 +188,12 @@ class _CatalogoScreenState extends State<CatalogoScreen>
       if (_tabs.index == 1) {
         return CatalogoExplorador.zonaEjercicio(item) == _grupoVisual;
       }
+      if (_tabs.index == 2) {
+        return CatalogoExplorador.grupoExploracion(item) == _grupoVisual;
+      }
+      if (_tabs.index == 3) {
+        return item.detalles['Grupo de bebida'] == _grupoVisual;
+      }
       return true;
     }).toList();
     final grupos = <String, List<CatalogoItem>>{};
@@ -196,7 +206,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
       children: [
         Text(_tabs.index == 0 ? 'Explora por grupos del plato'
             : _tabs.index == 1 ? 'Explora por zona de movimiento'
-            : 'Explora por objetivos de bienestar',
+            : _tabs.index == 2 ? 'Explora por objetivos de bienestar'
+            : 'Explora con la Jarra del Buen Beber',
             style: TextStyle(color: _oscuro,
                 fontWeight: FontWeight.w900, fontSize: 18)),
         const SizedBox(height: 6),
@@ -205,8 +216,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             : 'Elige un objetivo para conocer sus elementos.',
             style: TextStyle(color: _gris, fontSize: 12)),
         const SizedBox(height: 14),
-        if (_tabs.index == 0 || _tabs.index == 1)
-          AnimatedSwitcher(
+        AnimatedSwitcher(
             duration: const Duration(milliseconds: 340),
             transitionBuilder: (child, animation) =>
                 FadeTransition(opacity: animation, child: child),
@@ -219,11 +229,23 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                             onSeleccionar: (value) =>
                                 setState(() => _grupoVisual = value),
                           )
-                        : MapaMovimientoCatalogo(
-                            seleccionado: null,
-                            onSeleccionar: (value) =>
-                                setState(() => _grupoVisual = value),
-                          ),
+                        : _tabs.index == 1
+                            ? MapaMovimientoCatalogo(
+                                seleccionado: null,
+                                onSeleccionar: (value) =>
+                                    setState(() => _grupoVisual = value),
+                              )
+                            : _tabs.index == 2
+                                ? SelectorBienestarCatalogo(
+                                    seleccionado: null,
+                                    onSeleccionar: (value) =>
+                                        setState(() => _grupoVisual = value),
+                                  )
+                                : JarraBuenBeberCatalogo(
+                                    seleccionado: null,
+                                    onSeleccionar: (value) =>
+                                        setState(() => _grupoVisual = value),
+                                  ),
                   )
                 : Padding(
                     key: const ValueKey('visual-results'),
@@ -232,7 +254,10 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                       onPressed: () =>
                           setState(() => _grupoVisual = null),
                       icon: const Icon(Icons.arrow_back_rounded),
-                      label: Text('Volver a ${_tabs.index == 0 ? 'plato' : 'zonas'}'),
+                      label: Text(_tabs.index == 0 ? 'Volver al plato'
+                        : _tabs.index == 1 ? 'Volver a las zonas'
+                        : _tabs.index == 2 ? 'Volver a objetivos'
+                        : 'Volver a la jarra'),
                     ),
                   ),
           ),
@@ -388,6 +413,8 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             style: TextStyle(fontWeight: FontWeight.w900, color: _oscuro)),
         bottom: TabBar(
           controller: _tabs,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: _verde,
           unselectedLabelColor: _gris,
           indicatorColor: _verde,
@@ -395,6 +422,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             Tab(text: 'Alimentos'),
             Tab(text: 'Ejercicios'),
             Tab(text: 'Consejos'),
+            Tab(text: 'Bebidas'),
           ],
         ),
       ),
@@ -442,7 +470,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             Expanded(child: Text('${resultados.length} resultados',
                 style: TextStyle(color: _gris, fontSize: 12))),
             PopupMenuButton<OrdenCatalogo>(
-              tooltip: 'Ordenar por prioridad',
+              tooltip: 'Ordenar resultados (no es un filtro)',
               icon: Icon(Icons.sort_rounded, color: _verde),
               onSelected: (value) => setState(() => _orden = value),
               itemBuilder: (_) => [
