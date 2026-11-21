@@ -105,3 +105,48 @@ Después: cuenta A solicita amistad a B, B acepta, ambos consultan
 hábito en pareja, B lo acepta y ambos intentan activar el mismo hábito
 respetando las reglas normales. Eliminar amistad y comprobar que
 desaparece en ambos dispositivos.
+
+
+## Endurecimiento del flujo — validación de activación
+
+Antes, `activarHabito(habitId)` aceptaba directamente el identificador del
+catálogo. Aunque la interfaz sólo ofrecía el botón en invitaciones
+aceptadas, el servicio no volvía a validar la invitación.
+
+Ahora el servicio recibe **`invitationId`** y, antes de llamar a la
+operación oficial de hábitos:
+
+1. Lee `shared_habit_invites/{invitationId}`.
+2. Exige `status == 'aceptada'`.
+3. Exige que el usuario autenticado sea `senderUid` o `recipientUid`.
+4. Recupera el `habitId` exclusivamente desde el documento aceptado.
+5. Comprueba la relación `users/{miUid}/friends/{otroUid}`.
+6. Ejecuta `HabitActionService.preview` para aplicar el desbloqueo,
+   los cupos y costos normales del usuario.
+7. Vuelve a comprobar el estado de la invitación antes de
+   `HabitActionService.execute`.
+
+La política de participantes está extraída a
+`politica_habitos_pareja.dart`, cubierta por las cuatro pruebas
+`test/politica_habitos_pareja_test.dart`.
+
+**Límite:** las comprobaciones del cliente y una segunda lectura no
+eliminan todas las carreras entre las operaciones. No sustituyen reglas
+Firestore ni una autorización transaccional del servidor. El código
+tampoco crea un progreso conjunto ni confirma que la ruta nueva esté
+permitida en el backend real.
+
+### Próximo bloqueo
+
+Para trabajar sobre datos reales sin abrir permisos indebidamente,
+obtener el texto actual de **Firebase Console → Firestore Database →
+Reglas**. Se revisará y fusionará una política específica para
+`users/{uid}/friends`, solicitudes, reacciones e invitaciones a hábitos
+sin sustituir los controles actuales de hábitos, XP y cuentas.
+El despliegue requerirá revisión expresa.
+
+```bash
+flutter analyze lib/páginas/habitos
+flutter test test/politica_habitos_pareja_test.dart
+flutter test test/habitos_pareja_flujo_test.dart
+```
