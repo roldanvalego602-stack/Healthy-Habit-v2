@@ -153,6 +153,10 @@ test("el cliente no puede crear operaciones de Admin SDK", async () => {
     "users/strict-alice/registration_operations/operation_00001"), {
     habitId: "alim_004",
   }));
+  await assertFails(setDoc(doc(alice,
+    "users/strict-alice/shop_purchase_operations/operation_00001"), {
+    itemId: "crown", price: 0,
+  }));
 });
 
 test("el perfil inicial legítimo conserva XP cero y monedas iniciales", async () => {
