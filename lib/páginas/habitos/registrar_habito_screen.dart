@@ -637,8 +637,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             _buildFotografia(),
             const SizedBox(height: 8),
             Text(
-              'Puedes adjuntar una fotografía como evidencia. '
-              'Se eliminará después de 24 horas al ejecutar la limpieza.',
+              'Puedes adjuntar una fotografía para respaldar el registro. '
+              'Adjuntarla NO verifica automáticamente que se realizó '
+              'la actividad. La imagen se elimina tras 24 horas al '
+              'ejecutar la limpieza.',
               style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
             ),
             const SizedBox(height: 24),
