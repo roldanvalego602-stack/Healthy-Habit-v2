@@ -55,6 +55,38 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     };
   }
 
+  async function seedMulti(uid, habitId) {
+    const catalog = require("../official_habit_catalog").SERVER_CATALOG[habitId];
+    const ref = db.collection("users").doc(uid);
+    const habit = ref.collection("user_habits").doc(habitId);
+    const attempt = habit.collection("attempts").doc("attempt-1");
+    const batch = db.batch();
+    batch.set(ref, {
+      xp: 0, currentXp: 0, level: 1,
+      habitCoins: 100, claimedLevelRewards: [],
+    });
+    batch.set(habit, {
+      title: catalog.title,
+      latestAttemptId: "attempt-1", lastAttemptId: "attempt-1",
+      latestStatus: "inProgress", lastStatus: "inProgress",
+      frequencyType: catalog.frequencyType,
+    });
+    batch.set(attempt, {
+      status: "inProgress", progress: 0, target: catalog.target,
+      xpEarned: 0, frequencyType: catalog.frequencyType,
+      registrationsPerPeriod: catalog.registrationsPerPeriod,
+    });
+    await batch.commit();
+    return {ref, habit, attempt};
+  }
+
+  function inputMulti(uid, habitId, operationId, now = fixedDay) {
+    return {
+      db, uid, now,
+      data: {habitId, attemptId: "attempt-1", operationId},
+    };
+  }
+
   test("transacción real: registro atómico y reintento sin nuevos XP", async () => {
     const uid = "integration-idempotence";
     const {ref, attempt} = await seed(uid);
@@ -182,4 +214,79 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal(result.progress, 1);
     assert.equal((await owner.attempt.get()).data().progress, 3);
   });
+
+  test("hábito de dos registros diarios rechaza el tercero en Firestore", async () => {
+    const uid = "integration-double-daily";
+    const {ref, attempt} = await seedMulti(uid, "bien_007");
+    const first = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "double_daily_000001"
+    ));
+    const second = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "double_daily_000002"
+    ));
+    assert.equal(first.periodCount, 1);
+    assert.equal(second.periodCount, 2);
+    await assert.rejects(registerDemoHabit(inputMulti(
+      uid, "bien_007", "double_daily_000003"
+    )));
+    assert.equal((await ref.get()).data().xp, 20);
+    assert.equal((await attempt.collection("logs").get()).size, 2);
+    assert.equal((await attempt.collection("registration_days").get()).size, 0);
+    const period = await attempt.collection("registration_periods")
+      .doc("day_2026-11-21").get();
+    assert.equal(period.data().count, 2);
+  });
+
+  test("hábito semanal limita tres registros y cambia el lunes UTC", async () => {
+    const uid = "integration-triple-weekly";
+    const {ref, attempt} = await seedMulti(uid, "alim_004");
+    for (let n = 1; n <= 3; n++) {
+      const result = await registerDemoHabit(inputMulti(
+        uid, "alim_004", `triple_weekly_000${n}`
+      ));
+      assert.equal(result.periodCount, n);
+    }
+    await assert.rejects(registerDemoHabit(inputMulti(
+      uid, "alim_004", "triple_weekly_0004"
+    )));
+    const monday = await registerDemoHabit(inputMulti(
+      uid, "alim_004", "triple_weekly_0005",
+      new Date("2026-11-23T13:00:00Z")
+    ));
+    assert.equal(monday.periodCount, 1);
+    assert.equal(monday.registrationPeriod, "week_2026-11-23");
+    assert.equal((await ref.get()).data().xp, 40);
+    assert.equal((await attempt.collection("logs").get()).size, 4);
+  });
+
+  test("dos registros concurrentes llenan el cupo diario sin sobrepasarlo", async () => {
+    const uid = "integration-multidaily-race";
+    const {ref, attempt} = await seedMulti(uid, "bien_007");
+    const parallel = await Promise.allSettled([
+      registerDemoHabit(inputMulti(
+        uid, "bien_007", "parallel_daily_0001"
+      )),
+      registerDemoHabit(inputMulti(
+        uid, "bien_007", "parallel_daily_0002"
+      )),
+    ]);
+    const accepted = parallel.filter((x) => x.status === "fulfilled");
+    // Firestore puede abortar una de las operaciones por contención;
+    // ninguna ejecución permite más de dos recompensas.
+    assert.ok(accepted.length >= 1);
+    if (accepted.length === 1) {
+      await registerDemoHabit(inputMulti(
+        uid, "bien_007", "parallel_daily_0003"
+      ));
+    }
+    await assert.rejects(registerDemoHabit(inputMulti(
+      uid, "bien_007", "parallel_daily_0004"
+    )));
+    assert.equal((await ref.get()).data().xp, 20);
+    assert.equal((await attempt.collection("logs").get()).size, 2);
+    const counter = await attempt.collection("registration_periods")
+      .doc("day_2026-11-21").get();
+    assert.equal(counter.data().count, 2);
+  });
+
 }
