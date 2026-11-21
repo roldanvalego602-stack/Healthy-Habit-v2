@@ -22,10 +22,14 @@ class PersonalRoutine {
   final List<PersonalRoutineStep> steps;
   final int completedSessions;
 
-  PersonalRoutine copyWith({int? completedSessions}) => PersonalRoutine(
+  PersonalRoutine copyWith({
+    String? title,
+    List<PersonalRoutineStep>? steps,
+    int? completedSessions,
+  }) => PersonalRoutine(
         id: id,
-        title: title,
-        steps: steps,
+        title: title ?? this.title,
+        steps: steps ?? this.steps,
         completedSessions: completedSessions ?? this.completedSessions,
       );
 
@@ -172,6 +176,42 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
     }
   }
 
+  Future<void> _edit(PersonalRoutine routine) async {
+    final edited = await Navigator.push<PersonalRoutine>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _RoutineEditor(existing: routine),
+      ),
+    );
+    if (edited == null || !mounted) return;
+    try {
+      final current = await _store.load();
+      await _store.save([
+        for (final item in current)
+          if (item.id == routine.id) edited else item,
+      ]);
+      await _reload();
+    } catch (error) {
+      if (mounted) _message('$error');
+    }
+  }
+
+  Future<void> _createGoal() async {
+    final goal = await Navigator.push<PersonalRoutine>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const _RoutineEditor(singleGoal: true),
+      ),
+    );
+    if (goal == null || !mounted) return;
+    try {
+      await _store.save([...await _store.load(), goal]);
+      await _reload();
+    } catch (error) {
+      if (mounted) _message('$error');
+    }
+  }
+
   Future<void> _remove(PersonalRoutine routine) async {
     final accepted = await showDialog<bool>(
       context: context,
@@ -254,6 +294,13 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                   'dispositivo y no otorgan XP ni Habit Coins.',
                   style: TextStyle(color: HealthyAdaptive.muted),
                 ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  key: const ValueKey('personal-goal-create'),
+                  onPressed: _createGoal,
+                  icon: const Icon(Icons.flag_outlined),
+                  label: const Text('Crear meta personal'),
+                ),
                 const SizedBox(height: 24),
                 if (_routines.isEmpty)
                   Card(
@@ -307,6 +354,11 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                                 ),
                               ),
                               IconButton(
+                                tooltip: 'Editar rutina',
+                                onPressed: () => _edit(routine),
+                                icon: const Icon(Icons.edit_outlined),
+                              ),
+                              IconButton(
                                 tooltip: 'Eliminar rutina',
                                 onPressed: () => _remove(routine),
                                 icon: const Icon(Icons.delete_outline),
@@ -324,7 +376,10 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
 }
 
 class _RoutineEditor extends StatefulWidget {
-  const _RoutineEditor();
+  const _RoutineEditor({this.existing, this.singleGoal = false});
+
+  final PersonalRoutine? existing;
+  final bool singleGoal;
 
   @override
   State<_RoutineEditor> createState() => _RoutineEditorState();
@@ -334,20 +389,42 @@ class _RoutineEditorState extends State<_RoutineEditor> {
   final _title = TextEditingController();
   final _stepName = TextEditingController();
   final _goal = TextEditingController(text: '10');
+  final _unit = TextEditingController(text: 'repeticiones');
   final List<PersonalRoutineStep> _steps = [];
   String _type = 'counter';
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    if (existing != null) {
+      _title.text = existing.title;
+      _steps.addAll(existing.steps);
+    }
+    if (widget.singleGoal) {
+      _goal.text = '2000';
+      _unit.text = 'ml';
+    }
+  }
 
   @override
   void dispose() {
     _title.dispose();
     _stepName.dispose();
     _goal.dispose();
+    _unit.dispose();
     super.dispose();
   }
 
   void _addStep() {
     final name = _stepName.text.trim();
     final target = int.tryParse(_goal.text.trim());
+    if (widget.singleGoal && _steps.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Una meta personal tiene una sola actividad.')),
+      );
+      return;
+    }
     if (name.isEmpty || target == null || target < 1 || target > 86400) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Escribe un paso y una meta válida (1 a 86400).')),
@@ -359,30 +436,37 @@ class _RoutineEditorState extends State<_RoutineEditor> {
         title: name,
         type: _type,
         target: target,
-        unit: _type == 'counter' ? 'repeticiones' : 'segundos',
+        unit: _type == 'counter' ? _unit.text.trim() : 'segundos',
       ));
       _stepName.clear();
     });
   }
 
   void _save() {
-    if (_title.text.trim().isEmpty || _steps.isEmpty) {
+    if (_title.text.trim().isEmpty || _steps.isEmpty ||
+        _steps.any((step) => step.title.isEmpty || step.unit.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Escribe un nombre y añade al menos un paso.')),
       );
       return;
     }
     Navigator.pop(context, PersonalRoutine(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.existing?.id ??
+          DateTime.now().microsecondsSinceEpoch.toString(),
       title: _title.text.trim(),
       steps: List.unmodifiable(_steps),
+      completedSessions: widget.existing?.completedSessions ?? 0,
     ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Diseñar rutina')),
+      appBar: AppBar(
+        title: Text(widget.existing != null
+            ? 'Editar rutina'
+            : widget.singleGoal ? 'Nueva meta personal' : 'Diseñar rutina'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -397,7 +481,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Añadir actividad'),
+          Text(widget.singleGoal ? 'Configura tu meta' : 'Añadir actividad'),
           const SizedBox(height: 10),
           TextField(
             controller: _stepName,
@@ -421,21 +505,32 @@ class _RoutineEditorState extends State<_RoutineEditor> {
             },
           ),
           const SizedBox(height: 12),
+          if (_type == 'counter')
+            TextField(
+              controller: _unit,
+              maxLength: 24,
+              decoration: const InputDecoration(
+                labelText: 'Unidad de medida',
+                hintText: 'ml, vasos, repeticiones, páginas...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          const SizedBox(height: 12),
           TextField(
             controller: _goal,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               labelText: _type == 'counter'
-                  ? 'Número de repeticiones'
+                  ? 'Cantidad objetivo'
                   : 'Duración en segundos',
               border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: _addStep,
+            onPressed: widget.singleGoal && _steps.isNotEmpty ? null : _addStep,
             icon: const Icon(Icons.add),
-            label: const Text('Añadir paso'),
+            label: Text(widget.singleGoal ? 'Establecer meta' : 'Añadir paso'),
           ),
           const SizedBox(height: 14),
           for (var index = 0; index < _steps.length; index++)
@@ -456,7 +551,11 @@ class _RoutineEditorState extends State<_RoutineEditor> {
             key: const ValueKey('personal-routine-save'),
             onPressed: _save,
             icon: const Icon(Icons.save_outlined),
-            label: const Text('Guardar rutina personal'),
+            label: Text(widget.existing != null
+                ? 'Guardar cambios'
+                : widget.singleGoal
+                    ? 'Guardar meta personal'
+                    : 'Guardar rutina personal'),
           ),
         ],
       ),
