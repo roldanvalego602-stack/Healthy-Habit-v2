@@ -622,6 +622,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 target: _interactionTarget,
                 unit: _interactionUnit,
                 enabled: !_guardando && !_metaCompletada,
+                initialValue: _interactionValue,
                 onChanged: (complete, value) {
                   if (!mounted) return;
                   setState(() {
@@ -693,6 +694,33 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               const SizedBox(height: 16),
             ],
             if (!_modoPasos || _pasoRegistro == 2) ...[
+            if (_modoPasos && !_interactionComplete) ...[
+              Card(
+                color: HealthyAdaptive.surface,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Falta completar la actividad',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 6),
+                      const Text('Regresa al primer paso para finalizar '
+                        'el contador o temporizador. Lo que ya registraste '
+                        'se conserva.'),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        key: const ValueKey('registro-volver-actividad'),
+                        onPressed: () => setState(() => _pasoRegistro = 0),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        label: const Text('Volver a la actividad'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               'Tu registro suma',
               style: TextStyle(
