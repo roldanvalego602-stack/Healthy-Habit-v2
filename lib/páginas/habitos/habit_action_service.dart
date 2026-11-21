@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import '../niveles/levels_system.dart';
 import 'catalogo.dart';
+import '../../servicios/official_habit_emulator_service.dart';
 import 'modelo/habit.dart';
 
 /// Operaciones compartidas entre Hábitos y Mr. Healthy.
@@ -181,6 +182,39 @@ class HabitActionService {
       throw StateError('La sesión cambió. Vuelve a solicitar la acción.');
     }
     final habit = preview.habit;
+    // Modo aislado: el servidor verifica límites y saldo a partir
+    // de Firestore. La ruta de producción permanece sin cambios.
+    if (OfficialHabitEmulatorService.enabled) {
+      const official = OfficialHabitEmulatorService();
+      final operationId = official.newOperationId();
+      if (preview.remove) {
+        final attemptId = preview.attemptId;
+        if (attemptId == null) {
+          throw StateError('Falta identificar el intento activo.');
+        }
+        final response = await official.cancel(
+          habitId: habit.id,
+          attemptId: attemptId,
+          operationId: operationId,
+          maxPenalty: preview.estimatedCost,
+        );
+        return HabitActionResult(
+          habit: habit, removed: true,
+          chargedCoins: number(response['chargedCoins']),
+        );
+      }
+      final attemptId = _db.collection('_operation_ids').doc().id;
+      final response = await official.activate(
+        habitId: habit.id,
+        attemptId: attemptId,
+        operationId: operationId,
+      );
+      return HabitActionResult(
+        habit: habit, removed: false,
+        chargedCoins: number(response['chargedCoins']),
+      );
+    }
+
     final habitRef = userRef.collection('user_habits').doc(habit.id);
     final attemptsRef = habitRef.collection('attempts');
 
