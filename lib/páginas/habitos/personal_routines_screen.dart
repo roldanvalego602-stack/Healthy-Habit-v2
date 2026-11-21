@@ -281,6 +281,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
         for (final item in current)
           if (item.id == routine.id) edited else item,
       ]);
+      await _store.clearDraft(routine.id);
       await _reload();
     } catch (error) {
       if (mounted) _message('$error');
@@ -324,6 +325,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
     if (accepted != true || !mounted) return;
     try {
       await _store.save(_routines.where((item) => item.id != routine.id).toList());
+      await _store.clearDraft(routine.id);
       await _reload();
     } catch (error) {
       if (mounted) _message('$error');
@@ -331,23 +333,41 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
   }
 
   Future<void> _run(PersonalRoutine routine) async {
-    final completed = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => _RoutineRunner(routine: routine)),
-    );
-    if (completed != true || !mounted) return;
+    if (routine.dailyGoal && routine.completedOn(DateTime.now())) {
+      _message('Ya completaste esta meta hoy. Podrás repetirla mañana.');
+      return;
+    }
     try {
+      final draft = await _store.loadDraft(routine.id);
+      if (!mounted) return;
+      final completed = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _RoutineRunner(routine: routine, draft: draft),
+        ),
+      );
+      if (completed != true || !mounted) return;
       final current = await _store.load();
+      final today = PersonalRoutine.dateKey(DateTime.now());
       await _store.save([
         for (final item in current)
-          item.id == routine.id
-              ? item.copyWith(completedSessions: item.completedSessions + 1)
-              : item,
+          if (item.id != routine.id)
+            item
+          else if (item.dailyGoal && item.completedDays.contains(today))
+            item
+          else
+            item.copyWith(
+              completedSessions: item.completedSessions + 1,
+              completedDays: item.dailyGoal
+                  ? [...item.completedDays, today]
+                  : item.completedDays,
+            ),
       ]);
+      await _store.clearDraft(routine.id);
       await _reload();
       if (mounted) _message('Sesión personal completada. Sin recompensas oficiales.');
     } catch (error) {
-      if (mounted) _message('$error');
+      if (mounted) _message('No se pudo guardar el progreso: $error');
     }
   }
 
@@ -431,17 +451,26 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                             ),
                           ),
                           Text(
-                            '${routine.steps.length} pasos · ${routine.completedSessions} sesiones completadas',
+                            routine.dailyGoal
+                                ? 'Meta diaria · ${routine.completedDays.length} días completados'
+                                : '${routine.steps.length} pasos · ${routine.completedSessions} sesiones completadas',
                             style: TextStyle(color: HealthyAdaptive.muted),
                           ),
+                          if (routine.dailyGoal && routine.completedOn(DateTime.now()))
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: Text('Meta de hoy completada ✓'),
+                            ),
                           const SizedBox(height: 12),
                           Row(
                             children: [
                               Expanded(
                                 child: FilledButton.icon(
-                                  onPressed: () => _run(routine),
+                                  onPressed: routine.dailyGoal && routine.completedOn(DateTime.now())
+                                      ? null
+                                      : () => _run(routine),
                                   icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Comenzar'),
+                                  label: Text(routine.dailyGoal ? 'Registrar hoy' : 'Iniciar o continuar'),
                                 ),
                               ),
                               IconButton(
@@ -547,6 +576,8 @@ class _RoutineEditorState extends State<_RoutineEditor> {
       title: _title.text.trim(),
       steps: List.unmodifiable(_steps),
       completedSessions: widget.existing?.completedSessions ?? 0,
+      dailyGoal: widget.existing?.dailyGoal ?? widget.singleGoal,
+      completedDays: widget.existing?.completedDays ?? const [],
     ));
   }
 
