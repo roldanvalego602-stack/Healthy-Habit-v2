@@ -11,6 +11,7 @@ const {getFirestore} = require("firebase-admin/firestore");
 const {registerDemoHabit} = require("../habit_registration_transaction");
 const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
 const {activateDemoHabit} = require("../habit_activation_transaction");
+const {cancelDemoHabit} = require("../habit_cancellation_transaction");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST ||
     process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
@@ -505,6 +506,97 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal(result.registrationPeriod, "week_2026-11-16");
     assert.equal(result.calendarTimeZone, "America/Monterrey");
     assert.equal((await user.get()).data().xp, 110);
+  });
+
+
+  function cancellationArgs(uid, habitId, attemptId, operationId,
+    maxPenalty = 25) {
+    return {db, uid, data: {habitId, attemptId, operationId, maxPenalty}};
+  }
+
+  test("cancelación difícil cobra una vez y rechaza registrar después", async () => {
+    const uid = "integration-cancel-difficult";
+    const user = await seedActivation(uid, {xp: 11000});
+    await activateDemoHabit(activationArgs(
+      uid, "bien_007", "cancel_attempt_0001",
+      "cancel_activation_0001"
+    ));
+    const req = cancellationArgs(
+      uid, "bien_007", "cancel_attempt_0001",
+      "cancel_operation_0001"
+    );
+    const first = await cancelDemoHabit(req);
+    const retry = await cancelDemoHabit(req);
+    assert.equal(first.chargedCoins, 25);
+    assert.equal(retry.alreadyProcessed, true);
+    assert.equal(retry.chargedCoins, 25);
+    assert.equal((await user.get()).data().habitCoins, 75);
+    assert.equal((await user.get()).data().habitMutationVersion, 2);
+    const habit = user.collection("user_habits").doc("bien_007");
+    const attempt = habit.collection("attempts").doc("cancel_attempt_0001");
+    assert.equal((await habit.get()).data().latestStatus, "cancelled");
+    assert.equal((await attempt.get()).data().cancellationPenalty, 25);
+    await assert.rejects(registerDemoHabit({
+      db, uid, now: fixedDay, data: {
+        habitId: "bien_007", attemptId: "cancel_attempt_0001",
+        operationId: "registration_after_cancel_0001",
+      },
+    }));
+    assert.equal((await user.get()).data().xp, 11000);
+  });
+
+  test("cancelación moderada no cobra Habit Coins", async () => {
+    const uid = "integration-cancel-moderate";
+    const user = await seedActivation(uid);
+    await activateDemoHabit(activationArgs(
+      uid, "alim_004", "cancel_attempt_0002",
+      "cancel_activation_0002"
+    ));
+    const result = await cancelDemoHabit(cancellationArgs(
+      uid, "alim_004", "cancel_attempt_0002",
+      "cancel_operation_0002", 0
+    ));
+    assert.equal(result.chargedCoins, 0);
+    assert.equal((await user.get()).data().habitCoins, 100);
+    assert.equal((await user.get()).data().habitMutationVersion, 2);
+  });
+
+  test("dos cancelaciones simultáneas de distinto ID solo descuentan una vez", async () => {
+    const uid = "integration-cancel-race";
+    const user = await seedActivation(uid, {xp: 11000});
+    await activateDemoHabit(activationArgs(
+      uid, "bien_007", "cancel_attempt_0003",
+      "cancel_activation_0003"
+    ));
+    const result = await Promise.allSettled([
+      cancelDemoHabit(cancellationArgs(
+        uid, "bien_007", "cancel_attempt_0003",
+        "cancel_race_operation_0001"
+      )),
+      cancelDemoHabit(cancellationArgs(
+        uid, "bien_007", "cancel_attempt_0003",
+        "cancel_race_operation_0002"
+      )),
+    ]);
+    assert.equal(result.filter((x) => x.status === "fulfilled").length, 1);
+    assert.equal((await user.get()).data().habitCoins, 75);
+    assert.equal((await user.collection("habit_cancellation_operations").get()).size, 1);
+  });
+
+  test("cancelación exige respetar el máximo confirmado", async () => {
+    const uid = "integration-cancel-confirmation";
+    const user = await seedActivation(uid, {xp: 11000});
+    await activateDemoHabit(activationArgs(
+      uid, "bien_007", "cancel_attempt_0004",
+      "cancel_activation_0004"
+    ));
+    await assert.rejects(cancelDemoHabit(cancellationArgs(
+      uid, "bien_007", "cancel_attempt_0004",
+      "cancel_operation_0004", 10
+    )));
+    assert.equal((await user.get()).data().habitCoins, 100);
+    assert.equal((await user.get()).data().habitMutationVersion, 1);
+    assert.equal((await user.collection("habit_cancellation_operations").get()).size, 0);
   });
 
 }
