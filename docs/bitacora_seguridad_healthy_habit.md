@@ -373,3 +373,9 @@ python3 tools/chat_intent_compare.py
 ```
 
 **Pendiente:** obtener salidas locales o GitHub Actions para cuantificar diferencias reales. No se modificó `nutrichat.dart`, `HealthyAssistantEngine` ni ninguna configuración de Firebase en esta etapa. Los clasificadores permanecen desconectados de la app hasta superar criterios y evaluación de uso real. Detalles en `docs/mr_healthy_entrenamiento_intenciones.md`.
+
+## Clasificación ML — evaluación independiente V2 (20-nov-2026)
+
+Después de recibir del usuario la auditoría V1 (TF-IDF: macro-F1 0.708 y 2 errores críticos; Naive Bayes: macro-F1 0.708 y 5 críticos; 15 tests aprobados), se incorporó `datasets/chat_intents_es_v2_new.json` con 150 frases nuevas train y 60 nuevas test, sin duplicados frente al conjunto V1. Se incorporó `tools/chat_intent_v2.py` para una nueva prueba de cuatro variantes (dos clasificadores, con/sin abstención); el ajuste final usa 225 frases V1/train + 150 V2/train, mientras la selección usa 45 V2/train como dev. **Las 90 frases V1/test no se reintroducen**. La evaluación V2/test sigue separada. Pruebas de fuga y aislamiento en `tools/test_chat_intent_v2.py`. Workflow CI actualizado con informe `outputs/mr_healthy_intent_v2_report.json`.
+
+**Sin validación local confirmada para estos commits**: pendiente `python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v` y `python3 tools/chat_intent_v2.py`; puede devolver código 2 si no alcanza el umbral. No hay cambio en la app Flutter, datos de usuarios, Firebase ni producción. La capa de seguridad del modelo siempre produce recomendaciones con `may_execute_action: false`.
