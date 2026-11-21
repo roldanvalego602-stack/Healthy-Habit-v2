@@ -37,7 +37,7 @@ Rama: `feature/habits-discovery-routines`
 
 `shared_habit_invites/{inviteId}`
 - `senderUid`, `recipientUid`, `habitId`, `habitTitle`
-- `status`: pendiente | aceptada | rechazada | cancelada
+- `status`: pendiente | aceptada | rechazada | cancelada | finalizada
 - `createdAt`, `resolvedAt`
 
 El ID es determinista por emisor/receptor/hábito para evitar duplicados
@@ -82,9 +82,10 @@ solución rápida.
   servidor/FCM autorizado.
 - **Prueba con dos cuentas**: verificar reglas, lectura, escritura,
   visibilidad y cancelación antes de confirmar funcionamiento.
-- **Cierre de asociación**: decidir comportamiento al eliminar un
-  amigo que ya aceptó un hábito en pareja y cómo dejar de compartir
-  sin perder progreso personal.
+- **Cierre de asociación**: ya hay acción «Terminar pareja» que marca
+  la invitación como finalizada sin borrar los registros personales.
+  Falta automatizar qué sucede con una invitación aceptada cuando se
+  elimina la amistad.
 
 ## Validación local
 
