@@ -231,6 +231,8 @@ class HealthyRemindersService {
     await initialize();
     ++_revision;
     await _cancelManaged();
+    // Al cerrar sesión tampoco debe quedar un diagnóstico anterior.
+    await _plugin.cancel(_diagnosticId);
   }
 
   /// Solo se invoca cuando el usuario pulsa explícitamente Probar aviso.
