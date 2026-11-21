@@ -158,3 +158,30 @@ python3 tools/chat_intent_audit.py
 ```
 
 El siguiente experimento debe incluir frases **nuevas** en español coloquial, errores tipográficos, solicitudes elípticas y temas no relacionados, con separación explícita de entrenamiento/desarrollo/test. No alterar los 90 ejemplos de `datasets/chat_intents_es_v1.json` para elevar artificialmente los indicadores.
+
+## 10. Tercera etapa: corpus independiente V2 y prueba de seguridad (20-nov-2026)
+
+**Resultados de auditoría V1 suministrados por el usuario:** 15/15 tests Python correctos; TF-IDF calibrado: 65.6 % exactitud, macro-F1 0.708, cobertura 82.2 %, 2 errores críticos. Naive Bayes: 68.9 % exactitud, macro-F1 0.708, cobertura 95.6 %, 5 errores críticos. Ambos **rechazados**.
+
+La nueva iteración **no entrena con las 90 frases V1/test** ni las convierte en ejemplos de entrenamiento. Los archivos son:
+
+- `datasets/chat_intents_es_v2_new.json`: **210 frases nuevas**, 150 para train (10 por intención) y 60 para test (4 por intención), sin duplicados normalizados frente a V1.
+- `tools/chat_intent_v2.py`: combina **225 ejemplos V1/train + 150 V2/train = 375 ejemplos** para el ajuste final. Antes de seleccionar parámetros, reserva **45 frases V2/train para desarrollo** y ajusta con las 330 restantes. Las **60 preguntas V2/test** se utilizan exclusivamente al calcular métricas finales, nunca en selección de modelo o umbrales.
+- `tools/chat_intent_safety.py`: filtro de abstención para propuestas peligrosas sobre cuenta/hábito, **solo rechaza** y no puede ejecutar ninguna operación.
+- `tools/test_chat_intent_v2.py`: comprueba separación de datos, rechaza filtración del test anterior y valida las condiciones de evaluación.
+- Workflow CI `.github/workflows/mr_healthy_intent_benchmark.yml` actualizado para publicar `outputs/mr_healthy_intent_v2_report.json` junto a los informes V1.
+
+Se comparan en una misma evaluación cuatro estrategias: **TF-IDF original**, **TF-IDF + filtro**, **Naive Bayes original** y **Naive Bayes + filtro**. Se calculan exactitud, macro-F1, cobertura, abstenciones y errores críticos por estrategia. El candidato se selecciona **solo con métricas de desarrollo** y sus resultados de test no pueden cambiar esa selección. El informe marca `production_ready: false` incluso si alcanza criterios experimentales.
+
+Ejecutar después de actualizar la rama:
+
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_v2.py
+```
+
+**Importante:** un programa que devuelve código 2 ha generado su informe, pero no ha satisfecho los criterios de aceptación. Es esperable en esta fase, no es autorización para instalar el clasificador en la aplicación. No se modificaron `nutrichat.dart`, Firebase, reglas de seguridad ni la economía de Healthy Habit.
+
+### Restricciones de inferencia
+
+Este experimento sigue utilizando **datos sintéticos**, no pruebas reales de usuarios. Un pequeño conjunto adicional permite diagnosticar, pero no demuestra fiabilidad clínica, accesibilidad, seguridad estadística ni robustez frente a conversaciones prolongadas. Las fichas educativas continúan siendo la fuente de conocimiento, el modelo solo intenta clasificar intenciones. Antes de habilitarlo se requieren pruebas del sistema completo, consentimientos pertinentes para cualquier uso de conversaciones reales y validación de rutas sensibles.
