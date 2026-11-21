@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'interaction_model.dart';
 
 class InteractionService {
@@ -14,6 +15,18 @@ class InteractionService {
     String estado = 'enviado',
     String tipo = 'reaccion',
   }) async {
+    // El cliente nunca debe enviar reacciones atribuidas a otra cuenta.
+    // La misma comprobación debe aplicarse en las reglas de Firestore.
+    final loggedInUid = FirebaseAuth.instance.currentUser?.uid;
+    if (loggedInUid == null || loggedInUid != fromUid) {
+      throw StateError('Inicia sesión con tu cuenta para enviar reacciones.');
+    }
+    if (toUid.trim().isEmpty || toUid == fromUid) {
+      throw ArgumentError('Selecciona a otro usuario válido.');
+    }
+    if (!const ['🔥', '❤️', '👏', '💪', '🎉', '⭐'].contains(emoji)) {
+      throw ArgumentError('La reacción seleccionada no es válida.');
+    }
     final nuevaInteraccion = InteractionModel(
       challengeId: challengeId,
       createdAt: DateTime.now(),
