@@ -135,6 +135,8 @@ test("un perfil público nuevo no puede autoconcederse progreso", async () => {
     settings: {mostrarRachaAmigos: true, visibilidadLogros: "Todos"},
   };
   await assertFails(setDoc(ref, {...profile, xp: 9999}));
+  await assertFails(setDoc(ref, {...profile, nextLevelXp: 999999}));
+  await assertFails(setDoc(ref, {...profile, nextAchievementProgress: 999}));
   await assertSucceeds(setDoc(ref, profile));
 });
 
