@@ -114,6 +114,34 @@ class PersonalRoutineStep {
   }
 }
 
+/// Estado de la sesión en curso, aislado del registro oficial.
+class PersonalRoutineDraft {
+  const PersonalRoutineDraft({
+    required this.date,
+    this.stepIndex = 0,
+    this.stepValue = 0,
+  });
+
+  final String date;
+  final int stepIndex;
+  final int stepValue;
+
+  Map<String, dynamic> toJson() => {
+        'date': date,
+        'stepIndex': stepIndex,
+        'stepValue': stepValue,
+      };
+
+  factory PersonalRoutineDraft.fromJson(Map<String, dynamic> data) =>
+      PersonalRoutineDraft(
+        date: data['date']?.toString() ?? '',
+        stepIndex: ((data['stepIndex'] as num?)?.toInt() ?? 0)
+            .clamp(0, 1000).toInt(),
+        stepValue: ((data['stepValue'] as num?)?.toInt() ?? 0)
+            .clamp(0, 86400).toInt(),
+      );
+}
+
 class PersonalRoutinesStore {
   const PersonalRoutinesStore();
 
@@ -122,6 +150,44 @@ class PersonalRoutinesStore {
   String get _storageKey {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return uid == null ? '${key}_guest' : '${key}_$uid';
+  }
+
+  String _draftKey(String routineId) => '${_storageKey}_draft_$routineId';
+
+  Future<PersonalRoutineDraft?> loadDraft(String routineId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_draftKey(routineId));
+    if (raw == null) return null;
+    try {
+      final data = jsonDecode(raw);
+      if (data is! Map) return null;
+      final draft = PersonalRoutineDraft.fromJson(
+        Map<String, dynamic>.from(data),
+      );
+      return draft.date == PersonalRoutine.dateKey(DateTime.now())
+          ? draft
+          : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> saveDraft(
+    String routineId,
+    PersonalRoutineDraft draft,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString(
+      _draftKey(routineId),
+      jsonEncode(draft.toJson()),
+    )) {
+      throw StateError('No se pudo guardar el progreso de la sesión.');
+    }
+  }
+
+  Future<void> clearDraft(String routineId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_draftKey(routineId));
   }
 
   Future<List<PersonalRoutine>> load() async {
