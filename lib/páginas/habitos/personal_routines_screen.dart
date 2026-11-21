@@ -831,7 +831,35 @@ class _RoutineEditorState extends State<_RoutineEditor> {
             const SizedBox(height: 18),
           ],
           const SizedBox(height: 16),
-          Text(widget.singleGoal ? 'Configura tu meta' : 'Añadir actividad'),
+          if (!widget.singleGoal)
+            Card(
+              color: HealthyAdaptive.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Una rutina admite varios ejercicios',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: HealthyAdaptive.text,
+                      )),
+                    const SizedBox(height: 5),
+                    Text('Añade una actividad, su cantidad o tiempo y pulsa '
+                      '«Añadir ejercicio». Repite para incluir todas las '
+                      'actividades de la rutina. Después puedes cambiar '
+                      'su orden y guardar.',
+                      style: TextStyle(color: HealthyAdaptive.muted,
+                          fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Text('${_steps.length} actividades añadidas',
+                      key: const ValueKey('routine-steps-count'),
+                      style: TextStyle(color: HealthyAdaptive.accent,
+                          fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          Text(widget.singleGoal ? 'Configura tu meta' : 'Añadir ejercicio'),
           const SizedBox(height: 10),
           TextField(
             controller: _stepName,
@@ -883,7 +911,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
           OutlinedButton.icon(
             onPressed: widget.singleGoal && _steps.isNotEmpty ? null : _addStep,
             icon: const Icon(Icons.add),
-            label: Text(widget.singleGoal ? 'Establecer meta' : 'Añadir paso'),
+            label: Text(widget.singleGoal ? 'Establecer meta' : 'Añadir ejercicio a la rutina'),
           ),
           const SizedBox(height: 14),
           for (var index = 0; index < _steps.length; index++)
