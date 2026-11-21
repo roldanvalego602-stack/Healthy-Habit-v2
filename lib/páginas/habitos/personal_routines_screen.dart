@@ -907,6 +907,7 @@ class _PersonalRoutineEditorState extends State<PersonalRoutineEditor> {
           Text(widget.singleGoal ? 'Configura tu meta' : 'Añadir ejercicio'),
           const SizedBox(height: 10),
           TextField(
+            key: const ValueKey('routine-new-exercise'),
             controller: _stepName,
             maxLength: 70,
             decoration: const InputDecoration(
