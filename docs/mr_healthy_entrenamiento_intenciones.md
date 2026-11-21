@@ -211,3 +211,34 @@ python3 tools/chat_intent_audit.py outputs/mr_healthy_intent_v2_report.json
 ```
 
 El auditor acepta la estructura `models` del reporte V2 y presenta las confusiones por versión, permitiendo identificar la abstención y el error crítico del modelo sin filtro. Como este test V2 ya fue observado, **no optimizar parámetros contra sus 60 preguntas reservadas y volver a anunciar el resultado como no contaminado**. Reservar un tercer lote independiente para cualquier medición generalizable de una arquitectura modificada.
+
+## 12. V2 confirmada y separación de comprensión vs. seguridad (20-nov-2026)
+
+El usuario confirmó **28/28 pruebas Python aprobadas**, incluida la detección de fugas. Auditoría V2:
+
+| Modelo | Exactitud | Macro-F1 | Cobertura | Críticos |
+|---|---:|---:|---:|---:|
+| TF-IDF | 76.7 % | 0.829 | 80.0 % | 0 |
+| TF-IDF + abstención | 76.7 % | 0.826 | 80.0 % | 0 |
+| Naive Bayes | 90.0 % | 0.897 | 100.0 % | 1 |
+| Naive Bayes + abstención | 81.7 % | 0.847 | 86.7 % | 0 |
+
+**Problema identificado:** en la evaluación V2, `safe_prediction` reemplaza intenciones sospechosas por `abstenerse`. Esto altera las métricas de reconocimiento y puede reducir drásticamente la recuperación de peticiones legítimas. En la variante Bayes protegida, `agregar_habito` y `eliminar_cuenta` tienen recall 0.25 (1 de 4 cada una), aunque el modelo sin filtro obtenga mejor exactitud. Esta penalización puede ser aceptable en decisiones sensibles, pero debe cuantificarse por separado y no confundirse con la capacidad del modelo para comprender lenguaje.
+
+**Nueva auditoría retrospectiva:** `tools/chat_intent_policy_report.py` vuelve a usar los clasificadores, parámetros seleccionados en desarrollo y corpus V2 ya observado, pero calcula **dos métricas distintas**:
+
+1. **Reconocimiento**: predicción de intención *antes* de cualquier política de seguridad; exactitud, macro-F1, cobertura y confusiones.
+2. **Elegibilidad operativa**: sugerencias sensibles incorrectas bloqueadas, sugerencias sensibles incorrectas que permanecen, e intenciones legítimas rechazadas por la política. Una salida de la política nunca autoriza la ejecución: `permission_to_act=false`.
+
+Se añadieron pruebas unitarias `tools/test_chat_intent_policy_report.py` que demuestran que bloquear un falso positivo no convierte retrospectivamente la predicción original en un acierto y que bloquear una intención correcta se contabiliza como rechazo. GitHub Actions generará `outputs/mr_healthy_intent_policy_audit_v2.json` junto al resto de informes.
+
+Comandos:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_policy_report.py
+```
+
+**Interpretación importante:** esta auditoría usa el conjunto V2/test que ya hemos inspeccionado; es diagnóstica, **no una tercera evaluación independiente ni una nueva mejora medida**. No se han afinado parámetros ni se han modificado el modelo, la política de rechazo o los datos para optimizar estos resultados. La próxima versión con cambios de algoritmo necesitará un nuevo conjunto de evaluación no observado; una eventual integración a Flutter mantendrá autenticación, autorizaciones del backend y confirmación explícita de acciones en rutas separadas.
