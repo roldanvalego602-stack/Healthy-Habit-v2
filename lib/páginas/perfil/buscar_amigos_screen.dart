@@ -104,6 +104,20 @@ class _BuscarAmigosScreenState extends State<BuscarAmigosScreen> {
 
     final yaSigue = _siguiendo.contains(uid);
     final pendiente = _pendientes.contains(uid);
+    if (yaSigue) {
+      final confirm = await showDialog<bool>(context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar amigo'),
+          content: Text('¿Deseas eliminar a $nombre de tu lista de amigos?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar')),
+          ],
+        ));
+      if (confirm != true || !mounted) return;
+    }
     setState(() => _ocupados.add(uid));
 
     try {
