@@ -91,6 +91,33 @@ Una validación verde de la transacción no reemplaza la revisión de reglas
 de producción ni garantiza que el cliente actual no pueda adulterar
 estados que aún se escriben directamente desde Flutter.
 
+## Cuarto paso: paridad del catálogo oficial y reglas de frecuencia
+
+`functions/official_habit_catalog.js` refleja los **36 hábitos oficiales** de
+`lib/páginas/habitos/catalogo.dart` (24 diarios y 12 semanales).
+El catálogo de servidor incluye título, categoría, dificultad, objetivo,
+registros por periodo, duración, requisitos de nivel, XP de referencia,
+repetibilidad, descanso y periodos de gracia. Las pruebas en
+`functions/tests/official_habit_catalog.test.js` comparan ambos catálogos
+para detectar futuras divergencias.
+
+`functions/habit_period_policy.js` incluye la función pura que identifica
+el día UTC o una semana ISO iniciada en lunes, y valida el número
+máximo de registros por periodo. Tiene pruebas en
+`functions/tests/habit_period_policy.test.js`.
+
+**Restricción deliberada:** conocer los 36 hábitos NO significa habilitar
+su escritura. `registerDemoOfficialHabit` permanece limitado a
+`hidr_001`. La transacción experimental todavía aplica un único registro
+por día UTC, que no es correcto para hábitos que requieren 2 registros
+diarios o 3–5 semanales. Antes de ampliar la lista de hábitos habilitados
+es indispensable incorporar los contadores de periodos a una transacción
+atómica, reconciliar los registros históricos y definir cómo se tratan
+zonas horarias, tolerancias, periodos perdidos y repeticiones.
+
+El catálogo y la política de periodos son preparación **sin despliegue**.
+La aplicación Flutter y las reglas de producción permanecen intactas.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
