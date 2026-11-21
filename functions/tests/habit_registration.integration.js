@@ -71,9 +71,12 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     const logs = await attempt.collection("logs").get();
     const operations = await ref.collection("registration_operations").get();
     const days = await attempt.collection("registration_days").get();
+    const periods = await attempt.collection("registration_periods").get();
     assert.equal(logs.size, 1);
     assert.equal(operations.size, 1);
     assert.equal(days.size, 1);
+    assert.equal(periods.size, 1);
+    assert.equal(periods.docs[0].data().count, 1);
   });
 
   test("simultaneidad real: dos IDs el mismo día conceden a lo sumo 10 XP", async () => {
@@ -124,6 +127,49 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
       input(uid, "integration_final_0002", new Date("2026-11-22T13:00:00Z"))
     ));
     assert.equal((await ref.get()).data().xp, 100);
+  });
+
+  test("dos días distintos generan contadores separados sin duplicar XP", async () => {
+    const uid = "integration-next-period";
+    const {ref, attempt} = await seed(uid);
+    const first = await registerDemoHabit(input(
+      uid, "integration_period_0001", fixedDay
+    ));
+    const second = await registerDemoHabit(input(
+      uid, "integration_period_0002", new Date("2026-11-22T13:00:00Z")
+    ));
+    assert.equal(first.progress, 1);
+    assert.equal(second.progress, 2);
+    assert.equal((await ref.get()).data().xp, 20);
+    const counters = await attempt.collection("registration_periods").get();
+    assert.equal(counters.size, 2);
+    for (const doc of counters.docs) assert.equal(doc.data().count, 1);
+  });
+
+  test("una marca diaria previa conserva el bloqueo sin contador", async () => {
+    const uid = "integration-legacy-day";
+    const {ref, attempt} = await seed(uid);
+    await attempt.collection("registration_days")
+      .doc("2026-11-21").create({operationId: "legacy_record_0001"});
+    await assert.rejects(registerDemoHabit(input(
+      uid, "integration_legacy_0001"
+    )));
+    assert.equal((await ref.get()).data().xp, 0);
+    assert.equal((await attempt.collection("registration_periods").get()).size, 0);
+  });
+
+  test("una segunda petición no altera el contador del mismo periodo", async () => {
+    const uid = "integration-counter-race";
+    const {ref, attempt} = await seed(uid);
+    const results = await Promise.allSettled([
+      registerDemoHabit(input(uid, "integration_counter_0001")),
+      registerDemoHabit(input(uid, "integration_counter_0002")),
+    ]);
+    assert.equal(results.filter((x) => x.status === "fulfilled").length, 1);
+    assert.equal((await ref.get()).data().xp, 10);
+    const counters = await attempt.collection("registration_periods").get();
+    assert.equal(counters.size, 1);
+    assert.equal(counters.docs[0].data().count, 1);
   });
 
   test("no permite operar sobre el intento de otro usuario", async () => {
