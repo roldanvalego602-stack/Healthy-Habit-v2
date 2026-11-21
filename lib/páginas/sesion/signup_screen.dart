@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:healthy_habit/p%C3%A1ginas/inicio.dart';
 import 'package:healthy_habit/servicios/autenticacion_servicio.dart';
 
+import '../../servicios/shop_demo_bootstrap.dart';
 import 'login_screen.dart'; // Reutiliza AuthTextField, FieldLabel y GoogleG
 
 // ---------- Palette ----------
@@ -313,10 +314,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 22),
 
-              SizedBox(
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _handleGoogleSignup,
+              if (!ShopDemoBootstrap.officialHabitsEnabled)
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _handleGoogleSignup,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: HealthyAdaptive.surface,
                     side: BorderSide(color: AppColors.fieldBorder),
