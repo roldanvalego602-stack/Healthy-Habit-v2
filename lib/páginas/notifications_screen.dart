@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
 import '../servicios/healthy_reminders_service.dart';
 import 'perfil/configuracion_screen.dart';
+import 'perfil/reacciones_recibidas_panel.dart';
 
 /// Centro de recordatorios de la cuenta actual.
 /// No fabrica notificaciones sociales ni recompensas de demostración.
@@ -309,6 +310,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     )),
                     const SizedBox(height: 14),
+                    const ReaccionesRecibidasPanel(),
+                    const SizedBox(height: 14),
                     Card(child: Padding(
                       padding: const EdgeInsets.all(18),
                       child: Row(
@@ -318,11 +321,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: theme.colorScheme.primary),
                           const SizedBox(width: 12),
                           Expanded(child: Text(
-                            'Esta pantalla muestra recordatorios y su '
-                            'configuración reales. La bandeja de eventos '
-                            'sociales, solicitudes y recompensas todavía '
-                            'no está conectada; no se muestran mensajes '
-                            'ficticios como si hubieran ocurrido.',
+                            'Aquí se muestran los recordatorios del '
+                            'dispositivo y las reacciones recibidas realmente. '
+                            'Las invitaciones a hábitos compartidos y las '
+                            'recompensas sociales aún no están conectadas.',
                             style: theme.textTheme.bodySmall)),
                         ],
                       ),
