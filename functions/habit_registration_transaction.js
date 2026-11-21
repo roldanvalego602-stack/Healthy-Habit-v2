@@ -114,14 +114,14 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
   const ids = validateDemoRegistration(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const date = utcDay(now);
-   const userRef = db.collection("users").doc(uid);
+  const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(ids.habitId);
   const attemptRef = habitRef.collection("attempts").doc(ids.attemptId);
   const operationRef = userRef.collection("registration_operations")
     .doc(ids.operationId);
   // Compatibilidad con marcas del piloto previo: consultar ambas rutas.
   const dayRef = attemptRef.collection("registration_days").doc(date);
-   const logRef = attemptRef.collection("logs").doc(ids.operationId);
+  const logRef = attemptRef.collection("logs").doc(ids.operationId);
   // Solo el piloto heredado hidr_001 utiliza una marca de un registro
   // por día. Los demás hábitos se rigen por el contador del periodo.
   const usesLegacyDailyMarker = ids.habitId === "hidr_001";
