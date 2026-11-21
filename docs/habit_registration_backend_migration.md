@@ -455,6 +455,58 @@ migrar el cliente y todas las otras vías de escritura de economía,
 revisar el canje de consumibles y coordinar el despliegue de
 reglas estrictas en la misma versión.
 
+## Decimotercer paso: puente opcional de compras en Flutter
+
+El cliente incorpora `lib/páginas/tienda/shop_purchase_gateway.dart` y
+una bifurcación al principio de `ShopService.buy`:
+
+- Por defecto `HH_DEMO_SHOP_PURCHASE=false`: **sin cambios** en las
+  compras de Flutter, que aún usan la transacción cliente antigua.
+- Con `--dart-define=HH_DEMO_SHOP_PURCHASE=true`: exige que la
+  aplicación Firebase activa utilice exactamente el proyecto
+  `demo-healthy-habit`. En cualquier otro proyecto, incluyendo
+  `cloud-firestore-d8c61` (configuración actual), se rechaza la
+  compra **antes de crear una llamada a Cloud Functions**. No se
+  permite volver a la escritura directa al fallar el callable.
+- Se configura `FirebaseFunctions.instanceFor` para
+  `us-central1`, conectándolo al emulador mediante
+  `HH_FUNCTIONS_EMULATOR_HOST` (valor por defecto `127.0.0.1`,
+  en emulador Android habitualmente `10.0.2.2`) y
+  `HH_FUNCTIONS_EMULATOR_PORT` (por defecto 5001).
+- El cliente envía únicamente `{itemId, operationId}` y valida que
+  la respuesta contenga artículo, precio y saldo nuevos. Los cambios
+  de inventario y saldo siguen llegando a `ShopService.watch`
+  mediante el listener existente de Firestore.
+- El identificador de operación se genera localmente y se conserva
+  en memoria durante fallos de conexión, de modo que un reintento
+  de la misma compra pueda usar el ID anterior y no cobre dos veces.
+  Al reiniciar la app se pierde este ID, pero Firestore sigue
+  impidiendo comprar artículos duplicados.
+
+`test/shop_purchase_gateway_test.dart` verifica el bloqueo de
+proyectos reales, el contrato del payload y el estado deshabilitado
+de forma predeterminada.
+
+**Limitación importante:** `lib/main.dart` y
+`lib/firebase_options.dart` **NO se modificaron**. Actualmente la
+app se inicia con el proyecto de producción, así que activar el
+flag experimental sin un arranque Firebase demo completo
+(fijar la app, Auth Emulator y Firestore Emulator al MISMO
+proyecto `demo-healthy-habit`) **fallará de forma intencional**.
+No usar este flag en una build normal ni conectarlo a producción.
+La siguiente fase será preparar y verificar el arranque aislado de
+la aplicación sobre los emuladores antes de intentar compras E2E.
+
+Validaciones sin conexión al backend:
+
+```bash
+flutter analyze lib/páginas/tienda/shop_service.dart lib/páginas/tienda/shop_purchase_gateway.dart
+flutter test test/shop_purchase_gateway_test.dart
+```
+
+Nunca habilitar el nuevo flujo por defecto hasta migrar las otras
+escrituras de economía del cliente y adoptar reglas estrictas.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
