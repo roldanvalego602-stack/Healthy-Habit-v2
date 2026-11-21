@@ -649,7 +649,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
       Text('Cómo ver los hábitos', style: TextStyle(
         color: navy, fontWeight: FontWeight.w700, fontSize: 12)),
       const SizedBox(height: 8),
-      SegmentedButton<int>(
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SegmentedButton<int>(
         segments: const [
           ButtonSegment(value: 0, icon: Icon(Icons.view_list_rounded),
             label: Text('Lista')),
@@ -662,6 +664,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         showSelectedIcon: false,
         onSelectionChanged: (value) => setState(
           () => _habitsView = value.first),
+        ),
       ),
     ]),
   );
@@ -676,20 +679,41 @@ class _HabitsScreenState extends State<HabitsScreen> {
       ]);
     }
     if (_habitsView == 1) {
-      return LayoutBuilder(builder: (context, constraints) =>
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: habits.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: constraints.maxWidth < 550 ? 1 : 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 255,
-          ),
-          itemBuilder: (_, index) => _recommendationCard(habits[index]),
-        ),
-      );
+      return LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth < 550 ? 1 : 2;
+        final width = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final habit in habits)
+              SizedBox(
+                width: width,
+                child: Column(children: [
+                  Container(
+                    width: double.infinity,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        categoryBg(habit.category),
+                        HealthyAdaptive.surface,
+                      ]),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20)),
+                    ),
+                    child: Center(
+                      child: Icon(categoryIcon(habit.category),
+                        color: categoryInk(habit.category), size: 48),
+                    ),
+                  ),
+                  _recommendationCard(habit),
+                ]),
+              ),
+          ],
+        );
+      });
     }
     return Column(children: [
       for (final habit in habits)
