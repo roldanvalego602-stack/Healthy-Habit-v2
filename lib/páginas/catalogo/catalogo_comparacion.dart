@@ -28,6 +28,9 @@ class CatalogoComparacion extends StatelessWidget {
     if (items.first.categoria == 'Alimentos') {
       return [..._nutrientes, 'Referencia', 'Grupo del plato'];
     }
+    if (items.first.categoria == 'Bebidas') {
+      return ['Grupo de bebida'];
+    }
     if (items.first.categoria == 'Ejercicios') {
       return ['Grupo muscular', 'Equipo', 'Impacto', 'Modalidad'];
     }
