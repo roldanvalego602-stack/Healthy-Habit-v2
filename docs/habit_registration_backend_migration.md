@@ -64,6 +64,33 @@ por los propietarios bajo las reglas candidatas. Por eso no está listo
 para usuarios reales, no debe sustituir el flujo Flutter y **no habilita
 estadísticas públicas verificadas**.
 
+## Pruebas de integración de Firestore (tercer paso)
+
+Se añadió `functions/tests/habit_registration_integration.test.js`,
+que utiliza Firestore Admin SDK contra **Firestore Emulator real**, no un
+repositorio simulado. Estas pruebas no se ejecutan en `npm test` para evitar
+dependencias accidentales de emuladores durante las pruebas unitarias.
+
+Desde la raíz del repositorio, con Java, Firebase CLI y dependencias
+de `functions` instaladas:
+
+```bash
+firebase emulators:exec --config firebase.emulator.json \
+  --project demo-healthy-habit --only firestore \
+  "cd functions && npm run test:integration"
+```
+
+Verifica: commit y reintento del mismo ID, dos registros simultáneos
+con identificadores diferentes el mismo día, peticiones simultáneas
+del mismo ID, finalización/cambio de nivel y separación de datos
+entre usuarios. Los usuarios de prueba son exclusivos para cada caso.
+El archivo aborta si no detecta Firestore Emulator y el proyecto demo.
+
+**Sin despliegue, sin modificación a Flutter y sin publicación global.**
+Una validación verde de la transacción no reemplaza la revisión de reglas
+de producción ni garantiza que el cliente actual no pueda adulterar
+estados que aún se escriben directamente desde Flutter.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
