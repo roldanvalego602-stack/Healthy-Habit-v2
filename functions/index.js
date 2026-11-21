@@ -258,3 +258,66 @@ exports.prepareEvidenceDemo = onCall(
     return {habitId, attemptId, title: "Beber agua (prueba)", xpAwarded: 0};
   },
 );
+
+
+// Publicación administrativa de estadísticas globales. No es un trigger
+// automático: ejecutar solo tras desplegar reglas que impidan escrituras
+// desde el cliente y permitan lectura de agregados autorizados.
+const {
+  aggregateActiveHabits,
+} = require("./habit_popularity_aggregator");
+
+exports.rebuildPublicHabitPopularity = onCall(
+  {
+    region: "us-central1",
+    enforceAppCheck: false,
+    maxInstances: 1,
+    timeoutSeconds: 180,
+    memory: "512MiB",
+  },
+  async (request) => {
+    if (!request.auth || request.auth.token.admin !== true) {
+      throw new HttpsError(
+        "permission-denied",
+        "Solo los administradores pueden publicar estadísticas."
+      );
+    }
+    // Evitar rankings parciales si aumenta el tamaño de la colección.
+    const snapshot = await db.collectionGroup("user_habits")
+      .limit(10001).get();
+    if (snapshot.size >= 10001) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Hay demasiados documentos; requiere paginación antes de publicar."
+      );
+    }
+    const aggregated = aggregateActiveHabits(
+      snapshot.docs.map((doc) => ({
+        path: doc.ref.path,
+        data: doc.data(),
+      }))
+    );
+    const destination = db.collection("public_habit_popularity");
+    const previous = await destination.get();
+    const batch = db.batch();
+    const activeIds = new Set(aggregated.map((entry) => entry.habitId));
+    for (const doc of previous.docs) {
+      if (!activeIds.has(doc.id)) batch.delete(doc.ref);
+    }
+    const {FieldValue} = require("firebase-admin/firestore");
+    for (const item of aggregated) {
+      batch.set(destination.doc(item.habitId), {
+        activeUsers: item.activeUsers,
+        verified: true,
+        verifiedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    // El catálogo contiene 36 hábitos: el lote se mantiene < 500 escrituras.
+    await batch.commit();
+    return {
+      publishedHabits: aggregated.length,
+      checkedDocuments: snapshot.size,
+      minimumUsersPerPublishedHabit: 5,
+    };
+  }
+);
