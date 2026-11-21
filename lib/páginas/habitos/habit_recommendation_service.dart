@@ -72,7 +72,7 @@ class HabitRecommendationService {
           final count = totals[b]!.compareTo(totals[a]!);
           return count != 0 ? count : a.compareTo(b);
         });
-      return 'Según tus registros recientes e historial de ${sorted.first.toLowerCase()}, '
+      return 'Según el progreso registrado en ${sorted.first.toLowerCase()}, '
           'estas actividades podrían interesarte.';
     }
     if (activeCategories.isNotEmpty) {
