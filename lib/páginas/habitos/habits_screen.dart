@@ -9,6 +9,7 @@ import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
 import 'habit_action_service.dart';
 import 'habit_popularity_service.dart';
+import 'habit_recommendation_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 import 'personal_routines_screen.dart';
@@ -45,6 +46,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool saving = false;
   bool loadingPopularity = false;
   List<HabitPopularity> popularMetrics = [];
+  List<HabitUsageSignal> usageHistory = [];
+  final HabitRecommendationService _recommendationService =
+      const HabitRecommendationService();
   final HabitPopularityService _popularityService = const HabitPopularityService();
   int xp = 0;
   int coins = 0;
@@ -102,6 +106,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         if (!mounted) return;
         setState(() {
           active = [];
+          usageHistory = [];
           xp = 0;
           coins = 0;
           level = 1;
@@ -127,6 +132,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
       final loadedSlots =
           (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
       final List<_ActiveHabitEntry> loadedActive = [];
+      final List<HabitUsageSignal> loadedHistory = [
+        for (final habitDoc in habitsSnapshot.docs)
+          if ((habitDoc.data()['latestProgress'] as num?) != null)
+            HabitUsageSignal(
+              habitId: habitDoc.id,
+              category: habitDoc.data()['category']?.toString() ?? '',
+              registrations: (habitDoc.data()['latestProgress'] as num)
+                  .toInt()
+                  .clamp(0, 1000000)
+                  .toInt(),
+              lastActivity: habitDoc.data()['updatedAt'] is Timestamp
+                  ? (habitDoc.data()['updatedAt'] as Timestamp).toDate()
+                  : null,
+            ),
+      ];
       final groups = await Future.wait(
         habitsSnapshot.docs.map((habitDoc) async {
           final habit = Habit.fromMap(habitDoc.data(), habitDoc.id);
@@ -152,6 +172,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (!mounted) return;
       setState(() {
         active = loadedActive;
+        usageHistory = loadedHistory;
         xp = loadedXp;
         coins = loadedCoins;
         level = loadedLevel;
@@ -572,26 +593,22 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }).toList();
   }
 
-  List<Habit> get _suggestedHabits {
-    final categories = active.map((entry) => entry.habit.category).toSet();
-    final sorted = visibleRecommendations.toList()
-      ..sort((a, b) {
-        final aScore = (categories.contains(a.category) ? 2 : 0) +
-            (_isUnlocked(a) ? 1 : 0);
-        final bScore = (categories.contains(b.category) ? 2 : 0) +
-            (_isUnlocked(b) ? 1 : 0);
-        return bScore.compareTo(aScore);
-      });
-    return sorted.take(8).toList();
-  }
+  Set<String> get _activeCategories =>
+      active.map((entry) => entry.habit.category).toSet();
 
-  String _suggestionDescription() {
-    if (active.isEmpty) {
-      return 'Empieza a tu ritmo: explora hábitos y elige tu primer objetivo.';
-    }
-    final category = active.first.habit.category.toLowerCase();
-    return 'Como ya practicas hábitos de $category, quizá te interesen estas opciones.';
-  }
+  List<Habit> get _suggestedHabits =>
+      _recommendationService.rank(
+        candidates: visibleRecommendations,
+        history: usageHistory,
+        activeCategories: _activeCategories,
+        isUnlocked: _isUnlocked,
+      ).take(8).toList();
+
+  String _suggestionDescription() =>
+      _recommendationService.explanation(
+        history: usageHistory,
+        activeCategories: _activeCategories,
+      );
 
   Widget _twoRowRecommendationCarousel(List<Habit> habits, {
     String carouselId = 'habits-suggested-carousel',
