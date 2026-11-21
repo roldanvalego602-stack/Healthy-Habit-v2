@@ -318,25 +318,45 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal((await attempt.collection("registration_periods").get()).size, 1);
   });
 
-  test("racha diaria: gracia usada una vez no concede XP extra", async () => {
-    const uid = "integration-grace-streak";
+  test("el hábito moderado conserva racha tras una semana omitida", async () => {
+    const uid = "integration-weekly-grace";
+    const {ref, attempt} = await seedMulti(uid, "alim_004");
+    await attempt.update({
+      lastCompletedPeriod: "week_2026-11-02", periodStreak: 4,
+      gracePeriodsUsed: 0,
+    });
+    for (let n = 1; n <= 2; n++) {
+      await registerDemoHabit(inputMulti(
+        uid, "alim_004", `weekly_grace_000${n}`
+      ));
+      assert.equal((await attempt.get()).data().periodStreak, 4);
+    }
+    const complete = await registerDemoHabit(inputMulti(
+      uid, "alim_004", "weekly_grace_0003"
+    ));
+    assert.equal(complete.periodStreak, 5);
+    const state = (await attempt.get()).data();
+    assert.equal(state.lastCompletedPeriod, "week_2026-11-16");
+    assert.equal(state.gracePeriodsUsed, 1);
+    assert.equal((await ref.get()).data().xp, 30);
+    assert.equal((await attempt.collection("logs").get()).size, 3);
+  });
+
+  test("el hábito difícil no concede gracia tras un día omitido", async () => {
+    const uid = "integration-no-difficult-grace";
     const {ref, attempt} = await seedMulti(uid, "bien_007");
     await attempt.update({
       lastCompletedPeriod: "day_2026-11-19", periodStreak: 4,
       gracePeriodsUsed: 0,
     });
     await registerDemoHabit(inputMulti(
-      uid, "bien_007", "grace_period_0001"
+      uid, "bien_007", "difficult_no_grace_0001"
     ));
-    const firstState = (await attempt.get()).data();
-    assert.equal(firstState.periodStreak, 4);
-    const complete = await registerDemoHabit(inputMulti(
-      uid, "bien_007", "grace_period_0002"
+    const completed = await registerDemoHabit(inputMulti(
+      uid, "bien_007", "difficult_no_grace_0002"
     ));
-    assert.equal(complete.periodStreak, 5);
-    const finalState = (await attempt.get()).data();
-    assert.equal(finalState.lastCompletedPeriod, "day_2026-11-21");
-    assert.equal(finalState.gracePeriodsUsed, 1);
+    assert.equal(completed.periodStreak, 1);
+    assert.equal((await attempt.get()).data().gracePeriodsUsed, 0);
     assert.equal((await ref.get()).data().xp, 20);
   });
 
