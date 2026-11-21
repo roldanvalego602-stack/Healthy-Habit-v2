@@ -712,13 +712,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
     ]),
   );
 
-  Widget _vistaDeRecomendaciones(List<Habit> habits) {
+  Widget _vistaDeRecomendaciones(List<Habit> habits, {bool popular = false}) {
     if (_habitsView == 2) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Desliza a los lados para explorar', style: TextStyle(
           fontSize: 12, color: muted)),
         const SizedBox(height: 8),
-        _twoRowRecommendationCarousel(habits),
+        _twoRowRecommendationCarousel(habits,
+          carouselId: popular ? 'habits-popular-carousel'
+              : 'habits-suggested-carousel'),
       ]);
     }
     if (_habitsView == 1) {
@@ -928,9 +930,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                 'Los hábitos populares aparecerán cuando estén disponibles.',
                               )
                             else
-                              _twoRowRecommendationCarousel(
-                                _popularHabits,
-                                carouselId: 'habits-popular-carousel',
+                              _vistaDeRecomendaciones(
+                                _popularHabits, popular: true,
                               ),
                           ],
                           const SizedBox(height: 18),
