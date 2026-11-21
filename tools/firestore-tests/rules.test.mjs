@@ -229,3 +229,96 @@ test('las consultas de invitaciones sólo exponen al participante', async () => 
   )));
   await assertFails(getDocs(collection(as('mallory'), 'shared_habit_invites')));
 });
+
+test('el registro inicial válido conserva el acceso propio', async () => {
+  await assertSucceeds(setDoc(doc(as('alice'), 'users/alice'), {
+    uid: 'alice', name: 'Alice', username: 'alice',
+    email: 'alice@example.test', level: 1, xp: 0,
+    habitCoins: 100, currentStreak: 0, createdAt: serverTimestamp(),
+  }));
+});
+
+test('el alta inicial no permite crear saldo y XP arbitrarios', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'users/alice'), {
+    uid: 'alice', name: 'Alice', username: 'alice',
+    email: 'alice@example.test', level: 40, xp: 99999,
+    habitCoins: 999999, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  }));
+});
+
+test('el usuario cambia preferencias sin acceder a datos de terceros', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), { name: 'Alice', xp: 0,
+      habitCoins: 100 });
+  });
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users/alice'),
+    { settings: { tema: 'oscuro' } }));
+  await assertFails(updateDoc(doc(as('mallory'), 'users/alice'),
+    { settings: { tema: 'claro' } }));
+});
+
+test('una compra del catálogo debita el precio correcto del inventario', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'),
+      { name: 'Alice', xp: 0, habitCoins: 150, shopInventory: [] });
+  });
+  await assertSucceeds(updateDoc(doc(as('alice'), 'users/alice'),
+    { habitCoins: 30, shopInventory: ['avatar_frame'] }));
+});
+
+test('no se permite comprar sin descontar monedas', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'),
+      { name: 'Alice', xp: 0, habitCoins: 150, shopInventory: [] });
+  });
+  await assertFails(updateDoc(doc(as('alice'), 'users/alice'),
+    { habitCoins: 150, shopInventory: ['avatar_frame'] }));
+});
+
+test('sólo el titular puede crear registros privados de hábito', async () => {
+  await assertSucceeds(setDoc(
+    doc(as('alice'), 'users/alice/user_habits/hidr_001/attempts/one/logs/x'),
+    { userId: 'alice', xpEarned: 10, createdAt: serverTimestamp() }));
+  await assertFails(setDoc(
+    doc(as('mallory'), 'users/alice/user_habits/hidr_001/attempts/one/logs/y'),
+    { userId: 'alice', xpEarned: 10, createdAt: serverTimestamp() }));
+});
+
+test('cada persona ve los perfiles públicos sin editar el de otra', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'public_profiles/alice'),
+      {name: 'Alice', username: 'alice', xp: 0, settings: {}});
+  });
+  await assertSucceeds(getDoc(doc(as('bob'), 'public_profiles/alice')));
+  await assertFails(updateDoc(doc(as('mallory'), 'public_profiles/alice'),
+    { name: 'Mallory' }));
+});
+
+test('nadie modifica configuración global desde un cliente móvil', async () => {
+  await assertFails(setDoc(doc(as('alice'), 'system', 'settings'),
+    { allowRewards: true }));
+});
+
+test('la app no puede crear nuevos seguidores heredados', async () => {
+  await assertFails(setDoc(
+    doc(as('alice'), 'users/alice/following/bob'),
+    { createdAt: serverTimestamp() }));
+  await assertFails(setDoc(
+    doc(as('alice'), 'users/alice/followers/bob'),
+    { createdAt: serverTimestamp() }));
+});
+
+test('el destinatario puede rechazar reacciones desde su perfil público', async () => {
+  await seedFriendship();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'public_profiles/bob'),
+      { name: 'Bob', username: 'bob', xp: 0,
+        settings: { permitirReacciones: false } });
+  });
+  await assertFails(setDoc(doc(as('alice'), 'interactions/blocked'), {
+    challengeId: '', createdAt: new Date(), emoji: '👏', estado: 'enviado',
+    fromUid: 'alice', leido: false, respondedAt: null,
+    tipo: 'reaccion', toUid: 'bob',
+  }));
+});
