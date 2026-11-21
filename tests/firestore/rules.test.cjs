@@ -736,7 +736,15 @@ test('perfil público: avatar predeterminado válido y rechazo de valor arbitrar
 });
 
 test('se compra y equipa banda deportiva con precio y ranura autorizados', async () => {
-  const ref = doc(buyer, 'users/buyer');
+  // Aislar el caso: otras pruebas alteran el saldo del usuario "buyer".
+  const uid = 'headband-purchase';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), `users/${uid}`), {
+      uid, habitCoins: 500, shopInventory: [], shopEquipped: {},
+    });
+  });
+  const isolated = env.authenticatedContext(uid).firestore();
+  const ref = doc(isolated, `users/${uid}`);
   await assertSucceeds(updateDoc(ref, {
     habitCoins: 430,
     shopInventory: arrayUnion('sports_headband'),
@@ -746,6 +754,7 @@ test('se compra y equipa banda deportiva con precio y ranura autorizados', async
   }));
   const data = (await getDoc(ref)).data();
   assert.equal(data.habitCoins, 430);
+  assert.deepEqual(data.shopInventory, ['sports_headband']);
   assert.equal(data.shopEquipped.cabeza, 'sports_headband');
 });
 
