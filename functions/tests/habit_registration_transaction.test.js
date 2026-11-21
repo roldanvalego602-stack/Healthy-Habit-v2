@@ -330,3 +330,68 @@ test("operación duplicada del hábito semanal no añade otro registro", async (
   assert.equal(retry.alreadyProcessed, true);
   assert.equal(db.docs.get("users/alice").xp, 10);
 });
+
+
+test("el día local de Monterrey no cambia al llegar medianoche UTC", async () => {
+  const db = seededMultiDb("bien_007");
+  for (const key of ["users/alice", "users/alice/user_habits/bien_007",
+    "users/alice/user_habits/bien_007/attempts/attempt-1"]) {
+    db.docs.get(key).calendarTimeZone = "America/Monterrey";
+  }
+  const first = await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "local_0001", new Date("2026-11-22T01:00:00Z"),
+  )});
+  const second = await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "local_0002", new Date("2026-11-22T03:00:00Z"),
+  )});
+  assert.equal(first.registrationPeriod, "day_2026-11-21");
+  assert.equal(second.registrationPeriod, "day_2026-11-21");
+  assert.equal(second.periodStreak, 1);
+  assert.equal(db.docs.get("users/alice/user_habits/bien_007/" +
+    "attempts/attempt-1").periodStreak, 1);
+  await assert.rejects(registerDemoHabit({db, ...multiArgs(
+    "bien_007", "local_0003", new Date("2026-11-22T04:00:00Z"),
+  )}), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 20);
+});
+
+test("las rachas se incrementan al completar el cupo y respetan la gracia", async () => {
+  const db = seededMultiDb("bien_007");
+  const attempt = db.docs.get("users/alice/user_habits/bien_007/attempts/attempt-1");
+  attempt.lastCompletedPeriod = "day_2026-11-19";
+  attempt.periodStreak = 4;
+  await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "grace_0001",
+  )});
+  assert.equal(attempt.periodStreak, 4);
+  const last = await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "grace_0002",
+  )});
+  assert.equal(last.periodStreak, 5);
+  assert.equal(attempt.periodStreak, 5);
+  assert.equal(attempt.gracePeriodsUsed, 1);
+  assert.equal(db.docs.get("users/alice").xp, 20);
+});
+
+test("la racha se reinicia cuando los periodos omitidos superan la gracia", async () => {
+  const db = seededMultiDb("bien_007");
+  const attempt = db.docs.get("users/alice/user_habits/bien_007/attempts/attempt-1");
+  attempt.lastCompletedPeriod = "day_2026-11-18";
+  attempt.periodStreak = 6;
+  await registerDemoHabit({db, ...multiArgs("bien_007", "resetgrace_0001")});
+  const last = await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "resetgrace_0002",
+  )});
+  assert.equal(last.periodStreak, 1);
+  assert.equal(attempt.gracePeriodsUsed, 1);
+});
+
+test("rechaza zonas distintas entre perfil, hábito e intento", async () => {
+  const db = seededMultiDb("alim_004");
+  db.docs.get("users/alice/user_habits/alim_004/attempts/attempt-1")
+    .calendarTimeZone = "America/Monterrey";
+  await assert.rejects(registerDemoHabit({db, ...multiArgs(
+    "alim_004", "conflict_0001",
+  )}), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 0);
+});
