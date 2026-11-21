@@ -240,6 +240,8 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final rawSettings = d['settings'];
         final publicStreak = rawSettings is! Map ||
             rawSettings['mostrarRachaAmigos'] != false;
+        final acceptsReactions = rawSettings is! Map ||
+            rawSettings['permitirReacciones'] != false;
         final xpActual = _num(_primero(d, ['currentXp']), 0);
         final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
         final progresoXp =
@@ -415,7 +417,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 13),
-                  Align(
+                  if (acceptsReactions) Align(
                     alignment: Alignment.centerRight,
                     child: OutlinedButton.icon(
                       key: ValueKey('feed-encourage-$uid'),
