@@ -6,7 +6,13 @@ class NutriRespuestasService {
 
   /// Tone is applied to everyday educational responses, never safety messages.
   String humor = 'amigable';
-  static const moods = <String>['amigable', 'divertido', 'serio', 'motivador', 'tranquilo'];
+  static const moods = <String>[
+    'amigable',
+    'divertido',
+    'serio',
+    'motivador',
+    'tranquilo',
+  ];
 
   void cambiarHumor(String nuevo) {
     if (moods.contains(nuevo)) humor = nuevo;
@@ -31,10 +37,18 @@ class NutriRespuestasService {
   /// from genuine questions about identity, stigma or discrimination.
   static bool ataqueDiscriminatorio(String input) {
     final s = normalizar(input);
-    final grupo = RegExp(r'\b(gays?|homosexuales?|lesbianas?|trans|negros?|indigenas?|migrantes?|musulmanes?|judios?|asiaticos?)\b');
-    final ataque = RegExp(r'\b(odio|matar|maten|expulsar|inferiores|asco|sucios|degenerados|desaparezcan|no merecen|son basura)\b');
-    final insultoExplicito = RegExp(r'\b(maricon(?:es)?|joto(?:s)?|nigger|nigga|beaner|sudaca(?:s)?)\b');
-    final contextoExplicativo = RegExp(r'\b(que significa|definicion|por que es ofensivo|como denunciar|me dijeron|me llamaron)\b');
+    final grupo = RegExp(
+      r'\b(gays?|homosexuales?|lesbianas?|trans|negros?|indigenas?|migrantes?|musulmanes?|judios?|asiaticos?)\b',
+    );
+    final ataque = RegExp(
+      r'\b(odio|matar|maten|expulsar|inferiores|asco|sucios|degenerados|desaparezcan|no merecen|son basura)\b',
+    );
+    final insultoExplicito = RegExp(
+      r'\b(maricon(?:es)?|joto(?:s)?|nigger|nigga|beaner|sudaca(?:s)?)\b',
+    );
+    final contextoExplicativo = RegExp(
+      r'\b(que significa|definicion|por que es ofensivo|como denunciar|me dijeron|me llamaron)\b',
+    );
     return (grupo.hasMatch(s) && ataque.hasMatch(s)) ||
         (insultoExplicito.hasMatch(s) && !contextoExplicativo.hasMatch(s));
   }
@@ -140,7 +154,14 @@ class NutriRespuestasService {
   }) {
     final text = normalizar(input);
     if (ataqueDiscriminatorio(input)) return moderar(input, nombre);
-    if (contiene(text, ['cambia tu humor', 'modo divertido', 'modo serio', 'modo motivador', 'modo tranquilo', 'modo amigable'])) {
+    if (contiene(text, [
+      'cambia tu humor',
+      'modo divertido',
+      'modo serio',
+      'modo motivador',
+      'modo tranquilo',
+      'modo amigable',
+    ])) {
       for (final mood in moods) {
         if (text.contains(mood)) {
           cambiarHumor(mood);
@@ -149,10 +170,33 @@ class NutriRespuestasService {
       }
       return 'Puedes elegir un estilo: amigable, divertido, serio, motivador o tranquilo.';
     }
-    if (contiene(text, ['estoy aburrido', 'estoy aburrida', 'como estas', 'como te sientes'])) {
-      return _conHumor('Estoy aquí para ayudarte. Podemos conversar, buscar una idea sencilla para tu día o hablar sobre ejercicio y alimentación.');
+    if (contiene(text, [
+      'estoy aburrido',
+      'estoy aburrida',
+      'como estas',
+      'como te sientes',
+    ])) {
+      return _conHumor(
+        'Estoy aquí para ayudarte. Podemos conversar, buscar una idea sencilla para tu día o hablar sobre ejercicio y alimentación.',
+      );
     }
-    if (contiene(text, ['calorias de', 'cuantas calorias tiene', 'tabla nutricional exacta'])) {
+    if (contiene(text, [
+      'que son los carbohidratos',
+      'que es un carbohidrato',
+      'para que sirven los carbohidratos',
+    ])) {
+      return _conHumor(
+        'Los carbohidratos son nutrientes que proporcionan energía '
+        'al organismo. Se encuentran en alimentos como cereales, '
+        'frutas, legumbres y tubérculos. Su aporte debe considerarse '
+        'dentro de una alimentación variada.',
+      );
+    }
+    if (contiene(text, [
+      'calorias de',
+      'cuantas calorias tiene',
+      'tabla nutricional exacta',
+    ])) {
       return 'No tengo una tabla validada de calorías por alimento y porción. Para un cálculo fiable hace falta cantidad, preparación y una base de composición alimentaria verificada; evita tomar una cifra inventada como dato real.';
     }
     final saludo = nombre.isEmpty ? '' : ', $nombre';
@@ -419,9 +463,9 @@ class NutriRespuestasService {
       'Me dejaste pensando 🤔. Mi conocimiento aquí es limitado: no consulto Internet en tiempo real. '
           '¿Buscas una explicación, un consejo práctico o un dato específico?',
       'No tengo datos suficientes para afirmar algo concreto sobre eso. '
-      'Si me cuentas qué quieres descubrir o resolver, puedo intentar '
-      'plantear opciones, hacerte preguntas útiles o explicarte lo que '
-      'sí está disponible en la aplicación.',
+          'Si me cuentas qué quieres descubrir o resolver, puedo intentar '
+          'plantear opciones, hacerte preguntas útiles o explicarte lo que '
+          'sí está disponible en la aplicación.',
       'Podemos desmenuzarlo juntos. Dime si te interesa el «qué», el «cómo» o el «por qué», y lo abordamos paso a paso.',
     ], fallback: true);
   }
