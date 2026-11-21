@@ -25,8 +25,11 @@ V2 = ROOT / "datasets/chat_intents_es_v2_new.json"
 OUTPUT = ROOT / "outputs/mr_healthy_intent_v2_report.json"
 
 
-def v2_rows(path: Path = V2) -> tuple[list[dict], list[str]]:
-    raw = json.loads(path.read_text(encoding="utf-8"))
+def v2_rows(path: Path | None = None) -> tuple[list[dict], list[str]]:
+    # Resolver la ruta al llamar, no al definir la función: así las
+    # pruebas pueden inyectar un dataset contaminado y detectar fugas.
+    source = V2 if path is None else path
+    raw = json.loads(source.read_text(encoding="utf-8"))
     if raw.get("schemaVersion") != 2 or raw.get("language") != "es-MX":
         raise ValueError("Formato V2 incompatible")
     labels = raw.get("labels")
@@ -54,10 +57,10 @@ def v2_rows(path: Path = V2) -> tuple[list[dict], list[str]]:
     return samples, labels
 
 
-def prepare() -> tuple[list[dict], list[dict], list[dict], list[dict], list[str]]:
+def prepare(v2_path: Path | None = None) -> tuple[list[dict], list[dict], list[dict], list[dict], list[str]]:
     old_data = json.loads(CORPUS.read_text(encoding="utf-8"))
     old_rows, old_labels = validate(old_data)
-    new_rows, labels = v2_rows()
+    new_rows, labels = v2_rows(v2_path)
     if old_labels != labels:
         raise ValueError("Las etiquetas cambiaron entre versiones")
     old_training = [row for row in old_rows if row["split"] == "train"]
