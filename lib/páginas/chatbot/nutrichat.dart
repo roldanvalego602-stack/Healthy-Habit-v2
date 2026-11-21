@@ -394,7 +394,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Future<void> _openOfficialSource(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null || uri.scheme != 'https' ||
-        !const {'fdc.nal.usda.gov', 'www.who.int'}.contains(uri.host)) {
+        !const {'fdc.nal.usda.gov', 'www.who.int', 'www.fda.gov'}.contains(uri.host)) {
       _chatNotice('Fuente externa no disponible o no verificada.');
       return;
     }
