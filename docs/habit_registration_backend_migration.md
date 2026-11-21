@@ -226,6 +226,40 @@ zona con un procedimiento de migración y proteger los campos de rachas
 y economía con reglas revisadas. El piloto solo se ejecuta en el
 emulador con proyecto demo; no publicarlo en producción.
 
+## Octavo paso: fijación transaccional del calendario (solo emulador)
+
+Se añadió `functions/habit_calendar_activation.js` y la callable
+`lockDemoHabitCalendar`, accesible **solo** cuando
+`FUNCTIONS_EMULATOR=true` y `GCLOUD_PROJECT=demo-healthy-habit`.
+
+Petición autenticada: `{habitId, attemptId, timeZone}`. Admite
+exclusivamente `bien_007` y `alim_004` del piloto y una zona IANA
+válida. Su transacción de Admin SDK lee perfil, hábito e intento y fija
+`calendarTimeZone` en los tres documentos con el mismo valor. Repetir
+la petición con idéntica zona devuelve `alreadyConfigured: true`.
+Si existe otra zona, rechaza la operación sin sobrescribirla.
+
+Para bloquear un calendario nuevo se requiere intento activo sin
+progreso, XP acumulado, racha ni historial de gracia. No se migra
+ningún registro previo. Además, el registro experimental ahora
+**rechaza el UTC implícito** cuando alguna de las tres entidades
+ya dispone de un calendario explícito diferente. `hidr_001`
+conserva UTC y las marcas históricas del piloto.
+
+Pruebas: `functions/tests/habit_calendar_activation.test.js` para
+validación e idempotencia, además de pruebas de integración sobre
+la activación, la protección de historiales y dos peticiones de
+zonas distintas concurrentes.
+
+**Advertencia:** esta es una comprobación transaccional experimental,
+NO un bloqueo de seguridad de los documentos frente al cliente.
+Las reglas candidatas todavía permiten alterar datos de perfil e
+intentos desde Flutter. Antes de producción habrá que mover también
+la activación y mutación de hábitos al servidor, restringir reglas y
+auditar cambios de calendario para evitar reiniciar contadores
+ilegítimamente. No se modificó el cliente Flutter ni se desplegaron
+reglas.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
