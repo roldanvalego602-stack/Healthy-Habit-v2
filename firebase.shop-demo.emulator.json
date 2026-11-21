@@ -1,0 +1,20 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.candidate.rules"
+  },
+  "emulators": {
+    "auth": {"port": 9099},
+    "firestore": {"port": 8080},
+    "functions": {"port": 5001},
+    "ui": {"enabled": true, "port": 4000},
+    "singleProjectMode": true
+  }
+}
