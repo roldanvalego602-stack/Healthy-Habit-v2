@@ -192,15 +192,15 @@ class HealthyHybridKnowledge {
     }
     final normalized = HealthyKnowledgeIndex.normalize(input);
     final hasReference = RegExp(
-      r'\\b(y si|si le|le pongo|le agrego|con eso|y con|eso hace|'
-      r'lo puedo|es malo|hace dano|como lo preparo)\\b',
+      r'\b(y si|si le|le pongo|le agrego|con eso|y con|eso hace|'
+      r'lo puedo|es malo|hace dano|como lo preparo)\b',
     ).hasMatch(normalized);
     // Si el usuario está hablando del huevo y dice «¿y con jamón?»,
     // recuperar el sujeto explícito sin alterar la frase original.
     final refersToEgg = lastKnowledgeId == 'huevo' ||
         lastKnowledgeId.startsWith('huevo_');
     final contextualInput = hasReference && refersToEgg &&
-            !RegExp(r'\\b(huevo|huevos)\\b').hasMatch(normalized)
+            !RegExp(r'\b(huevo|huevos)\b').hasMatch(normalized)
         ? 'huevo $input'
         : input;
     if (!index.looksEducational(contextualInput)) return null;
