@@ -52,11 +52,16 @@ class HabitosParejaServicio {
     }
 
     final ref = _invitations.doc(idPara(me, recipientUid, habitId));
+    final reverse = _invitations.doc(idPara(recipientUid, me, habitId));
     await _db.runTransaction((tx) async {
       final existing = await tx.get(ref);
-      if (existing.exists &&
-          (existing.data()?['status'] == 'pendiente' ||
-           existing.data()?['status'] == 'aceptada')) {
+      final existingReverse = await tx.get(reverse);
+      final statuses = [
+        existing.data()?['status'],
+        existingReverse.data()?['status'],
+      ];
+      if (statuses.any((status) =>
+          status == 'pendiente' || status == 'aceptada')) {
         throw StateError('Ya existe una invitación o actividad compartida '
             'con este amigo para ese hábito.');
       }
@@ -107,6 +112,25 @@ class HabitosParejaServicio {
       }
       tx.update(ref, {
         'status': 'cancelada',
+        'resolvedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  /// Permite que cualquiera de los participantes finalice la asociación.
+  /// No cancela el hábito personal de ninguno ni devuelve recompensas.
+  Future<void> terminar(String invitationId) async {
+    final me = _uid;
+    final ref = _invitations.doc(invitationId);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      final data = doc.data();
+      if (data == null || data['status'] != 'aceptada' ||
+          (data['senderUid'] != me && data['recipientUid'] != me)) {
+        throw StateError('Solo un participante puede finalizar la actividad.');
+      }
+      tx.update(ref, {
+        'status': 'finalizada',
         'resolvedAt': FieldValue.serverTimestamp(),
       });
     });
