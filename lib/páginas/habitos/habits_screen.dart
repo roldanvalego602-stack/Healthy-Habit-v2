@@ -475,7 +475,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
               padding: const EdgeInsets.only(right: 12),
               child: SizedBox(
                 width: (MediaQuery.sizeOf(context).width - 40)
-                    .clamp(260.0, 340.0),
+                    .clamp(260.0, 340.0)
+                    .toDouble(),
                 child: Column(
                   children: [
                     _recommendationCard(habits[i]),
