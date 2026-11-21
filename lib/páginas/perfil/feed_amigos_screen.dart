@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'profile_avatar.dart';
 import 'reaction_picker_dialog.dart';
+import '../logros/logros_service.dart';
 import 'social_action_button.dart';
 
 import 'amigos_servicio.dart';
@@ -242,6 +243,21 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
             rawSettings['mostrarRachaAmigos'] != false;
         final acceptsReactions = rawSettings is! Map ||
             rawSettings['permitirReacciones'] != false;
+        final achievementVisibility = rawSettings is Map
+            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
+            : 'Solo amigos';
+        final achievements = achievementVisibility == 'Solo yo'
+            ? const <String>[]
+            : LogrosService.catalogo.where((definition) {
+                if (!const {'nivel', 'xp', 'racha'}
+                    .contains(definition.tipo)) return false;
+                return LogrosService.obtenido(
+                  definition,
+                  LogrosService.progreso(
+                    definition, d, 0, 0, const <String>{},
+                  ),
+                );
+              }).take(3).map((item) => item.nombre).toList();
         final xpActual = _num(_primero(d, ['currentXp']), 0);
         final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
         final progresoXp =
@@ -393,6 +409,25 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (achievements.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Text('Logros destacados',
+                      style: TextStyle(fontWeight: FontWeight.w800,
+                        fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final achievement in achievements)
+                          Chip(
+                            avatar: const Icon(Icons.military_tech_outlined,
+                              size: 16),
+                            label: Text(achievement),
+                          ),
+                      ],
+                    ),
+                  ],
                   if (logro.isNotEmpty && progresoLogro >= 0) ...[
                     const SizedBox(height: 12),
                     Row(
