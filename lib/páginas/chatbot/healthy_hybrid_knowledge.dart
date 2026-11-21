@@ -208,7 +208,8 @@ class HealthyHybridKnowledge {
     final normalized = HealthyKnowledgeIndex.normalize(input);
     final hasReference = RegExp(
       r'\b(y si|si le|le pongo|le agrego|con eso|y con|eso hace|'
-      r'lo puedo|es malo|hace dano|como lo preparo)\b',
+      r'lo puedo|es malo|hace dano|como lo preparo|prepararlo|'
+      r'comerlo|con jamon|me podria|me puede hacer)\b',
     ).hasMatch(normalized);
     // Si el usuario está hablando del huevo y dice «¿y con jamón?»,
     // recuperar el sujeto explícito sin alterar la frase original.
