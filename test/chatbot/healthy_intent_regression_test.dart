@@ -117,6 +117,15 @@ void main() {
       expect(reply?.knowledgeId, 'huevo_frecuencia');
     });
 
+    test('«qué más» propone nuevos aspectos sin repetir el huevo general', () async {
+      final reply = await knowledge.answer('¿Qué más?',
+        operational: const HealthyAssistantReply(''),
+        lastKnowledgeId: 'huevo');
+      expect(reply?.knowledgeId, 'huevo');
+      expect(reply?.text, contains('tres cosas distintas'));
+      expect(reply?.text, contains('jamón'));
+    });
+
     test('tema ajeno no hereda contexto de alimento', () async {
       final reply = await knowledge.answer('¿Qué película me recomiendas?',
         operational: const HealthyAssistantReply(''),
