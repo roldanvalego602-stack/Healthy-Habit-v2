@@ -86,12 +86,13 @@ revisarse en conjunto con las políticas de producción, no sustituirlas.
 Con emulador Java instalado y dependencias del directorio de pruebas:
 
 ```bash
-firebase emulators:exec --only firestore \
+firebase emulators:exec --config firebase.emulator.json \
+  --project demo-healthy-habit --only firestore \
   "cd tests/firestore && npm test"
 ```
 
-La configuración de `firebase.json` no especifica actualmente `firestore.rules`
-ni una configuración del emulador; es necesario proporcionar al emulador
-el proyecto demo y el puerto 8080 que espera el conjunto de pruebas, sin
-alterar el despliegue de producción.
+El archivo existente `firebase.emulator.json` incluye las reglas candidatas
+y el emulador Firestore en el puerto 8080. El comando usa expresamente
+ese archivo y el proyecto `demo-healthy-habit`, sin alterar `firebase.json`
+ni desplegar reglas a producción.
 
