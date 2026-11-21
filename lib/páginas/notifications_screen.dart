@@ -7,6 +7,7 @@ import '../tema/healthy_theme.dart';
 import '../servicios/healthy_reminders_service.dart';
 import 'perfil/configuracion_screen.dart';
 import 'perfil/reacciones_recibidas_panel.dart';
+import 'perfil/solicitudes_amigos_panel.dart';
 
 /// Centro de recordatorios de la cuenta actual.
 /// No fabrica notificaciones sociales ni recompensas de demostración.
@@ -309,6 +310,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ],
                       ),
                     )),
+                    const SizedBox(height: 14),
+                    const SolicitudesAmigosPanel(),
                     const SizedBox(height: 14),
                     const ReaccionesRecibidasPanel(),
                     const SizedBox(height: 14),
