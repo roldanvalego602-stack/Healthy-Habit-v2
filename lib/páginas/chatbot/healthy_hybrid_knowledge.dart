@@ -206,6 +206,22 @@ class HealthyHybridKnowledge {
       );
     }
     final normalized = HealthyKnowledgeIndex.normalize(input);
+    // Responder a «¿qué más?» con opciones relacionadas, no repetir
+    // literalmente la misma ficha del mensaje anterior.
+    final asksForMore = const {
+      'que mas', 'dime mas', 'explicame mas', 'algo mas',
+      'cuentame mas', 'mas informacion', 'quiero saber mas',
+    }.contains(normalized);
+    if (asksForMore && lastKnowledgeId.startsWith('huevo')) {
+      return const HealthyAssistantReply(
+        'Sobre el huevo puedo explicarte tres cosas distintas: '
+        'cómo cocinarlo de forma segura, si puede causar problemas '
+        'en algunas personas o cómo combinarlo con jamón y verduras. '
+        '¿Cuál de esos temas te interesa?',
+        card: 'knowledge',
+        knowledgeId: 'huevo',
+      );
+    }
     final hasReference = RegExp(
       r'\b(y si|si le|le pongo|le agrego|con eso|y con|eso hace|'
       r'lo puedo|es malo|hace dano|como lo preparo|prepararlo|'
