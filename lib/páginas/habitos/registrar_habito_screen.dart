@@ -38,6 +38,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   XFile? _imagenSeleccionada;
   Uint8List? _bytesImagen;
   bool _guardando = false;
+  bool _modoPasos = false;
+  int _pasoRegistro = 0;
   bool _cargando = true;
   final bool _subiendoImagen = false;
   String _interactionType = 'manual';
@@ -588,6 +590,32 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           children: [
             _buildTarjetaHabito(),
             const SizedBox(height: 18),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false,
+                    icon: Icon(Icons.view_agenda_outlined),
+                    label: Text('Todo junto')),
+                ButtonSegment(value: true,
+                    icon: Icon(Icons.route_outlined),
+                    label: Text('Por pasos')),
+              ],
+              selected: {_modoPasos},
+              onSelectionChanged: _guardando ? null : (values) => setState(() {
+                _modoPasos = values.first;
+                _pasoRegistro = 0;
+              }),
+            ),
+            const SizedBox(height: 14),
+            if (_modoPasos) ...[
+              Text('Paso ${_pasoRegistro + 1} de 3: '
+                '${['Actividad y evidencia', 'Nota personal', 'Confirmación'][_pasoRegistro]}',
+                style: TextStyle(fontWeight: FontWeight.w800,
+                    color: HealthyAdaptive.text)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: (_pasoRegistro + 1) / 3),
+              const SizedBox(height: 16),
+            ],
+            if (!_modoPasos || _pasoRegistro == 0) ...[
             if (_interactionType != 'manual') ...[
               HabitInteractionCard(
                 type: _interactionType,
@@ -614,6 +642,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
             ),
             const SizedBox(height: 24),
+            ],
+            if (!_modoPasos || _pasoRegistro == 1) ...[
             _buildTituloSeccion('Añadir una nota', 'Opcional'),
             const SizedBox(height: 12),
             TextField(
@@ -640,6 +670,27 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            ],
+            if (_modoPasos) ...[
+              Row(children: [
+                OutlinedButton.icon(
+                  onPressed: _guardando || _pasoRegistro == 0
+                      ? null : () => setState(() => _pasoRegistro--),
+                  icon: const Icon(Icons.chevron_left_rounded),
+                  label: const Text('Anterior'),
+                ),
+                const Spacer(),
+                if (_pasoRegistro < 2)
+                  FilledButton.icon(
+                    onPressed: _guardando ? null :
+                        () => setState(() => _pasoRegistro++),
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    label: const Text('Siguiente'),
+                  ),
+              ]),
+              const SizedBox(height: 16),
+            ],
+            if (!_modoPasos || _pasoRegistro == 2) ...[
             Text(
               'Tu registro suma',
               style: TextStyle(
@@ -732,6 +783,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               height: 52,
