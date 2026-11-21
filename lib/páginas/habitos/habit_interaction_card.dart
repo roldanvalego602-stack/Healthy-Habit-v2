@@ -18,6 +18,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   Timer? _ticker;
   int _count = 0, _seconds = 0;
   bool get _timed => widget.type == 'timer' || widget.type == 'stopwatch';
+  bool get _water => !_timed && widget.unit.trim().toLowerCase() == 'ml';
   int get _target => widget.target.clamp(1, 86400);
   int get _value => _timed ? _seconds : _count;
   bool get _done => _value >= _target;
@@ -76,7 +77,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
           icon: Icon(_watch.isRunning ? Icons.pause : Icons.play_arrow),
           label: Text(_done ? 'Objetivo alcanzado' : _watch.isRunning ? 'Pausar' : _seconds == 0 ? 'Iniciar' : 'Reanudar'),
           style: FilledButton.styleFrom(backgroundColor: green))),
-        if (!_timed) Row(children: [
+        if (!_timed && !_water) Row(children: [
           IconButton.filledTonal(onPressed: widget.enabled && _count > 0 ? () => _add(-1) : null,
             icon: const Icon(Icons.remove)),
           const SizedBox(width: 12),
@@ -85,6 +86,29 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
             icon: const Icon(Icons.add),
             label: Text(_done ? 'Objetivo alcanzado' : 'Registrar ${widget.unit}'),
             style: FilledButton.styleFrom(backgroundColor: green))),
+        ]),
+        if (_water) Column(children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final amount in const [100, 250, 500])
+                FilledButton.tonal(
+                  onPressed: widget.enabled && !_done
+                      ? () => _add(amount)
+                      : null,
+                  child: Text('+$amount ml'),
+                ),
+            ],
+          ),
+          TextButton.icon(
+            onPressed: widget.enabled && _count > 0
+                ? () => _add(-100)
+                : null,
+            icon: const Icon(Icons.undo_rounded),
+            label: const Text('Corregir −100 ml'),
+          ),
         ]),
         const SizedBox(height: 12),
         Text(_done ? '¡Actividad lista! Guarda tu registro.' : 'Completa la actividad para guardar.',
