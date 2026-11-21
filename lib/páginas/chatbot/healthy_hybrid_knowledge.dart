@@ -125,6 +125,21 @@ class HealthyKnowledgeIndex {
         card.tags.expand((tag) => tokens(tag)).toSet(),
       ).length;
       score += tagMatches * 2;
+      // La pregunta concreta gana a la descripción general del alimento.
+      // Sin esto, «¿el huevo me hace daño?» devolvía solo «Huevo».
+      final egg = containsPhrase(query, 'huevo') ||
+          containsPhrase(query, 'huevos');
+      final ham = containsPhrase(query, 'jamon');
+      final safety = RegExp(
+        r'\b(dano|danino|malo|peligroso|enfermar|alergia|riesgo)\b',
+      ).hasMatch(query);
+      final cooking = RegExp(
+        r'\b(crudo|cocido|coccion|cocinar|salmonella)\b',
+      ).hasMatch(query);
+      if (egg && ham && card.id == 'huevo_jamon') score += 55;
+      if (egg && safety && card.id == 'huevo_seguridad') score += 45;
+      if (egg && cooking && !ham &&
+          card.id == 'huevo_coccion') score += 40;
       if (score >= 10) ranked.add(HealthyKnowledgeMatch(card, score));
     }
     if (ranked.isEmpty) return null;
