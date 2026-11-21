@@ -12,6 +12,7 @@ const {registerDemoHabit} = require("../habit_registration_transaction");
 const {lockDemoHabitCalendar} = require("../habit_calendar_activation");
 const {activateDemoHabit} = require("../habit_activation_transaction");
 const {cancelDemoHabit} = require("../habit_cancellation_transaction");
+const {purchaseDemoShopItem} = require("../shop_purchase_transaction");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST ||
     process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
@@ -597,6 +598,102 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal((await user.get()).data().habitCoins, 100);
     assert.equal((await user.get()).data().habitMutationVersion, 1);
     assert.equal((await user.collection("habit_cancellation_operations").get()).size, 0);
+  });
+
+
+  function purchaseArgs(uid, itemId, operationId) {
+    return {db, uid, data: {itemId, operationId}};
+  }
+
+  test("compra real en Admin SDK: descuento, inventario y reintento idempotente", async () => {
+    const uid = "integration-shop-purchase";
+    const ref = db.collection("users").doc(uid);
+    await ref.set({xp: 0, habitCoins: 500, shopInventory: ["cap"]});
+    const args = purchaseArgs(uid, "crown", "shop_operation_00001");
+    const first = await purchaseDemoShopItem(args);
+    const retry = await purchaseDemoShopItem(args);
+    assert.equal(first.alreadyProcessed, false);
+    assert.equal(first.price, 180);
+    assert.equal(first.balanceAfter, 320);
+    assert.equal(retry.alreadyProcessed, true);
+    assert.equal(retry.balanceAfter, 320);
+    const user = (await ref.get()).data();
+    assert.equal(user.habitCoins, 320);
+    assert.deepEqual(user.shopInventory, ["cap", "crown"]);
+    assert.equal((await ref.collection("shop_purchase_operations").get()).size, 1);
+    await assert.rejects(purchaseDemoShopItem(purchaseArgs(
+      uid, "cape", "shop_operation_00001"
+    )));
+    assert.equal((await ref.get()).data().habitCoins, 320);
+  });
+
+  test("dos compras simultáneas del mismo artículo no cobran dos veces", async () => {
+    const uid = "integration-shop-same-item";
+    const ref = db.collection("users").doc(uid);
+    await ref.set({habitCoins: 500, shopInventory: []});
+    const results = await Promise.allSettled([
+      purchaseDemoShopItem(purchaseArgs(uid, "crown", "shop_same_00000001")),
+      purchaseDemoShopItem(purchaseArgs(uid, "crown", "shop_same_00000002")),
+    ]);
+    assert.equal(results.filter((x) => x.status === "fulfilled").length, 1);
+    const user = (await ref.get()).data();
+    assert.equal(user.habitCoins, 320);
+    assert.deepEqual(user.shopInventory, ["crown"]);
+    assert.equal((await ref.collection("shop_purchase_operations").get()).size, 1);
+  });
+
+  test("dos compras distintas no pueden gastar dos veces el mismo saldo", async () => {
+    const uid = "integration-shop-balance-race";
+    const ref = db.collection("users").doc(uid);
+    await ref.set({habitCoins: 200, shopInventory: []});
+    const results = await Promise.allSettled([
+      purchaseDemoShopItem(purchaseArgs(uid, "crown", "shop_race_00000001")),
+      purchaseDemoShopItem(purchaseArgs(uid, "cape", "shop_race_00000002")),
+    ]);
+    assert.equal(results.filter((x) => x.status === "fulfilled").length, 1);
+    const user = (await ref.get()).data();
+    assert.equal(user.habitCoins,
+      200 - (user.shopInventory.includes("crown") ? 180 : 200));
+    assert.equal(user.shopInventory.length, 1);
+    assert.equal((await ref.collection("shop_purchase_operations").get()).size, 1);
+  });
+
+  test("compras de otros usuarios no afectan su economía ni su inventario", async () => {
+    const owner = db.collection("users").doc("integration-shop-owner");
+    const buyer = db.collection("users").doc("integration-shop-buyer");
+    await Promise.all([
+      owner.set({habitCoins: 500, shopInventory: []}),
+      buyer.set({habitCoins: 300, shopInventory: []}),
+    ]);
+    await purchaseDemoShopItem(purchaseArgs(
+      "integration-shop-buyer", "crown", "shop_private_000001"
+    ));
+    assert.equal((await owner.get()).data().habitCoins, 500);
+    assert.deepEqual((await owner.get()).data().shopInventory, []);
+    assert.equal((await buyer.get()).data().habitCoins, 120);
+    assert.deepEqual((await buyer.get()).data().shopInventory, ["crown"]);
+  });
+
+  test("artículos gratuitos, inventario inválido y falta de saldo no compran", async () => {
+    const uid = "integration-shop-reject";
+    const ref = db.collection("users").doc(uid);
+    await ref.set({habitCoins: 50, shopInventory: []});
+    for (const [itemId, operationId] of [
+      ["crown", "shop_reject_000001"],
+      ["sunglasses", "shop_reject_000002"],
+      ["not-in-catalog", "shop_reject_000003"],
+    ]) {
+      await assert.rejects(purchaseDemoShopItem(
+        purchaseArgs(uid, itemId, operationId)
+      ));
+    }
+    assert.equal((await ref.get()).data().habitCoins, 50);
+    assert.equal((await ref.collection("shop_purchase_operations").get()).size, 0);
+    await ref.update({shopInventory: ["crown", "crown"], habitCoins: 500});
+    await assert.rejects(purchaseDemoShopItem(
+      purchaseArgs(uid, "cape", "shop_reject_000004")
+    ));
+    assert.equal((await ref.get()).data().habitCoins, 500);
   });
 
 }
