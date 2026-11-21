@@ -679,7 +679,7 @@ class PersonalRoutineTemplates {
 }
 
 class PersonalRoutineEditor extends StatefulWidget {
-  const PersonalRoutineEditor({this.existing, this.singleGoal = false});
+  const PersonalRoutineEditor({super.key, this.existing, this.singleGoal = false});
 
   final PersonalRoutine? existing;
   final bool singleGoal;
@@ -695,6 +695,7 @@ class _PersonalRoutineEditorState extends State<PersonalRoutineEditor> {
   final _unit = TextEditingController(text: 'repeticiones');
   final List<PersonalRoutineStep> _steps = [];
   String _type = 'counter';
+  String? _ultimoEjercicioAnadido;
 
   void _applyTemplate(String title, List<PersonalRoutineStep> steps) {
     if (widget.singleGoal || widget.existing != null || _steps.isNotEmpty) {
@@ -768,14 +769,9 @@ class _PersonalRoutineEditorState extends State<PersonalRoutineEditor> {
         unit: _type == 'counter' ? _unit.text.trim() : 'segundos',
       ));
       _stepName.clear();
+      // Confirmación dentro del formulario: no tapa el botón Guardar.
+      _ultimoEjercicioAnadido = showConfirmation ? name : null;
     });
-    if (showConfirmation) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('«$name» se añadió. '
-          'Ahora puedes agregar otro ejercicio o guardar tu rutina.'),
-        duration: const Duration(seconds: 3),
-      ));
-    }
     return true;
   }
 
@@ -960,6 +956,22 @@ class _PersonalRoutineEditorState extends State<PersonalRoutineEditor> {
             icon: const Icon(Icons.add),
             label: Text(widget.singleGoal ? 'Establecer meta' : 'Añadir ejercicio a la rutina'),
           ),
+          if (_ultimoEjercicioAnadido != null) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                '✓ «$_ultimoEjercicioAnadido» añadido. '
+                'Puedes agregar otro ejercicio o guardar la rutina.',
+                key: const ValueKey('routine-step-added-feedback'),
+                style: TextStyle(
+                  color: HealthyAdaptive.accent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           for (var index = 0; index < _steps.length; index++)
             ListTile(
