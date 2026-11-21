@@ -210,6 +210,13 @@ Las nuevas pruebas están en
 `functions/tests/habit_calendar_policy.test.js`, en el conjunto unitario
 de transacciones y en `functions/tests/habit_registration.integration.js`.
 
+**Corrección de pruebas del séptimo paso:** `bien_007` es un hábito
+**difícil** y dispone de `gracePeriods: 0`, por lo que una racha
+interrumpida debe reiniciarse. `alim_004` es **moderado** y dispone de
+`gracePeriods: 1`; las pruebas de gracia deben usar este hábito y
+completar sus tres registros semanales. La lógica del servidor no se
+modificó: se corrigieron las expectativas de las pruebas.
+
 **Límite de seguridad:** los documentos actuales de hábitos, intentos
 y perfil pueden ser escritos desde el cliente según las reglas
 candidatas. El bloqueo de zona se realiza como validación de consistencia,
