@@ -2,7 +2,8 @@
   "name": "healthy-habit-firestore-rules-tests",
   "private": true,
   "scripts": {
-    "test": "node --test rules.test.cjs"
+    "test": "node --test rules.test.cjs",
+    "test:strict": "node --test strict_habits.test.cjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.0",
