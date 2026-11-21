@@ -174,6 +174,7 @@ class HealthyHybridKnowledge {
   Future<HealthyAssistantReply?> answer(
     String input, {
     required HealthyAssistantReply operational,
+    String lastKnowledgeId = '',
   }) async {
     if (operational.text.isNotEmpty || operational.action.isNotEmpty) {
       return null;
@@ -189,8 +190,21 @@ class HealthyHybridKnowledge {
         'intenta consultar este tema nuevamente más tarde.',
       );
     }
-    if (!index.looksEducational(input)) return null;
-    final match = index.search(input);
+    final normalized = HealthyKnowledgeIndex.normalize(input);
+    final hasReference = RegExp(
+      r'\\b(y si|si le|le pongo|le agrego|con eso|y con|eso hace|'
+      r'lo puedo|es malo|hace dano|como lo preparo)\\b',
+    ).hasMatch(normalized);
+    // Si el usuario está hablando del huevo y dice «¿y con jamón?»,
+    // recuperar el sujeto explícito sin alterar la frase original.
+    final refersToEgg = lastKnowledgeId == 'huevo' ||
+        lastKnowledgeId.startsWith('huevo_');
+    final contextualInput = hasReference && refersToEgg &&
+            !RegExp(r'\\b(huevo|huevos)\\b').hasMatch(normalized)
+        ? 'huevo $input'
+        : input;
+    if (!index.looksEducational(contextualInput)) return null;
+    final match = index.search(contextualInput);
     if (match == null) {
       return const HealthyAssistantReply(
         'No encontré una ficha suficientemente precisa en mi base educativa '
@@ -209,7 +223,8 @@ class HealthyHybridKnowledge {
         : '';
     final hasOfficialLink = card.sourceUrl.startsWith('https://') &&
         (Uri.tryParse(card.sourceUrl)?.host == 'www.who.int' ||
-         Uri.tryParse(card.sourceUrl)?.host == 'fdc.nal.usda.gov');
+         Uri.tryParse(card.sourceUrl)?.host == 'fdc.nal.usda.gov' ||
+         Uri.tryParse(card.sourceUrl)?.host == 'www.fda.gov');
     return HealthyAssistantReply(
       '${card.title}: ${card.answer}$caveat\n\n'
       'Referencia para consultar: ${card.sourceName}. '
@@ -217,6 +232,7 @@ class HealthyHybridKnowledge {
       card: 'knowledge',
       action: hasOfficialLink ? 'source' : '',
       actionArgument: hasOfficialLink ? card.sourceUrl : '',
+      knowledgeId: card.id,
     );
   }
 }
