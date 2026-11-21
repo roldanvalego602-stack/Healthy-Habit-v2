@@ -310,3 +310,52 @@ exports.rebuildPublicHabitPopularity = onCall(
     };
   }
 );
+
+
+// Validación de registro en servidor, solo lectura: no concede XP, monedas
+// ni acepta fotografías como evidencia verificada.
+const {
+  validateRegistrationRequest,
+  registrationEligibility,
+  RegistrationPolicyError,
+} = require("./habit_registration_policy");
+
+exports.previewOfficialHabitRegistration = onCall(
+  {
+    region: "us-central1",
+    enforceAppCheck: false,
+    maxInstances: 10,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión para continuar.");
+    }
+    let ids;
+    try {
+      ids = validateRegistrationRequest(request.data);
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+    const ref = db.collection("users").doc(request.auth.uid)
+      .collection("user_habits").doc(ids.habitId);
+    const attemptRef = ref.collection("attempts").doc(ids.attemptId);
+    const [habitSnapshot, attemptSnapshot] = await Promise.all([
+      ref.get(), attemptRef.get(),
+    ]);
+    try {
+      return registrationEligibility({
+        habit: habitSnapshot.exists ? habitSnapshot.data() : null,
+        attempt: attemptSnapshot.exists ? attemptSnapshot.data() : null,
+        attemptId: ids.attemptId,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
