@@ -183,3 +183,46 @@ test("rechaza un objetivo manipulado que difiere del catálogo", async () => {
     RegistrationPolicyError);
   assert.equal(db.docs.size, 3);
 });
+
+
+test("la transacción crea contador de periodo con un solo registro", async () => {
+  const db = seededDb();
+  const result = await registerDemoHabit({db, ...args});
+  const periodPath =
+    "users/alice/user_habits/hidr_001/attempts/attempt-1/" +
+    "registration_periods/day_2026-11-21";
+  assert.equal(result.registrationPeriod, "day_2026-11-21");
+  assert.equal(result.periodCount, 1);
+  assert.equal(db.docs.get(periodPath).count, 1);
+  await registerDemoHabit({db, ...args});
+  assert.equal(db.docs.get(periodPath).count, 1);
+});
+
+test("un segundo día habilita exactamente otro registro en el piloto", async () => {
+  const db = seededDb();
+  await registerDemoHabit({db, ...args});
+  const result = await registerDemoHabit({
+    db, ...args,
+    data: {...args.data, operationId: "operation_00000002"},
+    now: new Date("2026-11-22T13:00:00Z"),
+  });
+  assert.equal(result.progress, 2);
+  assert.equal(result.periodCount, 1);
+  assert.equal(db.docs.get("users/alice").xp, 20);
+  assert.equal(db.docs.get(
+    "users/alice/user_habits/hidr_001/attempts/attempt-1/" +
+    "registration_periods/day_2026-11-22"
+  ).count, 1);
+});
+
+test("un contador de periodo inválido bloquea recompensas", async () => {
+  const db = seededDb();
+  db.docs.set(
+    "users/alice/user_habits/hidr_001/attempts/attempt-1/" +
+    "registration_periods/day_2026-11-21",
+    {count: -1}
+  );
+  await assert.rejects(registerDemoHabit({db, ...args}),
+    RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 0);
+});
