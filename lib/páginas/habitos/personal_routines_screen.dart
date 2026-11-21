@@ -271,7 +271,10 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
     final edited = await Navigator.push<PersonalRoutine>(
       context,
       MaterialPageRoute(
-        builder: (_) => _RoutineEditor(existing: routine),
+        builder: (_) => _RoutineEditor(
+          existing: routine,
+          singleGoal: routine.dailyGoal,
+        ),
       ),
     );
     if (edited == null || !mounted) return;
