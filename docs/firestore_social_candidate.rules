@@ -37,6 +37,9 @@ service cloud.firestore {
       return isPair(uid, otherUid)
           && pendingFor(request.auth.uid,
               request.auth.uid == uid ? otherUid : uid)
+          // La aceptación debe consumir la solicitud en el mismo lote.
+          && !existsAfter(pathOf(request.auth.uid, 'solicitudes',
+              request.auth.uid == uid ? otherUid : uid))
           && existsAfter(pathOf(otherUid, 'friends', uid))
           && request.resource.data.keys().hasOnly(['createdAt'])
           && request.resource.data.createdAt == request.time;
