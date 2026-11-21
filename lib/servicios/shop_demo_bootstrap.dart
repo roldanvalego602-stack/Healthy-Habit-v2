@@ -9,6 +9,10 @@ class ShopDemoBootstrap {
     'HH_SHOP_DEMO_FIREBASE', defaultValue: false);
   static const purchaseEnabled = bool.fromEnvironment(
     'HH_DEMO_SHOP_PURCHASE', defaultValue: false);
+  // Habilitar exclusivamente junto al proyecto Firebase de demostración.
+  // Sin esta bandera Flutter conserva las transacciones locales antiguas.
+  static const officialHabitsEnabled = bool.fromEnvironment(
+    'HH_DEMO_OFFICIAL_HABITS', defaultValue: false);
   static const demoProjectId = 'demo-healthy-habit';
   static const host = String.fromEnvironment(
     'HH_EMULATOR_HOST', defaultValue: '127.0.0.1');
@@ -18,6 +22,14 @@ class ShopDemoBootstrap {
       throw StateError(
         'El modo de tienda demo exige activar juntos '
         'HH_SHOP_DEMO_FIREBASE y HH_DEMO_SHOP_PURCHASE.');
+    }
+  }
+
+  static void validateOfficialHabitsMode() {
+    if (officialHabitsEnabled && (!enabled || !purchaseEnabled)) {
+      throw StateError(
+        'HH_DEMO_OFFICIAL_HABITS requiere HH_SHOP_DEMO_FIREBASE '
+        'y HH_DEMO_SHOP_PURCHASE: nunca conectes Functions al proyecto real.');
     }
   }
 
