@@ -299,3 +299,33 @@ python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
 ```
 
 **Estado:** cambios implementados en la rama; las pruebas nuevas no se han ejecutado todavía en el equipo del usuario. No se han modificado `nutrichat.dart`, Firebase ni los modelos entrenados. Antes de integrar esta memoria a Flutter hay que modelar referencias por objetos reales, expiración por turnos, transparencia de estado y confirmación explícita de cada acción mediante el backend existente.
+
+## 15. Primera integración limitada de contexto en Flutter (20-nov-2026)
+
+**Validación previa recibida:** 46/46 pruebas Python aprobaron, incluyendo 20 escenarios (42 turnos) con intenciones anotadas. Esto valida el prototipo de sesión Python, **no el modelo ML en conversaciones reales**.
+
+Se añadió `lib/páginas/chatbot/healthy_chat_context.dart` y se integró con `lib/páginas/chatbot/nutrichat.dart`. La nueva clase administra únicamente el último identificador de ficha educativa, permite como máximo **dos seguimientos elípticos consecutivos** y se reinicia cuando el usuario cambia a datos del perfil, tienda, hábitos o una conversación nueva. No guarda información de salud ni saldos, no se persiste, no introduce un LLM ni un modelo ML experimental dentro de la app.
+
+El chat continúa priorizando el motor de acciones existente y los datos autorizados de Firestore. El contexto solo se pasa a `HealthyHybridKnowledge.answer(lastKnowledgeId: ...)` para las respuestas educativas. Cuando el motor devuelve la ficha de catálogo del **huevo**, se conserva ese sujeto para preguntas posteriores como «¿Y si lo preparo con jamón?»; el resto de fichas de catálogo no se transforma artificialmente en referencias educativas.
+
+Las órdenes elípticas independientes como «elimínalo», «bórralo», «agrégalo», «hazlo ya» se interceptan antes de `HealthyAssistantEngine.resolve`: se solicita aclaración, no se crea acción, se limpia el contexto educativo y se descartan referencias operativas anteriores para evitar operaciones basadas en una referencia incompleta. Los controles de confirmación de hábitos y las restricciones de borrado de cuentas siguen intactos.
+
+Se añadió `test/chatbot/healthy_chat_context_test.dart` con seis pruebas sobre memoria limitada, cambio de tema, reinicio y seguridad de órdenes ambiguas.
+
+**Requiere validación local Flutter**, no disponible en el entorno de desarrollo del asistente:
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter analyze --no-fatal-infos lib
+flutter test test/chatbot/healthy_chat_context_test.dart
+flutter test test/chatbot
+```
+
+Los 46 tests Python pueden seguir ejecutándose con:
+
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+```
+
+**Límites:** el modelo Naive Bayes, el filtro ML de Python y el orquestador `DialogueSession` siguen aislados; no hay despliegue ML ni entrenamiento nuevo en esta integración. No afirmar resultados de Flutter antes de ver la salida real. El contexto se pierde correctamente al abrir otro historial; solo sirve para seguimiento inmediato dentro de una sesión activa.
