@@ -392,3 +392,33 @@ exports.registerDemoOfficialHabit = onCall(
     }
   }
 );
+
+
+// Fija el calendario de un intento NUEVO. Solo emulador demo:
+// esta operación no migra intentos con registros o recompensas.
+const {lockDemoHabitCalendar} = require("./habit_calendar_activation");
+
+exports.lockDemoHabitCalendar = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition", "Solo disponible en el emulador demo."
+      );
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    try {
+      return await lockDemoHabitCalendar({
+        db, uid: request.auth.uid, data: request.data,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
