@@ -10,11 +10,21 @@ const USER_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const MAX_DIFFICULT_PENALTY = 25;
 
 function validateCancellation(data) {
+  return validateCancellationPayload(data, false);
+}
+
+function validateOfficialCancellation(data) {
+  return validateCancellationPayload(data, true);
+}
+
+function validateCancellationPayload(data, official) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new RegistrationPolicyError("invalid-argument", "Solicitud inválida.");
   }
   const {habitId, attemptId, operationId, maxPenalty} = data;
-  if (!PILOT_IDS.has(habitId)) {
+  if (typeof habitId !== "string" ||
+      !Object.hasOwn(SERVER_CATALOG, habitId) ||
+      (!official && !PILOT_IDS.has(habitId))) {
     throw new RegistrationPolicyError(
       "failed-precondition", "Hábito fuera del piloto de cancelación."
     );
@@ -68,11 +78,15 @@ function calculateCancellation({user, habit, attempt, catalog, attemptId,
   };
 }
 
-async function cancelDemoHabit({db, uid, data}) {
+async function cancelHabitTransaction({db, uid, data}, mode) {
   if (typeof uid !== "string" || !USER_ID.test(uid)) {
     throw new RegistrationPolicyError("unauthenticated", "Sesión inválida.");
   }
-  const ids = validateCancellation(data);
+  if (mode !== "demo" && mode !== "official") {
+    throw new RegistrationPolicyError("invalid-argument", "Modo inválido.");
+  }
+  const ids = mode === "demo" ?
+    validateCancellation(data) : validateOfficialCancellation(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(ids.habitId);
@@ -135,7 +149,17 @@ async function cancelDemoHabit({db, uid, data}) {
   });
 }
 
+function cancelDemoHabit(args) {
+  return cancelHabitTransaction(args, "demo");
+}
+
+function cancelOfficialHabitTransaction(args) {
+  return cancelHabitTransaction(args, "official");
+}
+
 module.exports = {
+  validateOfficialCancellation,
+  cancelOfficialHabitTransaction,
   MAX_DIFFICULT_PENALTY,
   validateCancellation,
   calculateCancellation,
