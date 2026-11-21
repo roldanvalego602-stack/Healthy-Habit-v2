@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -89,9 +90,14 @@ class PersonalRoutinesStore {
 
   static const key = 'healthy_personal_routines_v1';
 
+  String get _storageKey {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid == null ? '${key}_guest' : '${key}_${uid}';
+  }
+
   Future<List<PersonalRoutine>> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(key);
+    final raw = prefs.getString(_storageKey);
     if (raw == null || raw.isEmpty) return [];
     try {
       final data = jsonDecode(raw);
@@ -110,7 +116,7 @@ class PersonalRoutinesStore {
   Future<void> save(List<PersonalRoutine> routines) async {
     final prefs = await SharedPreferences.getInstance();
     final data = jsonEncode(routines.map((routine) => routine.toJson()).toList());
-    if (!await prefs.setString(key, data)) {
+    if (!await prefs.setString(_storageKey, data)) {
       throw StateError('No se pudieron guardar tus rutinas.');
     }
   }
