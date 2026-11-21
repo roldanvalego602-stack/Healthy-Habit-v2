@@ -205,17 +205,36 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             : 'Elige un objetivo para conocer sus elementos.',
             style: TextStyle(color: _gris, fontSize: 12)),
         const SizedBox(height: 14),
-        if (_tabs.index == 0)
-          MapaPlatoCatalogo(
-            seleccionado: _grupoVisual,
-            onSeleccionar: (value) =>
-                setState(() => _grupoVisual = value),
-          ),
-        if (_tabs.index == 1)
-          MapaMovimientoCatalogo(
-            seleccionado: _grupoVisual,
-            onSeleccionar: (value) =>
-                setState(() => _grupoVisual = value),
+        if (_tabs.index == 0 || _tabs.index == 1)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: _grupoVisual == null
+                ? KeyedSubtree(
+                    key: const ValueKey('visual-selector'),
+                    child: _tabs.index == 0
+                        ? MapaPlatoCatalogo(
+                            seleccionado: null,
+                            onSeleccionar: (value) =>
+                                setState(() => _grupoVisual = value),
+                          )
+                        : MapaMovimientoCatalogo(
+                            seleccionado: null,
+                            onSeleccionar: (value) =>
+                                setState(() => _grupoVisual = value),
+                          ),
+                  )
+                : Padding(
+                    key: const ValueKey('visual-results'),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          setState(() => _grupoVisual = null),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: Text('Volver a ${_tabs.index == 0 ? 'plato' : 'zonas'}'),
+                    ),
+                  ),
           ),
         if (_grupoVisual != null) ...[
           const SizedBox(height: 14),
