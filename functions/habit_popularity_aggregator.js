@@ -2,7 +2,7 @@
 
 // Función pura para preparar métricas de uso del catálogo oficial.
 // La agregación solo admite documentos usuarios/{uid}/user_habits/{habitId}.
-const HABIT_ID_PATTERN = /^(?:alim|hidr|ener|bien)_[0-9]{3}$/;
+const HABIT_ID_PATTERN = /^(?:alim|hidr|ener|bien)_00[1-9]$/;
 const MIN_PUBLIC_USERS = 5;
 
 function parseHabitPath(path) {
