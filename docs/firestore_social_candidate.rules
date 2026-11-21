@@ -1,0 +1,200 @@
+// BORRADOR PARA PRUEBAS EN FIRESTORE EMULATOR. NO DESPLEGAR SIN VALIDAR.
+// Basado en las reglas compartidas el 21/11/2026.
+// Omite la regla global 'allow read, write: if request.auth != null'.
+// Pendiente: endurecer XP/monedas en users/{uid}, administrar system,
+// comprobar flujos del resto de las colecciones de Healthy Habit.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function own(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function pathOf(uid, subcollection, id) {
+      return /databases/$(database)/documents/users/$(uid)/$(subcollection)/$(id);
+    }
+
+    function pendingFor(receiverUid, senderUid) {
+      return exists(pathOf(receiverUid, 'solicitudes', senderUid));
+    }
+
+    function friendOf(uid, otherUid) {
+      return exists(pathOf(uid, 'friends', otherUid));
+    }
+
+    function isPair(uid, otherUid) {
+      return signedIn()
+          && (request.auth.uid == uid || request.auth.uid == otherUid)
+          && uid != otherUid;
+    }
+
+    function isFriendCreation(uid, otherUid) {
+      return isPair(uid, otherUid)
+          && pendingFor(request.auth.uid,
+              request.auth.uid == uid ? otherUid : uid)
+          && existsAfter(pathOf(otherUid, 'friends', uid))
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+    }
+
+    function canRemoveFriend(uid, otherUid) {
+      return isPair(uid, otherUid)
+          && !existsAfter(pathOf(otherUid, 'friends', uid));
+    }
+
+    function onlyRequestFields() {
+      return request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+    }
+
+    // El documento principal del usuario sigue siendo editable por su
+    // propietario para preservar la app. NO ES PROTECCION SUFICIENTE
+    // para XP, Habit Coins y campos económicos: requiere un rediseño.
+    match /users/{uid} {
+      allow get, create, update, delete: if own(uid);
+      allow list: if false;
+
+      match /friends/{otherUid} {
+        allow get: if isPair(uid, otherUid);
+        allow list: if own(uid);
+        allow create: if isFriendCreation(uid, otherUid);
+        allow delete: if canRemoveFriend(uid, otherUid);
+        allow update: if false;
+      }
+
+      // Solicitud recibida: sólo el emisor crea; emisor o receptor borran
+      // ambas copias de forma atómica al cancelar/rechazar/aceptar.
+      match /solicitudes/{senderUid} {
+        allow get, list: if own(uid);
+        allow create: if signedIn()
+          && request.auth.uid == senderUid && senderUid != uid
+          && !friendOf(senderUid, uid)
+          && onlyRequestFields()
+          && existsAfter(pathOf(senderUid, 'solicitudes_enviadas', uid));
+        allow delete: if isPair(uid, senderUid)
+          && !existsAfter(pathOf(senderUid, 'solicitudes_enviadas', uid));
+        allow update: if false;
+      }
+
+      // Copia de la solicitud enviada en la cuenta del emisor.
+      match /solicitudes_enviadas/{recipientUid} {
+        allow get, list: if own(uid);
+        allow create: if own(uid) && uid != recipientUid
+          && !friendOf(uid, recipientUid)
+          && onlyRequestFields()
+          && existsAfter(pathOf(recipientUid, 'solicitudes', uid));
+        allow delete: if isPair(uid, recipientUid)
+          && !existsAfter(pathOf(recipientUid, 'solicitudes', uid));
+        allow update: if false;
+      }
+
+      // Datos privados de la propia cuenta, excluyendo las tres
+      // subcolecciones sociales protegidas arriba. NO publicar sin
+      // probar que el resto de la app usa estas rutas.
+      match /{privateCollection}/{privateDocument=**} {
+        allow read, write: if own(uid)
+          && !(privateCollection in [
+            'friends', 'solicitudes', 'solicitudes_enviadas'
+          ]);
+      }
+    }
+
+    // Los perfiles públicos pueden leerse para búsqueda, rankings y feed.
+    // Limitar campos para prevenir estadísticas falsificadas es pendiente.
+    match /public_profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update, delete: if own(uid);
+    }
+
+    match /interactions/{interactionId} {
+      allow get, list: if signedIn()
+        && resource.data.toUid == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && friendOf(request.auth.uid, request.resource.data.toUid)
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.tipo == 'reaccion'
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.emoji in ['🔥','❤️','👏','💪','🎉','⭐'];
+
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['leido'])
+        && request.resource.data.leido == true;
+      allow delete: if false;
+    }
+
+    match /shared_habit_invites/{inviteId} {
+      function participant(data) {
+        return signedIn() &&
+          (data.senderUid == request.auth.uid
+           || data.recipientUid == request.auth.uid);
+      }
+
+      allow get, list: if participant(resource.data);
+
+      allow create: if signedIn()
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.senderUid
+          != request.resource.data.recipientUid
+        && request.resource.data.habitId is string
+        && request.resource.data.habitTitle is string
+        && request.resource.data.habitTitle.size() > 0
+        && request.resource.data.habitTitle.size() <= 120
+        && request.resource.data.status == 'pendiente'
+        && request.resource.data.resolvedAt == null
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+          'habitId', 'habitTitle', 'senderUid', 'recipientUid',
+          'status', 'createdAt', 'resolvedAt'
+        ])
+        && friendOf(request.auth.uid,
+          request.resource.data.recipientUid);
+
+      allow update: if signedIn()
+        && participant(resource.data)
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['status', 'resolvedAt'])
+        && request.resource.data.resolvedAt == request.time
+        && (
+          (resource.data.status == 'pendiente'
+            && resource.data.recipientUid == request.auth.uid
+            && request.resource.data.status in ['aceptada', 'rechazada']
+            && friendOf(request.auth.uid, resource.data.senderUid))
+          ||
+          (resource.data.status == 'pendiente'
+            && resource.data.senderUid == request.auth.uid
+            && request.resource.data.status == 'cancelada')
+          ||
+          (resource.data.status == 'aceptada'
+            && request.resource.data.status == 'finalizada')
+        );
+      allow delete: if false;
+    }
+
+    // Configuracion global: los clientes la leen; no pueden reescribirla.
+    // Si la app tiene panel administrador cliente, requiere rol verificable.
+    match /system/{document=**} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Denegación implícita para colecciones no autorizadas.
+    // Nunca agregar aquí un permiso global a "cualquier autenticado".
+  }
+}
