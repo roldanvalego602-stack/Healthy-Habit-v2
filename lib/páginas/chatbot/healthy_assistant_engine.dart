@@ -175,7 +175,8 @@ class HealthyAssistantEngine {
       'quiero saber','que contiene','para que sirve',
       'recomiendame','dime sobre',
     ]);
-    if (catalogQuestion && catalogItem != null) {
+    if (catalogQuestion && catalogItem != null &&
+        !HealthyIntentRouter.asksFocusedEggQuestion(input)) {
       final summary = catalogItem.descripcion;
       final benefits = catalogItem.beneficios.isEmpty
           ? ''
