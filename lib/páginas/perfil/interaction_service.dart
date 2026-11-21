@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'interaction_model.dart';
 
 class InteractionService {
   final CollectionReference _interactionsRef =
-      FirebaseFirestore.instance.collection('interactions');
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default')
+          .collection('interactions');
 
   /// Enviar una nueva reacción a un usuario con los campos exactos de Firestore
   Future<void> enviarReaccion({
@@ -26,6 +28,20 @@ class InteractionService {
     }
     if (!const ['🔥', '❤️', '👏', '💪', '🎉', '⭐'].contains(emoji)) {
       throw ArgumentError('La reacción seleccionada no es válida.');
+    }
+    final friendship = await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('users').doc(fromUid)
+        .collection('friends').doc(toUid).get();
+    if (!friendship.exists) {
+      throw StateError('Solo puedes reaccionar al progreso de tus amigos.');
+    }
+    final publicProfile = await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('public_profiles').doc(toUid).get();
+    final rawSettings = publicProfile.data()?['settings'];
+    if (rawSettings is Map && rawSettings['permitirReacciones'] == false) {
+      throw StateError('Esta persona no acepta reacciones.');
     }
     final nuevaInteraccion = InteractionModel(
       challengeId: challengeId,
