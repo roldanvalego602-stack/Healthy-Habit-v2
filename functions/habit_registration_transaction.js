@@ -164,9 +164,13 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
           "El intento anterior debe conservar el calendario UTC."
         );
       }
-      if (zone !== "UTC" &&
+      if (!usesLegacyDailyMarker &&
+          (habit.calendarTimeZone !== undefined ||
+           userSnap.data().calendarTimeZone !== undefined ||
+           attempt.calendarTimeZone !== undefined) &&
           (habit.calendarTimeZone !== zone ||
-           userSnap.data().calendarTimeZone !== zone)) {
+           userSnap.data().calendarTimeZone !== zone ||
+           attempt.calendarTimeZone !== zone)) {
         throw new HabitCalendarError("La zona del intento no coincide.");
       }
       periodKey = periodKeyForZone(now, catalog.frequencyType, zone);
