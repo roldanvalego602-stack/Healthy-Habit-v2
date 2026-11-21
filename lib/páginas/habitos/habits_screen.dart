@@ -10,6 +10,7 @@ import 'catalogo.dart';
 import 'habit_action_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
+import 'personal_routines_screen.dart';
 import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
@@ -525,6 +526,51 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               color: muted,
                               fontSize: 13,
                               height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Card(
+                            key: const ValueKey('personal-routines-entry'),
+                            color: HealthyAdaptive.surface,
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.tune_rounded, color: green, size: 28),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Mis rutinas personales',
+                                          style: TextStyle(
+                                            color: navy,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Diseña tus pasos, contadores y descansos sin XP.',
+                                          style: TextStyle(
+                                            color: muted,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Abrir rutinas personales',
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const PersonalRoutinesScreen(),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.arrow_forward_ios_rounded),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
