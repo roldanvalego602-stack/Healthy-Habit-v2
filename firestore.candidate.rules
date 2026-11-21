@@ -1,6 +1,7 @@
-// CANDIDATA SOLO PARA EMULADOR. No desplegar en producción.
-// Aisla información privada; el flujo social usa batches con documentos espejo.
-// NO impide la manipulación de XP/monedas por el propio propietario.
+// CANDIDATA DE SEGURIDAD PARA PRUEBAS EN EMULADOR, NO DESPLEGADA.
+// Protección de acceso por usuario, amistades simétricas e invitaciones.
+// INCOMPLETA PARA PRODUCCIÓN: XP/monedas y hábitos son autorreportados
+// desde clientes Flutter. Requieren una autoridad de recompensa en servidor.
 rules_version = '2';
 
 service cloud.firestore {
@@ -26,15 +27,16 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(sender)/solicitudes_enviadas/$(recipient);
     }
 
-    function followingRef(follower, target) {
-      return /databases/$(database)/documents/users/$(follower)/following/$(target);
-    }
-
-    function followerRef(target, follower) {
-      return /databases/$(database)/documents/users/$(target)/followers/$(follower);
-    }
     function friendsRef(uid, otherUid) {
       return /databases/$(database)/documents/users/$(uid)/friends/$(otherUid);
+    }
+
+    // Reacción sólo si el perfil público permite recibirlas.
+    // Ausencia de opt-out significa permitido para perfiles antiguos.
+    function receivesReactions(uid) {
+      let path = /databases/$(database)/documents/public_profiles/$(uid);
+      return !exists(path)
+        || get(path).data.get('settings', {}).get('permitirReacciones', true) == true;
     }
 
     function validFriendAcceptance(uid, otherUid) {
@@ -360,35 +362,17 @@ service cloud.firestore {
           && !existsAfter(incomingRef(recipient, uid));
       }
 
-      // following está en la cuenta del seguidor. La relación se crea
-      // únicamente por el receptor de una solicitud pendiente.
+      // Seguimientos heredados: sólo limpieza del dato propio.
+      // No se aceptan nuevas relaciones "following/followers".
       match /following/{target} {
         allow get, list: if owner(uid);
-        allow create: if authenticated()
-          && request.auth.uid == target && target != uid
-          && socialPayload()
-          && exists(incomingRef(target, uid))
-          && !existsAfter(incomingRef(target, uid))
-          && getAfter(followerRef(target, uid)).data == request.resource.data;
-        allow delete: if authenticated()
-          && (owner(uid) || request.auth.uid == target)
-          && !existsAfter(followerRef(target, uid));
+        allow delete: if owner(uid);
+        allow create, update: if false;
       }
-
       match /followers/{follower} {
-        // La consulta puntual permite verificar si me sigue este usuario;
-        // las listas completas se limitan al propietario.
-        allow get: if owner(uid) ||
-          (authenticated() && request.auth.uid == follower);
-        allow list: if owner(uid);
-        allow create: if owner(uid) && uid != follower
-          && socialPayload()
-          && exists(incomingRef(uid, follower))
-          && !existsAfter(incomingRef(uid, follower))
-          && getAfter(followingRef(follower, uid)).data == request.resource.data;
-        allow delete: if authenticated()
-          && (owner(uid) || request.auth.uid == follower)
-          && !existsAfter(followingRef(follower, uid));
+        allow get, list: if owner(uid);
+        allow delete: if owner(uid);
+        allow create, update: if false;
       }
     }
 
@@ -439,6 +423,7 @@ service cloud.firestore {
         && request.resource.data.toUid.size() > 0
         && request.resource.data.toUid != request.auth.uid
         && exists(friendsRef(request.auth.uid, request.resource.data.toUid))
+        && receivesReactions(request.resource.data.toUid)
         && request.resource.data.emoji is string
         && request.resource.data.emoji.size() <= 16
         && request.resource.data.emoji.size() > 0
