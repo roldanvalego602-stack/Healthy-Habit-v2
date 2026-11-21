@@ -14,6 +14,7 @@ import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_hybrid_knowledge.dart';
 import 'healthy_intent_router.dart';
+import 'healthy_chat_context.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
@@ -86,7 +87,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final HealthyChatHistory _history = const HealthyChatHistory();
   String? _sessionId;
   String _lastTopic = '';
-  String _lastKnowledgeId = '';
+  final HealthyChatContext _chatContext = HealthyChatContext();
   String _lastHabitTitle = '';
   String _lastShopItemId = '';
   bool _historyLoading = false;
@@ -279,7 +280,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
-        _lastKnowledgeId = '';
+        _chatContext.reset();
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -321,7 +322,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _manuallyStartedNew = true;
       _sessionId = null;
       _lastTopic = '';
-      _lastKnowledgeId = '';
+      _chatContext.reset();
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -682,6 +683,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 '«Permitir análisis del historial» en Configuración. '
                 'Puedes seguir viendo tus hábitos desde su sección normal.';
           } else {
+            if (HealthyChatContext.needsActionClarification(text)) {
+              response = '¿Qué quieres modificar exactamente? '
+                  'Indica qué hábito o cuenta y qué deseas hacer. '
+                  'No realizaré cambios sin confirmación.';
+              _chatContext.reset();
+            } else {
             intent = _engine.resolve(text, profile: _perfil,
                 habits: _habitosPerfil, lastTopic: _lastTopic,
                 lastHabitTitle: _lastHabitTitle,
@@ -699,16 +706,21 @@ class _NutriChatPageState extends State<NutriChatPage> {
             } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
               response = intent.text;
             } else {
+              final previousKnowledge = _chatContext.referenceFor(text);
               final educational = await _hybridKnowledge.answer(
                 text, operational: intent,
-                lastKnowledgeId: _lastKnowledgeId,
+                lastKnowledgeId: previousKnowledge,
               );
               if (educational != null) {
                 intent = educational;
                 response = educational.text;
-                _lastKnowledgeId = educational.knowledgeId;
+                _chatContext.recordEducationalReply(
+                  input: text,
+                  knowledgeId: educational.knowledgeId,
+                  previousReference: previousKnowledge,
+                );
               } else {
-                _lastKnowledgeId = '';
+                _chatContext.reset();
                 response = _conversation.reply(
                       text,
                       name: _primerNombre,
@@ -718,7 +730,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       text, nombre: _primerNombre, perfil: _perfil);
               }
             }
-            if (intent.card != 'knowledge') _lastKnowledgeId = '';
+            if (intent.card != 'knowledge') _chatContext.reset();
             _lastTopic = _engine.topicFor(intent);
             if (intent.action == 'habits' &&
                 intent.actionArgument.isNotEmpty) {
@@ -728,6 +740,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 intent.actionArgument.isNotEmpty) {
               _lastShopItemId = intent.actionArgument;
             }
+            } // Respuesta ordinaria (no orden elíptica).
           }
         }
       }
