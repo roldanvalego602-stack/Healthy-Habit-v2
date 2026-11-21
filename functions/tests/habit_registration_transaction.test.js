@@ -85,6 +85,35 @@ const args = {
   now: new Date("2026-11-21T13:00:00Z"),
 };
 
+function seededMultiDb(habitId) {
+  const catalog = require("../official_habit_catalog").SERVER_CATALOG[habitId];
+  const prefix = `users/alice/user_habits/${habitId}`;
+  return new FakeFirestore({
+    "users/alice": {
+      xp: 0, currentXp: 0, habitCoins: 100,
+      claimedLevelRewards: [],
+    },
+    [prefix]: {
+      title: catalog.title, latestAttemptId: "attempt-1",
+      lastAttemptId: "attempt-1", latestStatus: "inProgress",
+      lastStatus: "inProgress", frequencyType: catalog.frequencyType,
+    },
+    [`${prefix}/attempts/attempt-1`]: {
+      status: "inProgress", progress: 0, target: catalog.target,
+      xpEarned: 0, frequencyType: catalog.frequencyType,
+      registrationsPerPeriod: catalog.registrationsPerPeriod,
+    },
+  });
+}
+
+function multiArgs(habitId, suffix, now = args.now) {
+  return {
+    uid: "alice", now,
+    data: {habitId, attemptId: "attempt-1",
+      operationId: `multi_registration_${suffix}`},
+  };
+}
+
 test("solo admite el piloto sin montos ni evidencias del cliente", () => {
   assert.deepEqual(validateDemoRegistration(args.data), args.data);
   for (const data of [
@@ -225,4 +254,79 @@ test("un contador de periodo inválido bloquea recompensas", async () => {
   await assert.rejects(registerDemoHabit({db, ...args}),
     RegistrationPolicyError);
   assert.equal(db.docs.get("users/alice").xp, 0);
+});
+
+
+test("dos registros diarios son válidos, el tercero se bloquea", async () => {
+  const db = seededMultiDb("bien_007");
+  const first = await registerDemoHabit({
+    db, ...multiArgs("bien_007", "daily_0001"),
+  });
+  const second = await registerDemoHabit({
+    db, ...multiArgs("bien_007", "daily_0002"),
+  });
+  assert.equal(first.periodCount, 1);
+  assert.equal(second.periodCount, 2);
+  assert.equal(second.progress, 2);
+  await assert.rejects(registerDemoHabit({
+    db, ...multiArgs("bien_007", "daily_0003"),
+  }), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 20);
+  const prefix = "users/alice/user_habits/bien_007/attempts/attempt-1/";
+  assert.equal(db.docs.get(prefix +
+    "registration_periods/day_2026-11-21").count, 2);
+  assert.equal([...db.docs.keys()].filter((x) =>
+    x.startsWith(prefix + "registration_days/")).length, 0);
+});
+
+test("un día nuevo reinicia el contador del hábito doble", async () => {
+  const db = seededMultiDb("bien_007");
+  await registerDemoHabit({db, ...multiArgs("bien_007", "reset_0001")});
+  await registerDemoHabit({db, ...multiArgs("bien_007", "reset_0002")});
+  const next = await registerDemoHabit({db, ...multiArgs(
+    "bien_007", "reset_0003", new Date("2026-11-22T13:00:00Z"),
+  )});
+  assert.equal(next.periodCount, 1);
+  assert.equal(db.docs.get("users/alice").xp, 30);
+});
+
+test("tres registros semanales son válidos y el cuarto se bloquea", async () => {
+  const db = seededMultiDb("alim_004");
+  for (let n = 1; n <= 3; n++) {
+    const result = await registerDemoHabit({db, ...multiArgs(
+      "alim_004", `weekly_000${n}`,
+    )});
+    assert.equal(result.periodCount, n);
+    assert.equal(result.registrationPeriod, "week_2026-11-16");
+  }
+  await assert.rejects(registerDemoHabit({db, ...multiArgs(
+    "alim_004", "weekly_0004",
+  )}), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 30);
+});
+
+test("una semana nueva admite tres registros adicionales", async () => {
+  const db = seededMultiDb("alim_004");
+  for (let n = 1; n <= 3; n++) {
+    await registerDemoHabit({db, ...multiArgs(
+      "alim_004", `weeka_000${n}`,
+    )});
+  }
+  const result = await registerDemoHabit({db, ...multiArgs(
+    "alim_004", "weekb_0001", new Date("2026-11-23T13:00:00Z"),
+  )});
+  assert.equal(result.periodCount, 1);
+  assert.equal(result.registrationPeriod, "week_2026-11-23");
+  assert.equal(result.progress, 4);
+  assert.equal(db.docs.get("users/alice").xp, 40);
+});
+
+test("operación duplicada del hábito semanal no añade otro registro", async () => {
+  const db = seededMultiDb("alim_004");
+  const req = multiArgs("alim_004", "idempotent_0001");
+  const first = await registerDemoHabit({db, ...req});
+  const retry = await registerDemoHabit({db, ...req});
+  assert.equal(first.periodCount, 1);
+  assert.equal(retry.alreadyProcessed, true);
+  assert.equal(db.docs.get("users/alice").xp, 10);
 });
