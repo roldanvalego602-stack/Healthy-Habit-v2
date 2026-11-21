@@ -19,6 +19,13 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _probando = false;
   bool _sincronizando = false;
+  late Future<int?> _pendientes;
+
+  @override
+  void initState() {
+    super.initState();
+    _pendientes = HealthyRemindersService.instance.pendingCount();
+  }
 
   DocumentReference<Map<String, dynamic>>? get _userRef {
     final user = FirebaseAuth.instance.currentUser;
@@ -65,7 +72,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (error) {
       _mensaje('No se pudieron programar los avisos: $error');
     } finally {
-      if (mounted) setState(() => _sincronizando = false);
+      if (mounted) {
+        setState(() {
+          _sincronizando = false;
+          _pendientes = HealthyRemindersService.instance.pendingCount();
+        });
+      }
     }
   }
 
@@ -131,6 +143,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               : 'Los recordatorios locales están disponibles '
                                 'en la aplicación Android, no en web.',
                               style: theme.textTheme.bodySmall),
+                            const SizedBox(height: 9),
+                            FutureBuilder<int?>(
+                              future: _pendientes,
+                              builder: (context, pending) {
+                                if (pending.hasError) {
+                                  return Text('No fue posible consultar la '
+                                    'agenda local. Revisa permisos de Android.',
+                                    style: theme.textTheme.bodySmall);
+                                }
+                                if (!pending.hasData) {
+                                  return Text(android
+                                    ? 'Consultando agenda local...'
+                                    : 'No disponible en esta plataforma.',
+                                    style: theme.textTheme.bodySmall);
+                                }
+                                return Text(
+                                  '${pending.data} avisos programados en '
+                                  'este dispositivo',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700),
+                                );
+                              },
+                            ),
                             const SizedBox(height: 14),
                             FilledButton.icon(
                               onPressed: () => Navigator.of(context).push(
