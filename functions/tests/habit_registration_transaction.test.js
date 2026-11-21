@@ -414,3 +414,13 @@ test("rechaza zonas distintas entre perfil, hábito e intento", async () => {
   )}), RegistrationPolicyError);
   assert.equal(db.docs.get("users/alice").xp, 0);
 });
+
+
+test("rechaza UTC implícito si el perfil ya tiene calendario local", async () => {
+  const db = seededMultiDb("alim_004");
+  db.docs.get("users/alice").calendarTimeZone = "America/Monterrey";
+  await assert.rejects(registerDemoHabit({db, ...multiArgs(
+    "alim_004", "implicit_utc_0001",
+  )}), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 0);
+});
