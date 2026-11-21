@@ -71,6 +71,9 @@ before(async () => {
     await setDoc(doc(db, 'users/bob/user_habits/water/attempts/try-1/logs/l1'), {
       note: 'private',
     });
+    await setDoc(doc(db, 'public_habit_popularity/hidr_001'), {
+      activeUsers: 8, verified: true,
+    });
     await setDoc(doc(db, 'system/catalog'), { version: 1 });
     await setDoc(doc(db, 'public_profiles/alice'), {
       name: 'Alice', username: 'alice', xp: 50,
@@ -107,6 +110,29 @@ test('usuario A no puede alterar monedas ni datos de B', async () => {
 
 test('nadie puede consultar todos los documentos privados de users', async () => {
   await assertFails(getDocs(collection(alice, 'users')));
+});
+
+test('los agregados de popularidad son legibles sin revelar hábitos privados', async () => {
+  const entry = doc(alice, 'public_habit_popularity/hidr_001');
+  const snapshot = await assertSucceeds(getDoc(entry));
+  assert.equal(snapshot.data().activeUsers, 8);
+  await assertSucceeds(getDocs(collection(alice, 'public_habit_popularity')));
+  await assertFails(getDoc(doc(anonymous, 'public_habit_popularity/hidr_001')));
+  await assertFails(getDocs(collection(anonymous, 'public_habit_popularity')));
+  await assertFails(getDocs(collection(alice, 'users/bob/user_habits')));
+});
+
+test('ningún cliente puede crear ni falsificar estadísticas de popularidad', async () => {
+  await assertFails(setDoc(doc(alice, 'public_habit_popularity/alim_001'), {
+    activeUsers: 999, verified: true,
+  }));
+  await assertFails(updateDoc(doc(alice, 'public_habit_popularity/hidr_001'), {
+    activeUsers: 999, verified: true,
+  }));
+  await assertFails(deleteDoc(doc(alice, 'public_habit_popularity/hidr_001')));
+  await assertFails(setDoc(doc(anonymous, 'public_habit_popularity/bien_001'), {
+    activeUsers: 500, verified: true,
+  }));
 });
 
 test('system es legible para autenticados pero no editable desde cliente', async () => {
