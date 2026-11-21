@@ -117,7 +117,7 @@ class HealthyCountUp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = (int number) => Text(
+    Text text(int number) => Text(
       '$prefix$number$suffix',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
