@@ -6,6 +6,7 @@ import 'detalles/catalogo_detalle_screen.dart';
 import 'modelos/catalogo_item.dart';
 import 'catalogo_explorador.dart';
 import 'catalogo_mapas.dart';
+import 'catalogo_comparacion.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -256,46 +257,31 @@ class _CatalogoScreenState extends State<CatalogoScreen>
 
   void _mostrarComparacion(List<CatalogoItem> actuales) {
     final seleccionados = actuales.where(
-        (item) => _comparar.contains(item.id)).toList();
+      (item) => _comparar.contains(item.id),
+    ).toList();
     if (seleccionados.length < 2) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Comparar elementos',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-              const SizedBox(height: 14),
-              for (final item in seleccionados)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.titulo, style: const TextStyle(
-                          fontWeight: FontWeight.w800)),
-                      Text(item.descripcion,
-                          style: const TextStyle(fontSize: 12)),
-                      for (final metric in <String>[
-                        'Proteína', 'Grasas', 'Carbohidratos', 'Fibra',
-                        'Grupo muscular', 'Impacto',
-                      ])
-                        if (item.detalles.containsKey(metric))
-                          Text('$metric: ${item.detalles[metric]}',
-                              style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
-              const Text('Comparación informativa: las referencias nutricionales pueden diferir entre crudo y cocido.',
-                  style: TextStyle(fontSize: 11)),
-            ],
-          ),
-        ),
+      builder: (sheetContext) => CatalogoComparacion(
+        items: seleccionados,
+        onAbrir: (item) {
+          Navigator.of(sheetContext).pop();
+          _abrirDetalle(item);
+        },
+        onQuitar: (item) {
+          Navigator.of(sheetContext).pop();
+          if (!mounted) return;
+          setState(() => _comparar.remove(item.id));
+          if (_comparar.length >= 2) {
+            _mostrarComparacion(actuales);
+          }
+        },
+        onLimpiar: () {
+          Navigator.of(sheetContext).pop();
+          if (mounted) setState(_comparar.clear);
+        },
       ),
     );
   }
