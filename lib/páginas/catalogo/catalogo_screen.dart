@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'catalogo_media.dart';
 import '../../tema/healthy_theme.dart';
 import 'datos/catalogo_datos.dart';
 import 'detalles/catalogo_detalle_screen.dart';
@@ -63,56 +63,16 @@ class _CatalogoScreenState extends State<CatalogoScreen>
     }
   }
 
-  IconData _icono(String nombre) {
-    switch (nombre) {
-      case 'grain':
-        return Icons.grain;
-      case 'egg':
-        return Icons.egg_outlined;
-      case 'eco':
-        return Icons.eco_outlined;
-      case 'fitness_center':
-        return Icons.fitness_center;
-      case 'accessibility_new':
-        return Icons.accessibility_new;
-      case 'directions_walk':
-        return Icons.directions_walk;
-      case 'bedtime':
-        return Icons.bedtime_outlined;
-      case 'health_and_safety':
-        return Icons.health_and_safety_outlined;
-      default:
-        return Icons.self_improvement;
-    }
-  }
-
-
   void _abrirDetalle(CatalogoItem item) => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => CatalogoDetalleScreen(item: item),
         ),
       );
 
-  Widget _imagen(CatalogoItem item, double altura) =>
-      item.imagen.isEmpty ? _imagenAlternativa(item, altura) : ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: item.imagen.endsWith('.svg')
-            ? SvgPicture.asset(
-                item.imagen,
-                height: altura,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                semanticsLabel: 'Ilustración de ${item.titulo}',
-                errorBuilder: (_, __, ___) => _imagenAlternativa(item, altura),
-              )
-            : Image.asset(
-                item.imagen,
-                height: altura,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                semanticLabel: 'Imagen de ${item.titulo}',
-                errorBuilder: (_, __, ___) => _imagenAlternativa(item, altura),
-              ),
+  Widget _imagen(CatalogoItem item, double altura) => CatalogoMedia(
+        item: item,
+        altura: altura,
+        usarHero: true,
       );
 
   Widget _tarjeta(CatalogoItem item) {
@@ -361,11 +321,11 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             : _vista == VistaCatalogo.imagenes
                 ? GridView.builder(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 245,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      mainAxisExtent: 252,
+                      mainAxisExtent: 256,
                     ),
                     itemCount: resultados.length,
                     itemBuilder: (_, i) => _tarjeta(resultados[i]),
@@ -505,42 +465,4 @@ class _CatalogoScreenState extends State<CatalogoScreen>
           : null,
     );
   }
-  Widget _imagenAlternativa(CatalogoItem item, double altura) {
-    final isFood = item.categoria == 'Alimentos';
-    final isExercise = item.categoria == 'Ejercicios';
-    final tint = isFood
-        ? const Color(0xFF337D60)
-        : isExercise
-            ? const Color(0xFF346D91)
-            : const Color(0xFF7765A7);
-    return Container(
-      height: altura,
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [tint.withValues(alpha: 0.82), tint],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(children: [
-        Positioned(
-          right: -18,
-          top: -22,
-          child: Icon(_icono(item.icono),
-              size: altura * 0.85,
-              color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        Center(child: Icon(
-          isFood ? Icons.restaurant_menu_rounded
-              : isExercise ? Icons.sports_gymnastics_rounded
-              : Icons.spa_rounded,
-          color: Colors.white, size: (altura * 0.34).clamp(23.0, 45.0),
-        )),
-      ]),
-    );
-  }
-
 }
