@@ -94,3 +94,43 @@ El archivo `firestore.candidate.rules` continúa con bloqueos de
 integridad pendientes: el cliente real puede alterar XP y registros
 si se mantienen las reglas permisivas. El despliegue futuro exige
 una migración coordinada de reglas, funciones y cliente.
+
+## Corrección de autenticación web de prueba (ClientID not set)
+
+En Chrome, `google_sign_in_web` requiere un Client ID OAuth real.
+Ese valor **no** pertenece al entorno aislado y no es necesario para
+evaluar el motor de hábitos. No hay que agregar credenciales OAuth
+de producción a `web/index.html`.
+
+Se implementó:
+- `AuthService.signInToIsolatedDemo()` que utiliza
+  `FirebaseAuth.signInAnonymously()` **solo** si el proyecto activo
+  es `demo-healthy-habit` y el flag de hábitos oficiales está activo.
+- Creación del perfil inicial con `FirebaseService.saveUserData`,
+  sin email real.
+- El login de prueba muestra **Entrar al entorno de pruebas** en vez
+  de invocar Google; el registro oculta Google en ese modo.
+- La pantalla Splash acepta al usuario anónimo únicamente en
+  modo aislado. La verificación de correo sigue vigente en producción.
+- Al cerrar sesión en demo no se inicializa el SDK Google Sign-In.
+
+Reiniciar Flutter tras actualizar el código; usar terminal 1 para
+`firebase emulators:start` y dejarla encendida. En terminal 2:
+
+```bash
+flutter analyze lib/servicios/autenticacion_servicio.dart \\
+  lib/páginas/sesion/login_screen.dart \\
+  lib/páginas/sesion/signup_screen.dart \\
+  lib/páginas/splash_screen.dart
+
+flutter run -d chrome \\
+  --dart-define=HH_SHOP_DEMO_FIREBASE=true \\
+  --dart-define=HH_DEMO_SHOP_PURCHASE=true \\
+  --dart-define=HH_DEMO_OFFICIAL_HABITS=true \\
+  --dart-define=HH_EMULATOR_HOST=127.0.0.1
+```
+
+Al entrar, seleccionar el botón de acceso demo. La cuenta anónima
+es efímera en cuanto a su identidad persistida en el navegador y
+los datos viven únicamente en el emulador (que parte vacío si no
+se importó estado). **No utilizar cuentas de producción.**
