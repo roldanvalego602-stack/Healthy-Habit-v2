@@ -66,3 +66,41 @@ etapa sólo prepara y comprueba el contrato de recompensas. El
 siguiente paso es integrar esta política con un controlador
 transaccional de servidor en emulador y ampliar la validación
 a los 36 hábitos antes de adaptar Flutter.
+
+## Etapa 2: motor transaccional de registro para 36 hábitos
+
+Se añadió `registerOfficialHabitTransaction` a
+`functions/habit_registration_transaction.js`, utilizando el mismo
+motor transaccional que el piloto, pero con la política estricta de
+recompensas para los 36 hábitos. El piloto
+`registerDemoHabit` mantiene su lista de tres hábitos y su cálculo
+histórico de 10 XP, para no romper sus flujos existentes.
+
+El motor oficial, **todavía no expuesto por un endpoint**, prepara en
+una única transacción:
+- Operación idempotente `registration_operations/{operationId}`;
+- Comprobación del intento activo y calendario persistido;
+- Límite de registros del periodo y actualización del contador;
+- Registro de actividad y progreso de hábito/intento;
+- XP correspondiente al catálogo (10/15/20), nivel y monedas de nivel.
+
+Se añadieron pruebas con `FakeFirestore` de los 36 hábitos,
+duplicados, reintentos cambiando de hábito e inyección de campos
+económicos en el payload.
+
+**Pendiente:** validar estas nuevas pruebas en el equipo local,
+probar el motor con Firestore Emulator real y condiciones concurrentes,
+integrar la activación y cancelación de los 36 hábitos,
+migrar el cliente Flutter y verificar la compatibilidad del calendario
+y los registros históricos. `FakeFirestore` no simula bloqueo real
+ni concurrencia del servicio y no sustituye una prueba de integración.
+
+Para ejecutar:
+
+```bash
+npm --prefix functions test
+```
+
+No cambia las ocho vulnerabilidades actuales hasta que las escrituras
+directas de Flutter se bloqueen de forma coordinada con un servidor
+disponible para producción.
