@@ -1,4 +1,5 @@
 import '../modelos/catalogo_item.dart';
+import 'catalogo_ampliado.dart';
 
 // Contenido inicial de demostración. Los nutrientes son aproximados por 100 g.
 // Revisar fuentes y porciones antes de utilizar el catálogo como referencia clínica.
@@ -109,6 +110,7 @@ const alimentosCatalogo = <CatalogoItem>[
       'Disponibilidad': 'Frecuentemente accesibles, según región',
     },
   ),
+  ...alimentosAmpliados,
 ];
 
 const ejerciciosCatalogo = <CatalogoItem>[
@@ -208,6 +210,7 @@ const ejerciciosCatalogo = <CatalogoItem>[
       'Impacto': 'Bajo',
     },
   ),
+  ...ejerciciosAmpliados,
 ];
 
 const consejosCatalogo = <CatalogoItem>[
@@ -315,4 +318,5 @@ const consejosCatalogo = <CatalogoItem>[
       'Costo': 'Sin costo',
     },
   ),
+  ...consejosAmpliados,
 ];
