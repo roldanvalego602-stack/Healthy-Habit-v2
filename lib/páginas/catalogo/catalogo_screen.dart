@@ -127,7 +127,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _imagen(item, 132),
+                    _imagen(item, 108),
                     const SizedBox(height: 10),
                     Text(item.titulo,
                         maxLines: 2,
@@ -138,7 +138,6 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: _verde, fontSize: 11)),
-                    const Spacer(),
                     _botonComparar(item, marcado),
                   ],
                 )
@@ -334,7 +333,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      mainAxisExtent: 250,
+                      mainAxisExtent: 252,
                     ),
                     itemCount: resultados.length,
                     itemBuilder: (_, i) => _tarjeta(resultados[i]),
