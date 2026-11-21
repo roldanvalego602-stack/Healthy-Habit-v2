@@ -512,3 +512,56 @@ exports.purchaseDemoShopItem = onCall(
     }
   }
 );
+
+
+// Puente experimental de los 36 hábitos: ÚNICAMENTE Emulator + proyecto demo.
+// No cambiar esta barrera para Spark/Blaze; el cliente normal nunca
+// debe invocar estas operaciones mientras la economía siga migrándose.
+const {registerOfficialHabitTransaction} =
+  require("./habit_registration_transaction");
+const {activateOfficialHabitTransaction} =
+  require("./habit_activation_transaction");
+const {cancelOfficialHabitTransaction} =
+  require("./habit_cancellation_transaction");
+
+function requireIsolatedOfficialDemo(request) {
+  if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+      process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Las operaciones oficiales experimentales solo existen en demo-healthy-habit Emulator."
+    );
+  }
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Inicia sesión en Auth Emulator.");
+  }
+}
+
+function officialDemoCallable(operation) {
+  return onCall(
+    {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+    async (request) => {
+      requireIsolatedOfficialDemo(request);
+      try {
+        return await operation({
+          db, uid: request.auth.uid, data: request.data,
+        });
+      } catch (error) {
+        if (error instanceof RegistrationPolicyError) {
+          throw new HttpsError(error.code, error.message);
+        }
+        throw error;
+      }
+    }
+  );
+}
+
+exports.activateOfficialHabitDemo = officialDemoCallable(
+  activateOfficialHabitTransaction
+);
+exports.cancelOfficialHabitDemo = officialDemoCallable(
+  cancelOfficialHabitTransaction
+);
+exports.registerOfficialHabitDemo = officialDemoCallable(
+  registerOfficialHabitTransaction
+);
