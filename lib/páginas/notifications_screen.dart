@@ -8,6 +8,7 @@ import '../servicios/healthy_reminders_service.dart';
 import 'perfil/configuracion_screen.dart';
 import 'perfil/reacciones_recibidas_panel.dart';
 import 'perfil/solicitudes_amigos_panel.dart';
+import 'habitos/habitos_pareja_notificaciones.dart';
 
 /// Centro de recordatorios de la cuenta actual.
 /// No fabrica notificaciones sociales ni recompensas de demostración.
@@ -313,6 +314,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(height: 14),
                     const SolicitudesAmigosPanel(),
                     const SizedBox(height: 14),
+                    const HabitosParejaNotificaciones(),
+                    const SizedBox(height: 14),
                     const ReaccionesRecibidasPanel(),
                     const SizedBox(height: 14),
                     Card(child: Padding(
@@ -326,7 +329,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           Expanded(child: Text(
                             'Aquí se muestran los recordatorios del '
                             'dispositivo y las reacciones recibidas realmente. '
-                            'Las invitaciones a hábitos compartidos y las '
+                            'El progreso colaborativo y las '
                             'recompensas sociales aún no están conectadas.',
                             style: theme.textTheme.bodySmall)),
                         ],
