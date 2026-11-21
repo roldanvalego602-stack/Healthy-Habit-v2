@@ -505,13 +505,42 @@ class _CatalogoScreenState extends State<CatalogoScreen>
           : null,
     );
   }
-  Widget _imagenAlternativa(CatalogoItem item, double altura) => SizedBox(
-    height: altura,
-    width: double.infinity,
-    child: ColoredBox(
-      color: HealthyAdaptive.mint,
-      child: Icon(_icono(item.icono), size: 48, color: _verde),
-    ),
-  );
+  Widget _imagenAlternativa(CatalogoItem item, double altura) {
+    final isFood = item.categoria == 'Alimentos';
+    final isExercise = item.categoria == 'Ejercicios';
+    final tint = isFood
+        ? const Color(0xFF337D60)
+        : isExercise
+            ? const Color(0xFF346D91)
+            : const Color(0xFF7765A7);
+    return Container(
+      height: altura,
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [tint.withValues(alpha: 0.82), tint],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -18,
+          top: -22,
+          child: Icon(_icono(item.icono),
+              size: altura * 0.85,
+              color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        Center(child: Icon(
+          isFood ? Icons.restaurant_menu_rounded
+              : isExercise ? Icons.sports_gymnastics_rounded
+              : Icons.spa_rounded,
+          color: Colors.white, size: (altura * 0.34).clamp(23.0, 45.0),
+        )),
+      ]),
+    );
+  }
 
 }
