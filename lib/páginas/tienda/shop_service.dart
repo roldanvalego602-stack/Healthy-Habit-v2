@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'shop_purchase_gateway.dart';
 
 class ShopItem {
   const ShopItem(
@@ -227,6 +228,12 @@ class ShopService {
   Future<void> buy(ShopItem item) async {
     if (shopItemById(item.id) == null) {
       throw const ShopException('Objeto desconocido.');
+    }
+    // Compilaciones normales conservan el flujo actual. La ruta demo
+    // NUNCA vuelve a escribir directamente si el callable falla.
+    if (DemoShopPurchaseGateway.requested) {
+      await DemoShopPurchaseGateway.purchase(item.id);
+      return;
     }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {
