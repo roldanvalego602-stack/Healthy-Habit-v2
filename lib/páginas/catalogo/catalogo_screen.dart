@@ -299,9 +299,45 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               ? OrdenCatalogo.nombre : OrdenCatalogo.relevancia),
     );
     final lista = resultados.isEmpty
-        ? Center(child: Text('Sin coincidencias. Prueba otra búsqueda o filtro.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: _gris)))
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: HealthyAdaptive.mint,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.search_off_rounded,
+                        color: _verde, size: 38),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('No encontramos coincidencias',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: _oscuro,
+                          fontSize: 17, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 6),
+                  Text('Prueba otros términos o elimina los filtros activos.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: _gris)),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() {
+                      _buscador.clear();
+                      _filtro = 'Todos';
+                      _orden = OrdenCatalogo.relevancia;
+                      _grupoVisual = null;
+                    }),
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: const Text('Restablecer búsqueda'),
+                  ),
+                ],
+              ),
+            ),
+          )
         : _vista == VistaCatalogo.explorar
             ? _vistaExplorar(resultados)
             : _vista == VistaCatalogo.imagenes
