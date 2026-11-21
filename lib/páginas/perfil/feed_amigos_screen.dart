@@ -250,7 +250,9 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
             ? const <String>[]
             : LogrosService.catalogo.where((definition) {
                 if (!const {'nivel', 'xp', 'racha'}
-                    .contains(definition.tipo)) return false;
+                    .contains(definition.tipo)) {
+                  return false;
+                }
                 return LogrosService.obtenido(
                   definition,
                   LogrosService.progreso(
