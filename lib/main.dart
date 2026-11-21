@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
 import 'tema/healthy_visual_mode.dart';
@@ -36,6 +37,7 @@ Future<void> main() async {
   // Nunca se inicializa la app real cuando las compras demo están habilitadas.
   ShopDemoBootstrap.validateMode(
     ShopDemoBootstrap.enabled, ShopDemoBootstrap.purchaseEnabled);
+  ShopDemoBootstrap.validateOfficialHabitsMode();
   if (ShopDemoBootstrap.enabled) {
     ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
     if (Firebase.apps.isNotEmpty) {
@@ -61,6 +63,12 @@ Future<void> main() async {
     await FirebaseAuth.instance.useAuthEmulator(
       ShopDemoBootstrap.host, 9099);
     firestore.useFirestoreEmulator(ShopDemoBootstrap.host, 8080);
+    if (ShopDemoBootstrap.officialHabitsEnabled) {
+      FirebaseFunctions.instanceFor(
+        app: Firebase.app(), region: 'us-central1',
+      ).useFunctionsEmulator(ShopDemoBootstrap.host, 5001);
+      debugPrint('Healthy Habit: hábitos oficiales conectados a Functions Emulator.');
+    }
     debugPrint('Healthy Habit: proyecto DEMO aislado, sin datos de producción.');
   }
 
