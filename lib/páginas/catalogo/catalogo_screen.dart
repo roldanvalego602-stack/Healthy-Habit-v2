@@ -321,8 +321,10 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             : _vista == VistaCatalogo.imagenes
                 ? GridView.builder(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 245,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: MediaQuery.sizeOf(context).width < 390
+                          ? 1
+                          : MediaQuery.sizeOf(context).width < 720 ? 2 : 3,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       mainAxisExtent: 256,
