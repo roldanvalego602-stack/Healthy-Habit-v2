@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'habit_action_service.dart';
+import 'politica_habitos_pareja.dart';
 
 /// Invitaciones explícitas para realizar hábitos oficiales entre amigos.
 ///
@@ -136,11 +137,46 @@ class HabitosParejaServicio {
     });
   }
 
-  /// Activa el hábito únicamente para el usuario actual, conservando
-  /// cupos, costo y reglas oficiales. No hay XP por aceptar la invitación.
-  Future<void> activarHabito(String habitId) async {
+  /// Activa únicamente el hábito de una invitación aceptada del usuario
+  /// autenticado. Además comprueba que la amistad sigue vigente.
+  ///
+  /// Las operaciones `preview` y `execute` conservan los controles
+  /// oficiales de cupo, desbloqueos y coste; no otorgan XP por invitar.
+  Future<void> activarHabito(String invitationId) async {
+    final me = _uid;
+    final invitation = await _invitations.doc(invitationId).get();
+    final data = invitation.data();
+    if (data == null) {
+      throw StateError('La invitación ya no está disponible.');
+    }
+    final habitId = data['habitId']?.toString() ?? '';
+    if (!PoliticaHabitosPareja.puedeActivar(
+      invitacion: data, uid: me, habitId: habitId,
+    )) {
+      throw StateError('Necesitas una invitación aceptada y vigente '
+          'para activar este hábito en pareja.');
+    }
+    final other = PoliticaHabitosPareja.otroParticipante(
+      invitacion: data, uid: me,
+    );
+    if (other == null) {
+      throw StateError('Los participantes de la invitación no son válidos.');
+    }
+    final friendship = await _db.collection('users').doc(me)
+        .collection('friends').doc(other).get();
+    if (!friendship.exists) {
+      throw StateError('Esta persona ya no está en tu lista de amigos.');
+    }
     final service = const HabitActionService();
     final preview = await service.preview(habitId, remove: false);
+    // Detecta invitaciones finalizadas mientras se comprueban los cupos.
+    final latest = await _invitations.doc(invitationId).get();
+    if (!PoliticaHabitosPareja.puedeActivar(
+      invitacion: latest.data() ?? <String, dynamic>{},
+      uid: me, habitId: habitId,
+    )) {
+      throw StateError('La invitación ha cambiado de estado.');
+    }
     await service.execute(preview);
   }
 }
