@@ -620,6 +620,34 @@ class _PersonalWeekCalendar extends StatelessWidget {
   }
 }
 
+/// Plantillas locales: no conceden recompensas y siempre son editables.
+class PersonalRoutineTemplates {
+  static const strength = [
+    PersonalRoutineStep(
+      title: 'Sentadillas', type: 'counter', target: 12, unit: 'repeticiones'),
+    PersonalRoutineStep(
+      title: 'Descanso', type: 'timer', target: 45, unit: 'segundos'),
+    PersonalRoutineStep(
+      title: 'Desplantes', type: 'counter', target: 10, unit: 'repeticiones'),
+  ];
+
+  static const focus = [
+    PersonalRoutineStep(
+      title: 'Concentración', type: 'timer', target: 1500, unit: 'segundos'),
+    PersonalRoutineStep(
+      title: 'Pausa', type: 'timer', target: 300, unit: 'segundos'),
+  ];
+
+  static const mobility = [
+    PersonalRoutineStep(
+      title: 'Movilidad suave', type: 'timer', target: 120, unit: 'segundos'),
+    PersonalRoutineStep(
+      title: 'Descanso', type: 'timer', target: 30, unit: 'segundos'),
+    PersonalRoutineStep(
+      title: 'Estiramiento', type: 'timer', target: 120, unit: 'segundos'),
+  ];
+}
+
 class _RoutineEditor extends StatefulWidget {
   const _RoutineEditor({this.existing, this.singleGoal = false});
 
@@ -637,6 +665,25 @@ class _RoutineEditorState extends State<_RoutineEditor> {
   final _unit = TextEditingController(text: 'repeticiones');
   final List<PersonalRoutineStep> _steps = [];
   String _type = 'counter';
+
+  void _applyTemplate(String title, List<PersonalRoutineStep> steps) {
+    if (widget.singleGoal || widget.existing != null || _steps.isNotEmpty) {
+      return;
+    }
+    setState(() {
+      _title.text = title;
+      _steps.addAll(steps);
+    });
+  }
+
+  void _moveStep(int index, int offset) {
+    final next = index + offset;
+    if (widget.singleGoal || next < 0 || next >= _steps.length) return;
+    setState(() {
+      final step = _steps.removeAt(index);
+      _steps.insert(next, step);
+    });
+  }
 
   @override
   void initState() {
@@ -727,6 +774,39 @@ class _RoutineEditorState extends State<_RoutineEditor> {
               border: OutlineInputBorder(),
             ),
           ),
+          if (!widget.singleGoal && widget.existing == null && _steps.isEmpty) ...[
+            Text('Comienza desde una plantilla',
+                style: TextStyle(
+                  color: HealthyAdaptive.text,
+                  fontWeight: FontWeight.w700,
+                )),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.fitness_center_outlined, size: 18),
+                  label: const Text('Fuerza'),
+                  onPressed: () => _applyTemplate(
+                    'Entrenamiento de fuerza', PersonalRoutineTemplates.strength),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.psychology_outlined, size: 18),
+                  label: const Text('Concentración'),
+                  onPressed: () => _applyTemplate(
+                    'Sesión de concentración', PersonalRoutineTemplates.focus),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.accessibility_new_rounded, size: 18),
+                  label: const Text('Movilidad'),
+                  onPressed: () => _applyTemplate(
+                    'Movilidad y estiramiento', PersonalRoutineTemplates.mobility),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+          ],
           const SizedBox(height: 16),
           Text(widget.singleGoal ? 'Configura tu meta' : 'Añadir actividad'),
           const SizedBox(height: 10),
@@ -739,17 +819,20 @@ class _RoutineEditorState extends State<_RoutineEditor> {
               border: OutlineInputBorder(),
             ),
           ),
-          DropdownButtonFormField<String>(
-            value: _type,
-            decoration: const InputDecoration(labelText: 'Herramienta'),
-            items: const [
-              DropdownMenuItem(value: 'counter', child: Text('Contador')),
-              DropdownMenuItem(value: 'timer', child: Text('Temporizador')),
-              DropdownMenuItem(value: 'stopwatch', child: Text('Cronómetro')),
+          Text('Selecciona una herramienta',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: HealthyAdaptive.text,
+              )),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _toolChoice('counter', 'Contador', Icons.add_circle_outline),
+              const SizedBox(width: 7),
+              _toolChoice('timer', 'Temporizador', Icons.hourglass_bottom_rounded),
+              const SizedBox(width: 7),
+              _toolChoice('stopwatch', 'Cronómetro', Icons.timer_outlined),
             ],
-            onChanged: (value) {
-              if (value != null) setState(() => _type = value);
-            },
           ),
           const SizedBox(height: 12),
           if (_type == 'counter')
@@ -787,10 +870,31 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                 '${_steps[index].target} ${_steps[index].unit}',
               ),
               leading: CircleAvatar(child: Text('${index + 1}')),
-              trailing: IconButton(
-                tooltip: 'Quitar paso',
-                icon: const Icon(Icons.close),
-                onPressed: () => setState(() => _steps.removeAt(index)),
+              trailing: SizedBox(
+                width: widget.singleGoal ? 44 : 132,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!widget.singleGoal) ...[
+                      IconButton(
+                        tooltip: 'Subir paso',
+                        onPressed: index == 0 ? null : () => _moveStep(index, -1),
+                        icon: const Icon(Icons.arrow_upward_rounded, size: 19),
+                      ),
+                      IconButton(
+                        tooltip: 'Bajar paso',
+                        onPressed: index == _steps.length - 1
+                            ? null : () => _moveStep(index, 1),
+                        icon: const Icon(Icons.arrow_downward_rounded, size: 19),
+                      ),
+                    ],
+                    IconButton(
+                      tooltip: 'Quitar paso',
+                      icon: const Icon(Icons.close, size: 19),
+                      onPressed: () => setState(() => _steps.removeAt(index)),
+                    ),
+                  ],
+                ),
               ),
             ),
           const SizedBox(height: 18),
@@ -805,6 +909,48 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                     : 'Guardar rutina personal'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _toolChoice(String value, String label, IconData icon) {
+    final selected = _type == value;
+    return Expanded(
+      child: InkWell(
+        key: ValueKey('routine-tool-$value'),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => setState(() => _type = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 90),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: selected ? HealthyAdaptive.mint : HealthyAdaptive.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? HealthyAdaptive.accent : HealthyAdaptive.border,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: selected
+                  ? HealthyAdaptive.accent : HealthyAdaptive.muted),
+              const SizedBox(height: 7),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: HealthyAdaptive.text,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
