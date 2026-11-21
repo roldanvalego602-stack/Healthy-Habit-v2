@@ -2,6 +2,34 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 
+/// Ayudas breves compartidas por las herramientas de hábitos.
+class HabitToolGuide {
+  static String titleFor(String type, String unit) {
+    if (type == 'timer') return 'Temporizador';
+    if (type == 'stopwatch') return 'Cronómetro';
+    return unit.trim().toLowerCase() == 'ml'
+        ? 'Contador de hidratación'
+        : 'Contador de actividad';
+  }
+
+  static String instructionsFor(String type, String unit) {
+    if (type == 'timer') {
+      return 'Pulsa Iniciar para comenzar la cuenta regresiva. '
+          'Puedes pausar y reanudar. Al llegar a cero, continúa con el siguiente paso.';
+    }
+    if (type == 'stopwatch') {
+      return 'Pulsa Iniciar para medir el tiempo transcurrido. '
+          'Pausa o reanuda hasta alcanzar la duración objetivo.';
+    }
+    if (unit.trim().toLowerCase() == 'ml') {
+      return 'Registra cada cantidad de agua con +100, +250 o +500 ml. '
+          'Usa Corregir −100 ml para ajustar el registro.';
+    }
+    return 'Pulsa Registrar cada vez que completes una unidad. '
+        'Utiliza el botón menos si necesitas corregir el contador.';
+  }
+}
+
 class HabitInteractionCard extends StatefulWidget {
   const HabitInteractionCard({super.key, required this.type, required this.target,
     required this.unit, required this.onChanged, this.enabled = true,
@@ -123,6 +151,25 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
           ),
         ]),
         const SizedBox(height: 12),
+        ExpansionTile(
+          key: const ValueKey('habit-tool-instructions'),
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          leading: Icon(Icons.help_outline_rounded, color: green),
+          title: Text(
+            'Cómo usar esta herramienta',
+            style: TextStyle(color: ink, fontWeight: FontWeight.w700),
+          ),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                HabitToolGuide.instructionsFor(widget.type, widget.unit),
+                style: TextStyle(color: ink, height: 1.45),
+              ),
+            ),
+          ],
+        ),
         Text(_done ? '¡Actividad lista! Guarda tu registro.' : 'Completa la actividad para guardar.',
           textAlign: TextAlign.center, style: TextStyle(color: ink)),
       ]),
