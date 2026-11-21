@@ -7,6 +7,7 @@ const {
   calculateRegistrationReward,
   levelForXp,
   registerDemoHabit,
+  registerOfficialHabitTransaction,
 } = require("../habit_registration_transaction");
 const {RegistrationPolicyError} = require("../habit_registration_policy");
 
@@ -423,4 +424,84 @@ test("rechaza UTC implícito si el perfil ya tiene calendario local", async () =
     "alim_004", "implicit_utc_0001",
   )}), RegistrationPolicyError);
   assert.equal(db.docs.get("users/alice").xp, 0);
+});
+
+test("motor transaccional oficial admite los 36 hábitos y acredita XP correcto", async () => {
+  const {SERVER_CATALOG} = require("../official_habit_catalog");
+  for (const [habitId, catalog] of Object.entries(SERVER_CATALOG)) {
+    const db = seededMultiDb(habitId);
+    const attemptPath =
+      `users/alice/user_habits/${habitId}/attempts/attempt-1`;
+    db.docs.get(attemptPath).habitId = habitId;
+    const operationId = `official_registration_${habitId}`;
+    const options = {db, uid: "alice", now: args.now, data: {
+      habitId, attemptId: "attempt-1", operationId,
+    }};
+    const first = await registerOfficialHabitTransaction(options);
+    assert.equal(first.alreadyProcessed, false, habitId);
+    assert.equal(first.xpAwarded, catalog.xp, habitId);
+    assert.equal(first.progress, 1, habitId);
+    assert.equal(db.docs.get("users/alice").xp, catalog.xp, habitId);
+    assert.equal(db.docs.get(attemptPath).xpEarned, catalog.xp, habitId);
+    const repeated = await registerOfficialHabitTransaction(options);
+    assert.equal(repeated.alreadyProcessed, true, habitId);
+    assert.equal(db.docs.get("users/alice").xp, catalog.xp, habitId);
+    assert.equal(db.docs.get(attemptPath).progress, 1, habitId);
+    assert.equal(db.docs.get(
+      `users/alice/registration_operations/${operationId}`
+    ).result.xpAwarded, catalog.xp, habitId);
+  }
+});
+
+test("motor transaccional oficial rechaza manipulaciones sin alterar economía", async () => {
+  const db = seededMultiDb("bien_007");
+  const attemptPath = "users/alice/user_habits/bien_007/attempts/attempt-1";
+  db.docs.get(attemptPath).habitId = "bien_007";
+  for (const payload of [
+    {habitId: "bien_007", attemptId: "attempt-1",
+      operationId: "attempt_official_00001", xp: 9999},
+    {habitId: "bien_007", attemptId: "attempt-1",
+      operationId: "attempt_official_00001", habitCoins: 9999},
+    {habitId: "bien_007", attemptId: "attempt-1",
+      operationId: "attempt_official_00001", evidenceVerified: true},
+  ]) {
+    await assert.rejects(registerOfficialHabitTransaction({
+      db, uid: "alice", data: payload, now: args.now,
+    }), RegistrationPolicyError);
+  }
+  assert.equal(db.docs.get("users/alice").xp, 0);
+  assert.equal(db.docs.get("users/alice").habitCoins, 100);
+  assert.equal(db.docs.get(attemptPath).progress, 0);
+});
+
+test("motor transaccional oficial rechaza reusar una operación en otro hábito", async () => {
+  const db = seededMultiDb("alim_001");
+  const firstRef = "users/alice/user_habits/alim_001/attempts/attempt-1";
+  db.docs.get(firstRef).habitId = "alim_001";
+  const operationId = "official_retry_00001";
+  const first = await registerOfficialHabitTransaction({
+    db, uid: "alice", now: args.now,
+    data: {habitId: "alim_001", attemptId: "attempt-1", operationId},
+  });
+  assert.equal(first.xpAwarded, 10);
+
+  const secondHabit = "bien_007";
+  const {SERVER_CATALOG} = require("../official_habit_catalog");
+  const catalog = SERVER_CATALOG[secondHabit];
+  const secondRef = `users/alice/user_habits/${secondHabit}`;
+  db.docs.set(secondRef, {
+    latestAttemptId: "attempt-2", lastAttemptId: "attempt-2",
+    latestStatus: "inProgress", frequencyType: catalog.frequencyType,
+  });
+  db.docs.set(`${secondRef}/attempts/attempt-2`, {
+    habitId: secondHabit, status: "inProgress", progress: 0,
+    target: catalog.target, xpEarned: 0,
+    frequencyType: catalog.frequencyType,
+    registrationsPerPeriod: catalog.registrationsPerPeriod,
+  });
+  await assert.rejects(registerOfficialHabitTransaction({
+    db, uid: "alice", now: args.now,
+    data: {habitId: secondHabit, attemptId: "attempt-2", operationId},
+  }), RegistrationPolicyError);
+  assert.equal(db.docs.get("users/alice").xp, 10);
 });
