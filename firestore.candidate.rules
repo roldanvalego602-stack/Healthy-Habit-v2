@@ -427,7 +427,7 @@ service cloud.firestore {
         && request.resource.data.xp >= 0
         // Un perfil público no puede publicarse con XP distinto al
         // documento privado actual. No certifica la legitimidad de ese XP.
-        && request.resource.data.xp == get(
+        && request.resource.data.xp == getAfter(
           /databases/$(database)/documents/users/$(uid)
         ).data.xp
         && request.resource.data.get('profileAvatarStyle', 'foto')
