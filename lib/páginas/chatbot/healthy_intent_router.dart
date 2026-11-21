@@ -14,7 +14,7 @@ class HealthyIntentRouter {
   };
   static const _deletionTerms = <String>{
     'borrar', 'eliminar', 'cerrar', 'suprimir', 'dar de baja',
-    'desactivar', 'cancelar', 'quitar', 'deshacerme',
+    'desactivar', 'cancelar', 'quitar', 'deshacerme', 'doy de baja',
   };
   static final _ownership = RegExp(
     r'\b(mi|mis|tengo|tienes|tendra|me quedan|me queda|me restan|'
