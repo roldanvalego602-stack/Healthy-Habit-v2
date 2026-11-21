@@ -593,9 +593,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return 'Como ya practicas hábitos de $category, quizá te interesen estas opciones.';
   }
 
-  Widget _twoRowRecommendationCarousel(List<Habit> habits) {
+  Widget _twoRowRecommendationCarousel(List<Habit> habits, {
+    String carouselId = 'habits-suggested-carousel',
+  }) {
     return SingleChildScrollView(
-      key: const ValueKey('habits-suggested-carousel'),
+      key: ValueKey(carouselId),
       scrollDirection: Axis.horizontal,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -793,7 +795,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                 'Los hábitos populares aparecerán cuando estén disponibles.',
                               )
                             else
-                              _twoRowRecommendationCarousel(_popularHabits),
+                              _twoRowRecommendationCarousel(
+                                _popularHabits,
+                                carouselId: 'habits-popular-carousel',
+                              ),
                           ],
                           const SizedBox(height: 18),
                           _encouragement(),
