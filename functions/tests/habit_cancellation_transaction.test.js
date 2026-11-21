@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  validateCancellation, calculateCancellation,
+  validateCancellation, validateOfficialCancellation, calculateCancellation,
 } = require("../habit_cancellation_transaction");
 const {SERVER_CATALOG} = require("../official_habit_catalog");
 const {RegistrationPolicyError} = require("../habit_registration_policy");
@@ -75,5 +75,25 @@ test("rechaza economía inconsistente antes de efectuar descuentos", () => {
     assert.throws(() => calculateCancellation({
       ...state, user,
     }), RegistrationPolicyError);
+  }
+});
+
+test("la cancelación oficial cubre 36 hábitos, con penalización según dificultad", () => {
+  assert.equal(Object.keys(SERVER_CATALOG).length, 36);
+  for (const [habitId, catalog] of Object.entries(SERVER_CATALOG)) {
+    const request = {...data, habitId};
+    assert.deepEqual(validateOfficialCancellation(request), request);
+    if (!["hidr_001", "bien_007", "alim_004"].includes(habitId)) {
+      assert.throws(() => validateCancellation(request),
+        RegistrationPolicyError);
+    }
+    const outcome = calculateCancellation({...state, catalog});
+    assert.equal(outcome.penalty,
+      catalog.difficulty === "Difícil" ? 25 : 0, habitId);
+    for (const field of ["xp", "habitCoins", "uid", "status"]) {
+      assert.throws(() => validateOfficialCancellation({
+        ...request, [field]: 9999,
+      }), RegistrationPolicyError);
+    }
   }
 });
