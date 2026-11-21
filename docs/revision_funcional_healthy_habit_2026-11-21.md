@@ -213,3 +213,47 @@ flutter test test/personal_routines_test.dart
 Estas pruebas están preparadas en GitHub; su ejecución en Android/Flutter
 local queda pendiente. Se conserva el trabajo que el usuario tiene
 guardado en Git stash.
+
+
+## Diagnóstico de notificaciones programadas en Android
+
+Se añadió una prueba independiente para distinguir entre dos causas:
+(1) la notificación inmediata funciona, pero (2) la programación en
+segundo plano o con la aplicación cerrada falla o se retrasa.
+
+La pantalla `Notificaciones` ahora permite:
+- Consultar el permiso de notificaciones concedido en Android.
+- Consultar el número de recordatorios cotidianos pendientes.
+- Enviar una notificación inmediata (`show`).
+- **Programar una prueba (+2 min)** usando `zonedSchedule`
+  con `AndroidScheduleMode.inexactAllowWhileIdle`.
+- Ver si la prueba sigue pendiente en la agenda y actualizar los datos.
+- Reprogramar los avisos habituales sin borrar la prueba independiente.
+
+La prueba programada tiene un identificador exclusivo (`8198`) y
+reemplaza su propia programación previa, evitando acumulaciones. Al
+cerrar sesión se cancelan los recordatorios y la prueba diagnóstica.
+Los recordatorios cotidianos siguen siendo **aproximados**; Android
+puede retrasarlos por gestión de batería. No se solicita el permiso
+especial de alarmas exactas.
+
+### Prueba manual en teléfono
+
+1. Ejecutar `flutter analyze lib/servicios/healthy_reminders_service.dart`
+   y `flutter analyze lib/páginas/notifications_screen.dart`.
+2. En la app Android, ir a **Notificaciones**, comprobar que el permiso
+   se muestra como concedido y que la cuenta permite recordatorios.
+3. Pulsar «Enviar aviso de prueba»; verificar su aparición inmediata.
+4. Pulsar «Probar aviso programado (+2 min)» y verificar el estado
+   «pendiente en Android».
+5. Salir de la app sin cerrar sesión; comprobar la bandeja tras el
+   intervalo, dando margen a retrasos del sistema.
+6. Regresar a la app, pulsar «Actualizar diagnóstico» y registrar si
+   queda un aviso pendiente. Comparar con «Reprogramar avisos».
+7. Si la prueba inmediata llega pero la programada no, comprobar en
+   Android restricciones de batería, pausa de actividad y permisos de
+   notificación. No concluir que funciona solo por figurar pendiente.
+
+El proyecto no utiliza Firebase Storage para estas pruebas. La
+verificación física aún debe completarse; no se considera demostrada
+la entrega mientras falten resultados del dispositivo.
