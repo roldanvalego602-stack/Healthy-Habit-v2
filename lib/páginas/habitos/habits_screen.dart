@@ -43,6 +43,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool searching = false;
   bool showingFullCatalog = false;
   int _habitsView = 0;
+  final PageController _suggestedPager = PageController(viewportFraction: 0.94);
+  final PageController _popularPager = PageController(viewportFraction: 0.94);
+  int _suggestedPage = 0;
+  int _popularPage = 0;
   bool loading = true;
   bool saving = false;
   bool loadingPopularity = false;
@@ -95,6 +99,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
   @override
   void dispose() {
     searchController.dispose();
+    _suggestedPager.dispose();
+    _popularPager.dispose();
     super.dispose();
   }
 
@@ -614,32 +620,69 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _twoRowRecommendationCarousel(List<Habit> habits, {
     String carouselId = 'habits-suggested-carousel',
   }) {
-    return SingleChildScrollView(
+    if (habits.isEmpty) return const SizedBox.shrink();
+    final popular = carouselId == 'habits-popular-carousel';
+    final pager = popular ? _popularPager : _suggestedPager;
+    final page = (popular ? _popularPage : _suggestedPage)
+        .clamp(0, habits.length - 1);
+    return Column(
       key: ValueKey(carouselId),
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < habits.length; i += 2)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: SizedBox(
-                width: (MediaQuery.sizeOf(context).width - 40)
-                    .clamp(260.0, 340.0)
-                    .toDouble(),
-                child: Column(
-                  children: [
-                    _recommendationCard(habits[i]),
-                    if (i + 1 < habits.length) ...[
-                      const SizedBox(height: 12),
-                      _recommendationCard(habits[i + 1]),
-                    ],
-                  ],
-                ),
+      children: [
+        SizedBox(
+          height: 285,
+          child: PageView.builder(
+            controller: pager,
+            itemCount: habits.length,
+            onPageChanged: (index) => setState(() {
+              if (popular) {
+                _popularPage = index;
+              } else {
+                _suggestedPage = index;
+              }
+            }),
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(right: 10, bottom: 6),
+              child: SingleChildScrollView(
+                child: _recommendationCard(habits[index]),
               ),
             ),
-        ],
-      ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          IconButton(
+            tooltip: 'Hábito anterior',
+            onPressed: page == 0
+                ? null : () => pager.animateToPage(page - 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic),
+            icon: const Icon(Icons.chevron_left_rounded),
+          ),
+          Text('${page + 1} de ${habits.length}',
+            style: TextStyle(color: muted, fontWeight: FontWeight.w700,
+                fontSize: 12)),
+          const SizedBox(width: 12),
+          for (var i = 0; i < habits.length && i < 8; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              width: i == page ? 14 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: i == page ? green : border,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          IconButton(
+            tooltip: 'Siguiente hábito',
+            onPressed: page >= habits.length - 1
+                ? null : () => pager.animateToPage(page + 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic),
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ]),
+      ],
     );
   }
 
