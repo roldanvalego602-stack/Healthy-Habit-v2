@@ -422,3 +422,33 @@ exports.lockDemoHabitCalendar = onCall(
     }
   }
 );
+
+
+// Activación piloto protegida por Admin SDK; exclusiva del emulador demo.
+// No despliega ni reemplaza la activación actual de Flutter.
+const {activateDemoHabit} = require("./habit_activation_transaction");
+
+exports.activateDemoOfficialHabit = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError(
+        "failed-precondition", "La activación solo existe en el emulador demo."
+      );
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    try {
+      return await activateDemoHabit({
+        db, uid: request.auth.uid, data: request.data,
+      });
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);
