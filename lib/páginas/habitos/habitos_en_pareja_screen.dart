@@ -58,7 +58,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
                 key: const ValueKey('pair-recipient'),
-                initialValue: recipient,
+                value: recipient,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Amigo'),
                 items: [
@@ -74,7 +74,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 key: const ValueKey('pair-habit'),
-                initialValue: habitId,
+                value: habitId,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Hábito oficial'),
                 items: [
@@ -188,12 +188,14 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
         }
         return 0;
       });
-    if (items.isEmpty) return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(side == 'received'
-        ? 'No hay invitaciones recibidas.'
-        : 'No hay invitaciones enviadas.'),
-    );
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(side == 'received'
+          ? 'No hay invitaciones recibidas.'
+          : 'No hay invitaciones enviadas.'),
+      );
+    }
     return Column(children: [
       for (final item in items)
         Card(
@@ -254,8 +256,11 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_uid == null) return const Scaffold(
-      body: Center(child: Text('Inicia sesión para ver hábitos en pareja.')));
+    if (_uid == null) {
+      return const Scaffold(
+        body: Center(child: Text('Inicia sesión para ver hábitos en pareja.')),
+      );
+    }
     return Scaffold(
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(title: const Text('Hábitos en pareja')),
@@ -282,9 +287,11 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _service.recibidas(),
             builder: (context, snap) {
-              if (snap.hasError) return const Text(
-                'No se pudieron consultar las invitaciones. '
-                'Verifica las reglas de Firestore.');
+              if (snap.hasError) {
+                return const Text(
+                  'No se pudieron consultar las invitaciones. '
+                  'Verifica las reglas de Firestore.');
+              }
               if (!snap.hasData) {
                 return const LinearProgressIndicator();
               }
@@ -296,8 +303,10 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _service.enviadas(),
             builder: (context, snap) {
-              if (snap.hasError) return const Text(
-                'No se pudieron consultar las invitaciones enviadas.');
+              if (snap.hasError) {
+                return const Text(
+                  'No se pudieron consultar las invitaciones enviadas.');
+              }
               if (!snap.hasData) {
                 return const LinearProgressIndicator();
               }
