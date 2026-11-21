@@ -279,7 +279,7 @@ exports.rebuildPublicHabitPopularity = onCall(
     if (!request.auth || request.auth.token.admin !== true) {
       throw new HttpsError(
         "permission-denied",
-        "Solo los administradores pueden publicar estadísticas."
+        "Solo los administradores pueden revisar estadísticas."
       );
     }
     // Evitar rankings parciales si aumenta el tamaño de la colección.
@@ -297,25 +297,14 @@ exports.rebuildPublicHabitPopularity = onCall(
         data: doc.data(),
       }))
     );
-    const destination = db.collection("public_habit_popularity");
-    const previous = await destination.get();
-    const batch = db.batch();
-    const activeIds = new Set(aggregated.map((entry) => entry.habitId));
-    for (const doc of previous.docs) {
-      if (!activeIds.has(doc.id)) batch.delete(doc.ref);
-    }
-    const {FieldValue} = require("firebase-admin/firestore");
-    for (const item of aggregated) {
-      batch.set(destination.doc(item.habitId), {
-        activeUsers: item.activeUsers,
-        verified: true,
-        verifiedAt: FieldValue.serverTimestamp(),
-      });
-    }
-    // El catálogo contiene 36 hábitos: el lote se mantiene < 500 escrituras.
-    await batch.commit();
+    // MODO SEGURO: estos estados son editables por el cliente bajo las
+    // reglas actuales; no son una fuente de métricas verificadas.
+    // No publicar ni marcar verified:true hasta trasladar las
+    // transiciones de estado a una operación confiable del servidor.
     return {
-      publishedHabits: aggregated.length,
+      published: false,
+      reason: "untrusted-client-writable-habit-state",
+      candidateHabits: aggregated.length,
       checkedDocuments: snapshot.size,
       minimumUsersPerPublishedHabit: 5,
     };
