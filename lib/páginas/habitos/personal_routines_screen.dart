@@ -871,7 +871,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
               ),
               leading: CircleAvatar(child: Text('${index + 1}')),
               trailing: SizedBox(
-                width: widget.singleGoal ? 44 : 132,
+                width: widget.singleGoal ? 48 : 144,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
