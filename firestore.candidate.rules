@@ -316,8 +316,35 @@ service cloud.firestore {
       match /user_habits/{path=**} {
         allow read, write: if owner(uid);
       }
+      // Evidencia temporal privada. Solo se crea una vez y se purga desde
+      // la cuenta propietaria o mediante un proceso administrativo.
       match /temporary_habit_evidence/{evidenceId} {
-        allow read, write: if owner(uid);
+        allow read: if owner(uid);
+        allow create: if owner(uid)
+          && request.resource.data.keys().hasOnly([
+            'userId', 'habitId', 'attemptId', 'logId',
+            'imageBase64', 'contentType', 'createdAt', 'expiresAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'userId', 'habitId', 'attemptId', 'logId',
+            'imageBase64', 'contentType', 'createdAt', 'expiresAt'
+          ])
+          && request.resource.data.userId == uid
+          && request.resource.data.logId == evidenceId
+          && request.resource.data.habitId is string
+          && request.resource.data.attemptId is string
+          && request.resource.data.imageBase64 is string
+          && request.resource.data.imageBase64.size() <= 350000
+          && request.resource.data.contentType in [
+            'image/jpeg', 'image/png', 'image/webp'
+          ]
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time
+          && request.resource.data.expiresAt
+            <= request.time + duration.value(25, 'h');
+        allow delete: if owner(uid);
+        allow update: if false;
       }
       match /achievements/{path=**} {
         allow read, write: if owner(uid);
@@ -344,6 +371,8 @@ service cloud.firestore {
         allow get, list: if owner(uid);
         allow create: if authenticated()
           && request.auth.uid == sender && sender != uid
+          && !exists(friendsRef(sender, uid))
+          && !exists(incomingRef(sender, uid))
           && socialPayload()
           && getAfter(sentRef(sender, uid)).data == request.resource.data;
         allow delete: if authenticated()
@@ -355,6 +384,8 @@ service cloud.firestore {
       match /solicitudes_enviadas/{recipient} {
         allow get, list: if owner(uid);
         allow create: if owner(uid) && uid != recipient
+          && !exists(friendsRef(uid, recipient))
+          && !exists(incomingRef(uid, recipient))
           && socialPayload()
           && getAfter(incomingRef(recipient, uid)).data == request.resource.data;
         allow delete: if authenticated()
@@ -394,6 +425,11 @@ service cloud.firestore {
           in ['Amanecer', 'Bosque', 'Océano', 'Atardecer']
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
+        // Un perfil público no puede publicarse con XP distinto al
+        // documento privado actual. No certifica la legitimidad de ese XP.
+        && request.resource.data.xp == get(
+          /databases/$(database)/documents/users/$(uid)
+        ).data.xp
         && request.resource.data.get('profileAvatarStyle', 'foto')
           in ['foto', 'naturaleza', 'agua', 'energia']
         && request.resource.data.settings is map
