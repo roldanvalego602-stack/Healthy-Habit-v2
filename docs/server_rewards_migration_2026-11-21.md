@@ -145,3 +145,45 @@ históricos y denegación de escritura cliente de recompensas.
 **Condición de avance:** sólo después de obtener un informe de
 integración satisfactorio debe considerarse integrar con Flutter,
 sin desplegar a Spark.
+
+## Etapa 4: activar y cancelar los 36 hábitos sin exponer endpoints
+
+Se añadió un modo `official` interno a:
+- `functions/habit_activation_transaction.js` mediante
+  `activateOfficialHabitTransaction` y `validateOfficialActivation`;
+- `functions/habit_cancellation_transaction.js` mediante
+  `cancelOfficialHabitTransaction` y `validateOfficialCancellation`.
+
+El modo `demo` original conserva sus tres hábitos y restricciones
+históricas. El modo oficial usa el catálogo de 36 hábitos para validar
+nivel requerido, cupos, estado anterior, coste y penalización, y utiliza
+los identificadores de operación para evitar activar/cancelar dos
+veces. No se añadieron nuevos endpoints a `functions/index.js`,
+y no se ha cambiado ninguna regla de producción ni interfaz Flutter.
+
+Pruebas unitarias nuevas: cobertura de los 36 IDs y rechazo de campos
+adulterados. Pruebas de integración nuevas: ciclo activar/cancelar
+para los 36 hábitos, reintentos y dos activaciones simultáneas con
+un único cupo.
+
+Comandos, desde la raíz del repositorio:
+
+```bash
+git fetch origin feature/habits-discovery-routines
+git merge --ff-only FETCH_HEAD
+npm --prefix functions test
+
+firebase emulators:exec \\
+  --config firebase.emulator.json \\
+  --project demo-healthy-habit \\
+  --only firestore \\
+  "cd functions && npm run test:integration"
+```
+
+Los emuladores previos deben estar cerrados para evitar conflictos
+de puerto 8080. Estas nuevas pruebas aún deben ejecutarse localmente.
+
+**Límite:** completar pruebas unitarias y transaccionales del backend
+no implica que el cliente ya utilice esos flujos. La economía de
+Flutter sigue usando escrituras directas; las ocho vulnerabilidades
+de reglas candidatas siguen abiertas. No publicar las reglas.
