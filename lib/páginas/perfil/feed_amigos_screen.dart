@@ -91,7 +91,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
 
   Widget _cuerpo(String uid) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: AmigosServicio.siguiendo(uid),
+      stream: AmigosServicio.amigos(uid),
       builder: (context, snap) {
         if (snap.hasError) {
           return _mensaje(
@@ -112,8 +112,8 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
         if (ids.isEmpty) {
           return _mensaje(
             icono: Icons.dynamic_feed_outlined,
-            titulo: 'Aún no sigues a nadie',
-            detalle: 'Sigue a tus amigos para ver aquí su progreso.',
+            titulo: 'Aún no tienes amigos',
+            detalle: 'Agrega amigos y acepta solicitudes para compartir el progreso.',
             accion: 'Buscar amigos',
             onAccion: () {
               Navigator.push(
@@ -377,6 +377,21 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       backgroundColor: _C.mintSoft,
                       valueColor: const AlwaysStoppedAnimation(_C.green),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      Chip(
+                        avatar: const Icon(Icons.emoji_events_outlined, size: 16),
+                        label: Text('${_num(d['completedHabits'])} hábitos completados'),
+                      ),
+                      Chip(
+                        avatar: const Icon(Icons.star_outline_rounded, size: 16),
+                        label: Text('Nivel $nivel'),
+                      ),
+                    ],
                   ),
                   if (logro.isNotEmpty && progresoLogro >= 0) ...[
                     const SizedBox(height: 12),
