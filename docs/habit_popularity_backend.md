@@ -39,7 +39,9 @@ el nombre del campo expresa usuarios únicos actualmente activos.
 
 Se añadió la función callable `rebuildPublicHabitPopularity` en
 `functions/index.js`, restringida a usuarios con el custom claim
-`admin: true`. **No se ha desplegado ni ejecutado**.
+`admin: true`. **No se ha desplegado ni ejecutado; su publicación está
+explícitamente deshabilitada.** Devuelve únicamente una vista previa
+administrativa (`published: false`).
 
 - Examina como máximo 10.000 documentos de `collectionGroup('user_habits')`;
   si se excede el límite cancela la publicación para no presentar datos
@@ -47,8 +49,8 @@ Se añadió la función callable `rebuildPublicHabitPopularity` en
 - Acepta solo las rutas canónicas `users/{uid}/user_habits/{habitId}`
   y los 36 IDs del catálogo oficial (`alim_`, `hidr_`, `ener_`, `bien_`).
 - Cuenta usuarios únicos con `latestStatus == 'inProgress'`.
-- Publica únicamente valores de cinco o más usuarios distintos.
-- Elimina los agregados antiguos cuando dejan de cumplir las condiciones.
+- Calcula candidatos con cinco o más usuarios distintos, pero no los publica.
+- No escribe ni elimina agregados hasta tener una fuente de estados confiable.
 - Los archivos `functions/tests/habit_popularity_aggregator.test.js`
   comprueban el conteo, el filtrado y el umbral.
 
@@ -65,4 +67,31 @@ el coste de lectura de la consulta sea aceptable antes de ejecutarlo.
 ## Estado
 
 El frontend de lectura y la sección visual están implementados.
-**El productor administrativo está implementado, pero todavía no está desplegado ni ejecutado.**
+La regla de lectura autorizada y la prohibición de escrituras de clientes están
+incorporadas a `firestore.candidate.rules` **solo para el emulador**, con
+pruebas en `tests/firestore/rules.test.cjs`.
+
+**La publicación de estadísticas está desactivada por seguridad.**
+El propietario puede modificar su `latestStatus` bajo las reglas actuales.
+Por eso el contador no debe marcarse como `verified: true` ni difundirse
+hasta implementar cambios de estado autenticados por un servidor de confianza.
+
+No desplegar `firestore.candidate.rules` a producción: sus políticas para
+XP y Habit Coins todavía permiten cambios del propietario y existen pruebas
+que documentan esa vulnerabilidad. Cualquier nueva regla debe integrarse y
+revisarse en conjunto con las políticas de producción, no sustituirlas.
+
+### Pruebas locales de reglas
+
+Con emulador Java instalado y dependencias del directorio de pruebas:
+
+```bash
+firebase emulators:exec --only firestore \
+  "cd tests/firestore && npm test"
+```
+
+La configuración de `firebase.json` no especifica actualmente `firestore.rules`
+ni una configuración del emulador; es necesario proporcionar al emulador
+el proyecto demo y el puerto 8080 que espera el conjunto de pruebas, sin
+alterar el despliegue de producción.
+
