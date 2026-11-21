@@ -96,6 +96,18 @@ class PersonalRoutineStep {
   final int target;
   final String unit;
 
+  PersonalRoutineStep copyWith({
+    String? title,
+    String? type,
+    int? target,
+    String? unit,
+  }) => PersonalRoutineStep(
+        title: title ?? this.title,
+        type: type ?? this.type,
+        target: target ?? this.target,
+        unit: unit ?? this.unit,
+      );
+
   Map<String, dynamic> toJson() => {
         'title': title,
         'type': type,
@@ -734,6 +746,17 @@ class _RoutineEditorState extends State<_RoutineEditor> {
     });
   }
 
+  Future<void> _editStep(int index) async {
+    final original = _steps[index];
+    final edited = await showDialog<PersonalRoutineStep>(
+      context: context,
+      builder: (dialogContext) =>
+          _PersonalRoutineStepDialog(initial: original),
+    );
+    if (!mounted || edited == null) return;
+    setState(() => _steps[index] = edited);
+  }
+
   void _save() {
     if (_title.text.trim().isEmpty || _steps.isEmpty ||
         _steps.any((step) => step.title.isEmpty || step.unit.isEmpty)) {
@@ -865,16 +888,23 @@ class _RoutineEditorState extends State<_RoutineEditor> {
           const SizedBox(height: 14),
           for (var index = 0; index < _steps.length; index++)
             ListTile(
+              key: ValueKey('personal-edit-step-$index'),
+              onTap: () => _editStep(index),
               title: Text(_steps[index].title),
               subtitle: Text(
                 '${_steps[index].target} ${_steps[index].unit}',
               ),
               leading: CircleAvatar(child: Text('${index + 1}')),
               trailing: SizedBox(
-                width: widget.singleGoal ? 48 : 144,
+                width: widget.singleGoal ? 96 : 192,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    IconButton(
+                      tooltip: 'Editar paso',
+                      icon: const Icon(Icons.edit_outlined, size: 19),
+                      onPressed: () => _editStep(index),
+                    ),
                     if (!widget.singleGoal) ...[
                       IconButton(
                         tooltip: 'Subir paso',
@@ -952,6 +982,117 @@ class _RoutineEditorState extends State<_RoutineEditor> {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _PersonalRoutineStepDialog extends StatefulWidget {
+  const _PersonalRoutineStepDialog({required this.initial});
+
+  final PersonalRoutineStep initial;
+
+  @override
+  State<_PersonalRoutineStepDialog> createState() =>
+      _PersonalRoutineStepDialogState();
+}
+
+class _PersonalRoutineStepDialogState extends State<_PersonalRoutineStepDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _target;
+  late final TextEditingController _unit;
+  late String _type;
+
+  @override
+  void initState() {
+    super.initState();
+    final step = widget.initial;
+    _name = TextEditingController(text: step.title);
+    _target = TextEditingController(text: step.target.toString());
+    _unit = TextEditingController(text: step.unit);
+    _type = step.type;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _target.dispose();
+    _unit.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final amount = int.tryParse(_target.text.trim());
+    final name = _name.text.trim();
+    final unit = _type == 'counter' ? _unit.text.trim() : 'segundos';
+    if (name.isEmpty || unit.isEmpty ||
+        amount == null || amount < 1 || amount > 86400) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Indica un nombre, unidad y meta válida (1–86400).')),
+      );
+      return;
+    }
+    Navigator.pop(context, widget.initial.copyWith(
+      title: name, target: amount, type: _type, unit: unit,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar actividad'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              key: const ValueKey('edit-step-title'),
+              controller: _name,
+              maxLength: 70,
+              decoration: const InputDecoration(labelText: 'Actividad'),
+            ),
+            DropdownButtonFormField<String>(
+              value: _type,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Herramienta'),
+              items: const [
+                DropdownMenuItem(value: 'counter', child: Text('Contador')),
+                DropdownMenuItem(value: 'timer', child: Text('Temporizador')),
+                DropdownMenuItem(value: 'stopwatch', child: Text('Cronómetro')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _type = value);
+              },
+            ),
+            TextField(
+              key: const ValueKey('edit-step-target'),
+              controller: _target,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: _type == 'counter' ? 'Cantidad' : 'Segundos',
+              ),
+            ),
+            if (_type == 'counter')
+              TextField(
+                key: const ValueKey('edit-step-unit'),
+                controller: _unit,
+                maxLength: 24,
+                decoration: const InputDecoration(labelText: 'Unidad'),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const ValueKey('edit-step-confirm'),
+          onPressed: _submit,
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }
