@@ -299,6 +299,42 @@ confiables en producción hasta migrar cancelación, registro y
 activación junto con reglas revisadas. Esta funcionalidad no se usa
 desde Flutter y no debe desplegarse como una activación pública.
 
+## Décimo paso: cancelación transaccional con confirmación de penalización
+
+`functions/habit_cancellation_transaction.js` implementa el piloto
+`cancelDemoHabit`, publicado solo en el emulador como
+`cancelDemoOfficialHabit` cuando se ejecuta `demo-healthy-habit`
+con `FUNCTIONS_EMULATOR=true`.
+
+La petición autenticada acepta exclusivamente
+`{habitId, attemptId, operationId, maxPenalty}` y solo los tres
+hábitos permitidos. `maxPenalty` es la cantidad máxima de Habit Coins
+que el usuario confirmó en pantalla (**0 a 25**, obligatoria). El
+servidor calcula la penalización real sin aceptar importes del
+cliente: hábitos difíciles `min(saldo, 25)`; moderados y sencillos
+**0 Habit Coins**. Si el saldo cambió y el cobro calculado excede lo
+confirmado, se rechaza toda la operación.
+
+En una sola transacción Admin SDK se comprueban la operación
+idempotente, el usuario, el hábito y su intento activo. Se guardan
+`cancelled`, `cancelledAt`, `cancellationPenalty`, los estados
+del hábito, el nuevo saldo, la versión del perfil y la operación
+idempotente. Los reintentos con el mismo ID devuelven el resultado
+guardado sin volver a cobrar. Dos IDs concurrentes no pueden
+cancelar el mismo intento dos veces.
+
+Las pruebas cubren penalizaciones, límites confirmados, reintentos,
+cancelación moderada sin cobro, competencia concurrente y rechazo
+de registros tras cancelar. Ejecutar suites unitarias y de integración
+en el emulador como en los pasos anteriores.
+
+**Importante:** el cliente Flutter todavía usa su propia cancelación
+y las reglas candidatas permiten escrituras directas. Aunque la
+transacción de Admin SDK impide los cobros duplicados dentro del
+piloto, esto **no constituye seguridad de producción**. Falta
+reconciliar flujos de Flutter, reglas Firestore y permisos de escritura
+en un mismo despliegue controlado.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
