@@ -448,6 +448,15 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Filtrar por etiquetas',
+              style: TextStyle(color: _oscuro,
+                fontWeight: FontWeight.w700, fontSize: 12)),
+          ),
+        ),
         SizedBox(
           height: 43,
           child: ListView.separated(
@@ -470,7 +479,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
             Expanded(child: Text('${resultados.length} resultados',
                 style: TextStyle(color: _gris, fontSize: 12))),
             PopupMenuButton<OrdenCatalogo>(
-              tooltip: 'Ordenar resultados (no es un filtro)',
+              tooltip: 'Ordenar resultados (no aplica etiquetas)',
               icon: Icon(Icons.sort_rounded, color: _verde),
               onSelected: (value) => setState(() => _orden = value),
               itemBuilder: (_) => [
