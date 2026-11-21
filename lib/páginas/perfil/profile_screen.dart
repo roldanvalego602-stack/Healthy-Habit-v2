@@ -18,6 +18,7 @@ import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
 import 'profile_monthly_summary.dart';
+import 'profile_habit_insights.dart';
 import '../tienda/wardrobe_screen.dart';
 import '../splash_screen.dart';
 
@@ -153,6 +154,10 @@ class ProfileScreen extends StatelessWidget {
                   ],
                   _statistics(streak: streak, coins: coins,
                     uid: user.uid, showStreak: showStreak, showCoins: showCoins),
+                  const SizedBox(height: 24),
+                  _sectionTitle('Mis hábitos destacados', null, null),
+                  const SizedBox(height: 12),
+                  ProfileHabitInsightsCard(userRef: userRef),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Mis logros',
