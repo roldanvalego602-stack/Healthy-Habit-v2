@@ -55,8 +55,12 @@ class SecondEvaluationChecks(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "altered.json"
             path.write_text(json.dumps(altered), encoding="utf-8")
+            # Verifica la ruta inyectada explícitamente y la resolución
+            # dinámica del valor predeterminado (regresión original).
+            with self.assertRaisesRegex(ValueError, "Fuga de evaluación"):
+                v2.prepare(v2_path=path)
             with patch.object(v2, "V2", path):
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, "Fuga de evaluación"):
                     v2.prepare()
 
     def test_safety_adapter_only_abstains(self):
