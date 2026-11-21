@@ -150,6 +150,33 @@ simplificación experimental y no sustituye la fecha local del usuario,
 los periodos de gracia, las rachas, ni la reconciliación histórica.
 Nunca desplegar esta prueba como registro funcional de producción.
 
+## Sexto paso: varios registros por periodo en el piloto
+
+La lista de escritura del callable de emulador admite ahora **tres hábitos**:
+
+- `hidr_001`: beber agua al despertar, 1 registro/día UTC; mantiene
+  también su marca de compatibilidad `registration_days`.
+- `bien_007`: rutina diaria de bienestar, 2 registros/día UTC.
+- `alim_004`: planificar mis comidas, 3 registros/semana ISO UTC.
+
+Para los dos hábitos nuevos, cada registro crea su propio log y una
+operación idempotente, pero **solo aumenta** `registration_periods/{key}.count`.
+No se crea una marca `registration_days`, porque impediría correctamente
+el segundo registro del mismo día. La transacción valida y actualiza
+el contador, los datos del intento y las recompensas de forma atómica.
+
+Se añadieron cinco pruebas unitarias y tres de integración para
+comprobar exactamente los límites, el reinicio de periodos y las
+solicitudes concurrentes. Ejecutarlas con `npm test` y
+`npm run test:integration` dentro del emulador, como se explica arriba.
+
+**Limitaciones:** solo demo y emulador. El límite se calcula respecto
+al día UTC y la semana ISO (lunes UTC), no a la zona local. Aún no se
+verifica la distribución de registros durante el periodo, la duración,
+los días de gracia, las rachas ni las evidencias. No deben habilitarse
+otros hábitos ni considerarse confiable la popularidad global hasta
+completar esas condiciones y bloquear las escrituras cliente.
+
 ## Siguientes requisitos para una operación de escritura confiable
 
 1. Versionar el catálogo oficial en el servidor como fuente autorizada
