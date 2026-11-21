@@ -7,6 +7,7 @@ enum EstadoInvitacionHabito {
   aceptada,
   rechazada,
   cancelada,
+  finalizada,
 }
 
 class InvitacionHabitoCompartido {
