@@ -191,111 +191,120 @@ class _CatalogoScreenState extends State<CatalogoScreen>
       if (_tabs.index == 2) {
         return CatalogoExplorador.grupoExploracion(item) == _grupoVisual;
       }
-      if (_tabs.index == 3) {
-        return item.detalles['Grupo de bebida'] == _grupoVisual;
-      }
-      return true;
+      return item.detalles['Grupo de bebida'] == _grupoVisual;
     }).toList();
-    final grupos = <String, List<CatalogoItem>>{};
-    for (final item in elegidos) {
-      grupos.putIfAbsent(CatalogoExplorador.grupoExploracion(item), () => [])
-          .add(item);
-    }
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 110),
-      children: [
-        Text(_tabs.index == 0 ? 'Explora por grupos del plato'
-            : _tabs.index == 1 ? 'Explora por zona de movimiento'
-            : _tabs.index == 2 ? 'Explora por objetivos de bienestar'
-            : 'Explora con la Jarra del Buen Beber',
-            style: TextStyle(color: _oscuro,
-                fontWeight: FontWeight.w900, fontSize: 18)),
-        const SizedBox(height: 6),
-        Text(_tabs.index == 0
-            ? 'Agrupación orientativa. No representa porciones ni una dieta.'
-            : 'Elige un objetivo para conocer sus elementos.',
-            style: TextStyle(color: _gris, fontSize: 12)),
-        const SizedBox(height: 14),
-        AnimatedSwitcher(
-            duration: const Duration(milliseconds: 340),
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: _grupoVisual == null
-                ? KeyedSubtree(
-                    key: const ValueKey('visual-selector'),
-                    child: _tabs.index == 0
-                        ? MapaPlatoCatalogo(
-                            seleccionado: null,
-                            onSeleccionar: (value) =>
-                                setState(() => _grupoVisual = value),
-                          )
-                        : _tabs.index == 1
-                            ? MapaMovimientoCatalogo(
-                                seleccionado: null,
-                                onSeleccionar: (value) =>
-                                    setState(() => _grupoVisual = value),
-                              )
-                            : _tabs.index == 2
-                                ? SelectorBienestarCatalogo(
-                                    seleccionado: null,
-                                    onSeleccionar: (value) =>
-                                        setState(() => _grupoVisual = value),
-                                  )
-                                : JarraBuenBeberCatalogo(
-                                    seleccionado: null,
-                                    onSeleccionar: (value) =>
-                                        setState(() => _grupoVisual = value),
-                                  ),
-                  )
-                : Padding(
-                    key: const ValueKey('visual-results'),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: OutlinedButton.icon(
-                      onPressed: () =>
-                          setState(() => _grupoVisual = null),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: Text(_tabs.index == 0 ? 'Volver al plato'
-                        : _tabs.index == 1 ? 'Volver a las zonas'
-                        : _tabs.index == 2 ? 'Volver a objetivos'
-                        : 'Volver a la jarra'),
-                    ),
-                  ),
-          ),
-        if (_grupoVisual != null) ...[
-          const SizedBox(height: 14),
-          Text('${elegidos.length} elementos · $_grupoVisual',
-            style: TextStyle(color: _verde, fontWeight: FontWeight.w800)),
-        ],
-        const SizedBox(height: 14),
-        for (final group in grupos.entries) ...[
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-                color: HealthyAdaptive.surface,
-                borderRadius: BorderRadius.circular(22)),
-            child: ExpansionTile(
-              initiallyExpanded: grupos.length == 1,
-              leading: CircleAvatar(
-                backgroundColor: HealthyAdaptive.mint,
-                child: Icon(_tabs.index == 0 ? Icons.pie_chart_outline
-                    : _tabs.index == 1 ? Icons.accessibility_new
-                    : Icons.spa_outlined, color: _verde)),
-              title: Text(group.key, style: const TextStyle(
-                  fontWeight: FontWeight.w800)),
-              subtitle: Text('${group.value.length} elementos'),
+
+    // El estado inicial y los resultados son pantallas distintas: el
+    // encabezado, la descripción y el mapa se funden juntos al seleccionar.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 340),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: _grupoVisual == null
+          ? ListView(
+              key: ValueKey('explorar-selector-${_tabs.index}'),
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 110),
               children: [
-                for (final item in group.value)
-                  ListTile(
-                    title: Text(item.titulo),
-                    subtitle: Text(item.etiquetas.take(2).join(' · ')),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _abrirDetalle(item),
+                Text(
+                  _tabs.index == 0 ? 'Explora por grupos del plato'
+                      : _tabs.index == 1 ? 'Explora por zona de movimiento'
+                      : _tabs.index == 2 ? 'Explora por objetivos de bienestar'
+                      : 'Explora con la Jarra del Buen Beber',
+                  style: TextStyle(color: _oscuro,
+                      fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _tabs.index == 0
+                      ? 'Agrupación orientativa. No representa porciones ni una dieta.'
+                      : 'Selecciona una opción para conocer sus elementos.',
+                  style: TextStyle(color: _gris, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                if (_tabs.index == 0)
+                  MapaPlatoCatalogo(
+                    seleccionado: null,
+                    onSeleccionar: (value) =>
+                        setState(() => _grupoVisual = value),
+                  )
+                else if (_tabs.index == 1)
+                  MapaMovimientoCatalogo(
+                    seleccionado: null,
+                    onSeleccionar: (value) =>
+                        setState(() => _grupoVisual = value),
+                  )
+                else if (_tabs.index == 2)
+                  SelectorBienestarCatalogo(
+                    seleccionado: null,
+                    onSeleccionar: (value) =>
+                        setState(() => _grupoVisual = value),
+                  )
+                else
+                  JarraBuenBeberCatalogo(
+                    seleccionado: null,
+                    onSeleccionar: (value) =>
+                        setState(() => _grupoVisual = value),
+                  ),
+              ],
+            )
+          : ListView(
+              key: ValueKey('explorar-resultados-${_tabs.index}-$_grupoVisual'),
+              padding: const EdgeInsets.fromLTRB(18, 6, 18, 110),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: const ValueKey('explorar-regresar'),
+                    onPressed: () => setState(() => _grupoVisual = null),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    label: const Text('Volver al selector'),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('$_grupoVisual',
+                  style: TextStyle(
+                    color: _oscuro, fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                  )),
+                const SizedBox(height: 3),
+                Text('${elegidos.length} elementos disponibles',
+                  style: TextStyle(color: _gris, fontSize: 12)),
+                const SizedBox(height: 10),
+                if (elegidos.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Text('No hay elementos en esta selección.',
+                      style: TextStyle(color: _gris)),
+                  ),
+                // Renderizado directo de fichas: sin ExpansionTiles cerrados.
+                // El primer elemento aparece inmediatamente al escoger grupo.
+                for (final item in elegidos)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: HealthyAdaptive.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        key: ValueKey('explorar-item-${item.id}'),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 8),
+                        leading: CircleAvatar(
+                          backgroundColor: HealthyAdaptive.mint,
+                          child: Icon(CatalogoMedia.icono(item),
+                            color: _verde),
+                        ),
+                        title: Text(item.titulo, style: const TextStyle(
+                          fontWeight: FontWeight.w800)),
+                        subtitle: Text(item.descripcion,
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => _abrirDetalle(item),
+                      ),
+                    ),
                   ),
               ],
             ),
-          ),
-        ],
-      ],
     );
   }
 
