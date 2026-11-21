@@ -155,7 +155,7 @@ class _LogrosColeccionState extends State<LogrosColeccion> {
                   const SizedBox(height: 12),
                   Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 10, runSpacing: 6,
                     children: [
-                      Text('${unlocked} / ${total}', style: TextStyle(
+                      Text('$unlocked / $total', style: TextStyle(
                         color: _Palette.white, fontSize: 30, fontWeight: FontWeight.w900)),
                       Text('insignias conseguidas',
                         style: TextStyle(color: _Palette.secondary, fontSize: 13)),
@@ -388,7 +388,7 @@ class LogroSteamCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _Palette.panel, borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: unlocked ? tone.withOpacity(0.65) : _Palette.border),
+        border: Border.all(color: unlocked ? tone.withValues(alpha: 0.65) : _Palette.border),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         LogroInsignia(
