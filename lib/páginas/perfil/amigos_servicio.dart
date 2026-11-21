@@ -7,15 +7,12 @@ import 'package:firebase_core/firebase_core.dart';
 /// Amistades recíprocas y solicitudes de amistad.
 ///
 /// Estructura en Firestore:
-///   users/{miUid}/following/{otroUid}          -> a quién sigo yo
-///   users/{otroUid}/followers/{miUid}          -> quién me sigue a mí
-///   users/{miUid}/solicitudes/{otroUid}        -> solicitudes que ME envían (recibidas)
-///   users/{otroUid}/solicitudes_enviadas/{miUid} -> solicitudes que YO envié (reflejo)
+///   users/{uid}/friends/{otherUid}                -> amistad recíproca
+///   users/{uid}/solicitudes/{senderUid}            -> solicitudes recibidas
+///   users/{uid}/solicitudes_enviadas/{recipientUid} -> solicitudes enviadas
 ///
-/// Para seguir a alguien ya no se escribe "following" directamente: primero
-/// se crea una solicitud, y solo cuando el destinatario la acepta se crea la
-/// relación de following/followers.
-/// Cada documento guarda solo { createdAt }.
+/// Aceptar una solicitud crea ambos vínculos `friends`. La versión anterior
+/// utilizaba relaciones unilaterales; no deben usarse para este módulo.
 class AmigosServicio {
   AmigosServicio._();
 
@@ -97,26 +94,42 @@ class AmigosServicio {
         .snapshots();
   }
 
-  /// Envía una solicitud de amistad a [otroUid]. No sigue de inmediato: el
-  /// destinatario debe aceptarla desde su pantalla de Solicitudes.
+  /// Envía una solicitud solo si todavía no son amigos y no hay otra
+  /// pendiente. Evita duplicados y autoinvitaciones con una transacción.
   static Future<void> enviarSolicitud(String otroUid) async {
     final yo = uidActual;
-    if (yo == null || yo == otroUid) return;
-
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(otroUid).collection('solicitudes').doc(yo),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    batch.set(
-      _db
-          .collection('users')
-          .doc(yo)
-          .collection('solicitudes_enviadas')
-          .doc(otroUid),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    await batch.commit();
+    if (yo == null || otroUid.isEmpty || yo == otroUid) {
+      throw StateError('Selecciona un usuario diferente de tu cuenta.');
+    }
+    final friendRef = _db.collection('users').doc(yo)
+        .collection('friends').doc(otroUid);
+    final sentRef = _db.collection('users').doc(yo)
+        .collection('solicitudes_enviadas').doc(otroUid);
+    final receivedRef = _db.collection('users').doc(yo)
+        .collection('solicitudes').doc(otroUid);
+    final destinationRef = _db.collection('users').doc(otroUid)
+        .collection('solicitudes').doc(yo);
+    await _db.runTransaction((tx) async {
+      final friend = await tx.get(friendRef);
+      final sent = await tx.get(sentRef);
+      final received = await tx.get(receivedRef);
+      if (friend.exists) {
+        throw StateError('Esta persona ya es tu amiga.');
+      }
+      if (sent.exists) {
+        throw StateError('Ya enviaste una solicitud a esta persona.');
+      }
+      if (received.exists) {
+        throw StateError('Esta persona ya te invitó. '
+            'Acepta su solicitud desde Amigos.');
+      }
+      tx.set(destinationRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      tx.set(sentRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   /// Cancela una solicitud que YO envié y sigue pendiente.
