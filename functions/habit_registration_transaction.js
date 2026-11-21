@@ -11,6 +11,8 @@ const {
 // La transacción sigue limitada a hidr_001 mientras se implementan
 // las reglas de frecuencia para los otros 35 hábitos.
 const {SERVER_CATALOG} = require("./official_habit_catalog");
+const {utcPeriodKey, checkPeriodRegistration, HabitPeriodError} =
+  require("./habit_period_policy");
 const PILOT_IDS = new Set(["hidr_001"]);
 const LEVELS = Object.freeze([
   [0, 0], [100, 25], [250, 25], [450, 25], [700, 50],
@@ -110,20 +112,24 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
   const ids = validateDemoRegistration(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const date = utcDay(now);
+  const periodKey = utcPeriodKey(now, catalog.frequencyType);
   const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(ids.habitId);
   const attemptRef = habitRef.collection("attempts").doc(ids.attemptId);
   const operationRef = userRef.collection("registration_operations")
     .doc(ids.operationId);
+  // Compatibilidad con marcas del piloto previo: consultar ambas rutas.
   const dayRef = attemptRef.collection("registration_days").doc(date);
+  const periodRef = attemptRef.collection("registration_periods").doc(periodKey);
   const logRef = attemptRef.collection("logs").doc(ids.operationId);
 
   return db.runTransaction(async (tx) => {
     // TODAS las lecturas van antes de las escrituras.
-    const [operationSnap, userSnap, habitSnap, attemptSnap, daySnap] =
+    const [operationSnap, userSnap, habitSnap, attemptSnap, daySnap,
+      periodSnap] =
       await Promise.all([
         tx.get(operationRef), tx.get(userRef), tx.get(habitRef),
-        tx.get(attemptRef), tx.get(dayRef),
+        tx.get(attemptRef), tx.get(dayRef), tx.get(periodRef),
       ]);
     if (operationSnap.exists) {
       const existing = operationSnap.data();
@@ -151,26 +157,53 @@ async function registerDemoHabit({db, uid, data, now = new Date()}) {
         "failed-precondition", "La configuración no coincide con el catálogo."
       );
     }
+    // La marca diaria del piloto anterior sigue siendo válida.
     if (daySnap.exists) {
       throw new RegistrationPolicyError(
         "failed-precondition", "Ya registraste este hábito hoy (UTC)."
       );
     }
+    const currentCount = periodSnap.exists ? periodSnap.data()?.count : 0;
+    let periodResult;
+    try {
+      periodResult = checkPeriodRegistration({
+        catalog, currentCount, progress: eligible.currentProgress,
+      });
+    } catch (error) {
+      if (error instanceof HabitPeriodError) {
+        throw new RegistrationPolicyError(
+          "failed-precondition", error.message
+        );
+      }
+      throw error;
+    }
     const reward = calculateRegistrationReward({
       user: userSnap.data(), attempt, catalog,
     });
-    const progress = eligible.currentProgress + 1;
-    const completed = progress === catalog.target;
+    const progress = periodResult.progressAfter;
+    const completed = periodResult.completed;
     const result = {
       habitId: ids.habitId, attemptId: ids.attemptId, progress,
       target: catalog.target, completed,
       xpAwarded: reward.xpAwarded,
       coinsAwarded: reward.coinsAwarded, level: reward.level,
       registrationDateUtc: date,
+      registrationPeriod: periodKey,
+      periodCount: periodResult.periodCountAfter,
     };
     tx.create(dayRef, {
       operationId: ids.operationId, createdAt: FieldValue.serverTimestamp(),
     });
+    const periodData = {
+      count: periodResult.periodCountAfter,
+      lastOperationId: ids.operationId,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    if (periodSnap.exists) {
+      tx.update(periodRef, periodData);
+    } else {
+      tx.create(periodRef, periodData);
+    }
     tx.create(logRef, {
       habitId: ids.habitId, attemptId: ids.attemptId,
       habitTitle: catalog.title, category: catalog.category,
