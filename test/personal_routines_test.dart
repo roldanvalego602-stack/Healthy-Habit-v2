@@ -110,6 +110,26 @@ void main() {
       expect(restored.toJson().containsKey('xp'), isFalse);
     });
 
+    test('identifica el día local de manera estable', () {
+      expect(
+        PersonalRoutine.dateKey(DateTime(2026, 1, 3, 23, 59)),
+        '2026-01-03',
+      );
+      expect(
+        PersonalRoutine.dateKey(DateTime(2026, 1, 4, 0, 1)),
+        '2026-01-04',
+      );
+      const goal = PersonalRoutine(
+        id: 'check-calendar',
+        title: 'Meta de prueba',
+        steps: [],
+        dailyGoal: true,
+        completedDays: ['2026-01-03'],
+      );
+      expect(goal.completedOn(DateTime(2026, 1, 3, 8)), isTrue);
+      expect(goal.completedOn(DateTime(2026, 1, 4, 8)), isFalse);
+    });
+
     test('serializa el borrador del paso pendiente', () {
       const draft = PersonalRoutineDraft(
         date: '2026-11-20',
