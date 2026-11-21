@@ -609,20 +609,12 @@ class ProfileScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _friendStat(context, uid, 'following', 'Siguiendo', 0),
+                child: _friendStat(context, uid, 'friends', 'Amigos', 0),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _friendStat(context, uid, 'followers', 'Seguidores', 1),
-              ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: _friendStat(
-                  context,
-                  uid,
-                  'solicitudes',
-                  'Solicitudes',
-                  2,
+                  context, uid, 'solicitudes', 'Solicitudes', 1,
                 ),
               ),
             ],
