@@ -92,7 +92,7 @@ class PersonalRoutinesStore {
 
   String get _storageKey {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    return uid == null ? '${key}_guest' : '${key}_${uid}';
+    return uid == null ? '${key}_guest' : '${key}_$uid';
   }
 
   Future<List<PersonalRoutine>> load() async {
@@ -143,10 +143,12 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
   Future<void> _reload() async {
     try {
       final items = await _store.load();
-      if (mounted) setState(() {
-        _routines = items;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _routines = items;
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -407,7 +409,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
             ),
           ),
           DropdownButtonFormField<String>(
-            initialValue: _type,
+            value: _type,
             decoration: const InputDecoration(labelText: 'Herramienta'),
             items: const [
               DropdownMenuItem(value: 'counter', child: Text('Contador')),
