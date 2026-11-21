@@ -436,7 +436,22 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                       ),
                     ),
                   ),
-                for (final routine in _routines)
+                if (_routines.any((routine) => routine.dailyGoal))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Tus metas diarias',
+                      style: TextStyle(
+                        color: HealthyAdaptive.text,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                for (final routine in [
+                  ..._routines.where((item) => item.dailyGoal),
+                  ..._routines.where((item) => !item.dailyGoal),
+                ])
                   Card(
                     key: ValueKey('personal-routine-${routine.id}'),
                     margin: const EdgeInsets.only(bottom: 12),
@@ -445,6 +460,35 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            children: [
+                              Icon(
+                                routine.dailyGoal
+                                    ? Icons.water_drop_outlined
+                                    : Icons.fitness_center_outlined,
+                                color: HealthyAdaptive.accent,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  routine.dailyGoal
+                                      ? 'META PERSONAL'
+                                      : 'RUTINA PERSONAL',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w800,
+                                    color: HealthyAdaptive.accent,
+                                  ),
+                                ),
+                              ),
+                              if (routine.dailyGoal &&
+                                  routine.completedOn(DateTime.now()))
+                                Icon(Icons.check_circle_rounded,
+                                    color: HealthyAdaptive.accent),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
                           Text(
                             routine.title,
                             style: TextStyle(
@@ -464,6 +508,18 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                               padding: EdgeInsets.only(top: 6),
                               child: Text('Meta de hoy completada ✓'),
                             ),
+                          if (routine.dailyGoal) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              'Últimos 7 días',
+                              style: TextStyle(
+                                color: HealthyAdaptive.muted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _PersonalWeekCalendar(routine: routine),
+                          ],
                           const SizedBox(height: 12),
                           Row(
                             children: [
@@ -494,6 +550,72 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                   ),
               ],
             ),
+    );
+  }
+}
+
+/// Resumen visual de siete días; usa las fechas locales registradas.
+class _PersonalWeekCalendar extends StatelessWidget {
+  const _PersonalWeekCalendar({required this.routine});
+
+  final PersonalRoutine routine;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    return Row(
+      key: const ValueKey('personal-goal-week-calendar'),
+      children: [
+        for (var i = 6; i >= 0; i--)
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                final date = DateTime(now.year, now.month, now.day)
+                    .subtract(Duration(days: i));
+                final completed = routine.completedOn(date);
+                final isToday = i == 0;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(weekdays[date.weekday - 1],
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: HealthyAdaptive.muted,
+                        )),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: completed
+                            ? HealthyAdaptive.accent
+                            : HealthyAdaptive.surface,
+                        border: Border.all(
+                          color: isToday
+                              ? HealthyAdaptive.accent
+                              : HealthyAdaptive.border,
+                          width: isToday ? 2 : 1,
+                        ),
+                      ),
+                      child: completed
+                          ? const Icon(Icons.check, color: Colors.white, size: 18)
+                          : Text(
+                              '${date.day}',
+                              style: TextStyle(
+                                color: HealthyAdaptive.text,
+                                fontSize: 12,
+                              ),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
@@ -790,6 +912,15 @@ class _RoutineRunnerState extends State<_RoutineRunner> {
             ),
           ),
           const SizedBox(height: 12),
+          LinearProgressIndicator(
+            key: const ValueKey('personal-routine-overall-progress'),
+            value: (_step + (_stepValue / step.target))
+                .clamp(0.0, widget.routine.steps.length.toDouble())
+                .toDouble() / widget.routine.steps.length,
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          const SizedBox(height: 18),
           Text(
             step.title,
             style: TextStyle(
