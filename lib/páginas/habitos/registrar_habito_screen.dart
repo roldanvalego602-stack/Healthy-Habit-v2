@@ -1033,28 +1033,65 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   }
 
   Widget _buildTarjetasXP() {
-    return Row(
+    final conEvidencia = _bytesImagen != null;
+    final normalColor = conEvidencia
+        ? HealthyAdaptive.surface
+        : HealthyAdaptive.mint;
+    final evidenceColor = conEvidencia
+        ? HealthyAdaptive.mint
+        : HealthyAdaptive.surface;
+    final normalInk = conEvidencia
+        ? HealthyAdaptive.text
+        : HealthyAdaptive.accent;
+    final evidenceInk = conEvidencia
+        ? HealthyAdaptive.accent
+        : HealthyAdaptive.text;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _tarjetaXP(
-            titulo: 'Registro normal',
-            xp: '+10 XP',
-            descripcion: 'Sin evidencia',
-            color: HealthyAdaptive.surface,
-            colorTexto: HealthyAdaptive.text,
-            borde: HealthyAdaptive.border,
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            conEvidencia
+                ? 'Recompensa prevista: 15 XP con fotografía'
+                : 'Recompensa prevista: 10 XP sin fotografía',
+            key: const ValueKey('habit-xp-preview'),
+            style: TextStyle(
+              color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _tarjetaXP(
-            titulo: 'Con evidencia',
-            xp: '+15 XP',
-            descripcion: 'Total del registro',
-            color: HealthyAdaptive.mint,
-            colorTexto: HealthyAdaptive.accent,
-            borde: HealthyAdaptive.accent.withValues(alpha: 0.5),
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _tarjetaXP(
+                titulo: 'Registro normal',
+                xp: '+10 XP',
+                descripcion: conEvidencia ? 'Opción alternativa' : 'Seleccionado',
+                color: normalColor,
+                colorTexto: normalInk,
+                borde: conEvidencia
+                    ? HealthyAdaptive.border
+                    : HealthyAdaptive.accent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _tarjetaXP(
+                titulo: 'Con evidencia',
+                xp: '+15 XP',
+                descripcion: conEvidencia ? 'Seleccionado' : 'Añade una fotografía',
+                color: evidenceColor,
+                colorTexto: evidenceInk,
+                borde: conEvidencia
+                    ? HealthyAdaptive.accent
+                    : HealthyAdaptive.border,
+              ),
+            ),
+          ],
         ),
       ],
     );
