@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import '../catalogo_media.dart';
 import '../../../tema/healthy_theme.dart';
 import '../modelos/catalogo_item.dart';
 
@@ -11,29 +11,6 @@ class CatalogoDetalleScreen extends StatelessWidget {
   Color get _oscuro => HealthyAdaptive.text;
   Color get _fondo => HealthyAdaptive.background;
   Color get _gris => HealthyAdaptive.muted;
-
-  IconData get _icono {
-    switch (item.icono) {
-      case 'grain':
-        return Icons.grain;
-      case 'egg':
-        return Icons.egg_outlined;
-      case 'eco':
-        return Icons.eco_outlined;
-      case 'fitness_center':
-        return Icons.fitness_center;
-      case 'accessibility_new':
-        return Icons.accessibility_new;
-      case 'directions_walk':
-        return Icons.directions_walk;
-      case 'bedtime':
-        return Icons.bedtime_outlined;
-      case 'health_and_safety':
-        return Icons.health_and_safety_outlined;
-      default:
-        return Icons.self_improvement;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,26 +28,11 @@ class CatalogoDetalleScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: item.imagen.endsWith('.svg')
-                ? SvgPicture.asset(
-                    item.imagen,
-                    semanticsLabel: 'Ilustración de ${item.titulo}',
-                    height: 190,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagenAlternativa(),
-                  )
-                : Image.asset(
-                    item.imagen,
-                    semanticLabel: 'Fotografía de ${item.titulo}',
-                    height: 190,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (_, __, ___) => _imagenAlternativa(),
-                  ),
+          CatalogoMedia(
+            item: item,
+            altura: 190,
+            radio: 24,
+            usarHero: true,
           ),
           const SizedBox(height: 14),
           Container(
@@ -88,7 +50,8 @@ class CatalogoDetalleScreen extends StatelessWidget {
                     color: HealthyAdaptive.mint,
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: Icon(_icono, size: 36, color: _verde),
+                  child: Icon(CatalogoMedia.icono(item),
+                      size: 36, color: _verde),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -237,15 +200,6 @@ class CatalogoDetalleScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _imagenAlternativa() => SizedBox(
-    height: 190,
-    width: double.infinity,
-    child: ColoredBox(
-      color: HealthyAdaptive.mint,
-      child: Icon(_icono, size: 56, color: _verde),
-    ),
-  );
 
   Widget _chip(String s) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
