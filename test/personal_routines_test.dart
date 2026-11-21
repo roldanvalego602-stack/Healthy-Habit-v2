@@ -47,6 +47,44 @@ void main() {
       expect(next.toJson().containsKey('xpEarned'), isFalse);
     });
 
+    test('edita rutinas sin perder identificador ni sesiones', () {
+      const routine = PersonalRoutine(
+        id: 'routine-3',
+        title: 'Piernas',
+        steps: [exercise],
+        completedSessions: 4,
+      );
+      final edited = routine.copyWith(
+        title: 'Piernas y descanso',
+        steps: [exercise, rest],
+      );
+      expect(edited.id, 'routine-3');
+      expect(edited.title, 'Piernas y descanso');
+      expect(edited.steps, hasLength(2));
+      expect(edited.completedSessions, 4);
+      expect(routine.steps, hasLength(1));
+      expect(edited.toJson().containsKey('habitCoins'), isFalse);
+    });
+
+    test('permite metas personales en mililitros sin XP', () {
+      const goal = PersonalRoutine(
+        id: 'water-1',
+        title: 'Beber 2 litros',
+        steps: [
+          PersonalRoutineStep(
+            title: 'Agua diaria',
+            type: 'counter',
+            target: 2000,
+            unit: 'ml',
+          ),
+        ],
+      );
+      final decoded = PersonalRoutine.fromJson(goal.toJson());
+      expect(decoded.steps.single.target, 2000);
+      expect(decoded.steps.single.unit, 'ml');
+      expect(decoded.toJson().containsKey('xp'), isFalse);
+    });
+
     test('normaliza herramientas y metas desconocidas', () {
       final step = PersonalRoutineStep.fromJson({
         'title': 'Actividad',
