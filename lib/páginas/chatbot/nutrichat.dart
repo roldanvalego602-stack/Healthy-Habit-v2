@@ -279,7 +279,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
-      _lastKnowledgeId = '';
         _lastKnowledgeId = '';
         _lastHabitTitle = '';
         _lastShopItemId = '';
