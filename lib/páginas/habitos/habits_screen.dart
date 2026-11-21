@@ -38,6 +38,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   String selectedCategory = 'Todos';
   String selectedDifficulty = 'Todos';
   bool searching = false;
+  bool showingFullCatalog = false;
   bool loading = true;
   bool saving = false;
   int xp = 0;
@@ -441,6 +442,56 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }).toList();
   }
 
+  List<Habit> get _suggestedHabits {
+    final categories = active.map((entry) => entry.habit.category).toSet();
+    final sorted = visibleRecommendations.toList()
+      ..sort((a, b) {
+        final aScore = (categories.contains(a.category) ? 2 : 0) +
+            (_isUnlocked(a) ? 1 : 0);
+        final bScore = (categories.contains(b.category) ? 2 : 0) +
+            (_isUnlocked(b) ? 1 : 0);
+        return bScore.compareTo(aScore);
+      });
+    return sorted.take(8).toList();
+  }
+
+  String _suggestionDescription() {
+    if (active.isEmpty) {
+      return 'Empieza a tu ritmo: explora hábitos y elige tu primer objetivo.';
+    }
+    final category = active.first.habit.category.toLowerCase();
+    return 'Como ya practicas hábitos de $category, quizá te interesen estas opciones.';
+  }
+
+  Widget _twoRowRecommendationCarousel(List<Habit> habits) {
+    return SingleChildScrollView(
+      key: const ValueKey('habits-suggested-carousel'),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < habits.length; i += 2)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: SizedBox(
+                width: (MediaQuery.sizeOf(context).width - 40)
+                    .clamp(260.0, 340.0),
+                child: Column(
+                  children: [
+                    _recommendationCard(habits[i]),
+                    if (i + 1 < habits.length) ...[
+                      const SizedBox(height: 12),
+                      _recommendationCard(habits[i + 1]),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -498,13 +549,40 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               ),
                             ),
                           const SizedBox(height: 14),
-                          _sectionHeader(
-                            'Descubre nuevos hábitos',
-                            '${visibleRecommendations.length}',
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _sectionHeader(
+                                  showingFullCatalog
+                                      ? 'Catálogo completo'
+                                      : 'Hábitos sugeridos',
+                                  '',
+                                ),
+                              ),
+                              TextButton.icon(
+                                key: const ValueKey('habits-catalog-toggle'),
+                                onPressed: () => setState(
+                                  () => showingFullCatalog = !showingFullCatalog,
+                                ),
+                                icon: Icon(
+                                  showingFullCatalog
+                                      ? Icons.auto_awesome_rounded
+                                      : Icons.menu_book_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  showingFullCatalog
+                                      ? 'Ver sugeridos'
+                                      : 'Ver catálogo',
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Encuentra una misión que se adapte a ti.',
+                            showingFullCatalog
+                                ? 'Explora todos los hábitos disponibles según tus filtros.'
+                                : _suggestionDescription(),
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
                           const SizedBox(height: 14),
@@ -512,13 +590,16 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             _empty(
                               'No hay hábitos disponibles con estos filtros.',
                             )
-                          else
+                          else if (showingFullCatalog)
                             ...visibleRecommendations.map(
                               (habit) => Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: _recommendationCard(habit),
                               ),
-                            ),
+                            )
+                          else
+                            _twoRowRecommendationCarousel(_suggestedHabits),
+
                           const SizedBox(height: 18),
                           _encouragement(),
                         ],
