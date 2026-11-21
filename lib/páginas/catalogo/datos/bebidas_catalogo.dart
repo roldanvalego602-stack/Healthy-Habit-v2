@@ -12,7 +12,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Agua potable y segura; la cantidad adecuada varía según la persona y la actividad.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Agua simple'},
   ),
   CatalogoItem(
@@ -25,7 +25,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Revisa la etiqueta de sodio si tienes indicaciones dietéticas específicas.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Agua simple'},
   ),
   CatalogoItem(
@@ -38,7 +38,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Algunas hierbas o infusiones pueden interactuar con medicamentos; verifica sus ingredientes.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Opciones sin azúcar'},
   ),
   CatalogoItem(
@@ -51,7 +51,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Evitar en alergia a proteínas de leche; revisar tolerancia a la lactosa.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Bebidas nutritivas'},
   ),
   CatalogoItem(
@@ -64,7 +64,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Modera la cafeína según edad, sensibilidad y condiciones de salud; puede afectar el sueño.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Opciones sin azúcar'},
   ),
   CatalogoItem(
@@ -77,7 +77,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['No sustituye la fibra de consumir frutas enteras; revisa la porción.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Bebidas con azúcares'},
   ),
   CatalogoItem(
@@ -90,7 +90,7 @@ const bebidasCatalogo = <CatalogoItem>[
     precauciones: ['Consulta la etiqueta de azúcar por envase y por porción; evita usarla como fuente habitual de hidratación.'],
     habitosRelacionados: ['Elegir bebidas con información clara'],
     fuente: 'CDC - Healthy Drinks',
-    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/healthy-eating/healthy-drinks/index.html',
+    fuenteUrl: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/',
     detalles: {'Grupo de bebida': 'Bebidas con azúcares'},
   ),
 ];
