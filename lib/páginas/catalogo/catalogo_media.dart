@@ -56,6 +56,8 @@ class CatalogoMedia extends StatelessWidget {
         return const Color(0xFF27765A);
       case 'Ejercicios':
         return const Color(0xFF326D91);
+      case 'Bebidas':
+        return const Color(0xFF2D91B2);
       default:
         return const Color(0xFF7A66A7);
     }
