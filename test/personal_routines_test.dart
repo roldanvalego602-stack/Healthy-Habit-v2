@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:healthy_habit/páginas/habitos/personal_routines_screen.dart';
+import 'package:healthy_habit/páginas/habitos/habit_interaction_card.dart';
 
 void main() {
   group('Rutinas personales', () {
@@ -186,6 +187,39 @@ void main() {
       expect(steps.first.title, 'Descanso');
       expect(PersonalRoutineTemplates.strength.first.title, 'Sentadillas');
       expect(steps, hasLength(3));
+    });
+
+    test('edita una actividad conservando la original', () {
+      const original = PersonalRoutineStep(
+        title: 'Sentadillas',
+        type: 'counter',
+        target: 12,
+        unit: 'repeticiones',
+      );
+      final edited = original.copyWith(
+        title: 'Descanso',
+        type: 'timer',
+        target: 45,
+        unit: 'segundos',
+      );
+      expect(original.title, 'Sentadillas');
+      expect(original.type, 'counter');
+      expect(edited.title, 'Descanso');
+      expect(edited.type, 'timer');
+      expect(edited.target, 45);
+      expect(edited.unit, 'segundos');
+      expect(PersonalRoutineStep.fromJson(edited.toJson()).title, 'Descanso');
+    });
+
+    test('cada herramienta incluye instrucciones específicas', () {
+      expect(HabitToolGuide.titleFor('counter', 'ml'), 'Contador de hidratación');
+      expect(HabitToolGuide.instructionsFor('counter', 'ml'), contains('250'));
+      expect(HabitToolGuide.instructionsFor('counter', 'repeticiones'),
+          contains('Registrar'));
+      expect(HabitToolGuide.instructionsFor('timer', 'segundos'),
+          contains('cuenta regresiva'));
+      expect(HabitToolGuide.instructionsFor('stopwatch', 'segundos'),
+          contains('tiempo transcurrido'));
     });
 
     test('normaliza herramientas y metas desconocidas', () {
