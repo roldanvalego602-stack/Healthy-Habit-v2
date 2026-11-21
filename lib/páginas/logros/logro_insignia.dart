@@ -95,7 +95,7 @@ class _LogroInsigniaState extends State<LogroInsignia>
                 Icon(widget.icono,
                   size: widget.size * 0.30, color: tone,
                   shadows: widget.desbloqueado && HealthyVisualEffects.allowDecorativeShadows
-                      ? [Shadow(color: tone.withOpacity(0.6), blurRadius: 9)] : null,
+                      ? [Shadow(color: tone.withValues(alpha: 0.6), blurRadius: 9)] : null,
                 ),
                 if (!widget.desbloqueado)
                   Positioned(
@@ -140,7 +140,7 @@ class _EmblemPainter extends CustomPainter {
       for (final x in [12.0, 88.0]) {
         canvas.drawLine(Offset(x, 39), Offset(x, 63),
           Paint()..strokeWidth = 3..strokeCap = StrokeCap.round
-            ..color = color.withOpacity(0.7));
+            ..color = color.withValues(alpha: 0.7));
       }
       _diamond(canvas, const Offset(50, 14), 5, color);
     } else if (rareza == RarezaLogro.especial) {
@@ -149,14 +149,14 @@ class _EmblemPainter extends CustomPainter {
           canvas.drawOval(Rect.fromCenter(
             center: Offset(50 + side * (34 + i * 2), 35 + i * 10.0),
             width: 6, height: 11),
-            Paint()..color = color.withOpacity(0.55));
+            Paint()..color = color.withValues(alpha: 0.55));
         }
       }
       _diamond(canvas, const Offset(50, 13), 8, color);
     } else if (rareza == RarezaLogro.epico) {
       // Épico: órbita y fragmentos cristalinos.
       canvas.drawOval(Rect.fromCenter(center: center, width: 90, height: 51),
-        Paint()..color = color.withOpacity(0.55)
+        Paint()..color = color.withValues(alpha: 0.55)
           ..strokeWidth = 1.8..style = PaintingStyle.stroke);
       for (var i = 0; i < 5; i++) {
         final a = i * math.pi * 2 / 5 + (unlocked ? phase * math.pi * 2 : 0);
@@ -166,7 +166,7 @@ class _EmblemPainter extends CustomPainter {
     } else if (rareza == RarezaLogro.legendario) {
       // Legendario: corona, alas y aureola rotatoria.
       canvas.drawCircle(center, 41, Paint()
-        ..color = color.withOpacity(0.6)
+        ..color = color.withValues(alpha: 0.6)
         ..strokeWidth = 1.4..style = PaintingStyle.stroke);
       for (final side in [-1.0, 1.0]) {
         for (var i = 0; i < 4; i++) {
@@ -174,7 +174,7 @@ class _EmblemPainter extends CustomPainter {
             Offset(50 + side * 28, 35 + i * 9.0),
             Offset(50 + side * (46 - i * 2), 16 + i * 10.0),
             Paint()..strokeWidth = 3.3 - i * 0.4
-              ..strokeCap = StrokeCap.round..color = color.withOpacity(0.77));
+              ..strokeCap = StrokeCap.round..color = color.withValues(alpha: 0.77));
         }
       }
       for (var i = 0; i < 9; i++) {
@@ -190,7 +190,7 @@ class _EmblemPainter extends CustomPainter {
     final outer = _poly(center, 34, sides);
     final inner = _poly(center, 29, sides);
     canvas.drawPath(outer, Paint()
-      ..color = color.withOpacity(0.3)..strokeWidth = 3
+      ..color = color.withValues(alpha: 0.3)..strokeWidth = 3
       ..style = PaintingStyle.stroke);
     canvas.drawPath(inner, Paint()
       ..shader = const RadialGradient(colors: [
@@ -203,7 +203,7 @@ class _EmblemPainter extends CustomPainter {
 
     if (rareza.index >= 2) {
       canvas.drawPath(_poly(center, 22, sides), Paint()
-        ..color = color.withOpacity(0.3)..strokeWidth = 1
+        ..color = color.withValues(alpha: 0.3)..strokeWidth = 1
         ..style = PaintingStyle.stroke);
     }
 

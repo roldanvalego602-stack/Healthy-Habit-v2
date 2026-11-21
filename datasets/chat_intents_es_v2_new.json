@@ -1,0 +1,1494 @@
+{
+  "schemaVersion": 2,
+  "language": "es-MX",
+  "purpose": "Segundo conjunto independiente de frases sintéticas para una iteración nueva. El split test de v1 NO se usa para ajustar el modelo.",
+  "labels": [
+    "consultar_saldo",
+    "consultar_xp_nivel",
+    "consultar_racha_progreso",
+    "agregar_habito",
+    "eliminar_habito",
+    "eliminar_cuenta",
+    "editar_perfil",
+    "abrir_tienda",
+    "consultar_logros_desafios",
+    "consultar_nutricion",
+    "consultar_movimiento",
+    "consultar_descanso_hidratacion",
+    "ayuda_aplicacion",
+    "fuera_de_alcance",
+    "ambiguo_necesita_aclaracion"
+  ],
+  "samples": [
+    {
+      "id": "N0001",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Oye, me dices mi saldo de HC",
+      "context": null
+    },
+    {
+      "id": "N0002",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Enséñame las monedas que junté",
+      "context": null
+    },
+    {
+      "id": "N0003",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Quiero comprobar mis coins disponibles",
+      "context": null
+    },
+    {
+      "id": "N0004",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Cuánta plata virtual tengo guardada",
+      "context": null
+    },
+    {
+      "id": "N0005",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Consultar billetera de recompensas",
+      "context": null
+    },
+    {
+      "id": "N0006",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Mis Habit Coins actuales",
+      "context": null
+    },
+    {
+      "id": "N0007",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Cuánto tengo ahorrado para canjes",
+      "context": null
+    },
+    {
+      "id": "N0008",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Puedes revisar mis monedas acumuladas",
+      "context": null
+    },
+    {
+      "id": "N0009",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Muéstrame lo que tengo en mi monedero",
+      "context": null
+    },
+    {
+      "id": "N0010",
+      "split": "train",
+      "intent": "consultar_saldo",
+      "text": "Cómo está mi saldo de HC",
+      "context": null
+    },
+    {
+      "id": "N0011",
+      "split": "test",
+      "intent": "consultar_saldo",
+      "text": "Abre mi balance de monedas",
+      "context": null
+    },
+    {
+      "id": "N0012",
+      "split": "test",
+      "intent": "consultar_saldo",
+      "text": "Necesito saber la cantidad de coins guardadas",
+      "context": null
+    },
+    {
+      "id": "N0013",
+      "split": "test",
+      "intent": "consultar_saldo",
+      "text": "Qué dinero canjeable tengo",
+      "context": null
+    },
+    {
+      "id": "N0014",
+      "split": "test",
+      "intent": "consultar_saldo",
+      "text": "Consulta las monedas ganadas",
+      "context": null
+    },
+    {
+      "id": "N0015",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Dime la experiencia que llevo",
+      "context": null
+    },
+    {
+      "id": "N0016",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Cuánto nivel he alcanzado",
+      "context": null
+    },
+    {
+      "id": "N0017",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Qué cantidad de experiencia me falta",
+      "context": null
+    },
+    {
+      "id": "N0018",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Mis puntos XP actuales",
+      "context": null
+    },
+    {
+      "id": "N0019",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Enséñame el avance hacia otro nivel",
+      "context": null
+    },
+    {
+      "id": "N0020",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Cuál es mi nivel ahora mismo",
+      "context": null
+    },
+    {
+      "id": "N0021",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Puedes revisar mi nivel de usuario",
+      "context": null
+    },
+    {
+      "id": "N0022",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Ver mi barra de XP",
+      "context": null
+    },
+    {
+      "id": "N0023",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Quiero revisar puntos de experiencia",
+      "context": null
+    },
+    {
+      "id": "N0024",
+      "split": "train",
+      "intent": "consultar_xp_nivel",
+      "text": "Cuántos puntos de nivel llevo",
+      "context": null
+    },
+    {
+      "id": "N0025",
+      "split": "test",
+      "intent": "consultar_xp_nivel",
+      "text": "Cuántos XP llevo ganados",
+      "context": null
+    },
+    {
+      "id": "N0026",
+      "split": "test",
+      "intent": "consultar_xp_nivel",
+      "text": "Quiero saber si ya alcancé otro nivel",
+      "context": null
+    },
+    {
+      "id": "N0027",
+      "split": "test",
+      "intent": "consultar_xp_nivel",
+      "text": "Cuál es mi nivel de experiencia",
+      "context": null
+    },
+    {
+      "id": "N0028",
+      "split": "test",
+      "intent": "consultar_xp_nivel",
+      "text": "Revisa los XP de mi perfil",
+      "context": null
+    },
+    {
+      "id": "N0029",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Necesito saber mi racha vigente",
+      "context": null
+    },
+    {
+      "id": "N0030",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Enseña mis días consecutivos",
+      "context": null
+    },
+    {
+      "id": "N0031",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Quiero ver cómo ha cambiado mi progreso",
+      "context": null
+    },
+    {
+      "id": "N0032",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Resumen de mis hábitos completados",
+      "context": null
+    },
+    {
+      "id": "N0033",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Ver estadísticas de actividades",
+      "context": null
+    },
+    {
+      "id": "N0034",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Consulta días de constancia",
+      "context": null
+    },
+    {
+      "id": "N0035",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Gráficas del último mes",
+      "context": null
+    },
+    {
+      "id": "N0036",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Cuánto tiempo llevo sin fallar",
+      "context": null
+    },
+    {
+      "id": "N0037",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Quiero ver mi registro de avances",
+      "context": null
+    },
+    {
+      "id": "N0038",
+      "split": "train",
+      "intent": "consultar_racha_progreso",
+      "text": "Enséñame estadísticas diarias",
+      "context": null
+    },
+    {
+      "id": "N0039",
+      "split": "test",
+      "intent": "consultar_racha_progreso",
+      "text": "Ver mi avance de hábitos esta semana",
+      "context": null
+    },
+    {
+      "id": "N0040",
+      "split": "test",
+      "intent": "consultar_racha_progreso",
+      "text": "Qué racha llevo a la fecha",
+      "context": null
+    },
+    {
+      "id": "N0041",
+      "split": "test",
+      "intent": "consultar_racha_progreso",
+      "text": "Dime mi número de días consecutivos",
+      "context": null
+    },
+    {
+      "id": "N0042",
+      "split": "test",
+      "intent": "consultar_racha_progreso",
+      "text": "Cómo van mis registros diarios",
+      "context": null
+    },
+    {
+      "id": "N0043",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Quiero añadir un hábito semanal",
+      "context": null
+    },
+    {
+      "id": "N0044",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Ayúdame a registrar una actividad nueva",
+      "context": null
+    },
+    {
+      "id": "N0045",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Activemos un hábito de caminar",
+      "context": null
+    },
+    {
+      "id": "N0046",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Iniciar una rutina de alimentación",
+      "context": null
+    },
+    {
+      "id": "N0047",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Voy a incorporar un hábito a mis días",
+      "context": null
+    },
+    {
+      "id": "N0048",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Dame opción para crear una nueva meta habitual",
+      "context": null
+    },
+    {
+      "id": "N0049",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Comenzar un hábito de beber agua",
+      "context": null
+    },
+    {
+      "id": "N0050",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Deseo agregar una rutina a mis objetivos",
+      "context": null
+    },
+    {
+      "id": "N0051",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Me ayudas a activar un hábito adicional",
+      "context": null
+    },
+    {
+      "id": "N0052",
+      "split": "train",
+      "intent": "agregar_habito",
+      "text": "Necesito sumar otra actividad saludable",
+      "context": null
+    },
+    {
+      "id": "N0053",
+      "split": "test",
+      "intent": "agregar_habito",
+      "text": "Añadamos un hábito para esta semana",
+      "context": null
+    },
+    {
+      "id": "N0054",
+      "split": "test",
+      "intent": "agregar_habito",
+      "text": "Quiero empezar una rutina de caminar diario",
+      "context": null
+    },
+    {
+      "id": "N0055",
+      "split": "test",
+      "intent": "agregar_habito",
+      "text": "Cómo activo mi primer hábito",
+      "context": null
+    },
+    {
+      "id": "N0056",
+      "split": "test",
+      "intent": "agregar_habito",
+      "text": "Incorpora una actividad nueva a la lista",
+      "context": null
+    },
+    {
+      "id": "N0057",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Quiero dejar mi hábito de caminar",
+      "context": null
+    },
+    {
+      "id": "N0058",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Desactiva el seguimiento de un hábito",
+      "context": null
+    },
+    {
+      "id": "N0059",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Deseo retirar la rutina de agua",
+      "context": null
+    },
+    {
+      "id": "N0060",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Quítame una actividad de las activas",
+      "context": null
+    },
+    {
+      "id": "N0061",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Abandonar un hábito existente",
+      "context": null
+    },
+    {
+      "id": "N0062",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Necesito cancelar una rutina diaria",
+      "context": null
+    },
+    {
+      "id": "N0063",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Retirar el hábito de caminar del listado",
+      "context": null
+    },
+    {
+      "id": "N0064",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "No seguiré con mi actividad registrada",
+      "context": null
+    },
+    {
+      "id": "N0065",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Quiero eliminar una meta habitual",
+      "context": null
+    },
+    {
+      "id": "N0066",
+      "split": "train",
+      "intent": "eliminar_habito",
+      "text": "Quiero quitar el hábito que inicié",
+      "context": null
+    },
+    {
+      "id": "N0067",
+      "split": "test",
+      "intent": "eliminar_habito",
+      "text": "Necesito abandonar mi rutina diaria",
+      "context": null
+    },
+    {
+      "id": "N0068",
+      "split": "test",
+      "intent": "eliminar_habito",
+      "text": "Cómo desactivo un hábito que seguía",
+      "context": null
+    },
+    {
+      "id": "N0069",
+      "split": "test",
+      "intent": "eliminar_habito",
+      "text": "Quiero cancelar una actividad registrada",
+      "context": null
+    },
+    {
+      "id": "N0070",
+      "split": "test",
+      "intent": "eliminar_habito",
+      "text": "Retira un hábito activo, por favor",
+      "context": null
+    },
+    {
+      "id": "N0071",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Deseo cerrar definitivamente mi cuenta personal",
+      "context": null
+    },
+    {
+      "id": "N0072",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Dar de baja mi usuario registrado",
+      "context": null
+    },
+    {
+      "id": "N0073",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Quiero suprimir mi perfil de Healthy Habit",
+      "context": null
+    },
+    {
+      "id": "N0074",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Deseo quitar mi cuenta de la plataforma",
+      "context": null
+    },
+    {
+      "id": "N0075",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Elimina por completo mi cuenta de la app",
+      "context": null
+    },
+    {
+      "id": "N0076",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Quiero cancelar mi registro en Healthy Habit",
+      "context": null
+    },
+    {
+      "id": "N0077",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Cómo solicito la baja de mi perfil personal",
+      "context": null
+    },
+    {
+      "id": "N0078",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Quiero darme de baja del servicio",
+      "context": null
+    },
+    {
+      "id": "N0079",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Retirar mi cuenta y datos de usuario",
+      "context": null
+    },
+    {
+      "id": "N0080",
+      "split": "train",
+      "intent": "eliminar_cuenta",
+      "text": "Necesito borrar mi usuario del sistema",
+      "context": null
+    },
+    {
+      "id": "N0081",
+      "split": "test",
+      "intent": "eliminar_cuenta",
+      "text": "No quiero seguir con mi cuenta registrada",
+      "context": null
+    },
+    {
+      "id": "N0082",
+      "split": "test",
+      "intent": "eliminar_cuenta",
+      "text": "Cómo cierro mi usuario permanentemente",
+      "context": null
+    },
+    {
+      "id": "N0083",
+      "split": "test",
+      "intent": "eliminar_cuenta",
+      "text": "Quiero solicitar la eliminación del perfil entero",
+      "context": null
+    },
+    {
+      "id": "N0084",
+      "split": "test",
+      "intent": "eliminar_cuenta",
+      "text": "Necesito dar de baja la cuenta que creé",
+      "context": null
+    },
+    {
+      "id": "N0085",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Quiero cambiar la fotografía de mi perfil",
+      "context": null
+    },
+    {
+      "id": "N0086",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Actualizar mi alias visible",
+      "context": null
+    },
+    {
+      "id": "N0087",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Me gustaría modificar el banner de mi cuenta",
+      "context": null
+    },
+    {
+      "id": "N0088",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Deseo ajustar el texto de mi biografía",
+      "context": null
+    },
+    {
+      "id": "N0089",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Cómo personalizo el perfil de usuario",
+      "context": null
+    },
+    {
+      "id": "N0090",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Cambiar el nombre que ven mis amigos",
+      "context": null
+    },
+    {
+      "id": "N0091",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Quiero elegir otra foto para mi cuenta",
+      "context": null
+    },
+    {
+      "id": "N0092",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Necesito modificar mis datos de perfil",
+      "context": null
+    },
+    {
+      "id": "N0093",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Ayúdame a actualizar la imagen del avatar",
+      "context": null
+    },
+    {
+      "id": "N0094",
+      "split": "train",
+      "intent": "editar_perfil",
+      "text": "Me gustaría editar la apariencia de mi perfil",
+      "context": null
+    },
+    {
+      "id": "N0095",
+      "split": "test",
+      "intent": "editar_perfil",
+      "text": "Quiero ponerle una foto diferente al perfil",
+      "context": null
+    },
+    {
+      "id": "N0096",
+      "split": "test",
+      "intent": "editar_perfil",
+      "text": "Necesito ajustar mi nombre público",
+      "context": null
+    },
+    {
+      "id": "N0097",
+      "split": "test",
+      "intent": "editar_perfil",
+      "text": "Dónde personalizo la imagen del banner",
+      "context": null
+    },
+    {
+      "id": "N0098",
+      "split": "test",
+      "intent": "editar_perfil",
+      "text": "Cómo cambio la biografía de usuario",
+      "context": null
+    },
+    {
+      "id": "N0099",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Enséñame las recompensas de la tienda",
+      "context": null
+    },
+    {
+      "id": "N0100",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Dónde consigo ropa para la mascota",
+      "context": null
+    },
+    {
+      "id": "N0101",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Llévame al catálogo de accesorios",
+      "context": null
+    },
+    {
+      "id": "N0102",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Ver los objetos que puedo canjear",
+      "context": null
+    },
+    {
+      "id": "N0103",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Quiero visitar la tienda de Healthy Habit",
+      "context": null
+    },
+    {
+      "id": "N0104",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Cuánto cuesta la gorra del armario",
+      "context": null
+    },
+    {
+      "id": "N0105",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Me gustaría mirar las prendas disponibles",
+      "context": null
+    },
+    {
+      "id": "N0106",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Abre la sección de canjes",
+      "context": null
+    },
+    {
+      "id": "N0107",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Quiero equipar audífonos a Mr Healthy",
+      "context": null
+    },
+    {
+      "id": "N0108",
+      "split": "train",
+      "intent": "abrir_tienda",
+      "text": "Quiero conocer los precios del catálogo",
+      "context": null
+    },
+    {
+      "id": "N0109",
+      "split": "test",
+      "intent": "abrir_tienda",
+      "text": "Ver ropa nueva para la mascota",
+      "context": null
+    },
+    {
+      "id": "N0110",
+      "split": "test",
+      "intent": "abrir_tienda",
+      "text": "Abre el armario de artículos canjeables",
+      "context": null
+    },
+    {
+      "id": "N0111",
+      "split": "test",
+      "intent": "abrir_tienda",
+      "text": "Dónde compro unas gafas para Mr Healthy",
+      "context": null
+    },
+    {
+      "id": "N0112",
+      "split": "test",
+      "intent": "abrir_tienda",
+      "text": "Quiero comparar precios de accesorios",
+      "context": null
+    },
+    {
+      "id": "N0113",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Cuáles insignias puedo conseguir",
+      "context": null
+    },
+    {
+      "id": "N0114",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Dame un resumen de mis retos",
+      "context": null
+    },
+    {
+      "id": "N0115",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Cómo van mis misiones semanales",
+      "context": null
+    },
+    {
+      "id": "N0116",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Muestra los logros que desbloqueé",
+      "context": null
+    },
+    {
+      "id": "N0117",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Quiero saber el desafío que me falta",
+      "context": null
+    },
+    {
+      "id": "N0118",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Revisar mis premios por objetivos",
+      "context": null
+    },
+    {
+      "id": "N0119",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Mis medallas y desafíos activos",
+      "context": null
+    },
+    {
+      "id": "N0120",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Consulta los retos de esta semana",
+      "context": null
+    },
+    {
+      "id": "N0121",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Quiero ver cuántas insignias obtuve",
+      "context": null
+    },
+    {
+      "id": "N0122",
+      "split": "train",
+      "intent": "consultar_logros_desafios",
+      "text": "Dónde reviso las misiones pendientes",
+      "context": null
+    },
+    {
+      "id": "N0123",
+      "split": "test",
+      "intent": "consultar_logros_desafios",
+      "text": "Qué insignias faltan por conseguir",
+      "context": null
+    },
+    {
+      "id": "N0124",
+      "split": "test",
+      "intent": "consultar_logros_desafios",
+      "text": "Enséñame mis misiones activas",
+      "context": null
+    },
+    {
+      "id": "N0125",
+      "split": "test",
+      "intent": "consultar_logros_desafios",
+      "text": "Muéstrame el listado de retos actuales",
+      "context": null
+    },
+    {
+      "id": "N0126",
+      "split": "test",
+      "intent": "consultar_logros_desafios",
+      "text": "Quiero revisar logros completados",
+      "context": null
+    },
+    {
+      "id": "N0127",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Puedo mezclar huevos con verduras",
+      "context": null
+    },
+    {
+      "id": "N0128",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Qué aporta el arroz integral",
+      "context": null
+    },
+    {
+      "id": "N0129",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Cuál es la diferencia entre azúcar libre y añadida",
+      "context": null
+    },
+    {
+      "id": "N0130",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "El huevo bien cocido tiene riesgos",
+      "context": null
+    },
+    {
+      "id": "N0131",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Qué comidas proporcionan calcio",
+      "context": null
+    },
+    {
+      "id": "N0132",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Cómo elegir una proteína vegetal",
+      "context": null
+    },
+    {
+      "id": "N0133",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Qué ingredientes agrego a la avena",
+      "context": null
+    },
+    {
+      "id": "N0134",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Es buena idea cenar legumbres",
+      "context": null
+    },
+    {
+      "id": "N0135",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Qué significa sodio en una etiqueta",
+      "context": null
+    },
+    {
+      "id": "N0136",
+      "split": "train",
+      "intent": "consultar_nutricion",
+      "text": "Me explicas cómo combinar frijoles y huevo",
+      "context": null
+    },
+    {
+      "id": "N0137",
+      "split": "test",
+      "intent": "consultar_nutricion",
+      "text": "Puedo comer huevo revuelto con vegetales",
+      "context": null
+    },
+    {
+      "id": "N0138",
+      "split": "test",
+      "intent": "consultar_nutricion",
+      "text": "Qué minerales aporta una dieta variada",
+      "context": null
+    },
+    {
+      "id": "N0139",
+      "split": "test",
+      "intent": "consultar_nutricion",
+      "text": "Dame información sobre grasas en alimentos",
+      "context": null
+    },
+    {
+      "id": "N0140",
+      "split": "test",
+      "intent": "consultar_nutricion",
+      "text": "Cómo preparo avena con fruta",
+      "context": null
+    },
+    {
+      "id": "N0141",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Para qué sirven los ejercicios de resistencia",
+      "context": null
+    },
+    {
+      "id": "N0142",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Cómo empezar una caminata gradual",
+      "context": null
+    },
+    {
+      "id": "N0143",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Qué son los ejercicios de movilidad articular",
+      "context": null
+    },
+    {
+      "id": "N0144",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Me explicas las sentadillas lentas",
+      "context": null
+    },
+    {
+      "id": "N0145",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Cuál es la utilidad de entrenar fuerza",
+      "context": null
+    },
+    {
+      "id": "N0146",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Cómo puedo practicar flexiones en pared",
+      "context": null
+    },
+    {
+      "id": "N0147",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Es conveniente realizar pausas de movimiento",
+      "context": null
+    },
+    {
+      "id": "N0148",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Qué significa actividad aeróbica",
+      "context": null
+    },
+    {
+      "id": "N0149",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Cómo hago estiramientos suaves",
+      "context": null
+    },
+    {
+      "id": "N0150",
+      "split": "train",
+      "intent": "consultar_movimiento",
+      "text": "Por qué conviene interrumpir el sedentarismo",
+      "context": null
+    },
+    {
+      "id": "N0151",
+      "split": "test",
+      "intent": "consultar_movimiento",
+      "text": "Qué es el trabajo muscular con resistencia",
+      "context": null
+    },
+    {
+      "id": "N0152",
+      "split": "test",
+      "intent": "consultar_movimiento",
+      "text": "Explícame una rutina de movilidad fácil",
+      "context": null
+    },
+    {
+      "id": "N0153",
+      "split": "test",
+      "intent": "consultar_movimiento",
+      "text": "Qué beneficios proporciona caminar rápido",
+      "context": null
+    },
+    {
+      "id": "N0154",
+      "split": "test",
+      "intent": "consultar_movimiento",
+      "text": "Cómo mejorar la condición con ejercicios",
+      "context": null
+    },
+    {
+      "id": "N0155",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Cómo establecer una rutina nocturna",
+      "context": null
+    },
+    {
+      "id": "N0156",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Me gustaría mejorar mis horarios de descanso",
+      "context": null
+    },
+    {
+      "id": "N0157",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Qué hábitos de sueño puedo practicar",
+      "context": null
+    },
+    {
+      "id": "N0158",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Cómo distribuir el agua durante la jornada",
+      "context": null
+    },
+    {
+      "id": "N0159",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Por qué conviene hidratarse al moverse",
+      "context": null
+    },
+    {
+      "id": "N0160",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Recomiéndame una rutina para descansar",
+      "context": null
+    },
+    {
+      "id": "N0161",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Qué hacer para dormir con regularidad",
+      "context": null
+    },
+    {
+      "id": "N0162",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Tengo dudas sobre beber líquidos en calor",
+      "context": null
+    },
+    {
+      "id": "N0163",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Consejos para descansar tras actividad física",
+      "context": null
+    },
+    {
+      "id": "N0164",
+      "split": "train",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Qué significa una buena hidratación",
+      "context": null
+    },
+    {
+      "id": "N0165",
+      "split": "test",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Qué puedo hacer para descansar más regularmente",
+      "context": null
+    },
+    {
+      "id": "N0166",
+      "split": "test",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Dime cómo evitar olvidarme de tomar agua",
+      "context": null
+    },
+    {
+      "id": "N0167",
+      "split": "test",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Cómo cuido el sueño durante la semana",
+      "context": null
+    },
+    {
+      "id": "N0168",
+      "split": "test",
+      "intent": "consultar_descanso_hidratacion",
+      "text": "Explícame la hidratación al hacer ejercicio",
+      "context": null
+    },
+    {
+      "id": "N0169",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Explícame los botones principales de Healthy Habit",
+      "context": null
+    },
+    {
+      "id": "N0170",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Cómo puedo empezar a usar mi cuenta",
+      "context": null
+    },
+    {
+      "id": "N0171",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Cuáles son las funciones de Mr Healthy",
+      "context": null
+    },
+    {
+      "id": "N0172",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Qué son las recompensas de la aplicación",
+      "context": null
+    },
+    {
+      "id": "N0173",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Necesito una guía para usar el inicio",
+      "context": null
+    },
+    {
+      "id": "N0174",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Cómo registro el cumplimiento diario",
+      "context": null
+    },
+    {
+      "id": "N0175",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Dónde encuentro las opciones básicas",
+      "context": null
+    },
+    {
+      "id": "N0176",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Qué significa cada sección de la app",
+      "context": null
+    },
+    {
+      "id": "N0177",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Para qué sirve el asistente de hábitos",
+      "context": null
+    },
+    {
+      "id": "N0178",
+      "split": "train",
+      "intent": "ayuda_aplicacion",
+      "text": "Explícame la mecánica general de los puntos",
+      "context": null
+    },
+    {
+      "id": "N0179",
+      "split": "test",
+      "intent": "ayuda_aplicacion",
+      "text": "Quiero aprender a manejar Healthy Habit",
+      "context": null
+    },
+    {
+      "id": "N0180",
+      "split": "test",
+      "intent": "ayuda_aplicacion",
+      "text": "Enséñame la función de las misiones",
+      "context": null
+    },
+    {
+      "id": "N0181",
+      "split": "test",
+      "intent": "ayuda_aplicacion",
+      "text": "Qué significa el sistema de recompensas",
+      "context": null
+    },
+    {
+      "id": "N0182",
+      "split": "test",
+      "intent": "ayuda_aplicacion",
+      "text": "Necesito instrucciones para navegar la app",
+      "context": null
+    },
+    {
+      "id": "N0183",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Cómo puedo cambiar una llanta del coche",
+      "context": null
+    },
+    {
+      "id": "N0184",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Quién construyó las pirámides de Egipto",
+      "context": null
+    },
+    {
+      "id": "N0185",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Qué es un agujero negro en astronomía",
+      "context": null
+    },
+    {
+      "id": "N0186",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Explícame la sintaxis de Python",
+      "context": null
+    },
+    {
+      "id": "N0187",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Qué clima hubo en otro planeta",
+      "context": null
+    },
+    {
+      "id": "N0188",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Puedes recomendar una serie de misterio",
+      "context": null
+    },
+    {
+      "id": "N0189",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Cuál es el océano más profundo",
+      "context": null
+    },
+    {
+      "id": "N0190",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Dame la biografía de un pintor",
+      "context": null
+    },
+    {
+      "id": "N0191",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Qué es un algoritmo de ordenación",
+      "context": null
+    },
+    {
+      "id": "N0192",
+      "split": "train",
+      "intent": "fuera_de_alcance",
+      "text": "Cómo se construye un puente de acero",
+      "context": null
+    },
+    {
+      "id": "N0193",
+      "split": "test",
+      "intent": "fuera_de_alcance",
+      "text": "Ayúdame a programar una función recursiva",
+      "context": null
+    },
+    {
+      "id": "N0194",
+      "split": "test",
+      "intent": "fuera_de_alcance",
+      "text": "Cuál es la historia de un imperio antiguo",
+      "context": null
+    },
+    {
+      "id": "N0195",
+      "split": "test",
+      "intent": "fuera_de_alcance",
+      "text": "Explícame un problema de física cuántica",
+      "context": null
+    },
+    {
+      "id": "N0196",
+      "split": "test",
+      "intent": "fuera_de_alcance",
+      "text": "Dime una recomendación de películas",
+      "context": null
+    },
+    {
+      "id": "N0197",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "No sé qué hacer con eso",
+      "context": null
+    },
+    {
+      "id": "N0198",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Quita lo de antes",
+      "context": null
+    },
+    {
+      "id": "N0199",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Haz el cambio que dije",
+      "context": null
+    },
+    {
+      "id": "N0200",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "No quiero continuar así",
+      "context": null
+    },
+    {
+      "id": "N0201",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Podemos modificar aquello",
+      "context": null
+    },
+    {
+      "id": "N0202",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Sí, esa opción",
+      "context": null
+    },
+    {
+      "id": "N0203",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Mejor la otra cosa",
+      "context": null
+    },
+    {
+      "id": "N0204",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Necesito quitarlo de ahí",
+      "context": null
+    },
+    {
+      "id": "N0205",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Quiero arreglar esto",
+      "context": null
+    },
+    {
+      "id": "N0206",
+      "split": "train",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Puedo hacerlo de otra forma",
+      "context": null
+    },
+    {
+      "id": "N0207",
+      "split": "test",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Déjalo como estaba antes",
+      "context": null
+    },
+    {
+      "id": "N0208",
+      "split": "test",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "Me arrepentí de lo que dije",
+      "context": null
+    },
+    {
+      "id": "N0209",
+      "split": "test",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "No, la otra opción por favor",
+      "context": null
+    },
+    {
+      "id": "N0210",
+      "split": "test",
+      "intent": "ambiguo_necesita_aclaracion",
+      "text": "¿Puedes cambiarlo?",
+      "context": null
+    }
+  ]
+}

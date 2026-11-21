@@ -1,62 +1,12 @@
+import 'healthy_assistant_reply.dart';
+export 'healthy_assistant_reply.dart';
 import '../habitos/catalogo.dart';
 import '../catalogo/datos/catalogo_datos.dart';
 import '../catalogo/modelos/catalogo_item.dart';
 import '../tienda/shop_service.dart';
 import '../niveles/levels_system.dart';
 import 'nutri_respuestas_service.dart';
-
-/// Respuesta estructurada: la interfaz decide cómo mostrar las tarjetas.
-class HealthyAssistantReply {
-  const HealthyAssistantReply(this.text, {
-    this.action = '',
-    this.actionArgument = '',
-    this.card = '',
-  });
-  final String text;
-  final String action;
-  final String actionArgument;
-  final String card;
-}
-
-class HealthyKnowledgeEntry {
-  const HealthyKnowledgeEntry(this.id, this.terms, this.answer, this.source);
-  final String id;
-  final List<String> terms;
-  final String answer;
-  final String source;
-}
-
-/// Contenido educativo breve, revisable y sin recomendaciones clínicas.
-class HealthyKnowledgeBase {
-  static const entries = <HealthyKnowledgeEntry>[
-    HealthyKnowledgeEntry('avena', ['avena', 'hojuelas de avena'],
-        'La avena es un cereal que aporta carbohidratos y fibra. Puedes combinarla con fruta y otras fuentes de proteína según tus preferencias. Los valores exactos dependen de la porción y preparación.',
-        'USDA FoodData Central · https://fdc.nal.usda.gov/'),
-    HealthyKnowledgeEntry('lentejas', ['lentejas', 'lenteja'],
-        'Las lentejas son legumbres que aportan proteína vegetal y fibra. Su contenido nutricional cambia según la preparación y la cantidad. No hay un alimento único que sustituya una alimentación variada.',
-        'USDA FoodData Central · https://fdc.nal.usda.gov/'),
-    HealthyKnowledgeEntry('huevo', ['huevo', 'huevos'],
-        'El huevo aporta proteínas y otros nutrientes. La composición de un platillo con huevo depende de sus ingredientes y su preparación.',
-        'USDA FoodData Central · https://fdc.nal.usda.gov/'),
-    HealthyKnowledgeEntry('fruta', ['fruta', 'frutas', 'verduras', 'vegetales'],
-        'Consumir frutas y verduras variadas forma parte de una alimentación saludable. Puedes empezar incorporándolas a comidas que ya haces; no necesitas perseguir una dieta perfecta.',
-        'OMS, Alimentación saludable · https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet'),
-    HealthyKnowledgeEntry('azucar', ['azucar añadida', 'refresco', 'bebidas azucaradas', 'azucares libres'],
-        'Reducir el consumo habitual de bebidas con azúcares libres puede ayudar a mejorar el patrón de alimentación. Una opción sencilla es elegir agua como bebida de uso frecuente.',
-        'OMS, Alimentación saludable · https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet'),
-    HealthyKnowledgeEntry('ejercicio', ['actividad fisica', 'sedentarismo', 'ejercicio moderado', 'actividad aeróbica'],
-        'La actividad física habitual aporta beneficios para la salud. Puedes empezar por movimientos que te resulten accesibles y aumentar progresivamente según tus capacidades.',
-        'OMS, Actividad física · https://www.who.int/es/news-room/fact-sheets/detail/physical-activity'),
-  ];
-
-  static HealthyKnowledgeEntry? search(String question) {
-    final normalized = NutriRespuestasService.normalizar(question);
-    for (final entry in entries) {
-      if (NutriRespuestasService.contiene(normalized, entry.terms)) return entry;
-    }
-    return null;
-  }
-}
+import 'healthy_intent_router.dart';
 
 /// Intenciones de alta confianza. No ejecuta cambios por cuenta del usuario.
 class HealthyAssistantEngine {
@@ -130,11 +80,32 @@ class HealthyAssistantEngine {
         '¿Estás en un lugar seguro ahora?');
     }
 
+    // Intenciones de cuenta y saldo primero; «borrar mi cuenta» nunca
+    // se interpreta como abandono de hábito, ni se ejecuta un borrado.
+    if (HealthyIntentRouter.asksForAccountDeletion(input)) {
+      return const HealthyAssistantReply(
+        'Si quieres eliminar tu cuenta de Healthy Habit, la opción está '
+        'en Configuración, pero actualmente está deshabilitada: '
+        'todavía falta implementar la eliminación segura de los datos '
+        'de Authentication, Firestore y evidencias. '
+        'No he eliminado tu cuenta ni tus hábitos.',
+      );
+    }
+    if (HealthyIntentRouter.asksForCoinBalance(input)) {
+      return HealthyAssistantReply(
+        'Tu saldo actual es de $coins Habit Coins. '
+        'Puedes usarlas en Tienda para canjear accesorios, '
+        'después de revisar el precio y confirmar la compra.',
+        action: 'profile',
+        card: 'profile',
+      );
+    }
+
     // Acciones de hábitos: solo recomendar y abrir la UI que valida cupos,
     // penalizaciones y confirmación explícita. Nunca escribir directamente.
-    if (has(['agrega','agregar','anade','anadir','activar','iniciar un habito',
-             'quiero empezar un habito','ponme un habito',
-             'elimina','eliminar','borrar','quitar','abandonar','cancelar habito',
+    if (HealthyIntentRouter.asksForHabitAction(input) ||
+        has(['iniciar un habito','quiero empezar un habito',
+             'ponme un habito','cancelar habito',
              'eliminalo','quitalo','agregalo','anadelo','activarlo'])) {
       final removing = has(['elimina','eliminar','borrar','quitar','abandonar','cancelar',
         'eliminalo','quitalo']);
@@ -204,7 +175,8 @@ class HealthyAssistantEngine {
       'quiero saber','que contiene','para que sirve',
       'recomiendame','dime sobre',
     ]);
-    if (catalogQuestion && catalogItem != null) {
+    if (catalogQuestion && catalogItem != null &&
+        !HealthyIntentRouter.asksFocusedEggQuestion(input)) {
       final summary = catalogItem.descripcion;
       final benefits = catalogItem.beneficios.isEmpty
           ? ''
@@ -318,7 +290,7 @@ class HealthyAssistantEngine {
     if (has(['profesional', 'nutriologo', 'nutriologa', 'consulta nutricional',
              'contacto de nutricion', 'especialista', 'orientacion profesional'])) {
       return const HealthyAssistantReply(
-        'Puedo abrir el directorio de orientación profesional. Por ahora contiene contactos de demostración: no se deben utilizar para reservar ni llamar hasta que estén verificados.',
+        'Puedo abrir orientación profesional con enlaces externos al directorio de nutriólogos y a la consulta de cédulas. Healthy Habit no ofrece citas ni profesionales afiliados.',
         action: 'professionals', card: 'professional');
     }
     if (has(['mis estadisticas','mi progreso','ver progreso','grafica',
@@ -379,23 +351,8 @@ class HealthyAssistantEngine {
         action: 'shop', card: 'shop');
     }
 
-    final factQuestion = has(['nutrientes','proteinas','calorias de','que contiene',
-        'beneficios de','alimento','alimentacion','comer','tiene fibra',
-        'es saludable','que puedo desayunar','actividad fisica']);
-    if (factQuestion) {
-      final entry = HealthyKnowledgeBase.search(input);
-      if (entry != null) {
-        return HealthyAssistantReply(
-          '${entry.answer}\n\nFuente de referencia: ${entry.source}',
-          card: 'knowledge',
-          action: 'source',
-          actionArgument: entry.source.split('·').last.trim());
-      }
-      return const HealthyAssistantReply(
-        'No tengo una ficha verificada que responda con precisión esa pregunta. '
-        'Puedo ayudarte con las fichas disponibles sobre avena, lentejas, huevo, '
-        'frutas, azúcares libres y actividad física; no inventaré valores nutricionales.');
-    }
+    // La recuperación de conocimiento se ejecuta después de las acciones
+    // mediante HealthyHybridKnowledge. Este motor solo decide flujos de app.
 
     return const HealthyAssistantReply('');
   }

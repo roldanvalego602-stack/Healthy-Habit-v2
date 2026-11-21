@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
+import 'shop_item_artwork.dart';
+import '../../servicios/healthy_feedback_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
@@ -70,7 +72,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     }
     setState(() => _busy = item.id);
     try {
-      if (!state.owns(item.id)) await ShopService.instance.buy(item);
+      if (!state.owns(item.id)) {
+        await ShopService.instance.buy(item);
+        await HealthyFeedbackService.onReward();
+      }
       if (item.slot != null) {
         await ShopService.instance.equip(
           item,
@@ -233,18 +238,33 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     ),
   );
 
+  /// Composición anclada a un lienzo fijo de 280×275. La mascota base
+  /// permanece centrada y las prendas se distribuyen según su función.
+  /// Ajustar estos valores si cambia la ilustración de la mascota.
   Widget _preview(ShopState? state) {
-    final eq = state?.equipped ?? <String, String>{};
-    final head = shopItemById(eq['cabeza'] ?? '');
-    final eye = eq['ojos'];
-    final neck = eq['cuello'];
-    final cape = eq['espalda'] == 'cape';
-    final aura = eq['aura'] == 'mint_aura';
-    final names = eq.entries
-        .where((e) => !e.key.startsWith('perfil_'))
-        .map((e) => shopItemById(e.value)?.name)
+    final equipped = state?.equipped ?? <String, String>{};
+    final names = equipped.entries
+        .where((entry) => !entry.key.startsWith('perfil_'))
+        .map((entry) => shopItemById(entry.value)?.name)
         .whereType<String>()
         .join(' + ');
+
+    Widget accessory(String id, {
+      required double left, required double top, required double size,
+    }) {
+      final item = shopItemById(id);
+      if (item == null) return const SizedBox.shrink();
+      return Positioned(
+        left: left,
+        top: top,
+        width: size,
+        height: size,
+        child: IgnorePointer(
+          child: ShopItemArtwork(item: item, size: size),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -256,114 +276,125 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         ),
         borderRadius: BorderRadius.circular(28),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Vista previa de Mr. Healthy',
-                  style: TextStyle(color: navy, fontWeight: FontWeight.w800),
-                ),
-              ),
-              IconButton(
-                onPressed: state == null ? null : _reset,
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Quitar accesorios',
-              ),
-            ],
+      child: Column(children: [
+        Row(children: [
+          Expanded(child: Text('Vista previa de Mr. Healthy',
+            style: TextStyle(color: navy, fontWeight: FontWeight.w800))),
+          IconButton(
+            onPressed: state == null ? null : _reset,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Quitar accesorios',
           ),
-          SizedBox(
-            height: 275,
-            width: 280,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (aura)
-                  Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: green.withValues(alpha: .6),
-                          blurRadius: 48,
-                          spreadRadius: 10,
-                        ),
-                      ],
+        ]),
+        // FittedBox mantiene alineadas todas las capas en dispositivos
+        // estrechos y no modifica las posiciones lógicas de los objetos.
+        SizedBox(
+          width: double.infinity,
+          height: 275,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: 280,
+              height: 275,
+              child: Stack(clipBehavior: Clip.none, children: [
+                if (equipped['aura'] == 'mint_aura')
+                  Positioned(
+                    left: 30, top: 17,
+                    child: Container(
+                      width: 220, height: 220,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(
+                          color: green.withValues(alpha: .5),
+                          blurRadius: 44, spreadRadius: 8,
+                        )],
+                      ),
                     ),
                   ),
-                if (cape)
+                // Objetos detrás del cuerpo.
+                if (equipped['espalda'] == 'cape')
                   Positioned(
-                    top: 145,
+                    left: 47, top: 148,
                     child: Container(
-                      width: 180,
-                      height: 100,
+                      width: 185, height: 90,
                       decoration: BoxDecoration(
                         color: const Color(0xFFB94B58),
-                        borderRadius: BorderRadius.circular(40),
+                        borderRadius: BorderRadius.circular(42),
                       ),
                     ),
                   ),
-                Image.asset(
-                  'assets/mascot/healthy.png',
-                  height: 260,
-                  fit: BoxFit.contain,
-                  errorBuilder:
-                      (_, __, ___) => Icon(
-                         Icons.sentiment_satisfied,
-                        size: 170,
-                        color: green,
-                      ),
+                if (equipped['espalda'] == 'leaf_backpack')
+                  accessory('leaf_backpack', left: 165, top: 115, size: 85),
+
+                Positioned(
+                  left: 30, top: 7,
+                  width: 220, height: 260,
+                  child: Image.asset(
+                    'assets/mascot/healthy.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.sentiment_satisfied,
+                          size: 170, color: green),
+                  ),
                 ),
-                if (head != null)
+
+                // Vestimenta y objetos de frente. Los ojos de la mascota
+                // están por encima del centro de la cara (no en la boca).
+                if (equipped['torso'] == 'leaf_hoodie')
+                  accessory('leaf_hoodie', left: 76, top: 151, size: 128),
+
+                if (equipped['cabeza'] == 'cap')
+                  accessory('cap', left: 77, top: 30, size: 125),
+                if (equipped['cabeza'] == 'sports_headband')
+                  accessory('sports_headband',
+                    left: 78, top: 62, size: 122),
+                if (equipped['cabeza'] == 'leaf_headphones')
+                  accessory('leaf_headphones',
+                    left: 61, top: 60, size: 154),
+                if (equipped['cabeza'] == 'crown')
+                  accessory('crown', left: 94, top: 35, size: 92),
+                if (equipped['cabeza'] == 'cat_ears')
+                  accessory('cat_ears', left: 85, top: 40, size: 110),
+
+                if (equipped['ojos'] == 'sunglasses')
+                  accessory('sunglasses', left: 91, top: 107, size: 100),
+                if (equipped['ojos'] == 'pixel_glasses')
+                  accessory('pixel_glasses',
+                    left: 85, top: 107, size: 110),
+
+                if (equipped['cuello'] == 'wellness_medal')
+                  accessory('wellness_medal',
+                    left: 111, top: 177, size: 58),
+                if (equipped['cuello'] == 'mint_scarf' ||
+                    equipped['cuello'] == 'bandana')
                   Positioned(
-                    top: 5,
-                    child: Text(
-                      head.emoji,
-                      style: const TextStyle(fontSize: 49),
-                    ),
-                  ),
-                if (eye != null)
-                  Positioned(
-                    top: 160,
-                    child: Text(
-                      eye == 'sunglasses' ? '🕶️' : '🤓',
-                      style: const TextStyle(fontSize: 48),
-                    ),
-                  ),
-                if (neck == 'bandana' || neck == 'mint_scarf')
-                  Positioned(
-                    top: 202,
+                    left: 82, top: 192,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 4,
-                      ),
+                        horizontal: 22, vertical: 4),
                       decoration: BoxDecoration(
-                        color:
-                            neck == 'mint_scarf'
-                                ? green
-                                : const Color(0xFF1D7666),
+                        color: equipped['cuello'] == 'mint_scarf'
+                            ? green : const Color(0xFF1D7666),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        '✦  ✦  ✦',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      child: const Text('✦  ✦  ✦',
+                        style: TextStyle(color: Colors.white)),
                     ),
                   ),
-              ],
+                if (equipped['mano'] == 'water_bottle')
+                  accessory('water_bottle',
+                    left: 202, top: 163, size: 61),
+              ]),
             ),
           ),
-          Text(
-            names.isEmpty ? 'Sin accesorios equipados' : names,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: navy, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          names.isEmpty ? 'Sin accesorios equipados' : names,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: navy, fontWeight: FontWeight.w600),
+        ),
+      ]),
     );
   }
 
@@ -399,7 +430,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         : const Color(0xFFE5F7EF),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(item.emoji, style: const TextStyle(fontSize: 45)),
+                  child: ShopItemArtwork(item: item, size: 74),
                 ),
               ),
               const SizedBox(height: 9),

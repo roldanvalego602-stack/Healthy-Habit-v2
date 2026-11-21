@@ -2,10 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
+import '../sesion/sobre_nosotros_screen.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../servicios/healthy_reminders_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -153,20 +156,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
     final before = settings[key];
+    const reminderKeys = {
+      'permitirRecordatorios',
+      'horarioRecordatorio',
+      'recordatorioHabito',
+      'recordatorioRacha',
+      'recordatorioDesafios',
+      'descansoSemanal',
+      'sonidosApp',
+      'vibracionHaptica',
+    };
     setState(() {
       settings[key] = value;
       saving = true;
     });
+    DocumentReference<Map<String, dynamic>>? ref;
+    var committed = false;
     try {
-      final ref = userRef;
+      ref = userRef;
       if (ref == null) throw StateError('Sesión cerrada');
       await ref.set({
         'settings': {key: value},
       }, SetOptions(merge: true));
+      committed = true;
+      if (reminderKeys.contains(key)) {
+        final active = await HealthyRemindersService.instance.synchronize(
+          settings,
+          askPermission: key == 'permitirRecordatorios' && value == true,
+        );
+        if (!active && settings['permitirRecordatorios'] == true) {
+          throw StateError(
+            'Android no tiene habilitadas las notificaciones. '
+            'Permítelas en los ajustes del teléfono.',
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() => settings[key] = before);
-        _message('No se guardó el cambio: $e');
+        _message('No se aplicó el cambio: $e');
+      }
+      if (committed && ref != null) {
+        try {
+          await ref.set({
+            'settings': {key: before},
+          }, SetOptions(merge: true));
+          if (reminderKeys.contains(key)) {
+            await HealthyRemindersService.instance.synchronize(settings);
+          }
+        } catch (_) {
+          if (mounted) {
+            _message('No se pudo restaurar la preferencia. Comprueba tu conexión.');
+          }
+        }
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -350,6 +392,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _message('Enlace enviado a $email');
     } on FirebaseAuthException catch (e) {
       _message('No se pudo enviar: ${e.message ?? e.code}');
+    }
+  }
+
+  Future<void> _showVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Versión de Healthy Habit'),
+          content: Text(
+            'Versión: ${info.version}\n'
+            'Compilación: ${info.buildNumber}\n'
+            'Paquete: ${info.packageName}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      _message('No se pudo consultar la versión instalada: $e');
     }
   }
 
@@ -589,8 +657,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Mantener constancia',
               ]),
               value: _str('objetivoPrincipal'),
+              subtitle: 'Se guarda como preferencia; aún no genera un plan automático.',
             ),
-            _action('Categorías de interés', _categories, value: selected),
+            _action('Categorías de interés', _categories, value: selected,
+              subtitle: 'Preferencia guardada; recomendaciones automáticas pendientes.'),
             _action(
               'Nivel de dificultad',
               () => _choose('dificultad', 'Dificultad', [
@@ -599,11 +669,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Difícil',
               ]),
               value: _str('dificultad'),
+              subtitle: 'Aún no modifica automáticamente la dificultad de tus hábitos.',
             ),
             _action(
               'Frecuencia de hábitos',
               () => _choose('frecuencia', 'Frecuencia', ['Diaria', 'Semanal']),
               value: _str('frecuencia'),
+              subtitle: 'Aún no reprograma tus hábitos activos.',
             ),
             _action(
               'Máximo de hábitos activos',
@@ -652,7 +724,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _toggle('sonidosApp', 'Sonidos de la app'),
             _toggle('vibracionHaptica', 'Vibración háptica'),
-            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
+            _toggle('animacionesDivertidas', 'Animaciones divertidas',
+              subtitle: 'Reduce animaciones compatibles con HealthyVisualEffects en toda la app.'),
             _action(
               'Tamaño de texto',
               () => _choose('tamanoTexto', 'Tamaño de texto', [
@@ -677,6 +750,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Solo yo',
               ]),
               value: _str('visibilidadLogros'),
+              subtitle: 'Aún no restringe el acceso a logros. Requiere reglas de Firestore.',
             ),
             _action(
               'Quién puede enviarme desafíos',
@@ -686,9 +760,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Nadie',
               ]),
               value: _str('desafiosDe'),
+              subtitle: 'Aún no restringe invitaciones a desafíos.',
             ),
             _toggle('mostrarRachaAmigos', 'Mostrar racha a mis amigos'),
-            _toggle('permitirReacciones', 'Permitir reacciones'),
+            _toggle('permitirReacciones', 'Permitir reacciones',
+              subtitle: 'Pendiente de conectarse con los módulos sociales.'),
             _action(
               'Administrar usuarios bloqueados',
               () => _message(
@@ -701,7 +777,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'permitirRecordatorios',
               'Permitir recordatorios',
               subtitle:
-                  'Preferencia guardada. No programa notificaciones del dispositivo.',
+                  'Programa avisos locales aproximados; Android puede retrasarlos.',
+            ),
+            _action(
+              'Enviar notificación de prueba',
+              () async {
+                try {
+                  final sent = await HealthyRemindersService.instance.sendTest();
+                  if (!mounted) return;
+                  _message(sent
+                      ? 'Notificación enviada. Revisa la bandeja de Android.'
+                      : 'Android no autorizó las notificaciones. Actívalas en ajustes.');
+                } catch (error) {
+                  _message('No se pudo mostrar la notificación: $error');
+                }
+              },
+              subtitle: 'Comprueba los permisos antes de programar avisos.',
             ),
             _action('Horario preferido', () async {
               final parts = _str('horarioRecordatorio').split(':');
@@ -719,10 +810,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             }, value: _str('horarioRecordatorio')),
-            _toggle('recordatorioHabito', 'Recordatorios por hábito'),
-            _toggle('recordatorioRacha', 'Recordatorio de racha'),
-            _toggle('recordatorioDesafios', 'Recordatorios de desafíos'),
-            _toggle('descansoSemanal', 'Descanso semanal'),
+            _toggle('recordatorioHabito', 'Recordatorios por hábito',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('recordatorioRacha', 'Recordatorio de racha',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('recordatorioDesafios', 'Recordatorios de desafíos',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('descansoSemanal', 'Descanso semanal',
+              subtitle: 'Omite los recordatorios los domingos; no cambia tus metas.'),
           ]),
           _section('GAMIFICACIÓN', Icons.emoji_events_outlined, [
             _toggle('mostrarXp', 'Mostrar XP lograda'),
@@ -730,7 +825,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _toggle('mostrarNivelPerfil', 'Mostrar nivel en perfil'),
             _toggle('mostrarRachasDiarias', 'Mostrar rachas diarias'),
             _toggle('efectosRecompensa', 'Efectos visuales de recompensa'),
-            _toggle('modoDiscreto', 'Modo discreto'),
+            _toggle('modoDiscreto', 'Modo discreto',
+              subtitle: 'Oculta datos en tu perfil y efectos de compra; faltan otros módulos.'),
           ]),
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
@@ -740,14 +836,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           _section('INFORMACIÓN Y SOPORTE', Icons.info_outline, [
+            _action('Sobre nosotros', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SobreNosotrosScreen()))),
             _action('Acerca de Healthy Habit', () => _page('acerca')),
             _action('Términos de uso', () => _page('terminos')),
             _action('Aviso de privacidad', () => _page('privacidad')),
             _action(
               'Versión de la aplicación',
-              () => _message(
-                'Versión: consultar pubspec.yaml / compilación instalada.',
-              ),
+              _showVersion,
               value: 'Ver detalle',
             ),
             _action('Ayuda y soporte técnico', () => _page('ayuda')),

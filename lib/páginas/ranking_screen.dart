@@ -84,7 +84,7 @@ class RankingScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream:
             db
-                .collection('users')
+                .collection('public_profiles')
                 .orderBy('xp', descending: true)
                 .limit(100)
                 .snapshots(),

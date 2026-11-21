@@ -72,10 +72,25 @@ class _SocialActionButtonState extends State<SocialActionButton> {
               child: Center(
                 child: AnimatedSwitcher(
                   duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 180),
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(scale: animation, child: child),
-                  ),
+                  transitionBuilder: (child, animation) {
+                    final easing = CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    );
+                    return FadeTransition(
+                      opacity: easing,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.18),
+                          end: Offset.zero,
+                        ).animate(easing),
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.94, end: 1).animate(easing),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
                   child: widget.busy
                       ? SizedBox(
                           key: const ValueKey('busy'),

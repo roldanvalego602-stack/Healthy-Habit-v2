@@ -13,7 +13,6 @@ class _C {
   static const mint = Color(0xFF8DE0C0);
   static Color get navy => HealthyAdaptive.text;
   static Color get background => HealthyAdaptive.background;
-  static const gold = Color(0xFFD5A33E);
   static Color get grey => HealthyAdaptive.muted;
   static Color get border => HealthyAdaptive.border;
   static Color get mintSoft => HealthyAdaptive.mint;
@@ -614,6 +613,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
                 children: [
               HealthyProfileAvatar(
                 photoUrl: d['photoUrl']?.toString(),
+                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
                 size: 50,
               ),
               const SizedBox(width: 12),

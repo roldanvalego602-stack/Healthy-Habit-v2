@@ -5,7 +5,7 @@ import '../modelos/catalogo_item.dart';
 const alimentosCatalogo = <CatalogoItem>[
   CatalogoItem(
     id: 'avena',
-    imagen: 'assets/images/catalogo/avena.jpg',
+    imagen: 'assets/images/catalogo/avena.svg',
     titulo: 'Avena',
     categoria: 'Alimentos',
     dificultad: 'Fácil de preparar',
@@ -42,7 +42,7 @@ const alimentosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'huevo',
-    imagen: 'assets/images/catalogo/huevo.jpg',
+    imagen: 'assets/images/catalogo/huevo.svg',
     titulo: 'Huevo',
     categoria: 'Alimentos',
     dificultad: 'Preparación sencilla',
@@ -78,7 +78,7 @@ const alimentosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'lentejas',
-    imagen: 'assets/images/catalogo/lentejas.jpg',
+    imagen: 'assets/images/catalogo/lentejas.svg',
     titulo: 'Lentejas',
     categoria: 'Alimentos',
     dificultad: 'Económico',
@@ -114,7 +114,7 @@ const alimentosCatalogo = <CatalogoItem>[
 const ejerciciosCatalogo = <CatalogoItem>[
   CatalogoItem(
     id: 'sentadillas',
-    imagen: 'assets/images/catalogo/sentadillas.jpg',
+    imagen: 'assets/images/catalogo/sentadillas.svg',
     titulo: 'Sentadillas',
     categoria: 'Ejercicios',
     dificultad: 'Principiante',
@@ -147,7 +147,7 @@ const ejerciciosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'plancha',
-    imagen: 'assets/images/catalogo/plancha.jpg',
+    imagen: 'assets/images/catalogo/plancha.svg',
     titulo: 'Plancha abdominal',
     categoria: 'Ejercicios',
     dificultad: 'Adaptable',
@@ -178,7 +178,7 @@ const ejerciciosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'caminar',
-    imagen: 'assets/images/catalogo/caminar.jpg',
+    imagen: 'assets/images/catalogo/caminar.svg',
     titulo: 'Caminar en casa',
     categoria: 'Ejercicios',
     dificultad: 'Principiante',
@@ -213,7 +213,7 @@ const ejerciciosCatalogo = <CatalogoItem>[
 const consejosCatalogo = <CatalogoItem>[
   CatalogoItem(
     id: 'dormir_mejor',
-    imagen: 'assets/images/catalogo/dormir_mejor.jpg',
+    imagen: 'assets/images/catalogo/dormir_mejor.svg',
     titulo: 'Dormir mejor',
     categoria: 'Consejos',
     dificultad: 'Práctica diaria',
@@ -252,7 +252,7 @@ const consejosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'prevenir_caidas',
-    imagen: 'assets/images/catalogo/prevenir_caidas.jpg',
+    imagen: 'assets/images/catalogo/prevenir_caidas.svg',
     titulo: 'Prevenir caídas',
     categoria: 'Consejos',
     dificultad: 'Práctica diaria',
@@ -287,7 +287,7 @@ const consejosCatalogo = <CatalogoItem>[
   ),
   CatalogoItem(
     id: 'pausas_activas',
-    imagen: 'assets/images/catalogo/pausas_activas.jpg',
+    imagen: 'assets/images/catalogo/pausas_activas.svg',
     titulo: 'Hacer pausas activas',
     categoria: 'Consejos',
     dificultad: 'Fácil',

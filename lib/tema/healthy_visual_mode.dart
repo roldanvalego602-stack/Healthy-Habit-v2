@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../servicios/preferencias_app.dart';
 
 /// Configuración de intensidad visual. No desactiva ninguna funcionalidad.
 enum HealthyVisualMode { lite, normal }
@@ -47,6 +47,7 @@ class HealthyVisualController extends ChangeNotifier {
 class HealthyVisualEffects {
   static bool enabled(BuildContext context) =>
       !HealthyVisualController.instance.isLite &&
+      HealthySettingsScope.boolValue(context, 'animacionesDivertidas') &&
       !MediaQuery.disableAnimationsOf(context);
 
   static Duration duration(BuildContext context, Duration normal) =>

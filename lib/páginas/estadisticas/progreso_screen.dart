@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_visual_mode.dart';
 
 /// Estadísticas basadas en registros reales de cada intento (attempts/logs).
 /// Un registro equivale a una actividad; completar un intento es distinto.
@@ -17,7 +20,20 @@ class _Log {
   final String title;
   final int xp;
   final bool completed;
-  const _Log(this.date, this.title, this.xp, this.completed);
+  final String note;
+  final bool hasEvidence;
+  final String? evidenceId;
+  final DateTime? evidenceExpiresAt;
+  const _Log(
+    this.date,
+    this.title,
+    this.xp,
+    this.completed, {
+    required this.note,
+    required this.hasEvidence,
+    this.evidenceId,
+    this.evidenceExpiresAt,
+  });
 }
 
 class _ProgresoScreenState extends State<ProgresoScreen> {
@@ -64,8 +80,16 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           final data = doc.data();
           final date = _date(data['createdAt']);
           if (date == null) continue;
-          entries.add(_Log(date, (data['habitTitle'] ?? 'Hábito').toString(),
-            _int(data['xpEarned']), data['completed'] == true));
+          entries.add(_Log(
+            date,
+            (data['habitTitle'] ?? 'Hábito').toString(),
+            _int(data['xpEarned']),
+            data['completed'] == true,
+            note: (data['note'] ?? '').toString().trim(),
+            hasEvidence: data['hasEvidence'] == true,
+            evidenceId: data['evidenceId']?.toString(),
+            evidenceExpiresAt: _date(data['evidenceExpiresAt']),
+          ));
         }
       }
       entries.sort((a, b) => b.date.compareTo(a.date));
@@ -83,14 +107,146 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
     }
   }
 
+  bool _evidenceAvailable(_Log log) =>
+      log.hasEvidence &&
+      log.evidenceId != null &&
+      log.evidenceId!.isNotEmpty &&
+      log.evidenceExpiresAt != null &&
+      DateTime.now().toUtc().isBefore(log.evidenceExpiresAt!.toUtc());
+
+  Future<void> _viewEvidence(_Log log) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !_evidenceAvailable(log)) {
+      _showMessage('La fotografía ha expirado o no está disponible.');
+      return;
+    }
+    try {
+      final doc = await db.collection('users').doc(user.uid)
+          .collection('temporary_habit_evidence').doc(log.evidenceId!).get();
+      if (!mounted) return;
+      final data = doc.data();
+      final expiry = _date(data?['expiresAt']);
+      if (data == null ||
+          expiry == null ||
+          !DateTime.now().toUtc().isBefore(expiry.toUtc())) {
+        _showMessage('La evidencia ya no está disponible.');
+        return;
+      }
+      final encoded = data['imageBase64'];
+      if (encoded is! String || encoded.isEmpty) {
+        _showMessage('No se encontró la imagen de este registro.');
+        return;
+      }
+      final bytes = base64Decode(encoded);
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(log.title),
+          content: SingleChildScrollView(child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.memory(bytes, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Text('No se pudo abrir la imagen.')),
+              if (log.note.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Nota: ${log.note}'),
+              ],
+              const SizedBox(height: 10),
+              const Text('La fotografía es temporal. El registro y su nota permanecen en el historial.',
+                style: TextStyle(fontSize: 12)),
+            ],
+          )),
+          actions: [TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          )],
+        ),
+      );
+    } catch (_) {
+      _showMessage('No se pudo cargar la evidencia. Revisa tu conexión.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _logCard(_Log log) {
+    final available = _evidenceAvailable(log);
+    final date = log.date;
+    final dateLabel = '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/${date.year}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _panel(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: Text(log.title, style: TextStyle(
+              color: ink, fontWeight: FontWeight.w800, fontSize: 14,
+            ))),
+            Text('+${log.xp} XP', style: const TextStyle(
+              color: mint, fontWeight: FontWeight.w800,
+            )),
+          ]),
+          const SizedBox(height: 4),
+          Text(dateLabel, style: TextStyle(
+            fontSize: 11, color: HealthyAdaptive.muted,
+          )),
+          if (log.note.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.notes_rounded, size: 17, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(child: Text(log.note, style: TextStyle(
+                color: ink, fontSize: 13, height: 1.4,
+              ))),
+            ]),
+          ],
+          if (log.hasEvidence) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              Icon(available ? Icons.image_outlined : Icons.hide_image_outlined,
+                size: 18, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(child: Text(
+                available ? 'Fotografía temporal disponible' : 'Fotografía expirada o no disponible',
+                style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
+              )),
+              if (available) TextButton(
+                onPressed: () => _viewEvidence(log),
+                child: const Text('Ver'),
+              ),
+            ]),
+          ],
+        ],
+      )),
+    );
+  }
+
   Widget _tile(String label, String value, IconData icon, Color color) => Container(
     padding: const EdgeInsets.all(15),
     decoration: BoxDecoration(color: HealthyAdaptive.surface, borderRadius: BorderRadius.circular(18)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, color: color), const SizedBox(height: 9),
-      Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
-      Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF71879A))),
+      Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ink)),
+      Text(label, maxLines: 2, style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted)),
     ]),
+  );
+
+  Widget _weeklyMetric(IconData icon, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: HealthyAdaptive.accent, size: 16),
+      const SizedBox(width: 5),
+      Text(label, style: TextStyle(
+        fontWeight: FontWeight.w700, color: ink, fontSize: 13)),
+    ],
   );
 
   Widget _section(String text) => Padding(
@@ -104,7 +260,6 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
-    final todayKey = _key(today);
     final daily = <String, int>{};
     final byHabit = <String, int>{};
     for (final log in logs) {
@@ -112,10 +267,17 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
       byHabit.update(log.title, (v) => v + 1, ifAbsent: () => 1);
     }
     final last7 = List.generate(7, (i) => DateTime(today.year, today.month, today.day).subtract(Duration(days: 6-i)));
-    final weekly = last7.fold<int>(0, (sum, day) => sum + (daily[_key(day)] ?? 0));
+    final weekly = last7.fold<int>(0, (total, day) => total + (daily[_key(day)] ?? 0));
     final activeDays = last7.where((d) => (daily[_key(d)] ?? 0) > 0).length;
+    final last7Keys = last7.map(_key).toSet();
+    final weeklyXp = logs.where((log) => last7Keys.contains(_key(log.date)))
+        .fold<int>(0, (total, log) => total + log.xp);
     final maxDaily = last7.fold<int>(1, (m, d) { final n = daily[_key(d)] ?? 0; return n > m ? n : m; });
     final sortedHabits = byHabit.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
+    final monthLogs = logs.where((log) =>
+        log.date.year == month.year && log.date.month == month.month).toList();
+    final monthDays = monthLogs.map((log) => _key(log.date)).toSet().length;
+    final monthXp = monthLogs.fold<int>(0, (total, log) => total + log.xp);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final offset = DateTime(month.year, month.month, 1).weekday - 1;
     return Scaffold(
@@ -128,8 +290,48 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           mainAxisSize: MainAxisSize.min, children: [Text(error!, textAlign: TextAlign.center),
           const SizedBox(height: 12), ElevatedButton(onPressed: _load, child: const Text('Reintentar'))])))
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 30), children: [
-          const Text('Cada registro cuenta. Sigue construyendo tu constancia.', style: TextStyle(color: Color(0xFF71879A))),
+          Text('Cada registro cuenta. Sigue construyendo tu constancia.',
+            style: TextStyle(color: HealthyAdaptive.muted)),
           const SizedBox(height: 15),
+          HealthyMotionCard(
+            enablePress: false,
+            child: _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.insights_rounded, color: HealthyAdaptive.accent, size: 22),
+                const SizedBox(width: 9),
+                Expanded(child: Text('Tu avance esta semana',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: ink))),
+              ]),
+              const SizedBox(height: 12),
+              Text('$activeDays de 7 días con actividad',
+                style: TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 15)),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: activeDays / 7.0),
+                  duration: HealthyVisualEffects.enabled(context)
+                      ? const Duration(milliseconds: 650) : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, progress, _) => LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 10,
+                    backgroundColor: HealthyAdaptive.border,
+                    color: HealthyAdaptive.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(spacing: 14, runSpacing: 6, children: [
+                _weeklyMetric(Icons.check_circle_outline_rounded, '$weekly registros'),
+                _weeklyMetric(Icons.auto_awesome_rounded, '+$weeklyXp XP'),
+              ]),
+              const SizedBox(height: 6),
+              Text('Actividad calculada a partir de tus registros guardados.',
+                style: TextStyle(color: HealthyAdaptive.muted, fontSize: 11)),
+            ])),
+          ),
+          const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _tile('Experiencia total', '${_int(profile['xp'])} XP', Icons.stars_rounded, mint)),
             const SizedBox(width: 10),
@@ -149,10 +351,22 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
               for (final day in last7) Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
                 Text('${daily[_key(day)] ?? 0}', style: TextStyle(fontSize: 11, color: ink)),
                 const SizedBox(height: 5),
-                Container(height: 8 + 82 * (daily[_key(day)] ?? 0) / maxDaily,
-                  margin: const EdgeInsets.symmetric(horizontal: 5),
-                  decoration: BoxDecoration(color: (daily[_key(day)] ?? 0) == 0 ? HealthyAdaptive.border : mint,
-                    borderRadius: BorderRadius.circular(7))),
+                TweenAnimationBuilder<double>(
+                  key: ValueKey('weekly-bar-${_key(day)}-${daily[_key(day)] ?? 0}'),
+                  tween: Tween<double>(begin: 0.0, end: 8.0 + 82.0 * (daily[_key(day)] ?? 0) / maxDaily),
+                  duration: HealthyVisualEffects.enabled(context)
+                      ? const Duration(milliseconds: 520) : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, height, _) => Container(
+                    height: height,
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    decoration: BoxDecoration(
+                      color: (daily[_key(day)] ?? 0) == 0
+                          ? HealthyAdaptive.border : HealthyAdaptive.accent,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Text(['L','M','X','J','V','S','D'][day.weekday-1], style: TextStyle(fontSize: 12, color: ink)),
               ])),
@@ -160,6 +374,14 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
             const SizedBox(height: 8),
             const Text('Las barras representan registros guardados, no porcentajes de cumplimiento.',
               style: TextStyle(fontSize: 11, color: Color(0xFF71879A))),
+          ])),
+          _section('Resumen del mes seleccionado'),
+          _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${monthLogs.length} registros · $monthDays días activos · $monthXp XP',
+              style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
+            const SizedBox(height: 8),
+            const Text('El resumen corresponde al mes mostrado en el calendario. Los valores se calculan con registros reales.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF71879A))),
           ])),
           _section('Calendario de constancia'),
           _panel(Column(children: [
@@ -191,12 +413,23 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
             Text('${logs.length} registros en total · $completedAttempts de $attemptsCount intentos completados',
               style: TextStyle(color: ink, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            if (sortedHabits.isEmpty) const Text('Aún no hay registros. Completa una actividad para comenzar.'),
+            if (sortedHabits.isEmpty) Text(
+              'Aún no hay registros. Completa una actividad para comenzar.',
+              style: TextStyle(color: HealthyAdaptive.muted)),
+
             for (final entry in sortedHabits.take(8)) Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Row(children: [
               Expanded(child: Text(entry.key, maxLines: 2, overflow: TextOverflow.ellipsis)),
               Text('${entry.value} registros', style: const TextStyle(fontWeight: FontWeight.bold, color: mint)),
             ])),
           ])),
+          _section('Historial de registros'),
+          if (logs.isEmpty) _panel(const Text('Todavía no tienes registros para consultar.')),
+          for (final log in logs.take(15)) _logCard(log),
+          if (logs.length > 15) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Se muestran los últimos 15 registros.', style: TextStyle(
+              color: HealthyAdaptive.muted, fontSize: 12)),
+          ),
           const SizedBox(height: 15),
           const Text('Las estadísticas se calculan a partir de los registros disponibles en Firestore. No se estiman días sin historial.',
             style: TextStyle(fontSize: 11, color: Color(0xFF71879A))),

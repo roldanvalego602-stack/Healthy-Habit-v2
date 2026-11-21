@@ -221,6 +221,14 @@ class HabitActionService {
         tx.update(userRef, {
           'habitCoins': coins - deducted,
           'habitMutationVersion': preview.mutationVersion + 1,
+          // Referencia auditable para que Firestore Rules valide el descuento
+          // contra la cancelación del intento en ESTA misma transacción.
+          if (deducted > 0)
+            'habitCancellation': {
+              'habitId': habit.id,
+              'attemptId': id,
+              'version': preview.mutationVersion + 1,
+            },
         });
         return deducted;
       });
@@ -292,6 +300,10 @@ class HabitActionService {
         'acquiredAt': FieldValue.serverTimestamp(),
         'lastAttemptId': attemptRef.id,
         'lastStatus': 'inProgress',
+        // Inicio muestra el intento activo incluso antes del primer registro.
+        'latestAttemptId': attemptRef.id,
+        'latestProgress': 0,
+        'latestTarget': attempt.target,
         'latestStatus': 'inProgress',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
