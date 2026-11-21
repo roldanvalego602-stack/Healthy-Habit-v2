@@ -394,12 +394,7 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
         title: const Text('Mis rutinas personales'),
         backgroundColor: HealthyAdaptive.background,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const ValueKey('personal-routine-create'),
-        onPressed: _create,
-        icon: const Icon(Icons.add),
-        label: const Text('Crear rutina'),
-      ),
+
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -421,11 +416,34 @@ class _PersonalRoutinesScreenState extends State<PersonalRoutinesScreen> {
                   style: TextStyle(color: HealthyAdaptive.muted),
                 ),
                 const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const ValueKey('personal-routine-primary'),
+                    onPressed: _create,
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: const Text('Crear y guardar mi rutina'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Agrega tantos ejercicios y descansos como necesites; '
+                  'guarda la rutina después de organizar sus pasos.',
+                  style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12),
+                ),
+                const SizedBox(height: 18),
+                Text('Otras opciones',
+                  style: TextStyle(
+                    color: HealthyAdaptive.text,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 OutlinedButton.icon(
                   key: const ValueKey('personal-goal-create'),
                   onPressed: _createGoal,
                   icon: const Icon(Icons.flag_outlined),
-                  label: const Text('Crear meta (una actividad)'),
+                  label: const Text('Crear meta individual (una actividad)'),
                 ),
                 const SizedBox(height: 24),
                 if (_routines.isEmpty)
