@@ -12,11 +12,13 @@ void main() {
     ...consejosCatalogo,
   ];
 
-  test('los nueve artículos apuntan a imágenes JPG locales únicas', () async {
-    expect(items.length, 9);
-    expect(items.map((e) => e.imagen).toSet().length, items.length);
+  test('las nueve fotografías existentes apuntan a archivos JPG únicos', () async {
+    expect(items.length, 28);
+    final photographed = items.where((item) => item.imagen.isNotEmpty).toList();
+    expect(photographed, hasLength(9));
+    expect(photographed.map((e) => e.imagen).toSet().length, photographed.length);
 
-    for (final item in items) {
+    for (final item in photographed) {
       expect(item.imagen, startsWith('assets/images/catalogo/'));
       expect(item.imagen.toLowerCase(), endsWith('.jpg'));
       final bytes = await rootBundle.load(item.imagen);
@@ -24,7 +26,7 @@ void main() {
     }
   });
 
-  testWidgets('las nueve fotografías se pueden renderizar en Flutter',
+  testWidgets('las nueve fotografías existentes se pueden renderizar en Flutter',
       (tester) async {
     tester.view.physicalSize = const Size(360, 780);
     tester.view.devicePixelRatio = 1;
@@ -33,7 +35,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    for (final item in items) {
+    for (final item in items.where((item) => item.imagen.isNotEmpty)) {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: Center(
