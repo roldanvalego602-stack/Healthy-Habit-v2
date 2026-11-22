@@ -86,16 +86,20 @@ class HealthyChatChallengesCard extends StatelessWidget {
         stream: _healthyDb.collection('users').doc(uid)
             .collection('challenges').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return const Text(
-            'No pude consultar tus desafíos. Revisa la conexión y los permisos.');
+          if (snapshot.hasError) {
+            return const Text(
+              'No pude consultar tus desafíos. Revisa la conexión y los permisos.');
+          }
           if (!snapshot.hasData) {
             return const Center(child: LinearProgressIndicator());
           }
           final all = snapshot.data!.docs;
-          if (all.isEmpty) return Text(
-            'Todavía no hay desafíos en tu cuenta. '
-            'Abre Desafíos para cargar los disponibles.',
+          if (all.isEmpty) {
+            return Text(
+              'Todavía no hay desafíos en tu cuenta. '
+              'Abre Desafíos para cargar los disponibles.',
             style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12));
+          }
           final active = all.where((d) =>
               d.data()['status'] == 'inProgress').toList();
           final claimable = all.where((d) =>

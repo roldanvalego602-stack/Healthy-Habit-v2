@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
@@ -10,6 +12,9 @@ import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
+import 'healthy_hybrid_knowledge.dart';
+import 'healthy_intent_router.dart';
+import 'healthy_chat_context.dart';
 import 'healthy_chat_history.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
@@ -75,19 +80,28 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
+  final HealthyHybridKnowledge _hybridKnowledge = HealthyHybridKnowledge();
   final HealthyConversationService _conversation =
       const HealthyConversationService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
   final HealthyChatHistory _history = const HealthyChatHistory();
   String? _sessionId;
   String _lastTopic = '';
+  final HealthyChatContext _chatContext = HealthyChatContext();
   String _lastHabitTitle = '';
   String _lastShopItemId = '';
   bool _historyLoading = false;
   bool _manuallyStartedNew = false;
   List<Map<String, dynamic>> _habitosPerfil = [];
+  bool _allowHistoryAnalysis = false;
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _voiceReady = false;
+  bool _listening = false;
+  bool _readAloud = false;
+  String? _voiceError;
   bool isTyping = false;
   bool _hasSentMessage = false;
 
@@ -128,7 +142,81 @@ class _NutriChatPageState extends State<NutriChatPage> {
     super.initState();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
+    _setupVoice();
     _loadRecentChat();
+  }
+
+  Future<void> _setupVoice() async {
+    try {
+      await _tts.setLanguage('es-MX');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setVolume(1.0);
+    } catch (_) {
+      // No speech engine installed: text chat continues to work.
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    try {
+      _voiceReady = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'done' || status == 'notListening') {
+            setState(() => _listening = false);
+          }
+        },
+        onError: (error) {
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _voiceError = 'No se pudo reconocer la voz. Revisa el micrófono.';
+          });
+        },
+      );
+      if (!_voiceReady) {
+        if (mounted) setState(() => _voiceError = 'El reconocimiento de voz no está disponible en este dispositivo.');
+        return;
+      }
+      await _tts.stop();
+      await _speech.listen(
+        listenOptions: stt.SpeechListenOptions(
+          localeId: 'es_MX',
+          listenFor: const Duration(seconds: 25),
+          pauseFor: const Duration(seconds: 3),
+        ),
+        onResult: (result) {
+          if (!mounted) return;
+          messageController.value = TextEditingValue(
+            text: result.recognizedWords,
+            selection: TextSelection.collapsed(offset: result.recognizedWords.length),
+          );
+          if (result.finalResult) setState(() => _listening = false);
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _listening = true;
+          _voiceError = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _listening = false;
+          _voiceError = 'No fue posible iniciar el micrófono.';
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleReadAloud() async {
+    if (_readAloud) await _tts.stop();
+    if (mounted) setState(() => _readAloud = !_readAloud);
   }
 
   Future<void> _cargarSaludoPersonalizado() async {
@@ -198,6 +286,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         }
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
+        _chatContext.reset();
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -239,6 +328,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _manuallyStartedNew = true;
       _sessionId = null;
       _lastTopic = '';
+      _chatContext.reset();
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -276,6 +366,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     if (user == null) {
       _perfil = {};
       _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
       return false;
     }
     final userRef = FirebaseFirestore.instanceFor(
@@ -285,8 +376,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
       final result = await userRef.get();
       if (!result.exists) return false;
       _perfil = result.data() ?? {};
+      final rawSettings = _perfil['settings'];
+      _allowHistoryAnalysis =
+          rawSettings is Map && rawSettings['analizarHistorialIA'] == true;
+      if (!_allowHistoryAnalysis) {
+        _habitosPerfil = [];
+        return true;
+      }
     } catch (_) {
       _perfil = {};
+      _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
       return false;
     }
     try {
@@ -301,7 +401,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Future<void> _openOfficialSource(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null || uri.scheme != 'https' ||
-        !const {'fdc.nal.usda.gov', 'www.who.int'}.contains(uri.host)) {
+        !const {'fdc.nal.usda.gov', 'www.who.int', 'www.fda.gov'}.contains(uri.host)) {
       _chatNotice('Fuente externa no disponible o no verificada.');
       return;
     }
@@ -510,6 +610,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
       text: text, isUser: true, time: _timeNow());
 
     messageController.clear();
+    if (_listening) {
+      await _speech.stop();
+      _listening = false;
+    }
+    await _tts.stop();
     setState(() {
       _hasSentMessage = true;
       messages.add(userMessage);
@@ -527,7 +632,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ]);
       if (danger) {
         response = _respuestas.moderar(text, _primerNombre);
-      } else if (NutriRespuestasService.tieneGroserias(text)) {
+      } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
       } else if (NutriRespuestasService.contiene(normalized, [
         'cancelar', 'salir del calculo', 'detener calculo',
@@ -561,7 +666,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
             response = error.message;
           }
         } else {
-          final requiresProfile = NutriRespuestasService.contiene(normalized, [
+          final requiresProfile = HealthyIntentRouter.asksForCoinBalance(text) ||
+              NutriRespuestasService.contiene(normalized, [
             'mi perfil','mis datos','mis estadisticas','mi progreso',
             'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
             'mis habitos','habitos activos','que habitos tengo',
@@ -574,29 +680,87 @@ class _NutriChatPageState extends State<NutriChatPage> {
           if (!available) {
             response = 'No pude consultar tus datos actualizados. '
                 'Revisa tu conexión e inténtalo de nuevo; no inventaré XP ni monedas.';
+          } else if (!_allowHistoryAnalysis &&
+              NutriRespuestasService.contiene(normalized, const [
+                'mis habitos', 'habitos activos', 'que habitos tengo',
+                'mis actividades',
+              ])) {
+            response = 'Para consultar tus hábitos desde el asistente, activa '
+                '«Permitir análisis del historial» en Configuración. '
+                'Puedes seguir viendo tus hábitos desde su sección normal.';
           } else {
-            intent = _engine.resolve(text, profile: _perfil,
-                habits: _habitosPerfil, lastTopic: _lastTopic,
-                lastHabitTitle: _lastHabitTitle,
-                lastShopItemId: _lastShopItemId);
-            response = intent.text.isNotEmpty
-                ? intent.text
-                : _conversation.reply(
-                    text,
-                    name: _primerNombre,
-                    previousUserMessage: lastUserPrompt,
-                  ) ??
-                  _respuestas.responder(
-                    text, nombre: _primerNombre, perfil: _perfil);
-            _lastTopic = _engine.topicFor(intent);
-            if (intent.action == 'habits' &&
-                intent.actionArgument.isNotEmpty) {
-              _lastHabitTitle = intent.actionArgument;
-            }
-            if (intent.card == 'shop_item' &&
-                intent.actionArgument.isNotEmpty) {
-              _lastShopItemId = intent.actionArgument;
-            }
+            if (HealthyChatContext.needsActionClarification(text)) {
+              response = '¿Qué quieres modificar exactamente? '
+                  'Indica qué hábito o cuenta y qué deseas hacer. '
+                  'No realizaré cambios sin confirmación.';
+              _chatContext.reset();
+              _lastTopic = '';
+              _lastHabitTitle = '';
+              _lastShopItemId = '';
+            } else {
+              intent = _engine.resolve(text, profile: _perfil,
+                  habits: _habitosPerfil, lastTopic: _lastTopic,
+                  lastHabitTitle: _lastHabitTitle,
+                  lastShopItemId: _lastShopItemId);
+              final toneCommand = NutriRespuestasService.contiene(text, const [
+                'cambia tu humor', 'modo serio', 'modo divertido',
+                'modo motivador', 'modo tranquilo', 'modo amigable',
+              ]);
+              // Prioridad: seguridad/calculadora → acciones de la app →
+              // búsqueda educativa estructurada → conversación general.
+              // Ninguna ficha del dataset realiza operaciones sobre Firebase.
+              if (toneCommand) {
+                response = _respuestas.responder(
+                  text, nombre: _primerNombre, perfil: _perfil);
+              } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
+                response = intent.text;
+              } else {
+                final previousKnowledge = _chatContext.referenceFor(text);
+                final educational = await _hybridKnowledge.answer(
+                  text, operational: intent,
+                  lastKnowledgeId: previousKnowledge,
+                );
+                if (educational != null) {
+                  intent = educational;
+                  response = educational.text;
+                  _chatContext.recordEducationalReply(
+                    input: text,
+                    knowledgeId: educational.knowledgeId,
+                    previousReference: previousKnowledge,
+                  );
+                } else {
+                  _chatContext.reset();
+                  response = _conversation.reply(
+                        text,
+                        name: _primerNombre,
+                        previousUserMessage: lastUserPrompt,
+                      ) ??
+                      _respuestas.responder(
+                        text, nombre: _primerNombre, perfil: _perfil);
+                }
+              }
+              if (intent.card == 'catalog_item' &&
+                  intent.actionArgument == 'huevo') {
+                // El catálogo también puede introducir un tema educativo.
+                // La siguiente pregunta podrá referirse al huevo sin repetirlo.
+                _chatContext.recordEducationalReply(
+                  input: text,
+                  knowledgeId: 'huevo',
+                  previousReference: '',
+                );
+              } else if (intent.card != 'knowledge') {
+                _chatContext.reset();
+              }
+              _lastTopic = _engine.topicFor(intent);
+              if (intent.action == 'habits' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastHabitTitle = intent.actionArgument;
+              }
+              if (intent.card == 'shop_item' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastShopItemId = intent.actionArgument;
+              }
+            } // Respuesta ordinaria (no orden elíptica).
           }
         }
       }
@@ -619,6 +783,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
     await _persist(userMessage, first: first);
     await _persist(botMessage);
     if (mounted) setState(() => isTyping = false);
+    if (_readAloud && mounted) {
+      try {
+        await _tts.speak(response);
+      } catch (_) {
+        if (mounted) setState(() => _voiceError = 'No se puede reproducir audio en este dispositivo.');
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -634,6 +805,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   void dispose() {
+    _speech.cancel();
+    _tts.stop();
     _inputFocus.removeListener(_onFocusChange);
     _inputFocus.dispose();
     messageController.dispose();
@@ -673,6 +846,30 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Personalidad de Mr. Healthy',
+            icon: Icon(Icons.sentiment_satisfied_alt_rounded, color: _navy),
+            onSelected: (mood) {
+              if (mood == '_audio') {
+                _toggleReadAloud();
+                return;
+              }
+              setState(() => _respuestas.cambiarHumor(mood));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Mr. Healthy: modo $mood')),
+              );
+            },
+            itemBuilder: (_) => [
+              ...NutriRespuestasService.moods.map((mood) => PopupMenuItem<String>(
+                value: mood,
+                child: Text(mood[0].toUpperCase() + mood.substring(1)),
+              )),
+              PopupMenuItem<String>(
+                value: '_audio',
+                child: Text(_readAloud ? 'Desactivar voz' : 'Activar voz'),
+              ),
+            ],
+          ),
           IconButton(
             key: const Key('healthy-chat-history-button'),
             onPressed: isTyping || _historyLoading ? null : _showChatHistory,
@@ -684,17 +881,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
             onPressed: isTyping ? null : _newConversation,
             tooltip: 'Nueva conversación',
             icon: Icon(Icons.add_comment_outlined, color: _navy),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              width: 38,
-              height: 38,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (_, __, ___) => const Icon(Icons.eco, color: _green),
-            ),
           ),
         ],
       ),
@@ -742,6 +928,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 },
               ),
             ),
+            if (_voiceError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(_voiceError!, style: const TextStyle(color: Colors.deepOrange, fontSize: 12)),
+              ),
             _buildComposer(keyboardVisible),
           ],
         ),
@@ -905,6 +1096,18 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: _listening ? 'Detener dictado' : 'Dictar mensaje',
+                onPressed: isTyping ? null : _toggleListening,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    key: ValueKey(_listening),
+                    color: _listening ? Colors.deepOrange : _green,
                   ),
                 ),
               ),

@@ -3,17 +3,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
 import '../logros/logros_screen.dart';
+import '../logros/logros_service.dart';
+import '../estadisticas/progreso_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'configuracion_screen.dart';
 import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import 'profile_monthly_summary.dart';
+import '../tienda/wardrobe_screen.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -105,11 +110,20 @@ class ProfileScreen extends StatelessWidget {
         final username = _string(
           data['username'],
         ).replaceFirst(RegExp(r'^@+'), '');
-        final email = _string(data['email'], fallback: user.email ?? '');
+        // Firebase Auth es la referencia del correo actual verificado.
+        final email = _string(user.email, fallback: _string(data['email']));
         final level = _integer(data['level'], fallback: 1);
         final xp = _integer(data['xp']);
         final coins = _integer(data['habitCoins']);
         final streak = _integer(data['currentStreak']);
+        final rawSettings = data['settings'];
+        final prefs = rawSettings is Map ? rawSettings : const <String, dynamic>{};
+        bool visible(String key) =>
+            prefs[key] != false && prefs['modoDiscreto'] != true;
+        final showXp = visible('mostrarXp');
+        final showCoins = visible('mostrarPuntos');
+        final showLevel = visible('mostrarNivelPerfil');
+        final showStreak = visible('mostrarRachasDiarias');
         return Scaffold(
           backgroundColor: background,
           body: SafeArea(
@@ -126,14 +140,19 @@ class ProfileScreen extends StatelessWidget {
                     username: username,
                     email: email,
                     coins: coins,
+                    showCoins: showCoins,
                     data: data,
                   ),
                   const SizedBox(height: 16),
                   _friendsCard(context, user.uid),
                   const SizedBox(height: 22),
-                  _levelCard(level: level, xp: xp),
-                  const SizedBox(height: 14),
-                  _statistics(streak: streak, coins: coins, uid: user.uid),
+                  if (showLevel || showXp) ...[
+                    _levelCard(level: level, xp: xp,
+                      showLevel: showLevel, showXp: showXp),
+                    const SizedBox(height: 14),
+                  ],
+                  _statistics(streak: streak, coins: coins,
+                    uid: user.uid, showStreak: showStreak, showCoins: showCoins),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Mis logros',
@@ -141,13 +160,14 @@ class ProfileScreen extends StatelessWidget {
                     () => _open(context, const LogrosScreen()),
                   ),
                   const SizedBox(height: 14),
-                  _achievementsCard(userRef, context),
+                  _achievementsCard(userRef, context, data),
                   const SizedBox(height: 12),
-                  _specialAchievements(),
-                  const SizedBox(height: 28),
                   _sectionTitle('Tu mes, paso a paso', null, null),
                   const SizedBox(height: 14),
-                  _monthlyProgress(),
+                  ProfileMonthlySummary(
+                     userRef: userRef,
+                     onViewProgress: () => _open(context, const ProgresoScreen()),
+                   ),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Hecho a tu manera',
@@ -156,6 +176,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _customizationCard(data),
+                   const SizedBox(height: 12),
+                   SizedBox(
+                     width: double.infinity,
+                     child: OutlinedButton.icon(
+                       onPressed: () => _open(context, const WardrobeScreen()),
+                       icon: const Icon(Icons.checkroom_rounded),
+                       label: const Text('Abrir mi armario y equipar cosméticos'),
+                     ),
+                   ),
                   const SizedBox(height: 20),
                   _mascotCard(streak: streak),
                   const SizedBox(height: 20),
@@ -284,6 +313,7 @@ class ProfileScreen extends StatelessWidget {
     required String username,
     required String email,
     required int coins,
+    required bool showCoins,
     required Map<String, dynamic> data,
   }) {
     return Container(
@@ -301,49 +331,49 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 150,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(
-                colors: _bannerColors(
-                  _string(data['profileBanner'], fallback: 'Amanecer'),
-                ),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Align(
-                  alignment: Alignment.topLeft,
+              child: Stack(fit: StackFit.expand, children: [
+                // Una sola superficie de banner: PNG o degradado de reserva.
+                if (HealthyAssetCatalog.banners.containsKey(
+                    _string(data['profileBanner'], fallback: 'Amanecer')))
+                  Image.asset(
+                    HealthyAssetCatalog.banners[
+                      _string(data['profileBanner'], fallback: 'Amanecer')]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => DecoratedBox(
+                      decoration: BoxDecoration(gradient: LinearGradient(
+                        colors: _bannerColors(_string(data['profileBanner'],
+                            fallback: 'Amanecer')),
+                      )),
+                    ),
+                  )
+                else
+                  DecoratedBox(
+                    decoration: BoxDecoration(gradient: LinearGradient(
+                      colors: _bannerColors(_string(data['profileBanner'],
+                          fallback: 'Amanecer')),
+                    )),
+                  ),
+                Positioned(
+                  left: 13,
+                  top: 12,
                   child: Text(
-                    _string(
-                      data['profileBanner'],
-                      fallback: 'Amanecer',
-                    ).toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white70,
+                    _string(data['profileBanner'], fallback: 'Amanecer')
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF6D989),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+              ]),
             ),
           ),
           Transform.translate(
@@ -380,6 +410,7 @@ class ProfileScreen extends StatelessWidget {
                                 ? data['photoUrl']?.toString() ?? ''
                                 : FirebaseAuth.instance.currentUser
                                         ?.photoURL ?? '',
+                            preset: _string(data['profileAvatarStyle'], fallback: 'foto'),
                             size: 86,
                           ),
                         ),
@@ -447,9 +478,14 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 9),
-                Text(
-                  'Pequeños pasos, raíces fuertes.',
-                  style: TextStyle(color: muted, fontSize: 13),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Text(
+                    _string(data['bio'],
+                      fallback: 'Pequeños pasos, raíces fuertes.'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(height: 15),
                 Padding(
@@ -477,6 +513,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (showCoins) ...[
                       const SizedBox(width: 10),
                       Container(
                         height: 44,
@@ -499,6 +536,7 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -677,7 +715,7 @@ class ProfileScreen extends StatelessWidget {
     _open(context, AmigosScreen(initialTab: tab));
   }
 
-  Widget _levelCard({required int level, required int xp}) {
+  Widget _levelCard({required int level, required int xp, required bool showLevel, required bool showXp}) {
     const xpForNextLevel = 1000;
     final xpInLevel = xp % xpForNextLevel;
     final progress = xpInLevel / xpForNextLevel;
@@ -694,7 +732,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
+          if (showLevel) Row(
             children: [
               Container(
                 width: 60,
@@ -745,6 +783,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (showXp) ...[
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -784,6 +823,7 @@ class ProfileScreen extends StatelessWidget {
               style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
           ),
+          ],
         ],
       ),
     );
@@ -802,16 +842,18 @@ class ProfileScreen extends StatelessWidget {
         return attempts.docs.length;
       }),
     );
-    return counts.fold<int>(0, (sum, count) => sum + count);
+    return counts.fold<int>(0, (total, amount) => total + amount);
   }
 
   Widget _statistics({
     required int streak,
     required int coins,
     required String uid,
+    required bool showStreak,
+    required bool showCoins,
   }) => Row(
     children: [
-      Expanded(
+      if (showStreak) Expanded(
         child: _statCard(
           icon: Icons.local_fire_department_outlined,
           value: '$streak',
@@ -820,7 +862,7 @@ class ProfileScreen extends StatelessWidget {
           iconColor: gold,
         ),
       ),
-      const SizedBox(width: 9),
+      if (showStreak) const SizedBox(width: 9),
       Expanded(
         child: FutureBuilder<int>(
           future: _completedCount(uid),
@@ -839,8 +881,8 @@ class ProfileScreen extends StatelessWidget {
               ),
         ),
       ),
-      const SizedBox(width: 9),
-      Expanded(
+      if (showCoins) const SizedBox(width: 9),
+      if (showCoins) Expanded(
         child: _statCard(
           customIcon: const HealthyCoinIcon(size: 22),
           value: '$coins',
@@ -924,285 +966,109 @@ class ProfileScreen extends StatelessWidget {
         ],
       );
 
+  /// Los mismos cálculos que LogrosScreen, sin otorgar recompensas.
   Widget _achievementsCard(
     DocumentReference<Map<String, dynamic>> userRef,
     BuildContext context,
-  ) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: userRef.collection('achievements').doc('primer_paso').snapshots(),
-      builder: (context, snapshot) {
-        final unlocked = snapshot.data?.exists ?? false;
-        return InkWell(
-          onTap: () => _open(context, const LogrosScreen()),
-          borderRadius: BorderRadius.circular(25),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(25),
+    Map<String, dynamic> profile,
+  ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    stream: userRef.collection('user_habits').snapshots(),
+    builder: (context, habitsSnapshot) =>
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: userRef.collection('achievements').snapshots(),
+        builder: (context, badgesSnapshot) {
+          if (habitsSnapshot.hasError || badgesSnapshot.hasError) {
+            return ListTile(
+              title: const Text('No se pudieron consultar tus logros'),
+              onTap: () => _open(context, const LogrosScreen()),
+            );
+          }
+          if (!habitsSnapshot.hasData || !badgesSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final habits = habitsSnapshot.data!.docs;
+          final completed = habits.where(
+            (doc) => doc.data()['latestStatus'] == 'completed',
+          ).length;
+          final ids = badgesSnapshot.data!.docs.map((doc) => doc.id).toSet();
+          final obtained = LogrosService.catalogo.where((def) =>
+            LogrosService.obtenido(def,
+              LogrosService.progreso(def, profile, habits.length, completed, ids),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ).length;
+          final next = LogrosService.siguiente(
+            profile, habits.length, completed, ids,
+          );
+          final total = LogrosService.catalogo.length;
+          final fraction = total == 0 ? 0.0 : obtained / total;
+          return Material(
+            color: HealthyAdaptive.surface,
+            borderRadius: BorderRadius.circular(24),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () => _open(context, const LogrosScreen()),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ESTANTE · MIS LOGROS',
-                      style: TextStyle(
-                        color: muted,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                    Text(
-                      snapshot.hasError
-                          ? 'Sin conexión'
-                          : unlocked
-                          ? '1 desbloqueado'
-                          : '0 desbloqueados',
-                      style: const TextStyle(
-                        color: green,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      width: 62,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color:
-                            unlocked
-                                ? HealthyAdaptive.mint
-                                : HealthyAdaptive.surfaceAlt,
-                        border: Border.all(
-                          color: unlocked ? green : muted,
-                          width: 1.8,
+                    Row(children: [
+                      Expanded(child: Text(
+                        'ESTANTE · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: muted,
+                          fontWeight: FontWeight.w800, fontSize: 11))),
+                      Text('$obtained de $total',
+                        style: TextStyle(color: HealthyAdaptive.accent,
+                          fontWeight: FontWeight.w900)),
+                    ]),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Container(
+                        width: 64, height: 64,
+                        decoration: BoxDecoration(
+                          color: HealthyAdaptive.mint,
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        child: Icon(next?.icono ?? Icons.workspace_premium_rounded,
+                          color: HealthyAdaptive.accent, size: 32),
                       ),
-                      child: Icon(
-                        unlocked
-                            ? Icons.workspace_premium_rounded
-                            : Icons.lock_outline,
-                        color: unlocked ? green : muted,
-                        size: 35,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Primer paso',
-                            style: TextStyle(
-                              color: navy,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          Text(next?.nombre ?? '¡Colección completa!',
+                            style: TextStyle(color: navy,
+                              fontSize: 15, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 5),
-                          Text(
-                            unlocked
-                                ? '¡Logro desbloqueado!'
-                                : 'Registra tu primer hábito',
-                            style: TextStyle(color: muted, fontSize: 12),
-                          ),
-                          const SizedBox(height: 5),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('+25 XP · ',
-                                style: TextStyle(color: green,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                              HealthyCoinAmount(amount: '+10', size: 16,
-                                suffix: ' Habit Coins',
-                                style: TextStyle(color: green,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                            ],
-                          ),
+                          Text(next?.descripcion ??
+                              'Has alcanzado todos los objetivos disponibles.',
+                            style: TextStyle(color: muted, fontSize: 12)),
                         ],
+                      )),
+                      Icon(Icons.chevron_right_rounded, color: muted),
+                    ]),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: fraction, minHeight: 7,
+                        backgroundColor: HealthyAdaptive.border,
+                        color: HealthyAdaptive.accent,
                       ),
                     ),
-                    Icon(Icons.chevron_right, color: muted),
+                    const SizedBox(height: 8),
+                    Text('Toca para ver los detalles de tus insignias',
+                      style: TextStyle(color: muted, fontSize: 11)),
                   ],
                 ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: LinearProgressIndicator(
-                    value: unlocked ? 1 : 0,
-                    minHeight: 5,
-                    backgroundColor: HealthyAdaptive.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(green),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Toca para ver todos los logros y desafíos.',
-                  style: TextStyle(color: muted, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _specialAchievements() => Row(
-    children: [
-      Expanded(
-        child: _specialCard(
-          Icons.nightlight_round,
-          'Ritmo lunar',
-          'PRÓXIMAMENTE',
-          'Los logros de sueño llegarán después.',
-          HealthyAdaptive.lavender,
-          const Color(0xFF8D77C3),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _specialCard(
-          Icons.lock_outline_rounded,
-          'Un mes floreciendo',
-          'PRÓXIMAMENTE',
-          'Los logros de racha llegarán después.',
-          HealthyAdaptive.surfaceAlt,
-          const Color(0xFF80958F),
-        ),
-      ),
-    ],
-  );
-
-  Widget _specialCard(
-    IconData icon,
-    String title,
-    String rarity,
-    String description,
-    Color color,
-    Color iconColor,
-  ) => Container(
-    constraints: const BoxConstraints(minHeight: 155),
-    padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(21),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: iconColor, size: 20),
-            const Spacer(),
-            Flexible(
-              child: Text(
-                rarity,
-                textAlign: TextAlign.end,
-                style: TextStyle(
-                  color: iconColor,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
-                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          style: TextStyle(
-            color: navy,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          description,
-          style: TextStyle(color: muted, fontSize: 10, height: 1.4),
-        ),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: const LinearProgressIndicator(
-            value: 0,
-            minHeight: 5,
-            backgroundColor: Colors.white70,
-          ),
-        ),
-      ],
-    ),
+          );
+        },
+      ),
   );
-
-  Widget _monthlyProgress() => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(26),
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _monthLabel(DateTime.now()),
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            Icon(Icons.calendar_month_rounded, color: muted),
-          ],
-        ),
-        const SizedBox(height: 20),
-        const Icon(Icons.insights_outlined, color: green, size: 42),
-        const SizedBox(height: 12),
-        Text(
-          'Resumen mensual pendiente de integración',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: navy, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Aquí se mostrarán tus registros reales cuando conectemos las estadísticas.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: muted, fontSize: 11),
-        ),
-      ],
-    ),
-  );
-
-  static String _monthLabel(DateTime date) {
-    const months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
 
   Widget _customizationCard(Map<String, dynamic> data) => Column(
     children: [

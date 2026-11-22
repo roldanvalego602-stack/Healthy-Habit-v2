@@ -193,8 +193,9 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: AnimatedSize(
-          duration: HealthyVisualEffects.duration(
-            context, const Duration(milliseconds: 240)),
+          duration: HealthyVisualEffects.enabled(context)
+              ? const Duration(milliseconds: 240)
+              : const Duration(milliseconds: 1),
           curve: Curves.easeOutCubic,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

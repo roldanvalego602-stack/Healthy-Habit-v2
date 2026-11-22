@@ -61,7 +61,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     return _userDoc.collection('user_habits');
   }
 
-  bool get _tieneEvidencia => _imagenSeleccionada != null;
   bool get _metaCompletada => _meta > 0 && _progreso >= _meta;
   bool get _puedeGuardar =>
       !_guardando && !_cargando && !_metaCompletada && _interactionComplete;
@@ -77,7 +76,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     _progreso = widget.currentProgress ?? 0;
     _meta = widget.goal ?? 6;
     _cargarHabito();
-    TemporaryEvidenceService.cleanExpiredForCurrentUser().catchError((_) {});
+    TemporaryEvidenceService.cleanExpiredForCurrentUser().then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('No se pudieron limpiar evidencias vencidas: $error');
+      },
+    );
   }
 
   @override
@@ -298,13 +302,11 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
       final resultado = await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
-        final habitoSnapshot = await transaction.get(habitoRef);
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (!attemptSnapshot.exists) {
           throw Exception('El intento ya no existe.');
         }
         final datosAttempt = attemptSnapshot.data()!;
-        final datosHabito = habitoSnapshot.data() ?? <String, dynamic>{};
         final datosUsuario = usuarioSnapshot.data() ?? <String, dynamic>{};
         // Comprobar el estado dentro de la transacción
         // evita guardar registros en intentos cancelados
@@ -463,35 +465,47 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           nuevaRacha: nuevaRacha,
           nivelAnterior: nivelAnterior,
           nivelNuevo: nivelNuevo,
+          xpGanado: xpGanado,
+          monedasGanadas: monedasGanadas,
+          progresoNuevo: nuevoProgreso,
+          meta: metaSegura,
         );
       });
       if (!mounted) return;
+      // Estas cifras provienen exclusivamente de una transacción confirmada.
+      // El banner es informativo: nunca concede XP ni Habit Coins.
+      final resumenRecompensa = [
+        '+${resultado.xpGanado} XP',
+        if (resultado.monedasGanadas > 0)
+          '+${resultado.monedasGanadas} Habit Coins',
+        '${resultado.progresoNuevo}/${resultado.meta} registros',
+      ].join(' · ');
       if (resultado.nivelNuevo > resultado.nivelAnterior) {
         HealthyCelebration.show(
           context,
           title: '¡Subiste al nivel ${resultado.nivelNuevo}!',
-          subtitle: 'Tu registro se guardó correctamente.',
+          subtitle: resumenRecompensa,
           icon: Icons.workspace_premium_rounded,
-        );
-      } else if (resultado.nuevaRacha > resultado.rachaAnterior) {
-        HealthyCelebration.show(
-          context,
-          title: '¡${resultado.nuevaRacha} días de racha!',
-          subtitle: 'Tu constancia sigue creciendo.',
-          icon: Icons.local_fire_department_rounded,
         );
       } else if (resultado.completado) {
         HealthyCelebration.show(
           context,
           title: '¡Hábito completado!',
-          subtitle: 'Tu meta quedó registrada.',
+          subtitle: resumenRecompensa,
           icon: Icons.emoji_events_rounded,
+        );
+      } else if (resultado.nuevaRacha > resultado.rachaAnterior) {
+        HealthyCelebration.show(
+          context,
+          title: '¡${resultado.nuevaRacha} días de racha!',
+          subtitle: resumenRecompensa,
+          icon: Icons.local_fire_department_rounded,
         );
       } else {
         HealthyCelebration.show(
           context,
           title: '¡Registro guardado!',
-          subtitle: 'Tu progreso se actualizó.',
+          subtitle: resumenRecompensa,
           icon: Icons.check_circle_rounded,
         );
       }

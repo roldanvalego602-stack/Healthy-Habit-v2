@@ -1,0 +1,955 @@
+{
+  "schemaVersion": 1,
+  "language": "es",
+  "description": "Fichas educativas locales: no contienen cálculos nutricionales ni sustituyen asesoría clínica. Las referencias son enlaces de consulta, no verificación individual de cada afirmación.",
+  "entries": [
+    {
+      "id": "avena",
+      "category": "alimentacion",
+      "title": "Avena",
+      "aliases": [
+        "avena",
+        "hojuelas de avena",
+        "avena para desayunar"
+      ],
+      "tags": [
+        "cereal",
+        "fibra",
+        "desayuno"
+      ],
+      "answer": "La avena es un cereal que aporta carbohidratos y fibra. Puede combinarse con fruta, yogur u otros alimentos según tus preferencias. La composición cambia según la porción y preparación.",
+      "source": {
+        "name": "USDA — FoodData Central",
+        "url": "https://fdc.nal.usda.gov/"
+      }
+    },
+    {
+      "id": "lentejas",
+      "category": "alimentacion",
+      "title": "Lentejas",
+      "aliases": [
+        "lentejas",
+        "lenteja",
+        "legumbres lentejas"
+      ],
+      "tags": [
+        "legumbre",
+        "fibra",
+        "proteina vegetal"
+      ],
+      "answer": "Las lentejas son leguminosas que aportan fibra y proteína vegetal. Su composición depende de la preparación y la cantidad consumida.",
+      "source": {
+        "name": "USDA — FoodData Central",
+        "url": "https://fdc.nal.usda.gov/"
+      }
+    },
+    {
+      "id": "huevo",
+      "category": "alimentacion",
+      "title": "Huevo",
+      "aliases": [
+        "huevo",
+        "huevos",
+        "comer huevo"
+      ],
+      "tags": [
+        "proteina",
+        "desayuno",
+        "alimento"
+      ],
+      "answer": "El huevo aporta proteínas y otros nutrientes. Las preparaciones con otros ingredientes pueden modificar la composición del platillo.",
+      "source": {
+        "name": "USDA — FoodData Central",
+        "url": "https://fdc.nal.usda.gov/"
+      }
+    },
+    {
+      "id": "proteinas",
+      "category": "alimentacion",
+      "title": "Fuentes de proteína",
+      "aliases": [
+        "proteina",
+        "proteinas",
+        "alimentos con proteina",
+        "fuentes de proteina",
+        "comidas proteicas",
+        "comer para ganar musculo"
+      ],
+      "tags": [
+        "musculo",
+        "tejidos",
+        "legumbres",
+        "huevo"
+      ],
+      "answer": "Las proteínas contribuyen al mantenimiento de los tejidos. Puedes obtenerlas de leguminosas, huevo, lácteos, pescado, carnes, tofu y semillas. Las necesidades personales varían.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "fibra",
+      "category": "alimentacion",
+      "title": "Fibra en la alimentación",
+      "aliases": [
+        "fibra",
+        "alimentos con fibra",
+        "mas fibra",
+        "comer fibra",
+        "estreñimiento"
+      ],
+      "tags": [
+        "leguminosas",
+        "cereales integrales",
+        "verduras"
+      ],
+      "answer": "La fibra se encuentra en frutas, verduras, leguminosas y cereales integrales. Introducirla gradualmente y mantener una hidratación adecuada puede facilitar su consumo.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "frutas_verduras",
+      "category": "alimentacion",
+      "title": "Frutas y verduras",
+      "aliases": [
+        "fruta",
+        "frutas",
+        "verduras",
+        "vegetales",
+        "comer verduras",
+        "comer frutas"
+      ],
+      "tags": [
+        "alimentacion variada",
+        "fibra",
+        "vegetales"
+      ],
+      "answer": "Incluir frutas y verduras variadas de forma habitual es parte de una alimentación saludable. Pueden ser frescas, congeladas o en conserva, según disponibilidad.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "azucares",
+      "category": "alimentacion",
+      "title": "Bebidas y azúcares libres",
+      "aliases": [
+        "refresco",
+        "bebidas azucaradas",
+        "azucar añadida",
+        "azucares libres",
+        "menos azucar"
+      ],
+      "tags": [
+        "bebida",
+        "agua",
+        "alimentacion"
+      ],
+      "answer": "Reducir el consumo habitual de bebidas con azúcares libres puede ayudar a mejorar el patrón alimentario. El agua sin azúcar es una opción frecuente.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "sal",
+      "category": "alimentacion",
+      "title": "Consumo de sal",
+      "aliases": [
+        "sal",
+        "sodio",
+        "menos sal",
+        "comer salado"
+      ],
+      "tags": [
+        "etiquetas",
+        "presion arterial",
+        "alimentacion"
+      ],
+      "answer": "Conviene moderar la sal y el sodio, incluidos los de alimentos preparados. Revisar etiquetas y cocinar con hierbas o especias puede ayudar.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "plato",
+      "category": "alimentacion",
+      "title": "Comidas variadas",
+      "aliases": [
+        "plato saludable",
+        "plato equilibrado",
+        "comida equilibrada",
+        "comer balanceado",
+        "comida balanceada",
+        "alimentacion saludable",
+        "alimentacion",
+        "mejorar alimentacion"
+      ],
+      "tags": [
+        "verduras",
+        "proteina",
+        "cereales"
+      ],
+      "answer": "Una comida variada puede incluir verduras, una fuente de proteína y cereales o tubérculos. Las cantidades dependen del contexto y no existe un plato único apropiado para todas las personas.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "desayuno",
+      "category": "alimentacion",
+      "title": "Ideas sencillas para desayunar",
+      "aliases": [
+        "que desayunar",
+        "desayuno saludable",
+        "ideas para desayunar",
+        "desayunar sano"
+      ],
+      "tags": [
+        "avena",
+        "huevo",
+        "fruta"
+      ],
+      "answer": "Algunas opciones sencillas son avena con fruta y yogur, huevo acompañado de verduras o frijoles con tortilla. Ajusta según gustos, disponibilidad y necesidades.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "presupuesto",
+      "category": "alimentacion",
+      "title": "Alimentación con presupuesto ajustado",
+      "aliases": [
+        "comer barato",
+        "alimentacion economica",
+        "comida economica",
+        "comer sano barato"
+      ],
+      "tags": [
+        "planificacion",
+        "leguminosas",
+        "temporada"
+      ],
+      "answer": "Planificar comidas con frijoles, lentejas, avena, huevo y alimentos de temporada puede facilitar una alimentación variada con presupuesto limitado.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "actividad",
+      "category": "movimiento",
+      "title": "Actividad física cotidiana",
+      "aliases": [
+        "actividad fisica",
+        "hacer ejercicio",
+        "actividad aerobica",
+        "moverme mas",
+        "vida activa"
+      ],
+      "tags": [
+        "caminar",
+        "ejercicio",
+        "movimiento"
+      ],
+      "answer": "La actividad física cotidiana aporta beneficios para la salud. Puedes comenzar con movimientos accesibles y aumentar gradualmente de acuerdo con tus capacidades.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "caminar",
+      "category": "movimiento",
+      "title": "Caminar como actividad",
+      "aliases": [
+        "caminar",
+        "caminata",
+        "salir a caminar",
+        "caminar en casa"
+      ],
+      "tags": [
+        "movimiento",
+        "actividad aerobica"
+      ],
+      "answer": "Caminar puede ser una forma accesible de movimiento. Ajusta el ritmo y la duración a tu condición y aumenta progresivamente cuando resulte cómodo.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "fuerza",
+      "category": "movimiento",
+      "title": "Entrenamiento de fuerza",
+      "aliases": [
+        "entrenamiento de fuerza",
+        "pesas",
+        "fortalecer musculos",
+        "ganar fuerza"
+      ],
+      "tags": [
+        "musculo",
+        "resistencia",
+        "ejercicio"
+      ],
+      "answer": "Los ejercicios de fuerza ayudan a trabajar músculos y huesos. Empieza con técnica controlada y resistencia apropiada; adapta el esfuerzo y deja tiempo para recuperarte.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "sedentarismo",
+      "category": "movimiento",
+      "title": "Pausas activas",
+      "aliases": [
+        "pausas activas",
+        "mucho tiempo sentado",
+        "sedentarismo",
+        "levantarme de la silla"
+      ],
+      "tags": [
+        "movimiento",
+        "actividad fisica"
+      ],
+      "answer": "Interrumpir períodos prolongados sentado con pausas de movimiento puede ser útil. Levantarte y caminar unos minutos es una forma sencilla de comenzar.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "descanso",
+      "category": "descanso",
+      "title": "Hábitos de descanso",
+      "aliases": [
+        "dormir mejor",
+        "higiene del sueño",
+        "habitos de sueño",
+        "no puedo dormir",
+        "descansar mejor"
+      ],
+      "tags": [
+        "sueño",
+        "rutina",
+        "descanso"
+      ],
+      "answer": "Una rutina de descanso puede incluir horarios regulares, limitar cafeína cerca de la noche y preparar un entorno tranquilo. Si los problemas de sueño persisten, solicita valoración profesional.",
+      "source": {
+        "name": "Healthy Habit — consejo educativo general",
+        "url": ""
+      }
+    },
+    {
+      "id": "hidratacion",
+      "category": "hidratacion",
+      "title": "Hidratación cotidiana",
+      "aliases": [
+        "beber agua",
+        "tomar agua",
+        "hidratacion",
+        "hidratarme",
+        "agua durante el dia"
+      ],
+      "tags": [
+        "bebidas",
+        "ejercicio",
+        "agua"
+      ],
+      "answer": "Beber agua a lo largo del día ayuda a mantener una hidratación adecuada. Las necesidades pueden variar según actividad, clima y situación personal.",
+      "source": {
+        "name": "Healthy Habit — orientación general",
+        "url": ""
+      }
+    },
+    {
+      "id": "recuperacion",
+      "category": "movimiento",
+      "title": "Recuperación después del ejercicio",
+      "aliases": [
+        "agujetas",
+        "dolor despues de ejercicio",
+        "dolor muscular despues de entrenar",
+        "recuperacion muscular"
+      ],
+      "tags": [
+        "descanso",
+        "ejercicio",
+        "musculos"
+      ],
+      "answer": "Después de actividad física, el descanso y una progresión gradual son importantes. Dolor intenso, hinchazón o pérdida de función requieren valoración, no solo una recomendación del chatbot.",
+      "source": {
+        "name": "Healthy Habit — consejo educativo general",
+        "url": ""
+      }
+    },
+    {
+      "id": "carbohidratos",
+      "category": "alimentacion",
+      "title": "Carbohidratos",
+      "aliases": [
+        "carbohidratos",
+        "carbohidrato",
+        "alimentos con carbohidratos",
+        "cereales integrales"
+      ],
+      "tags": [
+        "energia",
+        "avena",
+        "arroz",
+        "pan"
+      ],
+      "answer": "Los carbohidratos son una fuente de energía. Una alimentación variada puede incluir cereales integrales, frutas y leguminosas, de acuerdo con el contexto de cada persona.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "grasas",
+      "category": "alimentacion",
+      "title": "Grasas alimentarias",
+      "aliases": [
+        "grasas saludables",
+        "grasas",
+        "aguacate",
+        "frutos secos"
+      ],
+      "tags": [
+        "aceite",
+        "nueces",
+        "semillas"
+      ],
+      "answer": "Las grasas forman parte de una alimentación variada. Algunas fuentes incluyen aguacate, nueces, semillas y aceites vegetales. Conviene limitar las grasas trans.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "vitaminas",
+      "category": "alimentacion",
+      "title": "Vitaminas y minerales",
+      "aliases": [
+        "vitaminas",
+        "minerales",
+        "micronutrientes",
+        "nutrientes esenciales"
+      ],
+      "tags": [
+        "alimentacion variada",
+        "verduras",
+        "frutas"
+      ],
+      "answer": "Las vitaminas y minerales participan en distintas funciones del cuerpo. Una alimentación variada ayuda a obtenerlos; una necesidad específica requiere valoración individual.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "hierro",
+      "category": "alimentacion",
+      "title": "Fuentes de hierro",
+      "aliases": [
+        "hierro",
+        "alimentos con hierro",
+        "anemia"
+      ],
+      "tags": [
+        "leguminosas",
+        "carnes",
+        "nutrientes"
+      ],
+      "answer": "El hierro se encuentra en distintos alimentos, como leguminosas y algunos productos animales. Ante sospecha de anemia no conviene diagnosticarla ni tratarla solo con consejos del chatbot.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "calcio",
+      "category": "alimentacion",
+      "title": "Calcio y salud ósea",
+      "aliases": [
+        "calcio",
+        "huesos",
+        "alimentos con calcio"
+      ],
+      "tags": [
+        "lacteos",
+        "nutrientes",
+        "minerales"
+      ],
+      "answer": "El calcio participa en la salud de huesos y dientes. Existen fuentes animales y vegetales; las necesidades dependen de la etapa de vida y situación individual.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "etiquetas",
+      "category": "alimentacion",
+      "title": "Lectura de etiquetas nutricionales",
+      "aliases": [
+        "etiqueta nutricional",
+        "etiquetas",
+        "sellos",
+        "leer etiquetas",
+        "informacion nutrimental"
+      ],
+      "tags": [
+        "sodio",
+        "azucares",
+        "porciones"
+      ],
+      "answer": "Para comparar alimentos envasados revisa la porción declarada, ingredientes y cantidad de sodio y azúcares. Los datos deben interpretarse considerando la cantidad realmente consumida.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "cena",
+      "category": "alimentacion",
+      "title": "Opciones sencillas para cenar",
+      "aliases": [
+        "cena saludable",
+        "ideas para cenar",
+        "que cenar",
+        "cenar sano",
+        "cenar",
+        "que deberia cenar"
+      ],
+      "tags": [
+        "comida",
+        "huevo",
+        "leguminosas"
+      ],
+      "answer": "Una cena práctica puede combinar verduras, una fuente de proteína como huevo, frijoles o tofu, y otro alimento de acuerdo con el apetito y las preferencias.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "colaciones",
+      "category": "alimentacion",
+      "title": "Colaciones y refrigerios",
+      "aliases": [
+        "colacion",
+        "snack saludable",
+        "entre comidas",
+        "botana saludable"
+      ],
+      "tags": [
+        "fruta",
+        "yogur",
+        "nueces"
+      ],
+      "answer": "Si tienes hambre entre comidas, opciones sencillas son fruta con yogur o una porción de nueces. No es obligatorio comer colaciones si no las necesitas.",
+      "source": {
+        "name": "OMS — Alimentación saludable",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/healthy-diet"
+      }
+    },
+    {
+      "id": "vegetariana",
+      "category": "alimentacion",
+      "title": "Alimentación vegetariana",
+      "aliases": [
+        "vegetariano",
+        "vegetariana",
+        "vegano",
+        "vegana",
+        "alimentacion vegetal"
+      ],
+      "tags": [
+        "leguminosas",
+        "cereales",
+        "vitamina b12"
+      ],
+      "answer": "Una alimentación basada en vegetales puede ser variada si se planifica bien. En dietas veganas conviene prestar atención especial a la vitamina B12 y asesorarse sobre necesidades individuales.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "alergias",
+      "category": "alimentacion",
+      "title": "Alergias e intolerancias alimentarias",
+      "aliases": [
+        "alergia alimentaria",
+        "alergias",
+        "intolerancia",
+        "gluten",
+        "lactosa"
+      ],
+      "tags": [
+        "reaccion alimentaria",
+        "sensibilidad"
+      ],
+      "answer": "Una alergia alimentaria y una intolerancia no son lo mismo. No elimines grupos completos por sospecha sin evaluación. Dificultad para respirar o hinchazón importante tras comer requieren atención urgente.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "glucosa",
+      "category": "alimentacion",
+      "title": "Alimentación y glucosa",
+      "aliases": [
+        "diabetes",
+        "glucosa",
+        "azucar en sangre",
+        "glucemia"
+      ],
+      "tags": [
+        "nutricion",
+        "salud"
+      ],
+      "answer": "La alimentación puede apoyar el cuidado de la glucosa, pero las decisiones deben individualizarse según el tratamiento y contexto clínico. No modifiques medicamentos por una respuesta del chatbot.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "peso",
+      "category": "alimentacion",
+      "title": "Cambios de peso",
+      "aliases": [
+        "bajar de peso",
+        "adelgazar",
+        "perder grasa",
+        "subir de peso",
+        "aumentar de peso"
+      ],
+      "tags": [
+        "alimentacion",
+        "actividad",
+        "descanso"
+      ],
+      "answer": "Los cambios de peso se abordan mejor con hábitos sostenibles que con dietas extremas. Si existe una variación involuntaria o preocupación clínica, busca orientación profesional.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "ayuno",
+      "category": "alimentacion",
+      "title": "Ayuno intermitente",
+      "aliases": [
+        "ayuno intermitente",
+        "ayunar",
+        "hacer ayuno"
+      ],
+      "tags": [
+        "horarios",
+        "comidas"
+      ],
+      "answer": "El ayuno no es indispensable para mejorar hábitos. Puede no ser adecuado en ciertas etapas o condiciones y requiere valoración si existe una situación de salud específica.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "suplementos",
+      "category": "alimentacion",
+      "title": "Suplementos nutricionales",
+      "aliases": [
+        "suplementos",
+        "proteina en polvo",
+        "creatina",
+        "suplemento alimenticio"
+      ],
+      "tags": [
+        "alimentacion",
+        "ejercicio"
+      ],
+      "answer": "Los suplementos no sustituyen una alimentación variada, el sueño ni el entrenamiento. Sus beneficios y riesgos varían según sustancia, calidad y condiciones personales.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "cardio",
+      "category": "movimiento",
+      "title": "Ejercicio aeróbico",
+      "aliases": [
+        "cardio",
+        "ejercicio aerobico",
+        "resistencia cardiovascular",
+        "correr",
+        "bicicleta"
+      ],
+      "tags": [
+        "caminar",
+        "actividad fisica"
+      ],
+      "answer": "Las actividades aeróbicas incluyen caminar a paso ligero, bicicleta o nadar. Puedes empezar con períodos cómodos y progresar de forma gradual.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "sentadillas",
+      "category": "movimiento",
+      "title": "Sentadillas",
+      "aliases": [
+        "sentadilla",
+        "sentadillas",
+        "hacer sentadillas"
+      ],
+      "tags": [
+        "piernas",
+        "ejercicio",
+        "fuerza"
+      ],
+      "answer": "Las sentadillas trabajan principalmente piernas y caderas. Prioriza un movimiento controlado y un rango cómodo; detente si experimentas dolor.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "flexiones",
+      "category": "movimiento",
+      "title": "Flexiones",
+      "aliases": [
+        "flexion",
+        "flexiones",
+        "lagartijas",
+        "hacer lagartijas"
+      ],
+      "tags": [
+        "brazos",
+        "ejercicio",
+        "fuerza"
+      ],
+      "answer": "Las flexiones trabajan varios músculos del torso y los brazos. Es posible empezar contra una pared o superficie elevada y ajustar la dificultad.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "planchas",
+      "category": "movimiento",
+      "title": "Plancha abdominal",
+      "aliases": [
+        "plancha abdominal",
+        "planchas",
+        "core",
+        "abdominales"
+      ],
+      "tags": [
+        "estabilidad",
+        "ejercicio"
+      ],
+      "answer": "La plancha es un ejercicio de estabilidad. Mantén una posición cómoda y respira continuamente; empieza con intervalos breves.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "calentamiento",
+      "category": "movimiento",
+      "title": "Calentamiento",
+      "aliases": [
+        "calentamiento",
+        "calentar antes de entrenar",
+        "antes de entrenar"
+      ],
+      "tags": [
+        "movilidad",
+        "ejercicio"
+      ],
+      "answer": "Antes de entrenar puedes realizar unos minutos de movimiento suave y progresivo relacionado con la actividad. Ajusta el esfuerzo a tu capacidad.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "movilidad",
+      "category": "movimiento",
+      "title": "Movilidad y estiramientos",
+      "aliases": [
+        "estirar",
+        "estiramientos",
+        "movilidad",
+        "flexibilidad"
+      ],
+      "tags": [
+        "ejercicio",
+        "articulaciones"
+      ],
+      "answer": "La movilidad suave y los estiramientos pueden ayudar a practicar movimientos controlados. No fuerces posiciones dolorosas ni rebotes intensamente.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "casa",
+      "category": "movimiento",
+      "title": "Ejercicio en casa",
+      "aliases": [
+        "entrenar en casa",
+        "rutina en casa",
+        "ejercicios en casa",
+        "ejercicio en casa",
+        "ejercicio que hacer en casa"
+      ],
+      "tags": [
+        "caminar",
+        "fuerza",
+        "sentadillas",
+        "ejercicio"
+      ],
+      "answer": "Puedes comenzar con caminar, levantarte de una silla o hacer flexiones contra una pared. Las sesiones breves también pueden formar parte de una rutina.",
+      "source": {
+        "name": "OMS — Actividad física",
+        "url": "https://www.who.int/es/news-room/fact-sheets/detail/physical-activity"
+      }
+    },
+    {
+      "id": "motivacion",
+      "category": "habitos",
+      "title": "Constancia con los hábitos",
+      "aliases": [
+        "motivacion para entrenar",
+        "no tengo motivacion",
+        "disciplina",
+        "ser constante",
+        "mantener habitos"
+      ],
+      "tags": [
+        "rutina",
+        "objetivos",
+        "progreso"
+      ],
+      "answer": "Preparar con anticipación una actividad breve y realista puede facilitar empezar. La constancia suele construirse con acciones que resulten sostenibles.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    },
+    {
+      "id": "huevo_seguridad",
+      "category": "alimentacion",
+      "title": "¿El huevo puede hacer daño?",
+      "aliases": [
+        "huevo hace daño",
+        "comer huevo hace daño",
+        "es malo comer huevo",
+        "huevo es dañino",
+        "huevo puede enfermar",
+        "peligros del huevo",
+        "huevo me cae mal",
+        "huevo crudo es peligroso"
+      ],
+      "tags": [
+        "huevo",
+        "seguridad alimentaria",
+        "alergia",
+        "salmonela"
+      ],
+      "answer": "Para muchas personas, el huevo bien cocinado puede formar parte de una alimentación variada. Los principales riesgos incluyen alergia y enfermedades transmitidas por huevos crudos o poco cocidos. Refrigera y cocina bien el huevo, hasta que la clara y la yema estén firmes. Si presentas una reacción alérgica, consulta a un profesional; dificultad para respirar requiere atención urgente.",
+      "source": {
+        "name": "FDA — Seguridad del huevo",
+        "url": "https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety"
+      }
+    },
+    {
+      "id": "huevo_jamon",
+      "category": "alimentacion",
+      "title": "Preparar huevo con jamón",
+      "aliases": [
+        "huevo con jamon",
+        "preparar huevo con jamon",
+        "huevos con jamon",
+        "agregar jamon al huevo",
+        "ponerle jamon al huevo",
+        "hacer huevo y jamon",
+        "jamon con huevo",
+        "si le pongo jamon",
+        "si le agrego jamon"
+      ],
+      "tags": [
+        "huevo",
+        "jamon",
+        "preparacion",
+        "carne procesada"
+      ],
+      "answer": "Sí, puedes preparar huevo con jamón. Cocina bien el huevo y manipula los ingredientes de forma higiénica. El jamón suele ser una carne procesada, por lo que conviene consumirlo con moderación. Para variar puedes añadir verduras y, si te interesa reducir sodio, elegir preparaciones con menos embutidos. No hace falta eliminar un alimento por una sola combinación.",
+      "source": {
+        "name": "OMS — Carnes rojas y procesadas",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/cancer-carcinogenicity-of-the-consumption-of-red-meat-and-processed-meat/"
+      }
+    },
+    {
+      "id": "huevo_coccion",
+      "category": "alimentacion",
+      "title": "Cocción segura del huevo",
+      "aliases": [
+        "huevo crudo",
+        "huevo poco cocido",
+        "huevo bien cocido",
+        "cocinar huevo",
+        "como preparar huevo seguro",
+        "cocer huevo",
+        "salmonella en huevo"
+      ],
+      "tags": [
+        "huevo",
+        "preparacion",
+        "coccion",
+        "salmonella"
+      ],
+      "answer": "Para reducir el riesgo de salmonela, conserva los huevos según las indicaciones locales, evita contaminación cruzada y cocina hasta que la clara y la yema estén firmes. Para platillos que se consuman crudos o poco cocidos utiliza huevos o productos de huevo pasteurizados.",
+      "source": {
+        "name": "FDA — Seguridad del huevo",
+        "url": "https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety"
+      }
+    },
+    {
+      "id": "huevo_frecuencia",
+      "category": "alimentacion",
+      "title": "Frecuencia de consumo de huevo",
+      "aliases": [
+        "comer huevo diario",
+        "comer huevos todos los dias",
+        "cuantos huevos puedo comer",
+        "huevo todos los dias",
+        "comer mucho huevo"
+      ],
+      "tags": [
+        "huevo",
+        "frecuencia",
+        "alimentacion",
+        "colesterol"
+      ],
+      "answer": "La cantidad apropiada de huevo depende de tu alimentación total, antecedentes y situación de salud. No hay una cantidad universal adecuada para todos. Si tienes indicaciones médicas relacionadas con lípidos o alergias, consulta a un profesional para individualizar el consumo.",
+      "source": {
+        "name": "Healthy Habit — orientación educativa general",
+        "url": ""
+      }
+    }
+  ]
+}

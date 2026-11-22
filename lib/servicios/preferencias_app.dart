@@ -2,6 +2,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
+/// Preferencias observables desde cualquier pantalla bajo MaterialApp.builder.
+/// No otorga privilegios ni sustituye las reglas de seguridad de Firestore.
+class HealthySettingsScope extends InheritedWidget {
+  const HealthySettingsScope({
+    super.key,
+    required this.values,
+    required super.child,
+  });
+
+  final Map<String, dynamic> values;
+
+  static bool boolValue(
+    BuildContext context,
+    String key, {
+    bool defaultValue = true,
+  }) {
+    final scope = context.dependOnInheritedWidgetOfExactType<HealthySettingsScope>();
+    final value = scope?.values[key];
+    return value is bool ? value : defaultValue;
+  }
+
+  @override
+  bool updateShouldNotify(HealthySettingsScope oldWidget) =>
+      !mapEquals(values, oldWidget.values);
+}
+
 
 /// Escucha las preferencias guardadas por SettingsScreen en users/{uid}.settings.
 class PreferenciasApp extends StatelessWidget {
@@ -44,7 +72,10 @@ class PreferenciasApp extends StatelessWidget {
               'Grande' => 1.15,
               _ => 1.0,
             };
-            return builder(context, theme, scale);
+            return HealthySettingsScope(
+              values: Map<String, dynamic>.from(settings),
+              child: builder(context, theme, scale),
+            );
           },
         );
       },

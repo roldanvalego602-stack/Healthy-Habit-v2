@@ -58,7 +58,7 @@ void main() {
     ));
     expect(find.text('light'), findsOneWidget);
     await controller.select(ThemeMode.dark);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('dark'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await controller.select(ThemeMode.light);

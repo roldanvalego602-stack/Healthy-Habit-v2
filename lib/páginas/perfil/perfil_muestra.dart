@@ -3,8 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
+import 'amigos_servicio.dart';
+import '../logros/logros_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -45,7 +48,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
-  DocumentReference<Map<String, dynamic>>? get _friendRef {
+  DocumentReference<Map<String, dynamic>>? get _followingRef {
     final currentUser = _currentUser;
     if (currentUser == null || currentUser.uid == widget.userId) {
       return null;
@@ -58,51 +61,44 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         .doc(widget.userId);
   }
 
-  Future<void> _toggleFriendship(bool isFriend) async {
+  DocumentReference<Map<String, dynamic>>? get _pendingRef {
     final currentUser = _currentUser;
-    final friendRef = _friendRef;
+    if (currentUser == null || currentUser.uid == widget.userId) {
+      return null;
+    }
+    return _db.collection('users').doc(currentUser.uid)
+        .collection('solicitudes_enviadas').doc(widget.userId);
+  }
 
-    if (currentUser == null || friendRef == null) {
-      _showMessage('Inicia sesión para agregar amigos.');
+  Future<void> _toggleFriendship(bool isFollowing, bool isPending) async {
+    if (_currentUser == null || _currentUser!.uid == widget.userId ||
+        _isLoading) {
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
-      if (isFriend) {
-        await friendRef.delete();
+      if (isFollowing) {
+        await AmigosServicio.dejarDeSeguir(widget.userId);
+      } else if (isPending) {
+        await AmigosServicio.cancelarSolicitud(widget.userId);
       } else {
-        await friendRef.set({
-          'uid': widget.userId,
-          'name': widget.name,
-          'username': widget.username,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        await AmigosServicio.enviarSolicitud(widget.userId);
       }
-
       if (!mounted) return;
-
-      _showMessage(
-        isFriend
-            ? 'Has eliminado a ${widget.name} de tus amigos.'
-            : '¡Agregaste a ${widget.name} a tus amigos!',
-      );
+      _showMessage(isFollowing
+          ? 'Dejaste de seguir a ${widget.name}.'
+          : isPending
+              ? 'Solicitud cancelada.'
+              : 'Solicitud enviada a ${widget.name}.');
     } on FirebaseException catch (e) {
       if (!mounted) return;
-
-      _showMessage(
-        e.code == 'permission-denied'
-            ? 'Firestore no permite esta operación. Revisa las reglas.'
-            : 'No se pudo actualizar tu lista de amigos.',
-      );
+      _showMessage(e.code == 'permission-denied'
+          ? 'Esta acción no está permitida por Firestore.'
+          : 'No se pudo completar la solicitud. Inténtalo de nuevo.');
     } catch (_) {
-      if (!mounted) return;
-      _showMessage('Ocurrió un error al actualizar tus amigos.');
+      if (mounted) _showMessage('No se pudo completar la acción.');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -129,7 +125,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(widget.userId).snapshots(),
+      stream: _db.collection(isOwnAccount(widget.userId) ? 'users' : 'public_profiles').doc(widget.userId).snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
 
@@ -154,6 +150,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         );
         final level = _readInt(data, 'level', widget.level);
         final streak = _readInt(data, 'currentStreak', widget.streakDays);
+        final rawSettings = data['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
+        final achievementsVisibility = rawSettings is Map
+            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
+            : 'Solo amigos';
         final completed = _readInt(
           data,
           'completedHabits',
@@ -162,7 +164,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
         final currentUser = _currentUser;
         final isOwnProfile = currentUser?.uid == widget.userId;
-        final friendRef = _friendRef;
+        final friendRef = _followingRef;
 
         return Scaffold(
           backgroundColor: background,
@@ -210,6 +212,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _publicProfileCard(
                             name: name,
                             photoUrl: photoUrl,
+                            avatarStyle: _readString(data, 'profileAvatarStyle', 'foto'),
+                            bannerStyle: _readString(data, 'profileBanner', 'Amanecer'),
                             username: username,
                             bio: bio,
                             title: title,
@@ -219,11 +223,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           const SizedBox(height: 22),
                           _levelCard(level),
                           const SizedBox(height: 14),
-                          _statistics(streak, completed),
+                          _statistics(streak, completed,
+                            showStreak: isOwnProfile || publicStreak),
                           const SizedBox(height: 28),
-                          _sectionTitle('Logros destacados'),
-                          const SizedBox(height: 14),
-                          _achievementsCard(),
+                          _visibleAchievements(
+                            own: isOwnProfile,
+                            visibility: achievementsVisibility,
+                            data: data,
+                          ),
                           const SizedBox(height: 28),
                           _mascotSupportCard(name),
                         ],
@@ -244,6 +251,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _publicProfileCard({
     required String name,
     required String photoUrl,
+    required String avatarStyle,
+    required String bannerStyle,
     required String username,
     required String bio,
     required String title,
@@ -265,29 +274,42 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 130,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF174D4B), Color(0xFF498A75)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Align(
-              alignment: Alignment.topLeft,
-              child: Text(
-                'PERFIL PÚBLICO',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+              child: Stack(fit: StackFit.expand, children: [
+                if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
+                  Image.asset(
+                    HealthyAssetCatalog.banners[bannerStyle]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                            ),
+                          ),
+                        ),
+                  )
+                else
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                      ),
+                    ),
+                  ),
+                const Positioned(
+                  left: 12, top: 10,
+                  child: Text('PERFIL PÚBLICO',
+                    style: TextStyle(color: Colors.white, fontSize: 10,
+                      fontWeight: FontWeight.w800, letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)]),
+                  ),
                 ),
-              ),
+              ]),
             ),
           ),
           Transform.translate(
@@ -305,6 +327,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                   child: HealthyProfileAvatar(
                     photoUrl: photoUrl,
+                    preset: avatarStyle,
                     size: 80,
                   ),
                 ),
@@ -368,28 +391,37 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child:
-                        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                          stream: friendRef.snapshots(),
-                          builder: (context, snapshot) {
-                            final isFriend = snapshot.data?.exists ?? false;
-
+                    child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: friendRef.snapshots(),
+                      builder: (context, followingSnapshot) {
+                        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                          stream: _pendingRef!.snapshots(),
+                          builder: (context, pendingSnapshot) {
+                            final isFollowing = followingSnapshot.data?.exists ?? false;
+                            final isPending = pendingSnapshot.data?.exists ?? false;
+                            final ready = followingSnapshot.hasData &&
+                                pendingSnapshot.hasData &&
+                                !followingSnapshot.hasError &&
+                                !pendingSnapshot.hasError;
                             return SizedBox(
                               width: double.infinity,
                               child: SocialActionButton(
-                                label: isFriend ? 'Amigos' : 'Agregar amigo',
-                                icon: isFriend
-                                    ? Icons.check_circle_rounded
+                                label: isFollowing ? 'Siguiendo'
+                                    : isPending ? 'Pendiente' : 'Agregar amigo',
+                                icon: isFollowing ? Icons.check_circle_rounded
+                                    : isPending ? Icons.schedule_rounded
                                     : Icons.person_add_rounded,
-                                outlined: isFriend,
-                                busy: _isLoading,
-                                onPressed: _isLoading || snapshot.hasError
+                                outlined: isFollowing || isPending,
+                                busy: _isLoading || !ready,
+                                onPressed: !ready || _isLoading
                                     ? null
-                                    : () => _toggleFriendship(isFriend),
+                                    : () => _toggleFriendship(isFollowing, isPending),
                               ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ],
@@ -460,10 +492,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _statistics(int streak, int completed) {
+  Widget _statistics(int streak, int completed, {required bool showStreak}) {
     return Row(
       children: [
-        Expanded(
+        if (showStreak) Expanded(
           child: _statCard(
             icon: Icons.local_fire_department_outlined,
             value: '$streak',
@@ -472,7 +504,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             iconColor: gold,
           ),
         ),
-        const SizedBox(width: 10),
+        if (showStreak) const SizedBox(width: 10),
         Expanded(
           child: _statCard(
             icon: Icons.check_circle_outline_rounded,
@@ -540,35 +572,94 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _achievementsCard() {
+  Widget _visibleAchievements({
+    required bool own,
+    required String visibility,
+    required Map<String, dynamic> data,
+  }) {
+    Widget content() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Logros destacados'),
+        const SizedBox(height: 14),
+        _achievementsCard(data),
+      ],
+    );
+
+    Widget privateMessage() => Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        'Los logros de este usuario son privados.',
+        style: TextStyle(color: HealthyAdaptive.muted),
+      ),
+    );
+
+    if (own || visibility == 'Todos') return content();
+    if (visibility == 'Solo yo') return privateMessage();
+    final viewer = _currentUser?.uid;
+    if (viewer == null) return privateMessage();
+
+    // Una solicitud de seguimiento aceptada crea este documento.
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _db.collection('users').doc(widget.userId)
+          .collection('followers').doc(viewer).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return privateMessage();
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return snapshot.data!.exists ? content() : privateMessage();
+      },
+    );
+  }
+
+  /// Solo se muestran insignias deducibles de los datos publicados
+  /// (nivel, XP y racha compartida); nunca medallas ficticias.
+  Widget _achievementsCard(Map<String, dynamic> data) {
+    const visibleTypes = {'nivel', 'xp', 'racha'};
+    final visible = LogrosService.catalogo.where((definition) {
+      if (!visibleTypes.contains(definition.tipo)) return false;
+      return LogrosService.obtenido(
+        definition,
+        LogrosService.progreso(definition, data, 0, 0, const <String>{}),
+      );
+    }).take(3).toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _achievement(
-            Icons.water_drop_outlined,
-            'Gota constante',
-            const Color(0xFF62B7DD),
-          ),
-          _achievement(Icons.local_fire_department_outlined, 'En llamas', gold),
-          _achievement(
-            Icons.spa_outlined,
-            'Primer brote',
-            const Color(0xFF369B7B),
-          ),
-        ],
-      ),
+      child: visible.isEmpty
+          ? Text(
+              'Todavía no hay insignias compartidas de nivel, XP o racha.',
+              style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12),
+            )
+          : Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                for (final logro in visible)
+                  _achievement(
+                    logro.icono,
+                    logro.nombre,
+                    HealthyAdaptive.accent,
+                  ),
+              ],
+            ),
     );
   }
 
   Widget _achievement(IconData icon, String name, Color color) {
-    return Column(
-      children: [
+    return SizedBox(
+      width: 95,
+      child: Column(children: [
         Container(
           width: 58,
           height: 64,
@@ -582,13 +673,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         const SizedBox(height: 8),
         Text(
           name,
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: navy,
             fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
         ),
-      ],
+      ]),
     );
   }
 

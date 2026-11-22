@@ -384,7 +384,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
 
           final totalSeasonXP = docs
               .where((doc) => doc.data()['season'] == true)
-              .fold<int>(0, (sum, doc) => sum + _toInt(doc.data()['xpReward']));
+              .fold<int>(0, (total, doc) => total + _toInt(doc.data()['xpReward']));
 
           final seasonCompleted =
               docs

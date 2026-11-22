@@ -105,7 +105,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
     return Scaffold(
       backgroundColor: AppColors.page,
-      body: SafeArea(child: screens[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: screens[_selectedIndex])),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -492,6 +492,11 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 18),
+
+          // Accesos rápidos a los tres pasos centrales del recorrido.
+          _demoJourney(context),
+
           const SizedBox(height: 24),
 
           // MISIÓN DEL DÍA
@@ -707,6 +712,115 @@ class _HomeContent extends StatelessWidget {
   }
 
   // --------------------------------------------------
+  // RECORRIDO PRINCIPAL
+  // --------------------------------------------------
+
+  Widget _demoJourney(BuildContext context) {
+    return Container(
+      key: const Key('inicio-recorrido'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        border: Border.all(color: HealthyAdaptive.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tu recorrido saludable',
+            style: TextStyle(color: AppColors.textDark,
+              fontWeight: FontWeight.w900, fontSize: 17)),
+          const SizedBox(height: 5),
+          Text('Registra una actividad y observa tus avances.',
+            style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.add_task_rounded,
+                  title: 'Registrar',
+                  subtitle: 'Hábitos',
+                  onTap: onHabits,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Icon(Icons.arrow_forward_ios_rounded,
+                size: 12, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.insights_rounded,
+                  title: 'Progreso',
+                  subtitle: 'Estadísticas',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProgresoScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Icon(Icons.arrow_forward_ios_rounded,
+                size: 12, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.emoji_events_rounded,
+                  title: 'Logros',
+                  subtitle: 'Insignias',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LogrosScreen()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyAction(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: HealthyAdaptive.surfaceAlt,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 13),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 23, color: HealthyAdaptive.accent),
+              const SizedBox(height: 6),
+              Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: AppColors.textDark,
+                  fontSize: 12, fontWeight: FontWeight.w800)),
+              Text(subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: HealthyAdaptive.muted, fontSize: 10)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
   // MISIÓN DEL DÍA
   // --------------------------------------------------
 
@@ -750,11 +864,15 @@ class _HomeContent extends StatelessWidget {
 
     final category = (data['category'] ?? 'Bienestar').toString();
 
-    final attemptId = (data['latestAttemptId'] ?? '').toString();
+    // Los intentos anteriores a la sincronización de campos «latest»
+    // solamente tienen lastAttemptId. Mantener ambos evita perder el botón.
+    final attemptId =
+        (data['latestAttemptId'] ?? data['lastAttemptId'] ?? '').toString();
 
     final progress = _number(data['latestProgress']);
 
-    final target = _number(data['latestTarget'], 1).clamp(1, 100000).toInt();
+    final target = _number(data['latestTarget'] ?? data['target'], 1)
+        .clamp(1, 100000).toInt();
 
     final fraction = (progress / target).clamp(0.0, 1.0);
 

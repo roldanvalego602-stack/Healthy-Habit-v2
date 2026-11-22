@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,9 @@ import 'tema/healthy_theme.dart';
 import 'tema/healthy_visual_mode.dart';
 import 'tema/healthy_motion.dart';
 import 'tema/healthy_float.dart';
+import 'servicios/preferencias_app.dart';
+import 'servicios/healthy_reminders_service.dart';
+import 'servicios/healthy_public_profile_service.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -35,18 +39,37 @@ Future<void> main() async {
 
   debugPrint('Firestore databaseId: ${firestore.databaseId}');
 
-  try {
-    await firestore.collection('users').limit(1).get();
-    debugPrint('Firestore: conexión de lectura correcta');
-  } catch (e) {
-    debugPrint('Firestore: error de lectura: $e');
-  }
+  // No consultar toda la colección users: contiene perfiles privados.
+  // La conexión se verificará mediante lecturas autorizadas en cada pantalla.
 
   firestoreDb = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'default',
   );
 
+  // Configura y reconstruye los avisos del usuario actual al iniciar sesión.
+  // Si cambia o se cierra la cuenta, cancela la agenda del usuario anterior.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    FirebaseAuth.instance.authStateChanges().listen((user) async {
+      try {
+        if (user == null) {
+          await HealthyRemindersService.instance.cancel();
+          return;
+        }
+        final ref = firestoreDb.collection('users').doc(user.uid);
+        final doc = await ref.get();
+        if (FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+        final raw = doc.data()?['settings'];
+        await HealthyRemindersService.instance.synchronize(
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{},
+        );
+      } catch (error) {
+        debugPrint('Recordatorios: no se pudo restaurar la agenda: $error');
+      }
+    });
+  }
+
+  HealthyPublicProfileService.instance.start();
   runApp(const HabitTrackerApp());
 }
 
@@ -66,6 +89,19 @@ class HabitTrackerApp extends StatelessWidget {
         theme: HealthyThemes.light(),
         darkTheme: HealthyThemes.dark(),
         themeMode: HealthyThemeController.instance.mode,
+        // La escala de Configuración se aplica a todas las rutas,
+        // respetando también la escala de accesibilidad del dispositivo.
+        builder: (context, child) => PreferenciasApp(
+          builder: (context, _, textScale) {
+            final baseScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(baseScale * textScale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
         home: const SplashScreen(),
       ),
     );
@@ -241,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _tabs[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: _tabs[_selectedIndex])),
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,

@@ -29,6 +29,12 @@ dependencies:
   url_launcher: ^6.3.2
   geolocator: 14.0.2
   http: ^1.6.0
+  speech_to_text: '>=7.3.0 <7.5.0'
+  flutter_tts: ^4.2.5
+  package_info_plus: ^9.0.1
+  flutter_local_notifications: 19.5.0
+  flutter_timezone: ^5.1.1
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:
@@ -49,6 +55,10 @@ flutter:
     - "assets/monedas/h coin.png"
     - "assets/monedas/h coin premium.png"
     - assets/images/catalogo/
+    - assets/avatares/
+    - assets/banners/
+    - assets/vestimenta/
+    - assets/knowledge/
 
 flutter_launcher_icons:
   min_sdk_android: 21

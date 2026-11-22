@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'profile_avatar.dart';
+import 'social_action_button.dart';
 
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -10,7 +11,6 @@ import 'perfil_muestra.dart';
 
 class _C {
   static const green = Color(0xFF198568);
-  static const mint = Color(0xFF8DE0C0);
   static Color get navy => HealthyAdaptive.text;
   static Color get background => HealthyAdaptive.background;
   static Color get grey => HealthyAdaptive.muted;
@@ -30,9 +30,6 @@ class FeedAmigosScreen extends StatefulWidget {
 }
 
 class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
-  FirebaseFirestore get _db =>
-      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
-
   String? get _uid => AmigosServicio.uidActual;
 
   @override
@@ -176,25 +173,10 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             ),
             if (accion != null && onAccion != null) ...[
               const SizedBox(height: 18),
-              SizedBox(
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: onAccion,
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: Text(
-                    accion,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _C.mint,
-                    foregroundColor: const Color(0xFF14382E),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
+              SocialActionButton(
+                label: accion,
+                icon: Icons.person_add_alt_1_rounded,
+                onPressed: onAccion,
               ),
             ],
           ],
@@ -242,7 +224,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(uid).snapshots(),
+      stream: _db.collection('public_profiles').doc(uid).snapshots(),
       builder: (context, snap) {
         if (!snap.hasData || !snap.data!.exists) {
           return const SizedBox.shrink();
@@ -254,6 +236,9 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final username = _texto(d['username']);
         final nivel = _num(_primero(d, ['level']), 1);
         final racha = _num(_primero(d, ['currentStreak', 'streakDays']), 0);
+        final rawSettings = d['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
         final xpActual = _num(_primero(d, ['currentXp']), 0);
         final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
         final progresoXp =
@@ -304,6 +289,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                     children: [
                       HealthyProfileAvatar(
                         photoUrl: d['photoUrl']?.toString(),
+                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
                         size: 44,
                       ),
                       const SizedBox(width: 12),
@@ -343,7 +329,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '$racha días 🔥',
+                                  publicStreak ? '$racha días 🔥' : 'Racha privada',
                                   style: TextStyle(
                                     color: _C.navy,
                                     fontSize: 11.5,
