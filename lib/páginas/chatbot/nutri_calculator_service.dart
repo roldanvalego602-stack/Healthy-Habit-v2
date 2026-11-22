@@ -107,6 +107,13 @@ class NutriCalculatorService {
   double? taGET;
   double? getTotalGET;
 
+  /// Reinicia también las confirmaciones cuando se cambia de conversación.
+  void reset() {
+    _confirmandoSalida = false;
+    resetIMC();
+    resetGET();
+  }
+
   void resetGET() {
     pasoGET = 0;
     sexoGET = null;
