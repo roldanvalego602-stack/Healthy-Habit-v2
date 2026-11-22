@@ -56,6 +56,7 @@ class MapaPlatoCatalogo extends StatelessWidget {
         children: [
           for (var i = 0; i < grupos.length; i++)
             ChoiceChip(
+              key: ValueKey('plato-grupo-${grupos[i]}'),
               label: Text(grupos[i]),
               avatar: CircleAvatar(backgroundColor: colores[i], radius: 8),
               selected: seleccionado == grupos[i],
