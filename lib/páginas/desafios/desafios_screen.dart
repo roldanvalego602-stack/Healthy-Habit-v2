@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
+import 'challenge_progress_policy.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
 
 class DesafiosScreen extends StatefulWidget {
@@ -63,16 +66,19 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'title': 'Hidratación constante',
           'description': 'Completa tu hábito de agua durante 7 días seguidos.',
           'category': 'Diarios',
-          'status': 'inProgress',
-          'currentProgress': 5,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 7,
           'xpReward': 80,
           'hcReward': 25,
           'difficulty': 'Baja',
           'difficultyStars': 1,
-          'timeLeft': 'Quedan 2 días',
+          'timeLeft': 'Disponible',
           'icon': 'water',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -80,32 +86,38 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'description':
               'Añade fruta a tus meriendas durante la semana de equilibrio.',
           'category': 'Especiales',
-          'status': 'inProgress',
-          'currentProgress': 2,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 4,
           'xpReward': 50,
           'hcReward': 20,
           'difficulty': 'Fácil',
           'difficultyStars': 1,
-          'timeLeft': 'Quedan 4 días',
+          'timeLeft': 'Disponible',
           'icon': 'fruit',
           'season': true,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
           'title': 'Racha de 7 días',
           'description': 'Mantén tus hábitos durante siete días.',
           'category': 'Semanales',
-          'status': 'completed',
-          'currentProgress': 7,
+          'status': 'available',
+          'currentProgress': 0,
           'totalProgress': 7,
           'xpReward': 80,
           'hcReward': 25,
           'difficulty': 'Media',
           'difficultyStars': 2,
-          'timeLeft': 'Completado',
+          'timeLeft': 'Disponible',
           'icon': 'trophy',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -123,6 +135,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'requiredLevel': 7,
           'icon': 'lock',
           'season': true,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
         {
@@ -139,6 +154,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'timeLeft': 'Disponible',
           'icon': 'fruit',
           'season': false,
+          'demoSeed': true,
+          'progressVerified': false,
+          'progressSource': 'demo',
           'createdAt': FieldValue.serverTimestamp(),
         },
       ];
@@ -212,6 +230,11 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
         if (status != 'completed') {
           throw Exception('Debes completar el desafío antes de reclamar.');
         }
+        if (!ChallengeProgressPolicy.claimable(challenge)) {
+          throw Exception(
+            'Este desafío no tiene progreso verificado con hábitos reales. '
+            'No se puede reclamar su recompensa todavía.');
+        }
 
         final current = _toInt(challenge['currentProgress']);
         final total = _toInt(challenge['totalProgress'], 1);
@@ -283,17 +306,17 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F9F8),
+        backgroundColor: HealthyAdaptive.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
+        title: Text(
           'Desafíos',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF0E1A30),
+            color: HealthyAdaptive.text,
           ),
         ),
         actions: [
@@ -313,24 +336,14 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                 ),
                 child: Row(
                   children: [
-                    Image.asset(
-                      'assets/monedas/h coin.png',
-                      width: 20,
-                      height: 20,
-                      errorBuilder:
-                          (_, __, ___) => const Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 18,
-                            color: Colors.amber,
-                          ),
-                    ),
+                    const HealthyCoinIcon(size: 20),
                     const SizedBox(width: 6),
                     Text(
                       '$coins',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: Color(0xFF0E1A30),
+                        color: HealthyAdaptive.text,
                       ),
                     ),
                   ],
@@ -339,14 +352,14 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_none_rounded,
-              color: Color(0xFF0E1A30),
+              color: HealthyAdaptive.text,
             ),
             onPressed: () => _mensaje('No tienes notificaciones nuevas.'),
           ),
           IconButton(
-            icon: const Icon(Icons.tune_rounded, color: Color(0xFF0E1A30)),
+            icon: Icon(Icons.tune_rounded, color: HealthyAdaptive.text),
             onPressed: () => _mostrarFiltros(),
           ),
           const SizedBox(width: 8),
@@ -371,7 +384,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
 
           final totalSeasonXP = docs
               .where((doc) => doc.data()['season'] == true)
-              .fold<int>(0, (sum, doc) => sum + _toInt(doc.data()['xpReward']));
+              .fold<int>(0, (total, doc) => total + _toInt(doc.data()['xpReward']));
 
           final seasonCompleted =
               docs
@@ -428,8 +441,8 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                             setState(() => _selectedFilter = filter);
                           }
                         },
-                        selectedColor: const Color(0xFF0E1A30),
-                        backgroundColor: Colors.white,
+                        selectedColor: HealthyAdaptive.accent,
+                        backgroundColor: HealthyAdaptive.surface,
                         showCheckmark: false,
                       );
                     },
@@ -467,10 +480,20 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
       builder:
           (context) => AlertDialog(
             title: Text(data['title']?.toString() ?? 'Desafío'),
-            content: Text(
-              '${data['description'] ?? ''}\n\n'
-              'Recompensa: ${data['xpReward'] ?? 0} XP y '
-              '${data['hcReward'] ?? 0} HC.',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${data['description'] ?? ''}'),
+                const SizedBox(height: 12),
+                Text('Recompensa: ${data['xpReward'] ?? 0} XP'),
+                const SizedBox(height: 6),
+                HealthyCoinAmount(
+                  amount: '${data['hcReward'] ?? 0}',
+                  suffix: ' Habit Coins',
+                  size: 21,
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -664,14 +687,15 @@ class _ChallengeCard extends StatelessWidget {
     final description = data['description']?.toString() ?? '';
     final category = data['category']?.toString() ?? 'Diarios';
     final status = data['status']?.toString() ?? 'available';
-    final current = _intValue(data['currentProgress']);
+    final current = ChallengeProgressPolicy.visibleProgress(data);
+    final verified = ChallengeProgressPolicy.verified(data);
     final total = _intValue(data['totalProgress'], 1).clamp(1, 999999);
     final xp = _intValue(data['xpReward']);
     final hc = _intValue(data['hcReward']);
     final progress = (current / total).clamp(0.0, 1.0).toDouble();
 
     final isLocked = status == 'locked';
-    final isCompleted = status == 'completed';
+    final isCompleted = status == 'completed' && verified;
     final isClaimed = status == 'claimed';
     final isAvailable = status == 'available';
 
@@ -683,7 +707,9 @@ class _ChallengeCard extends StatelessWidget {
       _ => Icons.flag_outlined,
     };
 
-    final statusText = switch (status) {
+    final statusText = !verified && status == 'completed'
+        ? 'PROGRESO SIN VERIFICAR'
+        : switch (status) {
       'inProgress' => 'EN CURSO',
       'completed' => 'COMPLETADO',
       'claimed' => 'RECOMPENSA RECLAMADA',
@@ -702,7 +728,7 @@ class _ChallengeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isLocked ? const Color(0xFFFCFCFC) : Colors.white,
+        color: isLocked ? HealthyAdaptive.surfaceAlt : HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color:
@@ -779,6 +805,14 @@ class _ChallengeCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!verified) ...[
+            const SizedBox(height: 9),
+            const Text(
+              'Vista previa · el progreso se mostrará cuando esté '
+              'vinculado a registros verificados de hábitos.',
+              style: TextStyle(color: Color(0xFF7A869A), fontSize: 11),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,7 +824,7 @@ class _ChallengeCard extends StatelessWidget {
                   color:
                       isLocked
                           ? Colors.purple.shade50
-                          : const Color(0xFFE8F6FC),
+                          : HealthyAdaptive.water,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
@@ -851,7 +885,7 @@ class _ChallengeCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFEDEFF3),
+              backgroundColor: HealthyAdaptive.surfaceAlt,
               valueColor: AlwaysStoppedAnimation(
                 isCompleted || isClaimed
                     ? const Color(0xFF00C88C)
@@ -871,10 +905,24 @@ class _ChallengeCard extends StatelessWidget {
               ),
               _reward(
                 '+$xp XP',
-                const Color(0xFFE2F7ED),
+                HealthyAdaptive.mint,
                 const Color(0xFF00A875),
               ),
-              _reward('+$hc HC', const Color(0xFFFDE89D), Colors.orange),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: HealthyAdaptive.yellow,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: HealthyCoinAmount(
+                  amount: '+$hc', size: 17,
+                  suffix: ' HC',
+                  style: const TextStyle(
+                    color: Color(0xFF9A6513),
+                    fontWeight: FontWeight.w800, fontSize: 11,
+                  ),
+                ),
+              ),
               Text(
                 'Dificultad: ${data['difficulty'] ?? 'Normal'}',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF7A869A)),
@@ -887,7 +935,7 @@ class _ChallengeCard extends StatelessWidget {
               label: 'Aceptar desafío',
               icon: Icons.play_arrow_rounded,
               onPressed: processing ? null : onAccept,
-              background: const Color(0xFF0E1A30),
+              background: HealthyAdaptive.isDark ? const Color(0xFF285A49) : const Color(0xFF0E1A30),
             )
           else if (isCompleted)
             _actionButton(
@@ -918,7 +966,7 @@ class _ChallengeCard extends StatelessWidget {
               label: 'Ver detalles',
               icon: Icons.info_outline,
               onPressed: onDetails,
-              background: const Color(0xFF0E1A30),
+              background: HealthyAdaptive.isDark ? const Color(0xFF285A49) : const Color(0xFF0E1A30),
             ),
         ],
       ),

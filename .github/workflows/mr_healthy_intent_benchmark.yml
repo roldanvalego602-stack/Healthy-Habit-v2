@@ -1,0 +1,77 @@
+name: Mr Healthy - Intent ML benchmark
+
+on:
+  push:
+    branches:
+      - feature/mr-healthy-voice-knowledge-motion
+    paths:
+      - 'datasets/chat_intents_es_v1.json'
+      - 'datasets/chat_dialogues_es_v1.json'
+      - 'datasets/chat_intents_es_v2_new.json'
+      - 'tools/chat_intent_*.py'
+      - 'tools/test_chat_intent_*.py'
+      - '.github/workflows/mr_healthy_intent_benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  intent-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify dataset and ML tests
+        run: python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+      - name: Train baseline and save report
+        shell: bash
+        run: |
+          set +e
+          python3 tools/chat_intent_train.py
+          code=$?
+          if [[ "$code" -eq 2 ]]; then
+            echo "Baseline below quality threshold; report saved."
+          elif [[ "$code" -ne 0 ]]; then
+            exit "$code"
+          fi
+      - name: Compare two supervised classifiers
+        shell: bash
+        run: |
+          set +e
+          python3 tools/chat_intent_compare.py
+          code=$?
+          if [[ "$code" -eq 2 ]]; then
+            echo "No model approved for Flutter; report saved."
+          elif [[ "$code" -ne 0 ]]; then
+            exit "$code"
+          fi
+      - name: Evaluate independent V2 corpus and safety ablations
+        shell: bash
+        run: |
+          set +e
+          python3 tools/chat_intent_v2.py
+          code=$?
+          if [[ "$code" -eq 2 ]]; then
+            echo "V2 candidate not approved; report saved for audit."
+          elif [[ "$code" -ne 0 ]]; then
+            exit "$code"
+          fi
+      - name: Audit recognition separately from safe routing
+        run: python3 tools/chat_intent_policy_report.py
+      - name: Upload benchmark reports (not for production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mr-healthy-intent-benchmark
+          path: |
+            outputs/mr_healthy_intent_report_v1.json
+            outputs/mr_healthy_intent_comparison_v1.json
+            outputs/mr_healthy_intent_v2_report.json
+            outputs/mr_healthy_intent_policy_audit_v2.json
+          retention-days: 14
+          if-no-files-found: error

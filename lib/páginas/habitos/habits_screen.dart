@@ -2,13 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
+import 'habit_action_service.dart';
+import 'habit_popularity_service.dart';
+import 'habit_recommendation_service.dart';
 import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
+import 'personal_routines_screen.dart';
+import 'habitos_en_pareja_screen.dart';
 import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
-  const HabitsScreen({super.key});
+  const HabitsScreen({super.key, this.initialSearch = ''});
+  final String initialSearch;
   @override
   State<HabitsScreen> createState() => _HabitsScreenState();
 }
@@ -20,20 +30,32 @@ class _ActiveHabitEntry {
 }
 
 class _HabitsScreenState extends State<HabitsScreen> {
-  static const navy = Color(0xFF193344);
-  static const green = Color(0xFF08B889);
-  static const greenDark = Color(0xFF078765);
-  static const background = Color(0xFFF5F8F6);
-  static const muted = Color(0xFF71879A);
-  static const border = Color(0xFFDCE8E3);
+  Color get navy => HealthyAdaptive.text;
+  Color get green => HealthyAdaptive.accent;
+  Color get greenDark => HealthyAdaptive.accent;
+  Color get background => HealthyAdaptive.background;
+  Color get muted => HealthyAdaptive.muted;
+  Color get border => HealthyAdaptive.border;
   static const int initialHabitSlots = 3;
-  static const int maxDifficultCancellationFee = 25;
+  final HabitActionService _habitActions = const HabitActionService();
   final TextEditingController searchController = TextEditingController();
   String selectedCategory = 'Todos';
   String selectedDifficulty = 'Todos';
   bool searching = false;
+  bool showingFullCatalog = false;
+  int _habitsView = 0;
+  final PageController _suggestedPager = PageController(viewportFraction: 0.94);
+  final PageController _popularPager = PageController(viewportFraction: 0.94);
+  int _suggestedPage = 0;
+  int _popularPage = 0;
   bool loading = true;
   bool saving = false;
+  bool loadingPopularity = false;
+  List<HabitPopularity> popularMetrics = [];
+  List<HabitUsageSignal> usageHistory = [];
+  final HabitRecommendationService _recommendationService =
+      const HabitRecommendationService();
+  final HabitPopularityService _popularityService = const HabitPopularityService();
   int xp = 0;
   int coins = 0;
   int level = 1;
@@ -67,12 +89,19 @@ class _HabitsScreenState extends State<HabitsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSearch.trim().isNotEmpty) {
+      searching = true;
+      searchController.text = widget.initialSearch.trim();
+    }
     _load();
+    _loadPopularity();
   }
 
   @override
   void dispose() {
     searchController.dispose();
+    _suggestedPager.dispose();
+    _popularPager.dispose();
     super.dispose();
   }
 
@@ -85,6 +114,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         if (!mounted) return;
         setState(() {
           active = [];
+          usageHistory = [];
           xp = 0;
           coins = 0;
           level = 1;
@@ -110,6 +140,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
       final loadedSlots =
           (userData['habitSlots'] as num?)?.toInt() ?? initialHabitSlots;
       final List<_ActiveHabitEntry> loadedActive = [];
+      final List<HabitUsageSignal> loadedHistory = [
+        for (final habitDoc in habitsSnapshot.docs)
+          if ((habitDoc.data()['latestProgress'] as num?) != null)
+            HabitUsageSignal(
+              habitId: habitDoc.id,
+              category: habitDoc.data()['category']?.toString() ?? '',
+              registrations: (habitDoc.data()['latestProgress'] as num)
+                  .toInt()
+                  .clamp(0, 1000000)
+                  .toInt(),
+              lastActivity: habitDoc.data()['updatedAt'] is Timestamp
+                  ? (habitDoc.data()['updatedAt'] as Timestamp).toDate()
+                  : null,
+            ),
+      ];
       final groups = await Future.wait(
         habitsSnapshot.docs.map((habitDoc) async {
           final habit = Habit.fromMap(habitDoc.data(), habitDoc.id);
@@ -135,6 +180,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (!mounted) return;
       setState(() {
         active = loadedActive;
+        usageHistory = loadedHistory;
         xp = loadedXp;
         coins = loadedCoins;
         level = loadedLevel;
@@ -159,7 +205,166 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
+  Future<void> _loadPopularity() async {
+    if (!mounted) return;
+    setState(() => loadingPopularity = true);
+    try {
+      final values = await _popularityService.fetchVerified();
+      if (!mounted) return;
+      setState(() {
+        popularMetrics = values;
+        loadingPopularity = false;
+      });
+    } catch (error) {
+      // Es información opcional: permisos insuficientes, falta de red o una
+      // colección aún no publicada no impiden usar los hábitos oficiales.
+      debugPrint('Estadísticas de popularidad no disponibles: $error');
+      if (mounted) {
+        setState(() {
+          popularMetrics = [];
+          loadingPopularity = false;
+        });
+      }
+    }
+  }
+
+  List<Habit> get _popularHabits {
+    final visible = {
+      for (final habit in visibleRecommendations) habit.id: habit,
+    };
+    return [
+      for (final score in popularMetrics)
+        if (visible.containsKey(score.habitId)) visible[score.habitId]!,
+    ].take(8).toList();
+  }
+
   Future<void> _confirmAddHabit(Habit habit) async {
+    if (saving) return;
+    late final HabitActionPreview preview;
+    try {
+      preview = await _habitActions.preview(habit.id, remove: false);
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+      return;
+    }
+    if (!mounted) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: categoryBg(habit.category),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(categoryIcon(habit.category),
+                  color: categoryInk(habit.category), size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(habit.title,
+                  style: const TextStyle(fontSize: 20,
+                      fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(habit.subtitle,
+                  style: TextStyle(color: HealthyAdaptive.muted)),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: [
+                  Chip(
+                    avatar: Icon(Icons.category_outlined, size: 17,
+                        color: categoryInk(habit.category)),
+                    label: Text(habit.category),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.speed_rounded, size: 17),
+                    label: Text(habit.difficulty),
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.event_repeat_rounded, size: 17),
+                    label: Text(habit.frequencyType == 'daily'
+                        ? 'Diario' : 'Semanal'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _habitDetailRow(Icons.flag_outlined,
+                  'Objetivo', '${habit.target} registros en total'),
+              const SizedBox(height: 10),
+              _habitDetailRow(Icons.calendar_today_outlined,
+                  'Duración', '${habit.durationPeriods} periodos'),
+              const SizedBox(height: 10),
+              _habitDetailRow(Icons.bolt_rounded,
+                  'Recompensa del catálogo', '${habit.xp} XP'),
+              if (habit.coinCost > 0) ...[
+                const SizedBox(height: 12),
+                const Text('Costo para adquirirlo:'),
+                HealthyCoinAmount(amount: '${habit.coinCost}',
+                    size: 20, suffix: ' Habit Coins'),
+              ],
+              if (_isDifficult(habit)) ...[
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        color: HealthyAdaptive.muted, size: 19),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Abandonar un hábito difícil puede costar '
+                        'hasta 25 Habit Coins.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                'La recompensa real por registro depende de las '
+                'reglas de evidencia.',
+                style: TextStyle(
+                    color: HealthyAdaptive.muted, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton.icon(
+            key: const ValueKey('confirm-official-habit'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.add_task_rounded),
+            label: const Text('Aceptar hábito'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true && mounted) {
+      final interaction = await _chooseInteraction(habit);
+      if (interaction != null && mounted) {
+        await addHabit(habit, preview: preview, interaction: interaction);
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>?> _chooseInteraction(Habit habit) async {
     String selectedType = 'manual';
     String selectedUnit = 'vasos';
     final targetController = TextEditingController(text: '1');
@@ -286,12 +491,32 @@ class _HabitsScreenState extends State<HabitsScreen> {
           },
         ),
       );
-      if (configuration != null && mounted) {
-        await addHabit(habit, interaction: configuration);
-      }
+      return mounted ? configuration : null;
     } finally {
       targetController.dispose();
     }
+  }
+  Widget _habitDetailRow(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: HealthyAdaptive.accent),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(label, style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: HealthyAdaptive.text,
+          )),
+        ),
+        Flexible(
+          child: Text(value, textAlign: TextAlign.right,
+              style: TextStyle(color: HealthyAdaptive.muted)),
+        ),
+      ],
+    );
   }
 
   bool _isDifficult(Habit habit) {
@@ -301,12 +526,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
 
   Future<void> _confirmCancelHabit(_ActiveHabitEntry entry) async {
     if (saving) return;
-    final fee =
-        _isDifficult(entry.habit)
-            ? (coins < maxDifficultCancellationFee
-                ? coins
-                : maxDifficultCancellationFee)
-            : 0;
+    late final HabitActionPreview preview;
+    try {
+      preview = await _habitActions.preview(entry.habit.id, remove: true);
+      if (preview.attemptId != entry.attempt.id) {
+        throw StateError('El intento cambió. Actualiza la pantalla.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+      return;
+    }
+    if (!mounted) return;
+    final fee = preview.estimatedCost;
     final accepted = await showDialog<bool>(
       context: context,
       builder:
@@ -322,7 +553,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   'Sesiones realizadas: ${entry.attempt.progress} de ${entry.attempt.target}',
                 ),
                 const SizedBox(height: 8),
-                Text('Penalización estimada: $fee Habit Coins'),
+                const Text('Penalización estimada:'),
+                HealthyCoinAmount(amount: '$fee',
+                  size: 20, suffix: ' Habit Coins'),
                 const SizedBox(height: 8),
                 const Text(
                   'Se conservarán tus sesiones anteriores y el XP obtenido.',
@@ -344,232 +577,62 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ],
           ),
     );
-    if (accepted == true && mounted) await _cancelHabit(entry);
+    if (accepted == true && mounted) {
+      await _cancelHabit(entry, preview: preview);
+    }
   }
 
-  Future<void> _cancelHabit(_ActiveHabitEntry entry) async {
-    final userDoc = _userDoc;
-    final collection = _habitsCollection;
-    if (userDoc == null || collection == null || saving) return;
+  /// Comparte las mismas validaciones y transacciones que Mr. Healthy.
+  Future<void> _cancelHabit(_ActiveHabitEntry entry, {
+    HabitActionPreview? preview,
+  }) async {
+    if (saving) return;
     setState(() => saving = true);
     try {
-      final habitRef = collection.doc(entry.habit.id);
-      final attemptRef = habitRef.collection('attempts').doc(entry.attempt.id);
-      final deducted = await _db.runTransaction<int>((transaction) async {
-        final attemptSnap = await transaction.get(attemptRef);
-        final habitSnap = await transaction.get(habitRef);
-        final userSnap = await transaction.get(userDoc);
-        if (!attemptSnap.exists ||
-            attemptSnap.data()?['status'] != 'inProgress' ||
-            habitSnap.data()?['lastAttemptId'] != entry.attempt.id) {
-          throw StateError(
-            'Este hábito ya no está activo. Actualiza la pantalla.',
-          );
-        }
-        final rawBalance =
-            (userSnap.data()?['habitCoins'] as num?)?.toInt() ?? 0;
-        final balance = rawBalance < 0 ? 0 : rawBalance;
-        final penalty =
-            _isDifficult(entry.habit)
-                ? (balance < maxDifficultCancellationFee
-                    ? balance
-                    : maxDifficultCancellationFee)
-                : 0;
-        transaction.update(attemptRef, {
-          'status': 'cancelled',
-          'cancelledAt': FieldValue.serverTimestamp(),
-          'cancellationPenalty': penalty,
-        });
-        transaction.update(habitRef, {
-          'lastStatus': 'cancelled',
-          'latestStatus': 'cancelled',
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        if (penalty > 0) {
-          transaction.update(userDoc, {'habitCoins': balance - penalty});
-        }
-        return penalty;
-      });
+      final checked = preview ??
+          await _habitActions.preview(entry.habit.id, remove: true);
+      if (checked.attemptId != entry.attempt.id) {
+        throw StateError('El intento cambió; actualiza tus hábitos.');
+      }
+      final result = await _habitActions.execute(checked);
       if (!mounted) return;
-      setState(() {
-        active.removeWhere(
-          (item) =>
-              item.attempt.id == entry.attempt.id &&
-              item.habit.id == entry.habit.id,
-        );
-        coins = (coins - deducted).clamp(0, 2147483647);
-      });
-      _showMessage(
-        deducted == 0
-            ? 'Hábito abandonado. Tu historial se conserva.'
-            : 'Hábito abandonado. Se descontaron $deducted Habit Coins.',
-      );
+      _showMessage(result.chargedCoins == 0
+          ? 'Hábito abandonado. Tu historial se conserva.'
+          : 'Hábito abandonado. Se descontaron ${result.chargedCoins} Habit Coins.');
       await _load();
-    } catch (e, stackTrace) {
-      debugPrint('Error al abandonar hábito: $e\n$stackTrace');
-      if (mounted) _showMessage('No se pudo abandonar el hábito: $e');
+    } catch (error) {
+      if (mounted) _showMessage('No se pudo abandonar: $error');
     } finally {
       if (mounted) setState(() => saving = false);
     }
   }
 
-  Future<void> addHabit(Habit habit, {Map<String, dynamic>? interaction}) async {
-    final collection = _habitsCollection;
-    final user = _user;
-    final userDoc = _userDoc;
-    if (collection == null || user == null || userDoc == null) {
-      _showMessage('Inicia sesión para guardar tus hábitos.');
-      return;
-    }
+  Future<void> addHabit(Habit habit, {
+    HabitActionPreview? preview,
+    Map<String, dynamic>? interaction,
+  }) async {
     if (saving) return;
-    if (active.any((entry) => entry.habit.id == habit.id)) {
-      _showMessage('Este hábito ya está en progreso.');
-      return;
-    }
-    if (active.length >= habitSlots) {
-      _showMessage(
-        'Ya ocupaste tus $habitSlots espacios disponibles. '
-        'Completa o cancela un hábito para liberar uno.',
-      );
-      return;
-    }
-    if (!_isUnlocked(habit)) {
-      _showMessage('Todavía no cumples los requisitos para desbloquearlo.');
-      return;
-    }
-    if (habit.coinCost > 0 && coins < habit.coinCost) {
-      _showMessage('No tienes suficientes monedas para adquirirlo.');
-      return;
-    }
     setState(() => saving = true);
     try {
-      final habitRef = collection.doc(habit.id);
-      final attemptsRef = habitRef.collection('attempts');
-      final previousAttempts = await attemptsRef.get();
-      final attemptNumber = previousAttempts.docs.length + 1;
-      final attemptRef = attemptsRef.doc();
-      final now = DateTime.now();
-      final attempt = UserHabit(
-        id: attemptRef.id,
-        habitId: habit.id,
-        status: UserHabitStatus.inProgress,
-        progress: 0,
-        target: habit.target,
-        attemptNumber: attemptNumber,
-        xpEarned: 0,
-        acquiredAt: now,
-        frequencyType: habit.frequencyType,
-        registrationsPerPeriod: habit.registrationsPerPeriod,
-        durationPeriods: habit.durationPeriods,
-        gracePeriods: habit.gracePeriods,
-        streakEnabled: habit.streakEnabled,
-        periodProgress: 0,
-        streak: 0,
-        longestStreak: 0,
-        missedPeriods: 0,
-        completedAt: null,
-        cancelledAt: null,
-        availableAgainAt: null,
-      );
-      if (habit.coinCost > 0) {
-        await _db.runTransaction((transaction) async {
-          final userSnapshot = await transaction.get(userDoc);
-          final balance =
-              (userSnapshot.data()?['habitCoins'] as num?)?.toInt() ?? 0;
-          if (balance < habit.coinCost) {
-            throw StateError('No tienes suficientes monedas.');
-          }
-          transaction.set(userDoc, {
-            'uid': user.uid,
-            'habitSlots': habitSlots,
-            'habitCoins': balance - habit.coinCost,
-          }, SetOptions(merge: true));
-          transaction.set(habitRef, {
-            ...habit.toMap(),
-            if (interaction != null) 'interaction': interaction,
-            'acquiredAt': FieldValue.serverTimestamp(),
-            'lastAttemptId': attemptRef.id,
-            'lastStatus': 'inProgress',
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-          transaction.set(attemptRef, attempt.toMap());
-        });
-      } else {
-        final batch = _db.batch();
-        batch.set(habitRef, {
-          ...habit.toMap(),
-          if (interaction != null) 'interaction': interaction,
-          'acquiredAt': FieldValue.serverTimestamp(),
-          'lastAttemptId': attemptRef.id,
-          'lastStatus': 'inProgress',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        batch.set(attemptRef, attempt.toMap());
-        batch.set(userDoc, {
-          'uid': user.uid,
-          'habitSlots': habitSlots,
-        }, SetOptions(merge: true));
-        await batch.commit();
-      }
+      final checked = preview ??
+          await _habitActions.preview(habit.id, remove: false);
+      await _habitActions.execute(checked, interaction: interaction);
       if (!mounted) return;
-      setState(() {
-        active.add(_ActiveHabitEntry(habit: habit, attempt: attempt));
-        if (habit.coinCost > 0) coins -= habit.coinCost;
-      });
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
-    } catch (e, stackTrace) {
-      debugPrint('ERROR AL GUARDAR HÁBITO: $e');
-      debugPrint('DETALLES: $stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            duration: const Duration(seconds: 8),
-          ),
-        );
-      }
+      await _load();
+    } catch (error) {
+      if (mounted) _showMessage('No se pudo agregar el hábito: $error');
     } finally {
-      if (mounted) {
-        setState(() => saving = false);
-      }
+      if (mounted) setState(() => saving = false);
     }
   }
 
-  bool _isUnlocked(Habit habit) {
-    final unlockType = habit.unlockType.trim().toLowerCase();
-    final level = LevelSystem.fromXp(xp).number;
-
-    switch (unlockType) {
-      case 'none':
-      case 'free':
-        return true;
-
-      case 'level':
-        return level >= (habit.requiredLevel ?? 1);
-
-      case 'coins':
-        return coins >= habit.coinCost;
-
-      case 'habit':
-        return active.any((entry) => entry.habit.id == habit.requiredHabitId);
-
-      case 'combined':
-        final levelOk = level >= (habit.requiredLevel ?? 1);
-        final coinsOk = coins >= habit.coinCost;
-        final habitOk =
-            habit.requiredHabitId == null ||
-            active.any((entry) => entry.habit.id == habit.requiredHabitId);
-
-        return levelOk && coinsOk && habitOk;
-
-      default:
-        debugPrint(
-          'Tipo de desbloqueo desconocido: '
-          '${habit.unlockType} (${habit.id})',
-        );
-        return false;
-    }
-  }
+  bool _isUnlocked(Habit habit) => HabitActionService.isUnlocked(
+    habit,
+    xp: xp,
+    coins: coins,
+    activeIds: active.map((entry) => entry.habit.id).toSet(),
+  );
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -600,17 +663,21 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Color categoryBg(String category) {
+    if (HealthyAdaptive.isDark) {
+      switch (category) {
+        case 'Alimentación': return const Color(0xFF302A32);
+        case 'Hidratación': return HealthyAdaptive.water;
+        case 'Energía': return HealthyAdaptive.yellow;
+        case 'Bienestar': return HealthyAdaptive.lavender;
+        default: return HealthyAdaptive.surface;
+      }
+    }
     switch (category) {
-      case 'Alimentación':
-        return const Color(0xFFFFEFEC);
-      case 'Hidratación':
-        return const Color(0xFFE4F5FB);
-      case 'Energía':
-        return const Color(0xFFFFF5D9);
-      case 'Bienestar':
-        return const Color(0xFFF2ECFC);
-      default:
-        return Colors.white;
+      case 'Alimentación': return const Color(0xFFFFEFEC);
+      case 'Hidratación': return const Color(0xFFE4F5FB);
+      case 'Energía': return const Color(0xFFFFF5D9);
+      case 'Bienestar': return const Color(0xFFF2ECFC);
+      default: return HealthyAdaptive.surface;
     }
   }
 
@@ -670,6 +737,173 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }).toList();
   }
 
+  Set<String> get _activeCategories =>
+      active.map((entry) => entry.habit.category).toSet();
+
+  List<Habit> get _suggestedHabits =>
+      _recommendationService.rank(
+        candidates: visibleRecommendations,
+        history: usageHistory,
+        activeCategories: _activeCategories,
+        isUnlocked: _isUnlocked,
+      ).take(8).toList();
+
+  String _suggestionDescription() =>
+      _recommendationService.explanation(
+        history: usageHistory,
+        activeCategories: _activeCategories,
+      );
+
+  Widget _twoRowRecommendationCarousel(List<Habit> habits, {
+    String carouselId = 'habits-suggested-carousel',
+  }) {
+    if (habits.isEmpty) return const SizedBox.shrink();
+    final popular = carouselId == 'habits-popular-carousel';
+    final pager = popular ? _popularPager : _suggestedPager;
+    final page = (popular ? _popularPage : _suggestedPage)
+        .clamp(0, habits.length - 1).toInt();
+    return Column(
+      key: ValueKey(carouselId),
+      children: [
+        SizedBox(
+          height: 285,
+          child: PageView.builder(
+            controller: pager,
+            itemCount: habits.length,
+            onPageChanged: (index) => setState(() {
+              if (popular) {
+                _popularPage = index;
+              } else {
+                _suggestedPage = index;
+              }
+            }),
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(right: 10, bottom: 6),
+              child: SingleChildScrollView(
+                child: _recommendationCard(habits[index]),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          IconButton(
+            tooltip: 'Hábito anterior',
+            onPressed: page == 0
+                ? null : () => pager.animateToPage(page - 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic),
+            icon: const Icon(Icons.chevron_left_rounded),
+          ),
+          Text('${page + 1} de ${habits.length}',
+            style: TextStyle(color: muted, fontWeight: FontWeight.w700,
+                fontSize: 12)),
+          const SizedBox(width: 12),
+          for (var i = 0; i < habits.length && i < 8; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              width: i == page ? 14 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: i == page ? green : border,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          IconButton(
+            tooltip: 'Siguiente hábito',
+            onPressed: page >= habits.length - 1
+                ? null : () => pager.animateToPage(page + 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic),
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _vistasHabitos() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Cómo ver los hábitos', style: TextStyle(
+        color: navy, fontWeight: FontWeight.w700, fontSize: 12)),
+      const SizedBox(height: 8),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SegmentedButton<int>(
+        segments: const [
+          ButtonSegment(value: 0, icon: Icon(Icons.view_list_rounded),
+            label: Text('Lista')),
+          ButtonSegment(value: 1, icon: Icon(Icons.grid_view_rounded),
+            label: Text('Tarjetas')),
+          ButtonSegment(value: 2, icon: Icon(Icons.swipe_rounded),
+            label: Text('Deslizar')),
+        ],
+        selected: {_habitsView},
+        showSelectedIcon: false,
+        onSelectionChanged: (value) => setState(
+          () => _habitsView = value.first),
+        ),
+      ),
+    ]),
+  );
+
+  Widget _vistaDeRecomendaciones(List<Habit> habits, {bool popular = false}) {
+    if (_habitsView == 2) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Desliza a los lados para explorar', style: TextStyle(
+          fontSize: 12, color: muted)),
+        const SizedBox(height: 8),
+        _twoRowRecommendationCarousel(habits,
+          carouselId: popular ? 'habits-popular-carousel'
+              : 'habits-suggested-carousel'),
+      ]);
+    }
+    if (_habitsView == 1) {
+      return LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth < 550 ? 1 : 2;
+        final width = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final habit in habits)
+              SizedBox(
+                width: width,
+                child: Column(children: [
+                  Container(
+                    width: double.infinity,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        categoryBg(habit.category),
+                        HealthyAdaptive.surface,
+                      ]),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20)),
+                    ),
+                    child: Center(
+                      child: Icon(categoryIcon(habit.category),
+                        color: categoryInk(habit.category), size: 48),
+                    ),
+                  ),
+                  _recommendationCard(habit),
+                ]),
+              ),
+          ],
+        );
+      });
+    }
+    return Column(children: [
+      for (final habit in habits)
+        Padding(padding: const EdgeInsets.only(bottom: 12),
+          child: _recommendationCard(habit)),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -677,7 +911,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       body: SafeArea(
         child:
             loading
-                ? const Center(child: CircularProgressIndicator(color: green))
+                ? Center(child: CircularProgressIndicator(color: green))
                 : Column(
                   children: [
                     _header(),
@@ -685,7 +919,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                         children: [
-                          const Text(
+                          Text(
                             '¿Qué quieres mejorar?',
                             style: TextStyle(
                               color: navy,
@@ -695,13 +929,75 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'Pequeños cambios, grandes resultados. '
                             'Elige tu siguiente misión.',
                             style: TextStyle(
                               color: muted,
                               fontSize: 13,
                               height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Card(
+                            key: const ValueKey('personal-routines-entry'),
+                            color: HealthyAdaptive.surface,
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.tune_rounded, color: green, size: 28),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Mis rutinas personales',
+                                          style: TextStyle(
+                                            color: navy,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Crea rutinas con varios ejercicios, ordénalos y ejecútalos paso a paso. Se guardan en este dispositivo y no conceden XP.',
+                                          style: TextStyle(
+                                            color: muted,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Abrir rutinas personales',
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const PersonalRoutinesScreen(),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.arrow_forward_ios_rounded),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Card(
+                            color: HealthyAdaptive.surface,
+                            child: ListTile(
+                              key: const ValueKey('shared-habits-entry'),
+                              leading: Icon(Icons.people_alt_outlined,
+                                color: green),
+                              title: const Text('Hábitos en pareja',
+                                style: TextStyle(fontWeight: FontWeight.w800)),
+                              subtitle: const Text(
+                                'Invita a un amigo y realicen el mismo hábito.'),
+                              trailing: const Icon(Icons.chevron_right_rounded),
+                              onTap: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) =>
+                                  const HabitosEnParejaScreen())),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -727,27 +1023,71 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               ),
                             ),
                           const SizedBox(height: 14),
-                          _sectionHeader(
-                            'Descubre nuevos hábitos',
-                            '${visibleRecommendations.length}',
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _sectionHeader(
+                                  showingFullCatalog
+                                      ? 'Catálogo completo'
+                                      : 'Hábitos sugeridos',
+                                  '',
+                                ),
+                              ),
+                              TextButton.icon(
+                                key: const ValueKey('habits-catalog-toggle'),
+                                onPressed: () => setState(
+                                  () => showingFullCatalog = !showingFullCatalog,
+                                ),
+                                icon: Icon(
+                                  showingFullCatalog
+                                      ? Icons.auto_awesome_rounded
+                                      : Icons.menu_book_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  showingFullCatalog
+                                      ? 'Ver sugeridos'
+                                      : 'Ver todos',
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 6),
-                          const Text(
-                            'Encuentra una misión que se adapte a ti.',
+                          Text(
+                            showingFullCatalog
+                                ? 'Estás viendo todos los hábitos. Pulsa «Ver sugeridos» para volver a una selección personalizada.'
+                                : 'Estas son sugerencias para ti. Pulsa «Ver todos» para consultar todos los hábitos. ${_suggestionDescription()}',
                             style: TextStyle(color: muted, fontSize: 12),
                           ),
                           const SizedBox(height: 14),
+                          _vistasHabitos(),
                           if (visibleRecommendations.isEmpty)
-                            _empty(
-                              'No hay hábitos disponibles con estos filtros.',
-                            )
+                            _empty('No hay hábitos disponibles con estos filtros.')
                           else
-                            ...visibleRecommendations.map(
-                              (habit) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _recommendationCard(habit),
-                              ),
+                            _vistaDeRecomendaciones(showingFullCatalog
+                              ? visibleRecommendations : _suggestedHabits),
+
+                          if (!showingFullCatalog) ...[
+                            const SizedBox(height: 24),
+                            _sectionHeader('Hábitos populares', ''),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Basados en activaciones verificadas de la comunidad.',
+                              style: TextStyle(color: muted, fontSize: 12),
                             ),
+                            const SizedBox(height: 12),
+                            if (loadingPopularity)
+                              const Center(child: CircularProgressIndicator())
+                            else if (_popularHabits.isEmpty)
+                              _empty(
+                                'Aún no hay estadísticas públicas verificadas. '
+                                'Los hábitos populares aparecerán cuando estén disponibles.',
+                              )
+                            else
+                              _vistaDeRecomendaciones(
+                                _popularHabits, popular: true,
+                              ),
+                          ],
                           const SizedBox(height: 18),
                           _encouragement(),
                         ],
@@ -783,7 +1123,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     },
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: HealthyAdaptive.surface,
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
@@ -793,7 +1133,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             )
           else ...[
-            const Expanded(
+            Expanded(
               child: Text(
                 'Hábitos',
                 style: TextStyle(
@@ -804,14 +1144,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
               ),
             ),
             Material(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               shape: const CircleBorder(),
               child: IconButton(
                 tooltip: 'Buscar hábitos',
                 onPressed: () {
                   setState(() => searching = true);
                 },
-                icon: const Icon(Icons.search_rounded, color: navy, size: 25),
+                icon: Icon(Icons.search_rounded, color: navy, size: 25),
               ),
             ),
           ],
@@ -871,14 +1211,14 @@ class _HabitsScreenState extends State<HabitsScreen> {
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: HealthyVisualEffects.duration(context, const Duration(milliseconds: 180)),
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: categoryBg(category),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: selected ? color : Colors.white,
+            color: selected ? color : HealthyAdaptive.border,
             width: selected ? 2 : 1,
           ),
         ),
@@ -891,7 +1231,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 category,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -911,7 +1251,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Dificultad',
           style: TextStyle(
             color: navy,
@@ -934,10 +1274,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       selectedDifficulty = difficulty;
                     });
                   },
-                  selectedColor: const Color(0xFFDDF5EB),
-                  backgroundColor: Colors.white,
+                  selectedColor: HealthyAdaptive.mint,
+                  backgroundColor: HealthyAdaptive.surface,
                   labelStyle: TextStyle(
-                    color: selected ? greenDark : muted,
+                    color: selected ? HealthyAdaptive.text : muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -958,7 +1298,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 19,
               fontWeight: FontWeight.w800,
@@ -968,7 +1308,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         if (trailing.isNotEmpty)
           Text(
             trailing,
-            style: const TextStyle(
+            style: TextStyle(
               color: greenDark,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -987,20 +1327,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
       0,
       attempt.target,
     );
-    return Container(
+    return HealthyMotionCard(
+      key: ValueKey('active-habit-${habit.id}'),
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 17, 18, 17),
       decoration: BoxDecoration(
         color: categoryBg(habit.category),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: HealthyAdaptive.border, width: 1.5),
+        boxShadow: HealthyVisualEffects.allowDecorativeShadows
+            ? [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 15, offset: const Offset(0, 6))]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,7 +1364,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF2C8),
+                  color: HealthyAdaptive.yellow,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1043,7 +1381,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           const SizedBox(height: 15),
           Text(
             habit.title,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 22,
               height: 1.18,
@@ -1053,7 +1391,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           const SizedBox(height: 8),
           Text(
             habit.subtitle,
-            style: const TextStyle(color: muted, fontSize: 12),
+            style: TextStyle(color: muted, fontSize: 12),
           ),
           const SizedBox(height: 15),
           _generalProgress(
@@ -1067,7 +1405,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
             children: [
               Text(
                 '${attempt.progress} de ${attempt.target} sesiones',
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -1078,7 +1416,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 child: Text(
                   done ? '¡Meta alcanzada!' : 'Faltan $remaining sesiones',
                   textAlign: TextAlign.right,
-                  style: const TextStyle(color: muted, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
               ),
             ],
@@ -1113,18 +1451,30 @@ class _HabitsScreenState extends State<HabitsScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: saving ? null : () => _confirmCancelHabit(entry),
-              icon: const Icon(Icons.cancel_outlined, size: 17),
-              label: const Text('Abandonar hábito'),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFAD5151),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 6,
+            children: [
+              TextButton.icon(
+                key: ValueKey('share-habit-${habit.id}'),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) =>
+                    HabitosEnParejaScreen(initialHabitId: habit.id))),
+                icon: const Icon(Icons.people_alt_outlined, size: 17),
+                label: const Text('En pareja'),
               ),
-            ),
+              TextButton.icon(
+                onPressed: saving ? null : () => _confirmCancelHabit(entry),
+                icon: const Icon(Icons.cancel_outlined, size: 17),
+                label: const Text('Abandonar hábito'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFAD5151),
+                ),
+              ),
+            ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -1178,7 +1528,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           child: LinearProgressIndicator(
             value: target > 0 ? (progress / target).clamp(0.0, 1.0) : 0,
             minHeight: 7,
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -1202,7 +1552,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(21),
         border: Border.all(color: border),
         boxShadow: [
@@ -1231,7 +1581,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               children: [
                 Text(
                   habit.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 14,
                     height: 1.25,
@@ -1250,12 +1600,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${habit.subtitle} · ${habit.difficulty}',
-                  style: const TextStyle(color: muted, fontSize: 11),
+                  style: TextStyle(color: muted, fontSize: 11),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   '${habit.target} sesiones para completar',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1272,7 +1622,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '+${habit.xp} XP',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: navy,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1286,7 +1636,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
                     !unlocked
                         ? 'Requisitos aún no cumplidos'
                         : 'Libera un espacio para agregarlo',
-                    style: const TextStyle(color: muted, fontSize: 10),
+                    style: TextStyle(color: muted, fontSize: 10),
                   ),
                 ],
               ],
@@ -1300,7 +1650,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: green,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFE5ECE9),
+                disabledBackgroundColor: HealthyAdaptive.border,
                 disabledForegroundColor: muted,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1323,18 +1673,18 @@ class _HabitsScreenState extends State<HabitsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(19),
         border: Border.all(color: border),
       ),
       child: Column(
         children: [
-          const Icon(Icons.spa_outlined, color: green, size: 30),
+          Icon(Icons.spa_outlined, color: green, size: 30),
           const SizedBox(height: 9),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: muted, fontSize: 12, height: 1.45),
+            style: TextStyle(color: muted, fontSize: 12, height: 1.45),
           ),
         ],
       ),
@@ -1345,10 +1695,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE1F6ED),
+        color: HealthyAdaptive.mint,
         borderRadius: BorderRadius.circular(19),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.spa_outlined, color: greenDark, size: 25),

@@ -1,10 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
+import '../../servicios/clima_servicio.dart';
 import 'nutri_respuestas_service.dart';
-import 'chat_historial.dart';
+import 'healthy_conversation_service.dart';
+import 'healthy_assistant_engine.dart';
+import 'healthy_hybrid_knowledge.dart';
+import 'healthy_intent_router.dart';
+import 'healthy_chat_context.dart';
+import 'healthy_chat_history.dart';
+import 'healthy_chat_history_sheet.dart';
+import 'healthy_chat_habit_card.dart';
+import 'healthy_chat_store_card.dart';
+import 'healthy_chat_progress_cards.dart';
+import 'healthy_chat_profile_editor.dart';
+import 'healthy_chat_catalog_card.dart';
+import '../catalogo/catalogo_screen.dart';
+import '../catalogo/detalles/catalogo_detalle_screen.dart';
+import '../catalogo/modelos/catalogo_item.dart';
+import 'healthy_chat_habit_picker.dart';
+import '../habitos/modelo/habit.dart';
+import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_celebration.dart';
+import '../habitos/habit_action_service.dart';
+import '../habitos/habits_screen.dart';
+import '../estadisticas/progreso_screen.dart';
+import '../perfil/profesionales_screen.dart';
+import '../perfil/profile_screen.dart';
+import '../niveles/camino_niveles_screen.dart';
+import '../niveles/levels_system.dart';
+import '../ranking_screen.dart';
+import '../tienda/store_screen.dart';
+import '../desafios/desafios_screen.dart';
+import '../logros/logros_screen.dart';
+import '../perfil/editar_perfil_screen.dart';
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final String time;
+  final String action;
+  final String argument;
+  final String card;
+
+  ChatMessage({required this.text, required this.isUser, required this.time,
+    this.action = '', this.argument = '', this.card = ''});
+
+  factory ChatMessage.fromRecord(HealthyChatRecord record) => ChatMessage(
+    text: record.text, isUser: record.isUser,
+    time: '${record.createdAt.hour.toString().padLeft(2, '0')}:${record.createdAt.minute.toString().padLeft(2, '0')}',
+    action: record.action, argument: record.actionArgument, card: record.card,
+  );
+}
 
 class NutriChatPage extends StatefulWidget {
   const NutriChatPage({super.key});
@@ -14,46 +68,72 @@ class NutriChatPage extends StatefulWidget {
 }
 
 class _NutriChatPageState extends State<NutriChatPage> {
-  static const _background = Color(0xFFF7F9F8);
-  static const _navy = Color(0xFF172B36);
-  static const _muted = Color(0xFF7A869A);
+  Color get _background => HealthyAdaptive.background;
+  Color get _navy => HealthyAdaptive.text;
+  Color get _muted => HealthyAdaptive.muted;
   static const _green = Color(0xFF198568);
 
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
+  final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
+  final HealthyHybridKnowledge _hybridKnowledge = HealthyHybridKnowledge();
+  final HealthyConversationService _conversation =
+      const HealthyConversationService();
+  final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
+  final HealthyChatHistory _history = const HealthyChatHistory();
+  String? _sessionId;
+  String _lastTopic = '';
+  final HealthyChatContext _chatContext = HealthyChatContext();
+  String _lastHabitTitle = '';
+  String _lastShopItemId = '';
+  bool _historyLoading = false;
+  bool _manuallyStartedNew = false;
+  List<Map<String, dynamic>> _habitosPerfil = [];
+  bool _allowHistoryAnalysis = false;
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _voiceReady = false;
+  bool _listening = false;
+  bool _readAloud = false;
+  String? _voiceError;
   bool isTyping = false;
   bool _hasSentMessage = false;
 
-  late final ChatSession _session;
-  late final List<ChatMessage> messages;
-
-  void _iniciarSesion() {
-    _session = ChatHistoryStore.instance.startSession(
-      FirebaseAuth.instance.currentUser?.uid,
-    );
-    messages = _session.messages;
-    messages.add(ChatMessage(
+  final List<ChatMessage> messages = [
+    ChatMessage(
       text:
           '¡Hola! Soy Mr. Healthy. Puedo ayudarte con dudas sobre la app, tus misiones y tus hábitos. ¿Por dónde empezamos?',
       isUser: false,
       time: _timeNow(),
-    ));
-  }
+    ),
+  ];
 
   final List<String> quickOptions = const [
+    '¿Quién eres?',
+    'Cuéntame una historia',
+    '¿Qué es la inteligencia artificial?',
+    '¿Cómo va mi perfil?',
+    'Mis desafíos',
+    '¿Qué logros tengo?',
+    'Quiero comprar corona',
+    'Editar mi perfil',
+    'Agregar un hábito',
+    'Ver mis estadísticas',
+    'Hablar con un profesional',
+    '¿Qué nutrientes tienen las lentejas?',
+    'Muéstrame los beneficios de la avena',
+    'Quiero calcular mi GET',
     '¿Cómo mejorar mi racha?',
     '¿Qué misión tengo hoy?',
     'Quiero mejorar mi hidratación',
-    'Hablar con un profesional',
     'Sugiere hábitos para mí',
-    '¿Cómo va mi perfil?',
-    'Quiero calcular mi GET',
+    '¿Cómo está el clima hoy?',
   ];
 
   static String _timeNow() {
@@ -64,9 +144,83 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void initState() {
     super.initState();
-    _iniciarSesion();
     _inputFocus.addListener(_onFocusChange);
     _cargarSaludoPersonalizado();
+    _setupVoice();
+    _loadRecentChat();
+  }
+
+  Future<void> _setupVoice() async {
+    try {
+      await _tts.setLanguage('es-MX');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setVolume(1.0);
+    } catch (_) {
+      // No speech engine installed: text chat continues to work.
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    try {
+      _voiceReady = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'done' || status == 'notListening') {
+            setState(() => _listening = false);
+          }
+        },
+        onError: (error) {
+          if (!mounted) return;
+          setState(() {
+            _listening = false;
+            _voiceError = 'No se pudo reconocer la voz. Revisa el micrófono.';
+          });
+        },
+      );
+      if (!_voiceReady) {
+        if (mounted) setState(() => _voiceError = 'El reconocimiento de voz no está disponible en este dispositivo.');
+        return;
+      }
+      await _tts.stop();
+      await _speech.listen(
+        listenOptions: stt.SpeechListenOptions(
+          localeId: 'es_MX',
+          listenFor: const Duration(seconds: 25),
+          pauseFor: const Duration(seconds: 3),
+        ),
+        onResult: (result) {
+          if (!mounted) return;
+          messageController.value = TextEditingValue(
+            text: result.recognizedWords,
+            selection: TextSelection.collapsed(offset: result.recognizedWords.length),
+          );
+          if (result.finalResult) setState(() => _listening = false);
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _listening = true;
+          _voiceError = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _listening = false;
+          _voiceError = 'No fue posible iniciar el micrófono.';
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleReadAloud() async {
+    if (_readAloud) await _tts.stop();
+    if (mounted) setState(() => _readAloud = !_readAloud);
   }
 
   Future<void> _cargarSaludoPersonalizado() async {
@@ -106,6 +260,340 @@ class _NutriChatPageState extends State<NutriChatPage> {
     });
   }
 
+  Future<void> _loadRecentChat() async {
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      final sessions = await _history.watchSessions().first;
+      if (!mounted || _hasSentMessage || _manuallyStartedNew || sessions.isEmpty) return;
+      await _openSession(sessions.first.id);
+    } catch (_) {
+      // El chat sigue disponible si Firestore no permite consultar el historial.
+    }
+  }
+
+  Future<void> _openSession(String id) async {
+    if (isTyping) return;
+    _calculatorService.reset();
+    setState(() => _historyLoading = true);
+    try {
+      final records = await _history.loadMessages(id);
+      if (!mounted) return;
+      setState(() {
+        _manuallyStartedNew = false;
+        _sessionId = id;
+        messages
+          ..clear()
+          ..addAll(records.map(ChatMessage.fromRecord));
+        if (messages.isEmpty) {
+          messages.add(ChatMessage(
+            text: '¡Hola! Soy Mr. Healthy. ¿En qué te ayudo?',
+            isUser: false, time: _timeNow()));
+        }
+        _hasSentMessage = records.isNotEmpty;
+        _lastTopic = '';
+        _chatContext.reset();
+        _lastHabitTitle = '';
+        _lastShopItemId = '';
+        for (final record in records.reversed) {
+          if (record.card == 'shop_item' &&
+              record.actionArgument.isNotEmpty) {
+            _lastShopItemId = record.actionArgument;
+            break;
+          }
+        }
+        for (final record in records.reversed) {
+          if (record.action == 'habits' &&
+              record.actionArgument.isNotEmpty) {
+            _lastHabitTitle = record.actionArgument;
+            break;
+          }
+        }
+        for (final record in records.reversed) {
+          if (!record.isUser) {
+            _lastTopic = const [
+              'habit_add','habit_remove','profile','shop_item',
+            ].contains(record.card) ? record.card : '';
+            break;
+          }
+        }
+      });
+      await _refreshAssistantData();
+      if (mounted) setState(() {});
+      _scrollToBottom();
+    } catch (_) {
+      _chatNotice('No se pudo abrir el historial de ese chat.');
+    } finally {
+      if (mounted) setState(() => _historyLoading = false);
+    }
+  }
+
+  void _newConversation() {
+    if (isTyping) return;
+    _calculatorService.reset();
+    setState(() {
+      _manuallyStartedNew = true;
+      _sessionId = null;
+      _lastTopic = '';
+      _chatContext.reset();
+      _lastHabitTitle = '';
+      _lastShopItemId = '';
+      _hasSentMessage = false;
+      messages
+        ..clear()
+        ..add(ChatMessage(
+          text: '¡Hola! Soy Mr. Healthy. ¿En qué te ayudo?',
+          isUser: false,
+          time: _timeNow(),
+        ));
+    });
+  }
+
+  void _chatNotice(String notice) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(notice)));
+  }
+
+  Future<void> _persist(ChatMessage message, {bool first = false}) async {
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      _sessionId ??= await _history.createSession();
+      await _history.saveMessage(_sessionId!, text: message.text,
+        isUser: message.isUser, action: message.action,
+        actionArgument: message.argument, card: message.card,
+        isFirstUserMessage: first && message.isUser);
+    } catch (_) {
+      _chatNotice('No se pudo sincronizar este mensaje con el historial.');
+    }
+  }
+
+  Future<bool> _refreshAssistantData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _perfil = {};
+      _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
+      return false;
+    }
+    final userRef = FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('users').doc(user.uid);
+    try {
+      final result = await userRef.get();
+      if (!result.exists) return false;
+      _perfil = result.data() ?? {};
+      final rawSettings = _perfil['settings'];
+      _allowHistoryAnalysis =
+          rawSettings is Map && rawSettings['analizarHistorialIA'] == true;
+      if (!_allowHistoryAnalysis) {
+        _habitosPerfil = [];
+        return true;
+      }
+    } catch (_) {
+      _perfil = {};
+      _habitosPerfil = [];
+      _allowHistoryAnalysis = false;
+      return false;
+    }
+    try {
+      final result = await userRef.collection('user_habits').limit(100).get();
+      _habitosPerfil = result.docs.map((d) => d.data()).toList();
+    } catch (_) {
+      _habitosPerfil = [];
+    }
+    return true;
+  }
+
+  Future<void> _openOfficialSource(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' ||
+        !const {'fdc.nal.usda.gov', 'www.who.int', 'www.fda.gov'}.contains(uri.host)) {
+      _chatNotice('Fuente externa no disponible o no verificada.');
+      return;
+    }
+    try {
+      final opened = await launchUrl(
+        uri, mode: LaunchMode.externalApplication);
+      if (!opened) _chatNotice('No fue posible abrir la fuente.');
+    } catch (_) {
+      _chatNotice('No fue posible abrir la fuente.');
+    }
+  }
+
+  Future<void> _chooseHabitForChat(bool remove) async {
+    if (isTyping || _historyLoading) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: HealthyAdaptive.surface,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => HealthyChatHabitPicker(
+        remove: remove,
+        onSelected: (habit) => _onHabitPicked(habit, remove),
+      ),
+    );
+  }
+
+  Future<void> _onHabitPicked(Habit habit, bool remove) async {
+    if (!mounted || isTyping) return;
+    final first = _sessionId == null;
+    final cardType = remove ? 'habit_remove' : 'habit_add';
+    final user = ChatMessage(
+      text: '${remove ? 'Abandonar' : 'Agregar'}: ${habit.title}',
+      isUser: true, time: _timeNow());
+    final bot = ChatMessage(
+      text: remove
+          ? 'Elegiste «${habit.title}». Verificaré el intento activo '
+              'y su posible penalización antes de pedirte confirmación.'
+          : 'Elegiste «${habit.title}». Revisaré tus cupos, '
+              'monedas y requisitos antes de solicitar confirmación.',
+      isUser: false, time: _timeNow(),
+      action: 'habits', argument: habit.title, card: cardType,
+    );
+    setState(() {
+      messages.addAll([user, bot]);
+      _hasSentMessage = true;
+      _lastTopic = cardType;
+      _lastHabitTitle = habit.title;
+      isTyping = true;
+    });
+    _scrollToBottom();
+    await _persist(user, first: first);
+    await _persist(bot);
+    if (mounted) setState(() => isTyping = false);
+  }
+
+  void _openCatalogItem(CatalogoItem item) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CatalogoDetalleScreen(item: item),
+    ));
+  }
+
+  Future<void> _onShopCommitted(String detail) async {
+    await _refreshAssistantData();
+    if (!mounted) return;
+    final reply = ChatMessage(
+      text: detail,
+      isUser: false,
+      time: _timeNow(),
+      card: 'shop_result',
+      action: 'shop',
+    );
+    setState(() => messages.add(reply));
+    HealthyCelebration.show(
+      context,
+      title: '¡Apariencia actualizada!',
+      subtitle: detail,
+      icon: Icons.auto_awesome_rounded,
+    );
+    _scrollToBottom();
+    await _persist(reply);
+  }
+
+  Future<void> _onHabitActionCompleted(HabitActionResult result) async {
+    await _refreshAssistantData();
+    if (!mounted) return;
+    final text = result.removed
+        ? 'Confirmado: «${result.habit.title}» fue abandonado. '
+          'Se descontaron ${result.chargedCoins} Habit Coins y tu historial permanece disponible.'
+        : 'Confirmado: «${result.habit.title}» se agregó a tus hábitos activos. '
+          'Puedes registrar tu progreso desde Hábitos.';
+    final message = ChatMessage(
+      text: text, isUser: false, time: _timeNow(),
+      action: 'habits', argument: result.habit.title,
+      card: 'habit_result',
+    );
+    setState(() {
+      messages.add(message);
+    });
+    HealthyCelebration.show(context,
+      title: result.removed ? 'Hábito actualizado' : '¡Nuevo hábito!',
+      subtitle: result.removed
+          ? 'Tu historial se conservó.'
+          : 'Puedes comenzar a registrar tus avances.',
+      icon: result.removed
+          ? Icons.task_alt_rounded
+          : Icons.emoji_events_rounded,
+    );
+    _scrollToBottom();
+    await _persist(message);
+  }
+
+  void _navigateFromChat(ChatMessage message) {
+    if (message.action == 'source') {
+      _openOfficialSource(message.argument);
+      return;
+    }
+    Widget? target;
+    switch (message.action) {
+      case 'habits':
+        target = HabitsScreen(initialSearch: message.argument);
+        break;
+      case 'progress':
+        target = const ProgresoScreen();
+        break;
+      case 'professionals':
+        target = const ProfesionalesScreen();
+        break;
+      case 'profile':
+        target = const ProfileScreen();
+        break;
+      case 'levels':
+        final raw = _perfil['xp'] ?? _perfil['currentXp'];
+        target = CaminoNivelesScreen(
+          xp: raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0);
+        break;
+      case 'ranking':
+        target = const RankingScreen();
+        break;
+      case 'shop':
+        target = const StoreScreen();
+        break;
+      case 'catalog':
+        target = const CatalogoScreen();
+        break;
+      case 'catalog_item':
+        final item = HealthyChatCatalogCard.findById(message.argument);
+        if (item != null) target = CatalogoDetalleScreen(item: item);
+        break;
+      case 'challenges':
+        target = const DesafiosScreen();
+        break;
+      case 'achievements':
+        target = const LogrosScreen();
+        break;
+      case 'edit_profile':
+        target = const EditarPerfilScreen();
+        break;
+    }
+    if (target != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => target!))
+          .then((_) async {
+        await _refreshAssistantData();
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  Future<void> _showChatHistory() async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      _chatNotice('Inicia sesión para guardar conversaciones.');
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (_) => HealthyChatHistorySheet(
+        history: _history,
+        activeId: _sessionId,
+        onSelected: _openSession,
+        onNew: _newConversation,
+      ),
+    );
+  }
+
   void _onFocusChange() {
     if (_inputFocus.hasFocus) {
       // Espera al ajuste de tamaño causado por el teclado.
@@ -114,114 +602,199 @@ class _NutriChatPageState extends State<NutriChatPage> {
   }
 
   Future<void> sendMessage([String? predefinedText]) async {
-    if (!mounted || isTyping) return;
+    if (!mounted || isTyping || _historyLoading) return;
     final text = (predefinedText ?? messageController.text).trim();
     if (text.isEmpty) return;
+    final first = _sessionId == null;
+    final previousUserMessage = messages
+        .where((message) => message.isUser)
+        .map((message) => message.text)
+        .toList();
+    final lastUserPrompt = previousUserMessage.isEmpty
+        ? '' : previousUserMessage.last;
+    final userMessage = ChatMessage(
+      text: text, isUser: true, time: _timeNow());
 
     messageController.clear();
+    if (_listening) {
+      await _speech.stop();
+      _listening = false;
+    }
+    await _tts.stop();
     setState(() {
       _hasSentMessage = true;
-      messages.add(ChatMessage(text: text, isUser: true, time: _timeNow()));
+      messages.add(userMessage);
       isTyping = true;
     });
     _scrollToBottom();
 
-    String response;
+    String response = '';
+    HealthyAssistantReply intent = const HealthyAssistantReply('');
     try {
+      // Los mensajes se guardan en orden cronológico por conversación.
       final normalized = NutriRespuestasService.normalizar(text);
-      // Moderación antes de los flujos: el lenguaje ofensivo no se procesa
-      // como un dato numérico de IMC/GET. No se bloquea el resto del chat.
-      if (NutriRespuestasService.tieneGroserias(text) ||
-          NutriRespuestasService.contiene(text, [
-            'suicidio',
-            'suicidarme',
-            'matarme',
-            'hacerme daño',
-            'autolesion',
-          ])) {
+      final danger = NutriRespuestasService.contiene(text, [
+        'suicidio', 'suicidarme', 'matarme', 'hacerme daño', 'autolesion',
+      ]);
+      if (danger) {
+        response = _respuestas.moderar(text, _primerNombre);
+      } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
       } else if (NutriRespuestasService.contiene(normalized, [
-            'cancelar',
-            'salir del calculo',
-            'detener calculo',
-          ]) &&
-          (_calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0)) {
-        _calculatorService.resetIMC();
-        _calculatorService.resetGET();
+        'cancelar', 'salir del calculo', 'detener calculo',
+      ]) && (_calculatorService.pasoIMC > 0 ||
+            _calculatorService.pasoGET > 0)) {
+        _calculatorService.reset();
         response = 'Cálculo cancelado. ¿Te ayudo con otra cosa? 🌿';
       } else {
-        // Actualizar estadísticas solo cuando se preguntan; no inventar datos.
-        if (NutriRespuestasService.contiene(normalized, [
-          'mi perfil',
-          'mis datos',
-          'mis estadisticas',
-          'cuantas monedas',
-          'habit coins',
-          'mi nivel',
-          'cuanta xp',
-          'mi xp',
-          'mi racha',
-          'mi nombre',
-          'mi usuario',
-          'como va mi perfil',
+        final activeCalculator = _calculatorService.pasoIMC > 0 ||
+            _calculatorService.pasoGET > 0;
+        final calculatorIntent = NutriRespuestasService.contiene(normalized, [
+          'imc','indice de masa corporal','get','gasto energetico',
+          'calorias diarias','calcular mi get',
+        ]);
+        final calc = activeCalculator || calculatorIntent
+            ? _calculatorService.procesarMensaje(text) : '';
+        if (calc.isNotEmpty) {
+          response = calc;
+        } else if (NutriRespuestasService.contiene(normalized, const [
+          'clima', 'pronostico', 'va a llover', 'esta lloviendo',
+          'temperatura de hoy', 'tiempo meteorologico',
         ])) {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            try {
-              final snapshot =
-                  await FirebaseFirestore.instanceFor(
-                    app: Firebase.app(),
-                    databaseId: 'default',
-                  ).collection('users').doc(user.uid).get();
-              _perfil = snapshot.data() ?? <String, dynamic>{};
-            } catch (_) {
-              _perfil = <String, dynamic>{};
-            }
+          // Mijo: clima real por solicitud explícita, sin ubicación por IP.
+          try {
+            final weather = await _climaServicio.obtenerClimaActual();
+            response = weather.mensaje;
+            intent = HealthyAssistantReply(
+              response, card: 'weather');
+          } on ClimaException catch (error) {
+            response = error.message;
+          }
+        } else {
+          final requiresProfile = HealthyIntentRouter.asksForCoinBalance(text) ||
+              NutriRespuestasService.contiene(normalized, [
+            'mi perfil','mis datos','mis estadisticas','mi progreso',
+            'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
+            'mis habitos','habitos activos','que habitos tengo',
+            'mis actividades','camino de xp',
+            'subir de nivel','mi posicion','cuanto he avanzado','cuantos xp',
+            'tienda','armario','canjear',
+          ]) || _lastTopic == 'profile';
+          final available = !requiresProfile ||
+              await _refreshAssistantData();
+          if (!available) {
+            response = 'No pude consultar tus datos actualizados. '
+                'Revisa tu conexión e inténtalo de nuevo; no inventaré XP ni monedas.';
+          } else if (!_allowHistoryAnalysis &&
+              NutriRespuestasService.contiene(normalized, const [
+                'mis habitos', 'habitos activos', 'que habitos tengo',
+                'mis actividades',
+              ])) {
+            response = 'Para consultar tus hábitos desde el asistente, activa '
+                '«Permitir análisis del historial» en Configuración. '
+                'Puedes seguir viendo tus hábitos desde su sección normal.';
           } else {
-            _perfil = <String, dynamic>{};
+            if (HealthyChatContext.needsActionClarification(text)) {
+              response = '¿Qué quieres modificar exactamente? '
+                  'Indica qué hábito o cuenta y qué deseas hacer. '
+                  'No realizaré cambios sin confirmación.';
+              _chatContext.reset();
+              _lastTopic = '';
+              _lastHabitTitle = '';
+              _lastShopItemId = '';
+            } else {
+              intent = _engine.resolve(text, profile: _perfil,
+                  habits: _habitosPerfil, lastTopic: _lastTopic,
+                  lastHabitTitle: _lastHabitTitle,
+                  lastShopItemId: _lastShopItemId);
+              final toneCommand = NutriRespuestasService.contiene(text, const [
+                'cambia tu humor', 'modo serio', 'modo divertido',
+                'modo motivador', 'modo tranquilo', 'modo amigable',
+              ]);
+              // Prioridad: seguridad/calculadora → acciones de la app →
+              // búsqueda educativa estructurada → conversación general.
+              // Ninguna ficha del dataset realiza operaciones sobre Firebase.
+              if (toneCommand) {
+                response = _respuestas.responder(
+                  text, nombre: _primerNombre, perfil: _perfil);
+              } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
+                response = intent.text;
+              } else {
+                final previousKnowledge = _chatContext.referenceFor(text);
+                final educational = await _hybridKnowledge.answer(
+                  text, operational: intent,
+                  lastKnowledgeId: previousKnowledge,
+                );
+                if (educational != null) {
+                  intent = educational;
+                  response = educational.text;
+                  _chatContext.recordEducationalReply(
+                    input: text,
+                    knowledgeId: educational.knowledgeId,
+                    previousReference: previousKnowledge,
+                  );
+                } else {
+                  _chatContext.reset();
+                  response = _conversation.reply(
+                        text,
+                        name: _primerNombre,
+                        previousUserMessage: lastUserPrompt,
+                      ) ??
+                      _respuestas.responder(
+                        text, nombre: _primerNombre, perfil: _perfil);
+                }
+              }
+              if (intent.card == 'catalog_item' &&
+                  intent.actionArgument == 'huevo') {
+                // El catálogo también puede introducir un tema educativo.
+                // La siguiente pregunta podrá referirse al huevo sin repetirlo.
+                _chatContext.recordEducationalReply(
+                  input: text,
+                  knowledgeId: 'huevo',
+                  previousReference: '',
+                );
+              } else if (intent.card != 'knowledge') {
+                _chatContext.reset();
+              }
+              _lastTopic = _engine.topicFor(intent);
+              if (intent.action == 'habits' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastHabitTitle = intent.actionArgument;
+              }
+              if (intent.card == 'shop_item' &&
+                  intent.actionArgument.isNotEmpty) {
+                _lastShopItemId = intent.actionArgument;
+              }
+            } // Respuesta ordinaria (no orden elíptica).
           }
         }
-        final activeCalculator =
-            _calculatorService.pasoIMC > 0 || _calculatorService.pasoGET > 0;
-        final calculatorIntent = NutriRespuestasService.contiene(normalized, [
-          'imc',
-          'indice de masa corporal',
-          'get',
-          'gasto energetico',
-          'calorias diarias',
-          'calcular mi get',
-          'gasto calorico',
-          'calorias necesito',
-          'metabolismo basal',
-          'tmb',
-        ]);
-        final calcResponse =
-            (activeCalculator || calculatorIntent)
-                ? _calculatorService.procesarMensaje(text)
-                : '';
-        response =
-            calcResponse.isNotEmpty
-                ? calcResponse
-                : _respuestas.responder(
-                  text,
-                  nombre: _primerNombre,
-                  perfil: _perfil,
-                );
       }
     } catch (_) {
-      response =
-          'Tuve un problema al preparar la respuesta. Intenta de nuevo en un momento. 🌿';
+      response = 'Ocurrió un problema al preparar tu respuesta. '
+          'Puedes intentar de nuevo.';
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
+    final botMessage = ChatMessage(
+      text: response, isUser: false, time: _timeNow(),
+      action: intent.action, argument: intent.actionArgument,
+      card: intent.card,
+    );
     setState(() {
-      messages.add(
-        ChatMessage(text: response, isUser: false, time: _timeNow()),
-      );
-      isTyping = false;
+      messages.add(botMessage);
     });
     _scrollToBottom();
+    // La respuesta aparece de inmediato; la escritura se serializa después.
+    await _persist(userMessage, first: first);
+    await _persist(botMessage);
+    if (mounted) setState(() => isTyping = false);
+    if (_readAloud && mounted) {
+      try {
+        await _tts.speak(response);
+      } catch (_) {
+        if (mounted) setState(() => _voiceError = 'No se puede reproducir audio en este dispositivo.');
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -237,7 +810,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   @override
   void dispose() {
-    ChatHistoryStore.instance.discardIfEmpty(_session);
+    _speech.cancel();
+    _tts.stop();
     _inputFocus.removeListener(_onFocusChange);
     _inputFocus.dispose();
     messageController.dispose();
@@ -255,11 +829,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
         backgroundColor: _background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: _navy),
+          icon: Icon(Icons.arrow_back, color: _navy),
           onPressed: () => Navigator.maybePop(context),
         ),
         titleSpacing: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -277,32 +851,49 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Historial',
-            icon: const Icon(Icons.history_rounded, color: _navy),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => ChatHistoryPage(activeSessionId: _session.id),
+          PopupMenuButton<String>(
+            tooltip: 'Personalidad de Mr. Healthy',
+            icon: Icon(Icons.sentiment_satisfied_alt_rounded, color: _navy),
+            onSelected: (mood) {
+              if (mood == '_audio') {
+                _toggleReadAloud();
+                return;
+              }
+              setState(() => _respuestas.cambiarHumor(mood));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Mr. Healthy: modo $mood')),
+              );
+            },
+            itemBuilder: (_) => [
+              ...NutriRespuestasService.moods.map((mood) => PopupMenuItem<String>(
+                value: mood,
+                child: Text(mood[0].toUpperCase() + mood.substring(1)),
+              )),
+              PopupMenuItem<String>(
+                value: '_audio',
+                child: Text(_readAloud ? 'Desactivar voz' : 'Activar voz'),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              width: 38,
-              height: 38,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (_, __, ___) => const Icon(Icons.eco, color: _green),
-            ),
+          IconButton(
+            key: const Key('healthy-chat-history-button'),
+            onPressed: isTyping || _historyLoading ? null : _showChatHistory,
+            tooltip: 'Historial de conversaciones',
+            icon: Icon(Icons.history_rounded, color: _navy),
+          ),
+          IconButton(
+            key: const Key('healthy-chat-new-button'),
+            onPressed: isTyping ? null : _newConversation,
+            tooltip: 'Nueva conversación',
+            icon: Icon(Icons.add_comment_outlined, color: _navy),
           ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            if (_historyLoading)
+              const LinearProgressIndicator(minHeight: 2),
             Expanded(
               child: ListView.builder(
                 controller: scrollController,
@@ -314,7 +905,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     1 +
                     messages.length +
                     (isTyping ? 1 : 0) +
-                    (!_hasSentMessage && !keyboardVisible ? 1 : 0),
+                    (!_hasSentMessage && !keyboardVisible ? 1 : 0) +
+                    (_hasSentMessage && !keyboardVisible &&
+                            _calculatorService.opcionesRapidas.isNotEmpty
+                        ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return _hasSentMessage || keyboardVisible
@@ -338,26 +932,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       ),
                     );
                   }
-                  return _buildQuickOptions();
+                  return _hasSentMessage
+                      ? _buildCalculatorOptions()
+                      : _buildQuickOptions();
                 },
               ),
             ),
-            if (_calculatorService.opcionesRapidas.isNotEmpty && !isTyping)
+            if (_voiceError != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: _calculatorService.opcionesRapidas.map((option) =>
-                      ActionChip(
-                        label: Text(option),
-                        onPressed: () => sendMessage(option),
-                      ),
-                    ).toList(),
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(_voiceError!, style: const TextStyle(color: Colors.deepOrange, fontSize: 12)),
               ),
             _buildComposer(keyboardVisible),
           ],
@@ -378,7 +962,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
               (_, __, ___) => const Icon(Icons.eco, size: 45, color: _green),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -407,12 +991,36 @@ class _NutriChatPageState extends State<NutriChatPage> {
     ),
   );
 
+  Widget _buildCalculatorOptions() => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Opciones del cálculo',
+            style: TextStyle(color: _muted,
+                fontWeight: FontWeight.w800, fontSize: 12)),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            for (final option in _calculatorService.opcionesRapidas)
+              ActionChip(
+                label: Text(option),
+                onPressed: isTyping ? null : () => sendMessage(option),
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+
   Widget _buildQuickOptions() => Padding(
     padding: const EdgeInsets.only(top: 8, bottom: 10),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Preguntas frecuentes',
           style: TextStyle(
             color: _muted,
@@ -421,11 +1029,28 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ),
         ),
         const SizedBox(height: 10),
+        if (_calculatorService.opcionesRapidas.isNotEmpty) ...[
+          Text('Opciones del cálculo',
+            style: TextStyle(color: _muted,
+              fontWeight: FontWeight.w700, fontSize: 12)),
+          const SizedBox(height: 7),
+          Wrap(
+            spacing: 8, runSpacing: 5,
+            children: [
+              for (final option in _calculatorService.opcionesRapidas)
+                ActionChip(
+                  label: Text(option),
+                  onPressed: isTyping ? null : () => sendMessage(option),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
         ...quickOptions.map(
           (option) => Padding(
             padding: const EdgeInsets.only(bottom: 7),
             child: Material(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -438,14 +1063,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5EEE9)),
+                    border: Border.all(color: HealthyAdaptive.border),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
                           option,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: _navy,
@@ -471,9 +1096,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   Widget _buildComposer(bool keyboardVisible) => Container(
     padding: EdgeInsets.fromLTRB(14, 8, 14, keyboardVisible ? 8 : 12),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       color: _background,
-      border: Border(top: BorderSide(color: Color(0xFFE5EEE9))),
+      border: Border(top: BorderSide(color: HealthyAdaptive.border)),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -481,9 +1106,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
         Container(
           padding: const EdgeInsets.only(left: 16, right: 5),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: HealthyAdaptive.surface,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFDDE8E2)),
+            border: Border.all(color: HealthyAdaptive.border),
           ),
           child: Row(
             children: [
@@ -508,6 +1133,18 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   ),
                 ),
               ),
+              IconButton(
+                tooltip: _listening ? 'Detener dictado' : 'Dictar mensaje',
+                onPressed: isTyping ? null : _toggleListening,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    key: ValueKey(_listening),
+                    color: _listening ? Colors.deepOrange : _green,
+                  ),
+                ),
+              ),
               IconButton.filled(
                 onPressed: isTyping ? null : () => sendMessage(),
                 icon: const Icon(Icons.arrow_upward_rounded, size: 21),
@@ -515,7 +1152,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 style: IconButton.styleFrom(
                   backgroundColor: const Color(0xFF8DE0C0),
                   foregroundColor: _navy,
-                  disabledBackgroundColor: const Color(0xFFE5EEE9),
+                  disabledBackgroundColor: HealthyAdaptive.border,
                 ),
               ),
             ],
@@ -541,14 +1178,29 @@ class _NutriChatPageState extends State<NutriChatPage> {
     final isUser = message.isUser;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey('mr-healthy-message-${messages.indexOf(message)}'),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: HealthyVisualEffects.duration(
+          context, const Duration(milliseconds: 220)),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) => Opacity(
+          opacity: value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 7),
+            child: child,
+          ),
+        ),
+        child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.82,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isUser ? _navy : const Color(0xFFE2F7ED),
+          color: isUser
+              ? (HealthyAdaptive.isDark ? const Color(0xFF284B56) : const Color(0xFF174F48))
+              : HealthyAdaptive.mint,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
@@ -562,22 +1214,249 @@ class _NutriChatPageState extends State<NutriChatPage> {
             Text(
               message.text,
               style: TextStyle(
-                color: isUser ? Colors.white : _navy,
+                color: isUser ? Colors.white : HealthyAdaptive.text,
                 fontSize: 14,
                 height: 1.4,
               ),
             ),
+            if (!isUser &&
+                (message.card == 'habit_add' ||
+                 message.card == 'habit_remove') &&
+                message.argument.trim().isEmpty) ...[
+              const SizedBox(height: 9),
+              FilledButton.icon(
+                key: const Key('mr-healthy-pick-habit'),
+                onPressed: isTyping ? null : () =>
+                    _chooseHabitForChat(message.card == 'habit_remove'),
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('Seleccionar hábito'),
+              ),
+            ],
+            if (!isUser &&
+                (message.card == 'habit_add' ||
+                 message.card == 'habit_remove') &&
+                message.argument.trim().isNotEmpty) ...[
+              HealthyChatHabitCard(
+                habitTitle: message.argument,
+                remove: message.card == 'habit_remove',
+                onCompleted: (result) => _onHabitActionCompleted(result),
+              ),
+            ],
+            if (!isUser &&
+                (message.card == 'shop_item' ||
+                 message.card == 'shop_picker')) ...[
+              HealthyChatStoreCard(
+                initialItemId: message.argument,
+                onCommitted: _onShopCommitted,
+              ),
+            ],
+            if (!isUser && message.card == 'challenges') ...[
+              HealthyChatChallengesCard(
+                onOpen: () => _navigateFromChat(message),
+              ),
+            ],
+            if (!isUser && message.card == 'achievements') ...[
+              HealthyChatAchievementsCard(
+                onOpen: () => _navigateFromChat(message),
+              ),
+            ],
+            if (!isUser && message.card == 'edit_profile') ...[
+              HealthyChatProfileEditor(
+                onEdit: () => _navigateFromChat(message),
+              ),
+            ],
+            if (!isUser && message.card == 'weather') ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.cloud_outlined, size: 18,
+                  color: HealthyAdaptive.accent),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  'Clima actual · Open-Meteo · ubicación aproximada',
+                  style: TextStyle(fontSize: 11,
+                    color: HealthyAdaptive.muted),
+                )),
+              ]),
+            ],
+            if (!isUser && message.card == 'catalog_item' &&
+                message.argument.isNotEmpty) ...[
+              HealthyChatCatalogCard(
+                itemId: message.argument,
+                onOpen: _openCatalogItem,
+              ),
+            ],
+            if (!isUser && message.card == 'knowledge') ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.menu_book_rounded, size: 17,
+                  color: HealthyAdaptive.accent),
+                const SizedBox(width: 7),
+                Expanded(child: Text('Información educativa con fuente',
+                  style: TextStyle(fontSize: 11,
+                    color: HealthyAdaptive.muted))),
+              ]),
+            ],
+            if (!isUser && message.card == 'profile') ...[
+              const SizedBox(height: 12),
+              _profileCard(),
+            ],
+            if (!isUser && message.action.isNotEmpty &&
+                !const {
+                  'habit_add', 'habit_remove', 'shop_item', 'shop_picker',
+                  'challenges', 'achievements', 'edit_profile',
+                  'catalog_item',
+                }.contains(message.card)) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                key: ValueKey('healthy-chat-action-${message.action}'),
+                onPressed: () => _navigateFromChat(message),
+                icon: Icon(_actionIcon(message.action), size: 18),
+                label: Text(_actionLabel(message)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: HealthyAdaptive.text,
+                  side: BorderSide(color: HealthyAdaptive.border),
+                  backgroundColor: HealthyAdaptive.surface,
+                ),
+              ),
+            ],
             const SizedBox(height: 6),
             Text(
               '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
-                color: isUser ? Colors.white70 : _green,
+                color: isUser ? Colors.white70 : HealthyAdaptive.muted,
                 fontSize: 10,
               ),
             ),
           ],
         ),
+        ),
       ),
     );
   }
+  String _actionLabel(ChatMessage message) {
+    switch (message.action) {
+      case 'habits':
+        return message.argument.isEmpty
+            ? 'Abrir Hábitos'
+            : 'Buscar en Hábitos';
+      case 'progress': return 'Ver estadísticas y gráficas';
+      case 'professionals': return 'Ver directorio de profesionales';
+      case 'profile': return 'Abrir mi perfil';
+      case 'levels': return 'Abrir mi camino de XP';
+      case 'ranking': return 'Ver clasificación';
+      case 'shop': return 'Abrir Tienda';
+      case 'catalog': return 'Ver catálogo educativo';
+      case 'catalog_item': return 'Ver ficha completa';
+      case 'challenges': return 'Ver desafíos';
+      case 'achievements': return 'Ver logros';
+      case 'edit_profile': return 'Editar mi perfil';
+      case 'source': return 'Consultar fuente oficial';
+      default: return 'Abrir';
+    }
+  }
+
+  IconData _actionIcon(String action) {
+    switch (action) {
+      case 'habits': return Icons.checklist_rtl_rounded;
+      case 'progress': return Icons.bar_chart_rounded;
+      case 'professionals': return Icons.medical_services_outlined;
+      case 'profile': return Icons.person_outline_rounded;
+      case 'levels': return Icons.route_outlined;
+      case 'ranking': return Icons.leaderboard_outlined;
+      case 'shop': return Icons.storefront_outlined;
+      case 'catalog': return Icons.menu_book_outlined;
+      case 'catalog_item': return Icons.book_outlined;
+      case 'challenges': return Icons.flag_outlined;
+      case 'achievements': return Icons.workspace_premium_outlined;
+      case 'edit_profile': return Icons.manage_accounts_outlined;
+      case 'source': return Icons.open_in_new_rounded;
+      default: return Icons.open_in_new_rounded;
+    }
+  }
+
+  Widget _profileCard() {
+    // Tarjeta de datos actuales, obtenidos del perfil y no de la conversación.
+    if (_perfil.isEmpty) {
+      return Text('Consulta tu perfil para ver datos actualizados.',
+          style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12));
+    }
+    int number(Object? raw) =>
+        raw is num ? raw.toInt() : int.tryParse('$raw') ?? 0;
+    final xp = number(_perfil['xp'] ?? _perfil['currentXp']);
+    final level = LevelSystem.fromXp(xp);
+    final streak = number(_perfil['currentStreak'] ?? _perfil['streakDays']);
+    final coins = number(_perfil['habitCoins']);
+    return Container(
+      key: const Key('healthy-chat-profile-card'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HealthyAdaptive.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tu progreso actual',
+            style: TextStyle(color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w900, fontSize: 13)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: _metric(Icons.rocket_launch_outlined,
+                'Nivel', '${level.number}')),
+            Expanded(child: _metric(Icons.bolt_rounded, 'XP', '$xp')),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _metric(Icons.local_fire_department_outlined,
+                'Racha', '$streak días')),
+            Expanded(child: _coinMetric('$coins')),
+          ]),
+          const SizedBox(height: 11),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: LevelSystem.progress(xp),
+              minHeight: 7,
+              backgroundColor: HealthyAdaptive.border,
+              color: HealthyAdaptive.accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coinMetric(String value) => Row(children: [
+    const HealthyCoinIcon(size: 19),
+    const SizedBox(width: 5),
+    Expanded(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Monedas', style: TextStyle(color: HealthyAdaptive.muted,
+          fontSize: 10)),
+        Text(value, overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: HealthyAdaptive.text,
+            fontWeight: FontWeight.w800, fontSize: 13)),
+      ],
+    )),
+  ]);
+
+  Widget _metric(IconData icon, String label, String value) {
+    return Row(children: [
+      Icon(icon, size: 18, color: HealthyAdaptive.accent),
+      const SizedBox(width: 5),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: HealthyAdaptive.muted,
+            fontSize: 10)),
+          Text(value, overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w800, fontSize: 13)),
+        ],
+      )),
+    ]);
+  }
+
 }

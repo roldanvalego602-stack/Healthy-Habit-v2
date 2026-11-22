@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 
 /// Pantalla de celebración de un logro para Healthy Habit.
 ///
@@ -30,9 +32,9 @@ class AchievementScreen extends StatelessWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onBack;
 
-  static const Color _background = Color(0xFFF6F8F5);
-  static const Color _navy = Color(0xFF193344);
-  static const Color _muted = Color(0xFF84929A);
+  Color get _background => HealthyAdaptive.background;
+  Color get _navy => HealthyAdaptive.text;
+  Color get _muted => HealthyAdaptive.muted;
   static const Color _mint = Color(0xFF8FE2C4);
   static const Color _mintStrong = Color(0xFF1D8069);
   static const Color _blue = Color(0xFF438EAE);
@@ -49,7 +51,7 @@ class AchievementScreen extends StatelessWidget {
       context: context,
       builder:
           (context) => AlertDialog(
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
@@ -57,12 +59,22 @@ class AchievementScreen extends StatelessWidget {
             title: Text(
               achievementName,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _navy, fontWeight: FontWeight.w800),
+              style: TextStyle(color: _navy, fontWeight: FontWeight.w800),
             ),
-            content: Text(
-              '$description\n\nRecompensa obtenida: +$xpReward XP y +$coinReward Habit Coins.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: _muted, height: 1.5),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(description, textAlign: TextAlign.center,
+                  style: TextStyle(color: _muted, height: 1.5)),
+                const SizedBox(height: 12),
+                Text('Recompensa obtenida: +$xpReward XP',
+                  style: TextStyle(color: _muted)),
+                HealthyCoinAmount(amount: '+$coinReward',
+                  size: 21, suffix: ' Habit Coins',
+                  style: TextStyle(color: _navy,
+                    fontWeight: FontWeight.w800)),
+              ],
             ),
             actionsAlignment: MainAxisAlignment.center,
             actions: [
@@ -116,14 +128,14 @@ class AchievementScreen extends StatelessWidget {
                             Navigator.of(context).pop();
                           }
                         },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_rounded,
                       color: _navy,
                       size: 29,
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Text(
+                  Text(
                     'Tu momento',
                     style: TextStyle(
                       color: _navy,
@@ -155,7 +167,7 @@ class AchievementScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-              const Text(
+              Text(
                 '¡Nuevo logro!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -242,7 +254,7 @@ class AchievementScreen extends StatelessWidget {
               Text(
                 achievementName,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _navy,
                   fontSize: 34,
                   height: 1.15,
@@ -254,7 +266,7 @@ class AchievementScreen extends StatelessWidget {
               Text(
                 description,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _muted,
                   fontSize: 18,
                   height: 1.5,
@@ -281,7 +293,7 @@ class AchievementScreen extends StatelessWidget {
                                 Text(
                                   '+$xpReward XP',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: _navy,
                                     fontSize: 25,
                                     fontWeight: FontWeight.w900,
@@ -307,24 +319,12 @@ class AchievementScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Image.asset(
-                                  'assets/monedas/h coin.png',
-                                  width: 30,
-                                  height: 30,
-                                  fit: BoxFit.contain,
-                                  errorBuilder:
-                                      (context, error, stackTrace) =>
-                                          const Icon(
-                                            Icons.image_not_supported_outlined,
-                                            color: Color(0xFFB58A26),
-                                            size: 30,
-                                          ),
-                                ),
+                                const HealthyCoinIcon(size: 30),
                                 const SizedBox(height: 5),
                                 Text(
                                   '+$coinReward Habit Coins',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: _navy,
                                     fontSize: 17,
                                     fontWeight: FontWeight.w900,
@@ -346,7 +346,7 @@ class AchievementScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.verified_outlined, color: _blue, size: 25),
@@ -395,7 +395,7 @@ class AchievementScreen extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => _continue(context),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: HealthyAdaptive.surface,
                     foregroundColor: _navy,
                     side: const BorderSide(color: Color(0xFFE1E8E4)),
                     shape: RoundedRectangleBorder(
@@ -409,7 +409,7 @@ class AchievementScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Un pequeño hábito. Una historia que sigue creciendo.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _muted, fontSize: 14),

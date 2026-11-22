@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'shop_purchase_gateway.dart';
 
 class ShopItem {
   const ShopItem(
@@ -143,6 +144,24 @@ const shopCatalog = <ShopItem>[
     emoji: '🐱',
     slot: 'cabeza',
   ),
+  ShopItem('sports_headband', 'Banda deportiva', 'Cabeza',
+      'Banda verde de hojas para Mr. Healthy.', 70,
+      emoji: '🌿', slot: 'cabeza'),
+  ShopItem('leaf_headphones', 'Audífonos naturaleza', 'Cabeza',
+      'Audífonos verde menta con motivos naturales.', 140,
+      emoji: '🎧', slot: 'cabeza'),
+  ShopItem('leaf_hoodie', 'Sudadera ecológica', 'Ropa',
+      'Sudadera verde de Mr. Healthy.', 200,
+      emoji: '👕', slot: 'torso'),
+  ShopItem('wellness_medal', 'Medalla saludable', 'Accesorios',
+      'Medalla de oro por tu constancia.', 100,
+      emoji: '🏅', slot: 'cuello'),
+  ShopItem('water_bottle', 'Termo turquesa', 'Accesorios',
+      'Botella de hidratación reutilizable.', 90,
+      emoji: '💧', slot: 'mano'),
+  ShopItem('leaf_backpack', 'Mochila ecológica', 'Accesorios',
+      'Mochila verde de exploración.', 170,
+      emoji: '🎒', slot: 'espalda'),
 ];
 
 ShopItem? shopItemById(String id) {
@@ -209,6 +228,12 @@ class ShopService {
   Future<void> buy(ShopItem item) async {
     if (shopItemById(item.id) == null) {
       throw const ShopException('Objeto desconocido.');
+    }
+    // Compilaciones normales conservan el flujo actual. La ruta demo
+    // NUNCA vuelve a escribir directamente si el callable falla.
+    if (DemoShopPurchaseGateway.requested) {
+      await DemoShopPurchaseGateway.purchase(item.id);
+      return;
     }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {

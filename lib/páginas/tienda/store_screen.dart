@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_motion.dart';
+import '../../tema/healthy_float.dart';
+import '../../tema/healthy_celebration.dart';
+import '../../tema/healthy_visual_mode.dart';
+import '../../tema/healthy_coin.dart';
 
+import '../../servicios/healthy_feedback_service.dart';
 import 'shop_service.dart';
+import 'shop_item_artwork.dart';
+import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
 
 /// Tienda con tarjetas horizontales grandes. Conserva el catálogo y las compras.
@@ -22,10 +31,10 @@ class StoreScreen extends StatefulWidget {
 }
 
 class _StoreScreenState extends State<StoreScreen> {
-  static const _green = Color(0xFF07865F);
-  static const _ink = Color(0xFF113B36);
-  static const _muted = Color(0xFF607A76);
-  static const _background = Color(0xFFF4FAF7);
+  Color get _green => HealthyAdaptive.accent;
+  Color get _ink => HealthyAdaptive.text;
+  Color get _muted => HealthyAdaptive.muted;
+  Color get _background => HealthyAdaptive.background;
 
   static const _categories = <String>[
     'Todos',
@@ -54,7 +63,19 @@ class _StoreScreenState extends State<StoreScreen> {
     setState(() => _busy = item.id);
     try {
       await ShopService.instance.buy(item);
-      _message('¡Canjeaste ${item.name}! Ya está en tu colección.');
+      // La compra ya fue confirmada por Firestore. Los efectos son opcionales.
+      final celebrate = await HealthyFeedbackService.onReward();
+      if (!mounted) return;
+      if (celebrate) {
+        HealthyCelebration.show(
+          context,
+          title: '¡Recompensa adquirida!',
+          subtitle: '${item.name} ya está en tu colección.',
+          icon: Icons.card_giftcard_rounded,
+        );
+      } else {
+        _message('${item.name} se agregó a tu colección.');
+      }
     } catch (error) {
       _message(error is ShopException
           ? error.message
@@ -64,6 +85,86 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
+  void _showFeaturedPreview(ShopItem item, ShopState? state) {
+    final owned = state?.owns(item.id) ?? false;
+    final affordable = state != null && state.coins >= item.price;
+    final canBuy = state != null && !owned && affordable && _busy == null;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            22, 12, 22, 22 + MediaQuery.viewInsetsOf(sheetContext).bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: ShopItemArtwork(item: item, size: 125)),
+              const SizedBox(height: 12),
+              Text(item.category.toUpperCase(),
+                style: TextStyle(color: HealthyAdaptive.accent,
+                  fontSize: 11, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              Text(item.name,
+                style: TextStyle(color: HealthyAdaptive.text,
+                  fontSize: 25, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 9),
+              Text(item.description,
+                style: TextStyle(color: HealthyAdaptive.muted,
+                  fontSize: 14, height: 1.4)),
+              const SizedBox(height: 17),
+              Row(children: [
+                _coinIcon(size: 24),
+                const SizedBox(width: 8),
+                Expanded(child: Text(
+                  item.price == 0 ? 'Gratis'
+                      : '${item.price} Habit Coins',
+                  style: TextStyle(color: HealthyAdaptive.text,
+                    fontSize: 17, fontWeight: FontWeight.w800))),
+              ]),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: canBuy ? () {
+                    Navigator.of(sheetContext).pop();
+                    _buy(item);
+                  } : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: HealthyAdaptive.accent,
+                    foregroundColor: const Color(0xFF10392F),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(owned ? 'Ya adquirido'
+                      : state == null ? 'Cargando saldo'
+                      : affordable ? 'Canjear recompensa'
+                      : 'Saldo insuficiente'),
+                ),
+              ),
+              if (state != null && !owned && !affordable) ...[
+                const SizedBox(height: 8),
+                Center(child: Text(
+                  'Te faltan ${item.price - state.coins} Habit Coins',
+                  style: TextStyle(color: HealthyAdaptive.muted,
+                    fontSize: 12))),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openWardrobe() {
     if (widget.onOpenWardrobe != null) {
       widget.onOpenWardrobe!();
@@ -71,14 +172,6 @@ class _StoreScreenState extends State<StoreScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const WardrobeScreen()),
       );
-    }
-  }
-
-  void _back() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      widget.onNavigate?.call(0);
     }
   }
 
@@ -108,6 +201,16 @@ class _StoreScreenState extends State<StoreScreen> {
                       ),
                     ),
                   ),
+                SliverToBoxAdapter(
+                  child: StoreFeaturedCarousel(
+                    items: featuredShopItemIds
+                        .map(shopItemById)
+                        .whereType<ShopItem>()
+                        .toList(),
+                    shopState: state,
+                    onSelected: (item) => _showFeaturedPreview(item, state),
+                  ),
+                ),
                 SliverToBoxAdapter(child: _categoryFilters()),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
@@ -115,9 +218,13 @@ class _StoreScreenState extends State<StoreScreen> {
                     delegate: SliverChildListDelegate([
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome_rounded, color: _green),
+                          HealthyGlowIcon(
+                            icon: Icons.auto_awesome_rounded,
+                            color: _green,
+                            size: 22,
+                          ),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Recompensas disponibles',
                               style: TextStyle(
@@ -129,7 +236,7 @@ class _StoreScreenState extends State<StoreScreen> {
                           ),
                           Text(
                             '${items.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               color: _muted,
                             ),
@@ -164,16 +271,7 @@ class _StoreScreenState extends State<StoreScreen> {
         children: [
           Row(
             children: [
-              IconButton.filledTonal(
-                onPressed: _back,
-                icon: const Icon(Icons.arrow_back_rounded),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: _ink,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Tienda',
                   style: TextStyle(
@@ -213,7 +311,7 @@ class _StoreScreenState extends State<StoreScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Convierte tus Habit Coins en recompensas.',
                   style: TextStyle(color: _muted, fontSize: 13),
@@ -226,7 +324,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 label: const Text('Armario'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _ink,
-                  backgroundColor: Colors.white,
+                  backgroundColor: HealthyAdaptive.surface,
                   side: const BorderSide(color: Color(0xFFB8DCD0)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -257,7 +355,7 @@ class _StoreScreenState extends State<StoreScreen> {
             onSelected: (_) => setState(() => _filter = category),
             showCheckmark: false,
             selectedColor: _green,
-            backgroundColor: Colors.white,
+            backgroundColor: HealthyAdaptive.surface,
             side: BorderSide(
               color: selected ? _green : const Color(0xFFB8DCD0),
             ),
@@ -281,7 +379,9 @@ class _StoreScreenState extends State<StoreScreen> {
     final canBuy = state != null && !owned && affordable && _busy == null;
     final palette = _palette(item.category);
 
-    return Container(
+    return HealthyMotionCard(
+      key: ValueKey('store-card-${item.id}'),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -292,13 +392,9 @@ class _StoreScreenState extends State<StoreScreen> {
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _ink, width: 2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x180F4039),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
+        boxShadow: HealthyVisualEffects.allowDecorativeShadows
+            ? const [BoxShadow(color: Color(0x180F4039), blurRadius: 12, offset: Offset(0, 6))]
+            : null,
       ),
       child: Column(
         children: [
@@ -343,14 +439,16 @@ class _StoreScreenState extends State<StoreScreen> {
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: HealthyAdaptive.isDark
+                                    ? const Color(0xFF273745)
+                                    : Colors.white.withValues(alpha: 0.85),
                                 borderRadius: BorderRadius.circular(9),
                               ),
                               child: Text(
                                 item.category.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
                                   color: _ink,
                                   fontWeight: FontWeight.w900,
@@ -362,7 +460,7 @@ class _StoreScreenState extends State<StoreScreen> {
                               item.name,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _ink,
                                 fontSize: 21,
                                 height: 1.05,
@@ -374,7 +472,7 @@ class _StoreScreenState extends State<StoreScreen> {
                               item.description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _ink,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -389,10 +487,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         child: Center(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
-                              item.emoji,
-                              style: const TextStyle(fontSize: 92),
-                            ),
+                            child: ShopItemArtwork(item: item, size: 126),
                           ),
                         ),
                       ),
@@ -404,7 +499,7 @@ class _StoreScreenState extends State<StoreScreen> {
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
-            color: Colors.white.withValues(alpha: 0.88),
+            color: HealthyAdaptive.surface.withValues(alpha: 0.93),
             child: Row(
               children: [
                 _coinIcon(size: 25),
@@ -412,7 +507,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 Expanded(
                   child: Text(
                     item.price == 0 ? 'Gratis' : '${item.price} H. Coins',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                       color: _ink,
@@ -425,8 +520,12 @@ class _StoreScreenState extends State<StoreScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: _green,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFB6C6C0),
-                    disabledForegroundColor: _ink,
+                    disabledBackgroundColor: HealthyAdaptive.isDark
+                        ? const Color(0xFF334652)
+                        : const Color(0xFFB6C6C0),
+                    disabledForegroundColor: HealthyAdaptive.isDark
+                        ? const Color(0xFFCED7DC)
+                        : _ink,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 15,
                       vertical: 12,
@@ -435,17 +534,22 @@ class _StoreScreenState extends State<StoreScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    waiting
-                        ? 'Comprando...'
-                        : owned
-                            ? 'Adquirido'
-                            : state == null
-                                ? 'Cargando...'
-                                : affordable
-                                    ? 'Canjear'
-                                    : 'Sin saldo',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  child: AnimatedSwitcher(
+                    duration: HealthyVisualEffects.duration(
+                      context, const Duration(milliseconds: 180)),
+                    child: Text(
+                      waiting
+                          ? 'Comprando...'
+                          : owned
+                              ? 'Adquirido'
+                              : state == null
+                                  ? 'Cargando...'
+                                  : affordable
+                                      ? 'Canjear'
+                                      : 'Sin saldo',
+                      key: ValueKey('$waiting-$owned-$affordable'),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
               ],
@@ -454,32 +558,43 @@ class _StoreScreenState extends State<StoreScreen> {
           if (state != null && !owned && !affordable)
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 9),
               child: Text(
                 'Te faltan ${item.price - state.coins} H. Coins',
-                style: const TextStyle(fontSize: 11, color: _muted),
+                style: TextStyle(fontSize: 11, color: _muted),
               ),
             ),
         ],
       ),
-    );
-  }
-
-  Widget _coinIcon({double size = 24}) {
-    return Image.asset(
-      'assets/monedas/h coin.png',
-      width: size,
-      height: size,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.monetization_on_rounded,
-        size: size,
-        color: const Color(0xFFFFC845),
       ),
     );
   }
 
+  Widget _coinIcon({double size = 24}) =>
+      HealthyCoinIcon(size: size);
+
+  // Colores de las recompensas: el modo oscuro utiliza pigmentos profundos,
+  // no pasteles luminosos con texto casi blanco.
   List<Color> _palette(String category) {
+    if (HealthyAdaptive.isDark) {
+      switch (category) {
+        case 'Ropa':
+        case 'Personalización':
+          return const [Color(0xFF403159), Color(0xFF2C253E)];
+        case 'Cabeza':
+        case 'Avatares':
+          return const [Color(0xFF214963), Color(0xFF192F47)];
+        case 'Insignias':
+          return const [Color(0xFF59472D), Color(0xFF352E28)];
+        case 'Accesorios':
+          return const [Color(0xFF59354A), Color(0xFF382A3B)];
+        case 'Especiales':
+          return const [Color(0xFF28503C), Color(0xFF1D3D39)];
+        default:
+          return const [Color(0xFF285046), Color(0xFF1C383B)];
+      }
+    }
     switch (category) {
       case 'Ropa':
       case 'Personalización':

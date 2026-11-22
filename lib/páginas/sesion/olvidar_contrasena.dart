@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -13,10 +14,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   static const Color green = Color(0xFF10B981);
   static const Color greenLight = Color(0xFFE6F7F0);
-  static const Color navy = Color(0xFF172B36);
-  static const Color background = Color(0xFFF8FAF9);
-  static const Color textMuted = Color(0xFF6B7280);
-  static const Color borderCard = Color(0xFFE5E7EB);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
+  Color get textMuted => HealthyAdaptive.muted;
+  Color get borderCard => HealthyAdaptive.border;
 
   bool _enviando = false;
 
@@ -93,7 +94,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: navy),
+          icon: Icon(Icons.arrow_back, color: navy),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -108,7 +109,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       const Icon(Icons.eco_rounded, color: green, size: 22),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Healthy Habit',
               style: TextStyle(
                 color: navy,
@@ -143,7 +144,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
+                  Text(
                     '¿Olvidaste tu contraseña?',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -153,7 +154,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       'No pasa nada. Ingresa el correo asociado a tu cuenta y te enviaremos instrucciones para recuperarla.',
@@ -166,7 +167,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Correo electrónico',
@@ -189,7 +190,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                       enabled: !_enviando,
-                      style: const TextStyle(color: navy, fontSize: 14),
+                      style: TextStyle(color: navy, fontSize: 14),
                       decoration: const InputDecoration(
                         hintText: 'nombre@correo.com',
                         hintStyle: TextStyle(

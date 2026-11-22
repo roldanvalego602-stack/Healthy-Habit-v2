@@ -1,0 +1,381 @@
+# Bitácora de seguridad de Healthy Habit
+
+**Actualizada:** 20 de noviembre de 2026  
+**Estado:** pausa de auditoría para priorizar desarrollo de la demo; reglas candidatas solo para emulador. **NO DESPLEGAR.**  
+**Repositorio:** `roldanvalego602-stack/Healthy-Habit-v2`  
+**Rama:** `feature/mr-healthy-voice-knowledge-motion`  
+**Último resultado confirmado por el usuario:** **60/60 pruebas aprobadas (0 fallidas)**.
+
+## ¿Qué estamos haciendo y por qué?
+
+Se están migrando los permisos de Firebase Firestore porque las reglas actuales de producción contienen una autorización recursiva para usuarios autenticados que puede exponer datos privados. En la candidata se han separado los perfiles privados de los públicos, establecido permisos de relaciones sociales y limitado algunas operaciones sobre tienda, desafíos y reacciones.
+
+**Las pruebas aprobadas NO significan que la app ya sea completamente segura ni que las reglas puedan publicarse.** También pasan pruebas que describen vulnerabilidades existentes.
+
+## Historial de etapas
+
+| Etapa | Resultado comprobado | Trabajo |
+| --- | --- | --- |
+| Privacidad | Pruebas aprobadas | Usuario solo accede a su perfil, hábitos y evidencia |
+| Perfiles públicos | Pruebas Flutter aprobadas | Ranking, búsqueda y perfiles ajenos pasan a `public_profiles` |
+| Solicitudes y seguimiento | 18/18 | Solicitudes con espejo, aceptar/rechazar/cancelar, seguir/dejar de seguir |
+| Compras | 27/27 | Precio de catálogo, único artículo nuevo y rechazo de débitos/compras inválidos |
+| Transacciones de recompensa | 30/30 | Casos de compatibilidad de hábitos y desafíos; se documenta el riesgo económico |
+| Desafíos demo | 34/34 | Impedir cambios fraudulentos de premios/verificación; aceptar desafíos |
+| Reacciones sociales | 39/39 | Emisor crea, receptor consulta/actualiza, terceros sin acceso |
+
+## Archivos involucrados
+
+- `firestore.candidate.rules`: reglas de prueba del emulador, no publicar todavía.
+- `firestore.rules`: reglas de producción, pendientes de sustitución segura.
+- `firebase.emulator.json`: configuración de pruebas aisladas.
+- `tests/firestore/rules.test.cjs`: suite automatizada de seguridad.
+- `lib/servicios/healthy_public_profile_service.dart`: proyección de datos públicos.
+- `lib/páginas/perfil/amigos_servicio.dart`: solicitudes y seguimiento.
+- `lib/páginas/perfil/interaction_service.dart`: reacciones.
+- `lib/páginas/habitos/registrar_habito_screen.dart`: registros y XP.
+- `lib/páginas/desafios/desafios_screen.dart`: desafíos y recompensas.
+- `lib/páginas/tienda/shop_service.dart`: compras/equipamiento.
+- `docs/plan_seguridad_firestore_spark.md`: detalles técnicos y decisiones cronológicas.
+
+## Qué falta antes de publicar
+
+1. **Economía confiable:** actualmente cada usuario puede falsificar su propio XP y Habit Coins. La candidata protege parcialmente compras, no la procedencia del saldo.
+2. **Origen verificable de recompensas:** no basta con comprobar que existe un log de hábito; un cliente modificado también puede escribir logs.
+3. **Cobertura de colecciones:** auditar todas las rutas de lectura/escritura de Flutter; ya se detectó que `interactions` requería permisos específicos.
+4. **Pruebas de integración reales:** verificar inicio de sesión, hábitos, evidencias, tienda, desafíos, ranking, amigos y reacciones con dos cuentas de prueba conectadas al emulador.
+5. **Depurar `evaluation error`:** algunos casos negativos dan errores de evaluación además de `PERMISSION_DENIED`. Los rechazos son esperados, pero conviene mejorar las condiciones.
+6. **Respaldo y despliegue controlado:** no desplegar hasta establecer un plan de reversión y verificar que se bloquean los accesos indebidos sin romper funciones.
+
+### Comando de regresión
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+```
+
+**Último resultado real recibido:** `tests 39`, `pass 39`, `fail 0`, `Script exited successfully (code 0)`. Los errores `PERMISSION_DENIED` de pruebas negativas son esperados.
+
+## Cómo mantener esta bitácora
+
+En cada actualización, anotar: fecha, objetivo, archivos cambiados, resultado de pruebas **ejecutadas**, resultado de pruebas **pendientes**, vulnerabilidades abiertas, commit y siguiente acción. No confundir el commit de código preparado con una validación local.
+
+**Documento ampliado:** el archivo Word `Bitacora_seguridad_Healthy_Habit.docx` fue generado en la conversación y contiene explicación, cronología, glosario, criterios de cierre y comandos. El documento técnico `docs/plan_seguridad_firestore_spark.md` continúa siendo el registro detallado.
+
+## Actualización — auditoría de integración Flutter (20-nov-2026)
+
+**Resultado previo validado por el usuario:** 39/39 pruebas del emulador aprobadas.
+
+**Trabajo realizado en esta revisión:** inspección de `firebase_servicios.dart`, `habits_screen.dart`, `registrar_habito_screen.dart`, `progreso_screen.dart`, `logros_screen.dart`, `nutrichat.dart`, `profile_screen.dart`, `editar_perfil_screen.dart`, `ranking_screen.dart`, `amigos_servicio.dart`, `interaction_service.dart`, `shop_service.dart`, `desafios_screen.dart`, `temporary_evidence_service.dart` y sus rutas relevantes.
+
+**Se detectaron riesgos nuevos a priorizar:** creación/eliminación de perfil sin límites económicos, posibilidad de equipar artículos sin demostrar propiedad desde reglas, logs propios arbitrarios, ranking público basado en XP del cliente y ausencia de un verificador confiable de progreso de desafíos.
+
+**Pruebas añadidas:** equipamiento, edición de perfil, privacidad/borrado de evidencias y consultas de logs anidados. **Nuevo total esperado: 43, todavía sin ejecutar.** Se creó `docs/auditoria_compatibilidad_firestore_flutter.md` con matriz de compatibilidad, riesgos y checklist manual.
+
+**Siguiente acción:** validar las 43 pruebas en emulador; luego revisar y corregir permisos de equipamiento y creación de perfiles con pruebas negativas adicionales. No alterar reglas de producción hasta resolver el modelo de confianza de XP/monedas y verificar recorridos completos de Flutter.
+
+## Etapa 9 — Validación de alta y equipamiento (20-nov-2026)
+
+**Confirmado por el usuario:** 43/43 pruebas aprobadas. **Código nuevo, aún sin validar:** 5 pruebas adicionales (total esperado 48).
+
+- `validInitialUser(uid)`: solo se puede crear un perfil con estructura inicial coincidente con `FirebaseService.saveUserData`: `xp=0`, `level=1`, `habitCoins=100`, `currentStreak=0`, UID del usuario y marca de tiempo del servidor. Se rechazan artículos preadquiridos y campos adicionales en el alta.
+- `validEquipped()`: cada ranura solo acepta artículos de su categoría y que estén en inventario, salvo los cosméticos gratuitos `sunglasses` y `bandana`. Mantiene `ShopService.equip` y `resetLook`.
+- Se agregaron 5 pruebas: alta realista, creación con economía falsa, cosméticos gratuitos, equipamiento inválido, restablecimiento conservando inventario.
+- **Alerta:** `users/{uid}` aún permite `delete` del propietario y escritura posterior; aunque una recreación debe iniciar con saldo predeterminado, el borrado de perfil necesita un flujo propio y pruebas de integridad.
+- **Alerta:** `habits_screen.dart` incluye penalizaciones que descuentan `habitCoins` sin compra. La regla existente puede bloquear ese flujo. No se ha alterado esa lógica; requerirá política propia y pruebas, antes de publicar.
+- No se alteró `firestore.rules`, `firebase.json` ni la configuración de producción.
+
+**Siguiente acción:** ejecutar 48 pruebas en emulador, luego diseñar permisos seguros para penalizaciones/ingresos y probar los recorridos Flutter.
+
+## Etapa 10 — contratos de débito no comercial (20-nov-2026)
+
+**El usuario confirmó 48/48 pruebas aprobadas.** Se inspeccionó `lib/páginas/habitos/habit_action_service.dart`, que contiene las transacciones reales de activación y abandono de hábitos:
+
+- **Activación:** comprueba desbloqueos/cupos y puede cobrar `habit.coinCost`, actualizando `habitCoins`, `habitSlots`, `habitMutationVersion`, `user_habits/{habitId}` y un nuevo `attempt`.
+- **Cancelación:** solo en intentos `inProgress`, calcula una penalización de hasta **25 Habit Coins** si el hábito es difícil, cambia el intento a `cancelled` y actualiza los datos de estado y versión del perfil.
+- La regla `validOwnerUpdate` de la candidata obliga actualmente a validar como compra cualquier descuento positivo de `habitCoins`. Por tanto puede bloquear ambas acciones aunque sean legítimas.
+
+Se agregaron **dos pruebas de caracterización**, que esperan rechazo de descuentos ajenos a la tienda. **Total esperado: 50**, pendiente de ejecutar. **Son pruebas de bloqueo conocido, no de la funcionalidad correcta**. Al diseñar la autorización de las transacciones de hábitos, habrá que cambiar los casos a éxito esperado y añadir casos de falsificación y cobros repetidos.
+
+**No se modificaron las reglas** en esta etapa para evitar autorizar descuentos arbitrarios. La economía continúa sin autoridad de servidor y el aumento unilateral de monedas/XP sigue permitido. No desplegar.
+
+## Etapa 11 — Resultado 50/50 y corrección del modelo de costos (20-nov-2026)
+
+**Confirmación del usuario:** 50/50 pruebas del emulador aprobadas (0 fallidas). Las dos pruebas de la etapa anterior caracterizaban el rechazo de débitos no comerciales: una negativa esperada NO prueba compatibilidad.
+
+**Hallazgo de revisión de código:** `lib/páginas/habitos/catalogo.dart` crea **todos los hábitos oficiales con `coinCost: 0`** mediante el helper `_habit`. Por tanto la activación normal del catálogo actual **no descuenta Habit Coins**; el caso de cobro de activación con costo solo ocurriría si se cambia el catálogo en el futuro. Se corrigió la suite para permitir el cambio de `habitMutationVersion` y `habitSlots` sin descontar monedas, y se conservó un caso negativo que rechaza un débito inventado. El verdadero débito legítimo no comercial en el catálogo vigente es la **cancelación de hábito difícil**, cuyo cobro está limitado a 25 Habit Coins por `HabitActionService.cancellationFee`.
+
+**Suite esperada: 51 pruebas**, pendiente de ejecutar. Los test nuevos no garantizan que la transacción integral de alta de hábitos con intento esté cubierta; lo único comprobado será la modificación compatible del perfil. La penalización sigue bloqueada por las reglas, tal como registran los tests de caracterización.
+
+**Decisión de seguridad:** no se abrió ningún permiso amplio de débito. Autorizar cancelaciones requerirá verificar de manera atómica un intento `inProgress` que pase a `cancelled`, un catálogo difícil reconocido, saldo correcto y prevención de cobros repetidos, no únicamente aceptar un decremento de hasta 25. El cliente aún controla escrituras de intentos y el saldo/XP propio, de modo que una regla parcialmente validada no resolvería toda la economía.
+
+**Archivos cambiados en esta etapa:** `tests/firestore/rules.test.cjs` y documentación. No se cambiaron `firestore.candidate.rules`, `firestore.rules` ni los flujos de Flutter.
+
+## Etapa 11 — corrección de prueba con estado compartido (20-nov-2026)
+
+**Resultado recibido:** 51 pruebas ejecutadas, 50 aprobadas, 1 fallida: `activación vigente sin costo: versión y cupos no necesitan descontar HC`. No se trata de una regresión comprobada de la regla. El fixture `users/economy` comienza con 50 monedas, pero una prueba anterior de reclamación de desafío las eleva a **60**. La prueba de activación escribía `habitCoins: 50`, provocando un descuento involuntario de 10 monedas que `validOwnerUpdate` rechaza correctamente.
+
+**Corrección:** la prueba ahora lee el saldo y la versión actuales con `getDoc`, conserva las monedas intactas, incrementa `habitMutationVersion` y verifica los valores finales. Se mantiene un caso negativo para cobros de activación inventados. **Suite esperada: 51 pruebas, pendiente de repetirse**.
+
+**Lección técnica:** una prueba de integración debe establecer o leer su estado inicial; los fixtures compartidos pueden ocultar dependencias entre pruebas. No se modificaron reglas candidatas, reglas de producción ni lógica Flutter. El bloqueo de penalizaciones por cancelación y la falsificación de XP/HC siguen abiertos.
+
+## Etapa 12 — penalizaciones atómicas de hábitos difíciles (20-nov-2026)
+
+**Validado por el usuario: 51 de 51 pruebas aprobadas.** Se implementó una excepción delimitada de débito en `firestore.candidate.rules` y se actualizó `lib/páginas/habitos/habit_action_service.dart` para incluir un marcador `habitCancellation` exclusivamente cuando se cobra la penalización.
+
+La autorización utiliza `get()` y `getAfter()` para comprobar **en la misma transacción**:
+- El hábito estaba activo, es de dificultad `Difícil` y conserva el identificador del intento activo.
+- El hábito y el intento quedan `cancelled`; las marcas de tiempo coinciden con el servidor y no se alteran otros campos de esos documentos.
+- `habitCoins` disminuye exactamente `min(saldo_previo, 25)`; `habitMutationVersion` sube en uno y el marcador apunta al intento.
+- No se pueden mezclar cambios de inventario o XP con esta operación de débito.
+
+Se añadieron **seis pruebas**: cancelación válida, ausencia de cambio de intento, importe falsificado, hábito sencillo, intento de segundo cobro y saldo inferior a 25. **Nuevo total esperado: 57**, pendiente de ejecutar en el emulador. La anterior prueba negativa de cobro sin justificación permanece.
+
+**Limitaciones importantes:** `user_habits` sigue admitiendo escrituras amplias del propietario, incluidos estados anteriores; este cambio valida el débito concreto pero no establece autoridad completa sobre la historia de hábitos. Los incrementos arbitrarios de `xp` y `habitCoins` siguen permitidos y la aplicación requiere pruebas manuales con Firebase Emulator. No se han desplegado reglas de producción.
+
+## Etapa 13 — optimización del evaluador de reglas (20-nov-2026)
+
+**Resultado confirmado por el usuario:** 57/57 casos aprobados, incluyendo las seis pruebas de cancelación; **sin embargo**, el log del emulador contiene múltiples rechazos por **límite de 1,000 expresiones evaluadas**, especialmente en compras o débitos inválidos. Estos errores revelan una debilidad de la implementación; el resultado verde de `assertFails` no garantiza que el rechazo se haya producido por la condición prevista.
+
+**Cambio realizado únicamente en `firestore.candidate.rules`:** se reescribió `validOwnerUpdate(uid)` para discriminar anticipadamente tres caminos: (a) cambios normales que no alteran inventario, saldo a la baja ni marcador de cancelación, (b) compras que cambian inventario y pasan `validInventoryChange()`, (c) cancelaciones que reducen saldo, no tocan inventario, cambian `habitCancellation` y pasan `validHabitCancellation(uid)`. De esta forma, las compras fallidas no evalúan los costosos `get()`/`getAfter()` de intentos.
+
+**Pruebas nuevas:** 3 casos de regresión para compra inválida sin marcador, marcador falso sin descuento y débito sin marcador. **Suite esperada: 60**, pendiente de ejecutar. Debe revisarse **tanto el total de tests como la ausencia de `maximum of 1000 expressions`**; si el límite persiste, el resultado no se considerará completamente resuelto.
+
+**Riesgo pendiente principal:** sigue siendo posible incrementar unilateralmente `xp` y `habitCoins` en `users/{uid}`; las recompensas de `registrar_habito_screen.dart` y `desafios_screen.dart` se computan desde Flutter, y las colecciones de logs son editables por el propietario. No se ha modificado el código de recompensas en esta etapa para evitar bloquear registros legítimos. La validación anti-fraude integral requiere definir una autoridad confiable o una estrategia de demo con riesgo explícito.
+
+**Archivos cambiados:** `firestore.candidate.rules`, `tests/firestore/rules.test.cjs`, bitácora y auditoría. Reglas de producción sin desplegar.
+
+## Cierre temporal de la ronda de seguridad y retorno a desarrollo (20-nov-2026)
+
+**Resultado aportado por el usuario:** 60 de 60 tests aprobados; 0 fallos, 0 omitidos, salida 0. En este registro ya no aparece el mensaje `maximum of 1000 expressions`; varios rechazos negativos siguen mostrando `evaluation error`, por lo que todavía se requieren revisiones específicas si se prepara despliegue.
+
+**Decisión:** detener la creación de pruebas rutinarias y priorizar las funciones visibles de Healthy Habit para la evaluación. Este es un **cierre de la ronda de pruebas**, no de la auditoría integral de seguridad.
+
+**Bloqueadores para producción:** `firestore.rules` no se ha cambiado y mantiene permisos excesivamente amplios; `firestore.candidate.rules` **no se debe desplegar** sin resolver el autoincremento arbitrario de `xp` y `habitCoins`, el historial de hábitos falsificable, la validación del cliente y la prueba con usuarios reales de emulador. El ranking y las recompensas no son anti-trampas. La arquitectura actual de recompensas en Flutter no puede certificar estos valores por sí misma.
+
+**Retorno a desarrollo:** `lib/páginas/catalogo/datos/catalogo_datos.dart` referenciaba 9 archivos JPG, pero las 9 ilustraciones SVG equivalentes ya existían en `assets/images/catalogo/`. Se corrigieron sus rutas a `.svg`; las pantallas `catalogo_screen.dart` y `catalogo_detalle_screen.dart` ya disponen de `SvgPicture.asset` y `flutter_svg` está declarado en `pubspec.yaml`. Cambio pendiente de revisión visual en Flutter. No se cambió producción.
+
+**Validación mínima posterior:** `flutter analyze --no-fatal-infos lib` y abrir las 9 tarjetas del catálogo y detalles. No es necesario volver a ejecutar 60 pruebas de reglas hasta realizar nuevos cambios de seguridad.
+
+## Desarrollo de demo — microinteracciones sociales (20-nov-2026)
+
+Retomando el desarrollo visible para la evaluación, se verificó que el módulo social ya usa el componente reutilizable `SocialActionButton` con bloqueo de doble pulsación, animación de presión, indicador de carga y cambio de texto según el estado recibido de Firebase. Se mejoró la transición de contenido mediante entrada combinada de deslizamiento, opacidad y escala (180 ms), respetando la preferencia de movimiento reducido.
+
+El estado vacío de `feed_amigos_screen.dart` reutiliza ahora `SocialActionButton` en su invitación a buscar/agregar amistades, sustituyendo un botón `ElevatedButton.icon` no uniforme. **No se alteraron las operaciones Firestore ni los permisos de seguridad.**
+
+Archivos modificados: `lib/páginas/perfil/social_action_button.dart` y `lib/páginas/perfil/feed_amigos_screen.dart`.
+
+**Validación pendiente en dispositivo:** `flutter analyze --no-fatal-infos lib`; desde Buscar amigos, enviar y cancelar solicitud; desde un perfil público, agregar y quitar amigo; comprobar que durante la operación se muestra carga y, tras el cambio confirmado por los streams, se anima el nuevo estado. Respetar ajuste de reducción de movimiento. La última suite de reglas permanece en 60/60 aprobadas, sin nuevos cambios de reglas.
+
+## Desarrollo de demo — resultados visibles de registrar hábitos (20-nov-2026)
+
+En `lib/páginas/habitos/registrar_habito_screen.dart` se amplió exclusivamente el resultado que devuelve la transacción confirmada de Firestore con `xpGanado`, `monedasGanadas`, `progresoNuevo` y `meta`. El banner de `HealthyCelebration` muestra ahora, por ejemplo, `+10 XP · 2/7 registros`; si se entregó una recompensa de nivel, agrega la cantidad **real** de Habit Coins. El orden de mensajes prioriza nivel obtenido, hábito completado, racha y registro común.
+
+No se modificaron fórmulas de XP, cálculo de monedas, rachas, evidencia, transacciones, permisos ni reglas. Se conserva la condición de mostrar celebración solo después de un commit exitoso; **no es una protección antifraude**.
+
+**Pruebas funcionales pendientes en Flutter:** registro sin evidencia (+10 XP), registro con evidencia válida (+15 XP), último registro que completa una meta, subida de nivel y crédito de monedas, operación fallida que no debe presentar celebración. Ejecutar `flutter analyze --no-fatal-infos lib` y validar con cuenta de demostración. Las reglas candidatas siguen sin desplegar; último resultado de reglas confirmado: 60/60.
+
+## Desarrollo de demo — pantalla Mi progreso (20-nov-2026)
+
+Se revisó `lib/páginas/estadisticas/progreso_screen.dart`. La fuente de datos continúa siendo `users/{uid}/user_habits/{habitId}/attempts/{attemptId}/logs` y el perfil privado; no se inventan registros ni se modifica Firebase.
+
+**Mejoras visibles realizadas:** tarjeta de resumen semanal con días activos sobre siete, barra de avance y métricas de registros y XP obtenidos durante los últimos siete días; animación de barras de actividad, adaptada a reducción de efectos visuales; títulos y cifras de tarjetas con manejo de desbordamiento y colores adaptativos. Se reutilizaron `HealthyMotionCard` y `HealthyVisualEffects`, ya presentes en el proyecto. La suma semanal de XP se calcula estrictamente desde `xpEarned` de los logs, por lo que puede no coincidir con el total histórico del perfil si el usuario recibió recompensas de desafíos u otros orígenes.
+
+**Pendiente validar en Flutter:** `flutter analyze --no-fatal-infos lib` y revisión visual en móvil (tema claro/oscuro, pantalla pequeña, cuenta sin registros, cuenta con siete días de actividad, cambio de mes y pull-to-refresh). Este cambio no ha pasado por compilación local ni un test de interfaz; solo se revisó el código en GitHub.
+
+**Estado de seguridad sin cambios:** ronda de pruebas de reglas cerrada temporalmente en 60/60; fraude de XP/HC e historial siguen abiertos y `firestore.candidate.rules` no debe desplegarse.
+
+## Desarrollo de demo — siguiente objetivo de Logros (20-nov-2026)
+
+Se revisaron `lib/páginas/logros/logros_screen.dart` y `logros_service.dart`. El catálogo existente tiene 12 definiciones y calcula progreso mediante los datos actuales de perfil, hábitos y medallas; las insignias son principalmente visuales y no acreditan recompensas nuevas.
+
+**Mejoras integradas:** tarjeta «Tu próximo objetivo» que selecciona entre metas no conseguidas la que tiene mayor proporción de progreso (desempate por meta numérica), y enseña insignia bloqueada, nombre, descripción, barra animada, avance y cantidad restante. Si no existen metas pendientes y sí hay catálogo, muestra «Colección completa». La lista de tarjetas cambia suavemente con `AnimatedSwitcher` entre Todos / Conseguidos / Pendientes. Todas las animaciones respetan `HealthyVisualEffects.duration` para modo Lite/reducción de movimiento.
+
+**Sin modificaciones** a `LogrosService.progreso`, datos guardados, escrituras en Firebase, desbloqueo de medallas, XP, Habit Coins o reglas de seguridad. La sugerencia de objetivo es solo una heurística de interfaz, no un cálculo de recompensa.
+
+**Validación pendiente en Flutter:** ejecutar `flutter analyze --no-fatal-infos lib`, abrir Logros con 0 y varios logros conseguidos, alternar filtros, revisar modo claro/oscuro y tamaño pequeño; probar presentación de «Colección completa» en una colección de prueba. La implementación se revisó a nivel de código mediante GitHub, no se ha compilado en un dispositivo.
+
+La ronda previa de reglas permanece confirmada en 60/60; **no desplegar candidata** hasta resolver riesgos pendientes.
+
+## Desarrollo de demo — recorrido desde Inicio (20-nov-2026)
+
+Se confirmó mediante referencias de Splash, login y registro que la pantalla usada al iniciar sesión es `HomeScreen2` en `lib/páginas/inicio.dart`, no la variante `HomeScreen` presente en `lib/main.dart`.
+
+Se integró una tarjeta de accesos directos **«Tu recorrido saludable»** en el inicio real, con tres destinos conectados: **Registrar** cambia a la pestaña Hábitos (`onHabits`), **Progreso** abre `ProgresoScreen` y **Logros** abre `LogrosScreen`. Presentación adaptativa a los colores claro/oscuro, iconos, botones accesibles mediante Material/InkWell, y diseño compacto para móvil. La tarjeta no computa ni concede recompensas ni contiene datos ficticios.
+
+**Validación pendiente:** `flutter analyze --no-fatal-infos lib`; iniciar sesión, abrir cada acceso desde Inicio, regresar con botón atrás desde Progreso/Logros, registrar un hábito en Hábitos y verificar que al volver el perfil actualice estadísticas y logros. Probar pantalla estrecha y tema oscuro. Esta entrega no fue compilada ni revisada visualmente en un dispositivo.
+
+**Reglas:** sin cambios; suite anterior 60/60 aprobada; NO desplegar la candidata debido a riesgos económicos pendientes.
+
+## Desarrollo de demo — corrección del primer registro desde Inicio (20-nov-2026)
+
+**Hallazgo funcional:** `HabitActionService.execute` al activar un hábito escribía `lastAttemptId` y `latestStatus: inProgress`, pero `HomeScreen2` intentaba navegar a `RegistrarHabitoScreen` mediante `latestAttemptId`. Ese campo se guardaba solo después del primer registro, con lo que la misión del inicio presentaba «Ver hábitos» en lugar de «Registrar sesión» justo tras activar el hábito.
+
+**Correcciones integradas:** en `lib/páginas/habitos/habit_action_service.dart`, la creación de intento ahora guarda también `latestAttemptId`, `latestProgress: 0` y `latestTarget: attempt.target` en la misma transacción existente. En `lib/páginas/inicio.dart`, la pantalla admite `lastAttemptId` como respaldo para intentos previos y `target` como respaldo de `latestTarget`. No se alteraron la economía, los requisitos de activación, los estados del intento, ni las reglas.
+
+**Validación manual pendiente:** `flutter analyze --no-fatal-infos lib`; con usuario de prueba activar un hábito nunca registrado, volver a Inicio y pulsar «Registrar sesión»; confirmar que se abre el intento correcto con progreso inicial 0/meta del catálogo; guardar la primera sesión y verificar actualización de progreso en Inicio y Mi progreso; repetir con un documento anterior que solo tenga `lastAttemptId`. Este cambio no se compiló localmente.
+
+**Riesgos de seguridad pendientes:** siguen documentados; no desplegar `firestore.candidate.rules`; el último resultado de emulador aportado es 60/60.
+
+## Desarrollo — reparación integral de Perfil (20-nov-2026)
+
+**Objetivo solicitado:** finalizar la pantalla de Perfil y sus acciones de edición, estadísticas, amistades, logros, personalización, armario y orientación profesional, manteniendo el desarrollo prioritario para la evaluación.
+
+**Correcciones integradas en rama `feature/mr-healthy-voice-knowledge-motion`:**
+
+1. **Relaciones sociales consistentes:** `perfil_muestra.dart` ya no crea ni borra documentos independientes de `users/{uid}/friends` para simular solicitudes. Ahora utiliza `AmigosServicio.enviarSolicitud`, `cancelarSolicitud` y `dejarDeSeguir`; el botón escucha `following` y `solicitudes_enviadas` y distingue «Agregar amigo», «Pendiente» y «Siguiendo». Respeta doble pulsación y confirma los resultados de las operaciones.
+2. **Edición real:** `profile_screen.dart` muestra la biografía guardada `bio`, usa el correo actual de Firebase Auth, y refleja las cuatro personalizaciones existentes: banner, marco, título y nombre de estante. `healthy_public_profile_service.dart` sincroniza `profileTitle` en `public_profiles.title` con fallback a títulos anteriores.
+3. **Logros basados en datos:** la vista previa del perfil propio emplea `LogrosService.catalogo`, documentos de hábitos y medallas; muestra el número conseguido, la siguiente meta y una proporción real. Se quitaron tarjetas de logros ficticios «Próximamente». El perfil público solo enseña insignias deducibles de los valores compartidos (XP, nivel y racha), respetando su visibilidad configurada.
+4. **Estadísticas mensuales integradas:** nuevo componente `profile_monthly_summary.dart` muestra recuento del mes actual de registros, XP procedente de esos registros y días activos, con botón de actualización y acceso al calendario detallado. Las consultas de subcolecciones se realizan bajo el UID propietario. No se generan métricas ficticias.
+5. **Armario:** el apartado de personalización abre directamente `WardrobeScreen`, ya conectado a `ShopService` para equipar los cosméticos adquiridos.
+6. **Avatares gratuitos:** `EditarPerfilScreen` permite elegir cuatro estilos (fotografía/clásico, naturaleza, hidratación, energía) guardando solo `profileAvatarStyle` en Firestore, sin Storage. Se presentan en perfil propio, público, búsqueda, amigos y feed. Las fotos subidas siguen disponibles y al subir una se activa automáticamente el modo fotografía. La proyección pública utiliza una lista permitida de estilos.
+7. **Orientación profesional sin contactos ficticios:** se sustituyeron nombres y teléfonos de demostración por accesos funcionales al directorio público del Colegio Mexicano de Nutriólogos (`https://cmnutriologos.com/directorio/`) y la consulta de cédulas de la SEP (`https://www.gob.mx/cedulaprofesional/es`). No se anuncian profesionales afiliados ni citas inexistentes.
+8. **Compatibilidad de reglas candidatas:** se añadió `profileAvatarStyle` a los campos permitidos de `public_profiles` y se restringió a `foto`, `naturaleza`, `agua` y `energia`. **No se modificaron ni desplegaron reglas de producción.**
+9. **Pruebas agregadas:** `test/perfil/public_profile_projection_test.dart` (5 casos de proyección pública: título, privacidad, compatibilidad y avatar) y `test/perfil/profile_avatar_test.dart` (3 casos visuales). Una prueba de reglas de perfil público adicional extiende la suite de Firestore de 60 a **61 casos pendientes de ejecutar**. No se deben declarar aprobadas sin salida de emulador.
+
+**Límites pendientes para dar por terminado el módulo en producción:**
+- La fotografía real continúa dependiendo del bucket, configuración, reglas y plan de Firebase Storage; el selector de avatares es la alternativa gratuita en Firestore.
+- `SettingsScreen._deleteAccount` explica correctamente que no hay backend de eliminación integral; la opción sigue sin estar implementada y no debe anunciarse como funcional.
+- Varias preferencias avanzadas de Configuración (recomendaciones automáticas, bloqueos, privacidad avanzada, algunas opciones de sonido y gamificación) se guardan pero **no están aplicadas de extremo a extremo**. Un ajuste guardado no equivale a una función verificada.
+- Faltan compilación, análisis estático, pruebas en Android y dos cuentas reales en el emulador. No se dispone de Flutter SDK en el entorno de estas modificaciones; no afirmar «todo comprobado».
+
+**Validación recomendada:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+dart format lib/páginas/perfil/ lib/servicios/healthy_public_profile_service.dart lib/servicios/profile_photo_service.dart test/perfil/
+flutter analyze --no-fatal-infos lib test/perfil
+flutter test test/perfil
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+flutter run
+```
+Probar edición de nombre, usuario, biografía, foto (si Storage está disponible), avatar gratuito, título, estante, banner, armario, seguimiento/solicitudes con dos cuentas, logros, resumen mensual, configuración y enlaces externos.
+
+### Ajuste final de privacidad de avatar (20-nov-2026)
+
+Cuando `profileAvatarStyle` no es `foto`, la proyección pública `HealthyPublicProfileService.project` publica `photoUrl: ''`, aunque la cuenta conserve una foto en privado para poder volver a mostrarla. Esta medida evita que el perfil público exponga una URL antigua cuando el usuario eligió un avatar de naturaleza, agua o energía. La prueba `public_profile_projection_test.dart` incluye esta regresión. No se modifica Firebase Storage ni se borra la fotografía por cambiar de estilo.
+
+**Último estado de validación:** implementación integrada en GitHub, aún sin ejecutar `flutter analyze`, `flutter test` ni 61 pruebas de Firestore en el equipo del usuario. No declarar la página «100 % verificada» hasta recibir esas salidas y completar la prueba manual de dos cuentas.
+
+## Integración de recursos visuales subidos por el equipo (20-nov-2026)
+
+**Origen confirmado:** existen los directorios `assets/avatares/`, `assets/banners/` y `assets/vestimenta/` en la rama `feature/mr-healthy-voice-knowledge-motion`. Se registraron como assets de Flutter en `pubspec.yaml` y se centralizaron sus rutas en `lib/tema/healthy_asset_catalog.dart`.
+
+**Avatares:** `HealthyProfileAvatar` muestra imágenes PNG reales para los estilos `naturaleza` (avatar 2), `agua` (avatar 3) y `energia` (avatar 4); conserva la fotografía por URL cuando el estilo es `foto`, con respaldo gráfico si falla la carga. La ilustración `avatares.png` no se utiliza como avatar individual por no haberse verificado que sea una imagen de una sola persona; requiere revisar/cortar si es una lámina.
+
+**Banners:** las variantes `Amanecer`, `Bosque` y `Océano` ahora muestran `banner.png`, `banner 2.png` y `banner 3.png` en el perfil privado y público. La opción existente `Atardecer` mantiene un degradado de respaldo. `HealthyPublicProfileService.project` sincroniza `profileBanner` únicamente si coincide con esas cuatro etiquetas; `firestore.candidate.rules` valida el campo.
+
+**Accesorios:** las 8 imágenes `Gafas.png`, `Gorra.png`, `Medalla.png`, `Termo.png`, `audifonos.png`, `banda.png`, `mochila.png`, `sudadera.png` se muestran mediante `ShopItemArtwork` en Tienda, carrusel, detalles y Armario. Los existentes `sunglasses` y `cap` reutilizan sus IDs y precios previos; se agregaron `sports_headband` (70 HC/cabeza), `leaf_headphones` (140 HC/cabeza), `leaf_hoodie` (200 HC/torso), `wellness_medal` (100 HC/cuello), `water_bottle` (90 HC/mano) y `leaf_backpack` (170 HC/espalda). El armario muestra sus PNG superpuestos en posiciones estimadas sobre Mr. Healthy; se debe ajustar visualmente cada uno con el PNG real en Android para evitar superposiciones incorrectas.
+
+**Reglas candidatas:** `shopPrice`, `validEquippedDetails` y la lista de campos de `public_profiles` se ampliaron con los IDs, precios y ranuras nuevos. **No se modificaron las reglas de producción y la economía antifraude sigue pendiente.** Se agregaron tres tests de emulador (compra, rechazo de fraude/ranura y banner), por lo que el total esperado pasa de 61 a **64 pruebas pendientes de ejecutar**. Se añadieron cuatro tests de catálogo y assets en `test/tienda/shop_assets_test.dart`; se adaptaron dos tests anteriores de avatar para comprobar `AssetImage` en vez de iconos.
+
+**Validación obligatoria:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/perfil test/tienda
+firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-healthy-habit "npm --prefix tests/firestore test"
+flutter run
+```
+Verificar carga real de los tres banners, las imágenes de avatar, los ocho accesorios en tienda y armario, compra/equipamiento/desequipamiento, persistencia tras reiniciar, alineación con cuerpo de Mr. Healthy y tema oscuro. El diseño de overlays requiere revisión visual. Este cambio se editó en GitHub sin Flutter SDK ni emulador disponibles en el entorno; no afirmar compilación o pruebas aprobadas.
+
+## Corrección visual y diagnóstico de fotografía — capturas del dispositivo (20-nov-2026)
+
+**Evidencia aportada:** Perfil privado mostraba el banner PNG junto al círculo amarillo decorativo antiguo; en Editar Perfil la subida falló con `Firebase: object-not-found` durante «subida a Storage»; en Armario las gafas se renderizaban debajo de los ojos de Mr. Healthy.
+
+**Correcciones integradas en GitHub:**
+
+- `profile_screen.dart` y `perfil_muestra.dart`: banner único de 150/130 px con `ClipRRect`, un solo `Image.asset` en `StackFit.expand`, sin degradados ni círculo decorativo superpuestos. Degradado de reserva solo para estilos sin PNG o errores de carga. Se preserva la etiqueta de banner con sombra para contraste.
+- `wardrobe_screen.dart`: se reconstruyó la vista previa sobre un lienzo lógico de 280×275 escalable mediante `FittedBox`. Accesorios de espalda detrás de la ilustración y capas de frente sobre el cuerpo. Gafas movidas a `top: 107` en vez de `143`, alineación distinta por categoría, sin alterar datos de compra/equipamiento. Ajustes son aproximados y requieren nueva captura para afinación.
+- `profile_photo_service.dart`: comprobación explícita del bucket de configuración, verificación de que `putData` terminó con `TaskState.success`, conservación de excepciones específicas y explicación para `object-not-found` distinguiendo el estadio. El bucket configurado en Flutter es `cloud-firestore-d8c61.firebasestorage.app`; **esto no garantiza que esté creado o disponible en Firebase Console**. Se agregó `storage.candidate.rules` con permiso autenticado para `users/{uid}/profile/avatar_<timestamp>.jpg`, límite de 3 MB, MIME `image/jpeg`, sin actualizaciones, eliminación por propietario, sin acceso al resto. **NO se ha desplegado ni integrado a producción**. Tests de diagnóstico de errores en `test/perfil/profile_photo_error_test.dart`.
+
+**Bloqueo externo:** Cloud Storage for Firebase exige un bucket real y plan Blaze. La configuración y las reglas en GitHub no crean ni habilitan automáticamente el bucket ni activan facturación. Si la cuenta continúa devolviendo `object-not-found` durante `putData`, hay que consultar Firebase Console → Storage para confirmar bucket, facturación y reglas efectivas, y ejecutar una prueba de subida desde el dispositivo. No inventar un éxito sin esa verificación.
+
+**Validación pendiente en dispositivo:**
+
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter analyze --no-fatal-infos lib
+flutter test test/perfil test/tienda
+flutter run
+```
+
+Probar tres banners con y sin foto, público y propio; equipar gafas y gorra con nueva captura; probar subida de fotografía JPEG y compartir el nuevo diagnóstico exacto si falla. No modificar `firestore.rules` ni desplegar `storage.candidate.rules` automáticamente.
+
+## Mr. Healthy — arquitectura híbrida de conocimiento v1 (20-nov-2026)
+
+**Implementación en rama de desarrollo, sin despliegue a producción.** Se añadió `assets/knowledge/mr_healthy_es_v1.json` (40 fichas estructuradas en español, con ID, categoría, título, alias, etiquetas, respuesta y referencia), registrado en `pubspec.yaml`. El buscador `healthy_hybrid_knowledge.dart` realiza normalización, recuperación léxica ponderada y rechazo de coincidencias poco claras; no es IA generativa ni embedding semántico.
+
+El contrato de respuesta `HealthyAssistantReply` ahora reside en `healthy_assistant_reply.dart`. `healthy_assistant_engine.dart` conserva la lógica de navegación y acciones de Hábitos, Tienda, Perfil, estadísticas, desafíos y catálogo; **no incorpora datos del dataset ni permite ejecutar operaciones a través de fichas**. `nutrichat.dart` aplica prioridad: moderación/cálculos/clima → acciones de la app → consulta educativa → conversación. Se retiró la búsqueda antigua de respuestas educativas de `nutri_respuestas_service.dart` para evitar sobrescrituras entre dos bases. Las respuestas del dataset dan fuentes honestas y rechazan inventar valores nutricionales por porción.
+
+**Pruebas agregadas, pendientes de ejecutar:** `test/chatbot/healthy_hybrid_knowledge_test.dart` incluye carga del asset, IDs, alias, formulaciones distintas, rechazo de términos fuera de tema, ausencia de cifras inventadas, fuentes permitidas y prioridad de operaciones. Guía completa en `docs/mr_healthy_arquitectura_hibrida.md`.
+
+**Validación sugerida:**
+```bash
+git fetch origin
+git merge --ff-only origin/feature/mr-healthy-voice-knowledge-motion
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/chatbot/healthy_hybrid_knowledge_test.dart
+flutter run
+```
+
+**Limitaciones:** búsquedas con sinónimos no incluidos aún pueden fallar; fichas y procedencia deben recibir revisión editorial antes de distribución; no hay entrenamiento de modelo, conexión a APIs generativas ni recuperación semántica neuronal. No se modificaron reglas de Firestore, XP ni Habit Coins.
+
+## Mr. Healthy — regresiones observadas en Android y correcciones (20-nov-2026)
+
+**Capturas del usuario:** «Cuántos monedas tengo?» no devolvía el saldo; «Quiero borrar mi cuenta» se confundía con abandonar un hábito; el chatbot daba fichas casi idénticas ante preguntas diferentes sobre huevo. En otra captura persiste `Storage: object-not-found`, incidencia independiente del chatbot y pendiente de resolución de bucket/permisos.
+
+**Correcciones en esta rama:**
+- Nuevo clasificador local `healthy_intent_router.dart` con precedencia de **eliminación de cuenta** y **consulta de saldo**. La solicitud de eliminación informa claramente que el borrado integral sigue deshabilitado; jamás toca datos ni redirige a eliminar un hábito.
+- `HealthyAssistantEngine.resolve` presenta el saldo real de `habitCoins` al reconocer variantes «mis monedas», «cuántas monedas», «Habit Coins», «saldo» y «dinero que me queda». `nutrichat.dart` solicita refrescar el perfil antes de responder sobre monedas con esas variantes. No inventa cifras.
+- Dataset educativo de **44 fichas**: cuatro temas nuevos de huevo (riesgo y alergias, huevo con jamón, cocción segura y frecuencia), con referencias oficiales FDA y OMS. El motor de recuperación prima las fichas específicas sobre el resumen general.
+- Contrato `HealthyAssistantReply` incluye `knowledgeId` para continuidad contextual. Preguntas como «¿Y si le pongo jamón?», «¿Y si me hace daño?» o «¿Puedo prepararlo con jamón?» después de hablar del huevo consultan el contexto correcto; «¿Qué más?» propone temas nuevos en vez de repetir el resumen. El contexto se elimina cuando se cambia de tema o conversación.
+- `healthy_assistant_engine.dart` evita interceptar preguntas alimentarias especializadas sobre el huevo con las fichas generales del Catálogo. La acción para abrir fuente oficial permite ahora dominio `www.fda.gov`, junto a OMS y USDA.
+- `test/chatbot/healthy_intent_regression_test.dart` con pruebas de frases tomadas de la experiencia real, variaciones, seguimiento y seguridad de la ruta de eliminación; se mantienen las pruebas existentes de `healthy_hybrid_knowledge_test.dart`.
+
+**Estado:** revisión de código y pruebas de puntuación de búsqueda reproducidas manualmente en la herramienta de trabajo; **Flutter analyze y flutter test todavía no ejecutados en el dispositivo del usuario**. No proclamar pruebas aprobadas sin ejecutar.
+
+**Validar:** `flutter analyze --no-fatal-infos lib`, `flutter test test/chatbot` y sesión Android siguiendo una conversación con cambios de intención. Firestore producción y reglas de Storage permanecen sin cambios.
+
+## Mr. Healthy — primera etapa de entrenamiento de intenciones (20-nov-2026)
+
+**Entregable en rama de desarrollo:** `datasets/chat_intents_es_v1.json` tiene 315 frases sintéticas etiquetadas en 15 intenciones: 225 `train` y 90 `test`. `datasets/chat_dialogues_es_v1.json` tiene 20 conversaciones (42 mensajes) para una futura evaluación de seguimiento. Ninguna expresión proviene de historiales privados.
+
+Se incorporó `tools/chat_intent_train.py`: clasificador TF-IDF de palabras, bigramas y n-gramas de caracteres con centroides entrenados, calibración interna solo en datos `train`, umbrales de abstención y evaluación test con matriz de confusión, precisión/recobrado/F1, macro-F1 y alertas de errores críticos. Genera modelo e informe en `outputs/` local (ignorado por Git). `tools/test_chat_intent_train.py` comprueba separación, integridad y determinismo.
+
+**Comprobación exploratoria:** una implementación equivalente en la herramienta de trabajo observó 66/90 respuestas correctas (73.3 %) sin abstención; no representa el resultado oficial de Python ni pasa el criterio de aceptación. El umbral de integración experimental requiere macro-F1 ≥ 0.85 y cero confusiones críticas, aun así no autoriza acciones. **El clasificador no está conectado al chatbot Flutter ni al backend**, por lo que no altera funcionamiento existente. No se entrenó un modelo generativo.
+
+**Próximos comandos del usuario:**
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_train.py' -v
+python3 tools/chat_intent_train.py
+python3 tools/chat_intent_train.py --predict "¿Cuántas monedas me quedan?"
+```
+
+Ver guía `docs/mr_healthy_entrenamiento_intenciones.md`. La prioridad es corregir confusiones en datos/desarrollo y comparar contra reglas actuales sin optimizar sobre la evaluación reservada. Seguridad y reglas de Firestore/Storage permanecen sin cambios.
+
+## Mr. Healthy — comparativa supervisada v2 (20-nov-2026)
+
+Se añadió `tools/chat_intent_compare.py`, que contrasta un **Naive Bayes multinomial** entrenado sobre n-gramas con el centroide TF-IDF existente, manteniendo 180 frases iniciales de ajuste, 45 frases `dev` para calibración y selección, y las 90 frases `test` reservadas para evaluación final. Los dos modelos se reentrenan después con las 225 frases `train` y se evalúan con los mismos 90 casos; **la elección se toma solo con métricas de desarrollo** y penaliza prioritariamente los errores críticos.
+
+Se añadieron pruebas del comparador en `tools/test_chat_intent_compare.py` y el workflow `.github/workflows/mr_healthy_intent_benchmark.yml`, que ejecuta tests y genera informes JSON descargables de ambos clasificadores. Un puntaje insuficiente se registra como rechazo experimental (código 2), sin desplegar nada.
+
+**Comando de validación:**
+```bash
+python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v
+python3 tools/chat_intent_train.py
+python3 tools/chat_intent_compare.py
+```
+
+**Pendiente:** obtener salidas locales o GitHub Actions para cuantificar diferencias reales. No se modificó `nutrichat.dart`, `HealthyAssistantEngine` ni ninguna configuración de Firebase en esta etapa. Los clasificadores permanecen desconectados de la app hasta superar criterios y evaluación de uso real. Detalles en `docs/mr_healthy_entrenamiento_intenciones.md`.
+
+## Clasificación ML — evaluación independiente V2 (20-nov-2026)
+
+Después de recibir del usuario la auditoría V1 (TF-IDF: macro-F1 0.708 y 2 errores críticos; Naive Bayes: macro-F1 0.708 y 5 críticos; 15 tests aprobados), se incorporó `datasets/chat_intents_es_v2_new.json` con 150 frases nuevas train y 60 nuevas test, sin duplicados frente al conjunto V1. Se incorporó `tools/chat_intent_v2.py` para una nueva prueba de cuatro variantes (dos clasificadores, con/sin abstención); el ajuste final usa 225 frases V1/train + 150 V2/train, mientras la selección usa 45 V2/train como dev. **Las 90 frases V1/test no se reintroducen**. La evaluación V2/test sigue separada. Pruebas de fuga y aislamiento en `tools/test_chat_intent_v2.py`. Workflow CI actualizado con informe `outputs/mr_healthy_intent_v2_report.json`.
+
+**Sin validación local confirmada para estos commits**: pendiente `python3 -m unittest discover -s tools -p 'test_chat_intent_*.py' -v` y `python3 tools/chat_intent_v2.py`; puede devolver código 2 si no alcanza el umbral. No hay cambio en la app Flutter, datos de usuarios, Firebase ni producción. La capa de seguridad del modelo siempre produce recomendaciones con `may_execute_action: false`.

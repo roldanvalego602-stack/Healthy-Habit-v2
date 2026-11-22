@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'interaction_model.dart';
 
 class InteractionService {
   final CollectionReference _interactionsRef =
-      FirebaseFirestore.instance.collection('interactions');
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default')
+          .collection('interactions');
 
   /// Enviar una nueva reacción a un usuario con los campos exactos de Firestore
   Future<void> enviarReaccion({
@@ -14,6 +17,32 @@ class InteractionService {
     String estado = 'enviado',
     String tipo = 'reaccion',
   }) async {
+    // El cliente nunca debe enviar reacciones atribuidas a otra cuenta.
+    // La misma comprobación debe aplicarse en las reglas de Firestore.
+    final loggedInUid = FirebaseAuth.instance.currentUser?.uid;
+    if (loggedInUid == null || loggedInUid != fromUid) {
+      throw StateError('Inicia sesión con tu cuenta para enviar reacciones.');
+    }
+    if (toUid.trim().isEmpty || toUid == fromUid) {
+      throw ArgumentError('Selecciona a otro usuario válido.');
+    }
+    if (!const ['🔥', '❤️', '👏', '💪', '🎉', '⭐'].contains(emoji)) {
+      throw ArgumentError('La reacción seleccionada no es válida.');
+    }
+    final friendship = await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('users').doc(fromUid)
+        .collection('friends').doc(toUid).get();
+    if (!friendship.exists) {
+      throw StateError('Solo puedes reaccionar al progreso de tus amigos.');
+    }
+    final publicProfile = await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).collection('public_profiles').doc(toUid).get();
+    final rawSettings = publicProfile.data()?['settings'];
+    if (rawSettings is Map && rawSettings['permitirReacciones'] == false) {
+      throw StateError('Esta persona no acepta reacciones.');
+    }
     final nuevaInteraccion = InteractionModel(
       challengeId: challengeId,
       createdAt: DateTime.now(),
@@ -49,8 +78,17 @@ class InteractionService {
 
   /// Marcar una reacción como leída
   Future<void> marcarComoLeida(String interactionId) async {
-    await _interactionsRef.doc(interactionId).update({
-      'leido': true,
+    final me = FirebaseAuth.instance.currentUser?.uid;
+    if (me == null) throw StateError('Inicia sesión.');
+    final ref = _interactionsRef.doc(interactionId);
+    await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists || (doc.data() as Map<String, dynamic>?)?['toUid'] != me) {
+        throw StateError('Solo el destinatario puede leer esta reacción.');
+      }
+      tx.update(ref, {'leido': true});
     });
   }
 

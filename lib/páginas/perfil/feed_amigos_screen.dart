@@ -1,6 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import 'profile_avatar.dart';
+import 'reaction_picker_dialog.dart';
+import '../logros/logros_service.dart';
+import 'social_action_button.dart';
 
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -8,21 +13,13 @@ import 'perfil_muestra.dart';
 
 class _C {
   static const green = Color(0xFF198568);
-  static const mint = Color(0xFF8DE0C0);
-  static const navy = Color(0xFF173544);
-  static const background = Color(0xFFF4F8F5);
-  static const grey = Color(0xFF8496A0);
-  static const border = Color(0xFFE3ECE7);
-  static const mintSoft = Color(0xFFE2F4EB);
+  static Color get navy => HealthyAdaptive.text;
+  static Color get background => HealthyAdaptive.background;
+  static Color get grey => HealthyAdaptive.muted;
+  static Color get border => HealthyAdaptive.border;
+  static Color get mintSoft => HealthyAdaptive.mint;
   static const gold = Color(0xFFD5A33E);
 
-  static const avatars = [
-    Color(0xFF198568),
-    Color(0xFFD5A33E),
-    Color(0xFF459FCB),
-    Color(0xFF8C72C6),
-    Color(0xFFE8736C),
-  ];
 }
 
 /// Feed con el progreso en vivo de las personas que sigues: nivel, racha,
@@ -35,9 +32,6 @@ class FeedAmigosScreen extends StatefulWidget {
 }
 
 class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
-  FirebaseFirestore get _db =>
-      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
-
   String? get _uid => AmigosServicio.uidActual;
 
   @override
@@ -73,16 +67,16 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
     return Row(
       children: [
         Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(16),
           child: IconButton(
             tooltip: 'Volver',
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_rounded, color: _C.navy),
+            icon: Icon(Icons.arrow_back_rounded, color: _C.navy),
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Text(
             'Feed de progreso',
             style: TextStyle(
@@ -98,7 +92,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
 
   Widget _cuerpo(String uid) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: AmigosServicio.siguiendo(uid),
+      stream: AmigosServicio.amigos(uid),
       builder: (context, snap) {
         if (snap.hasError) {
           return _mensaje(
@@ -119,8 +113,8 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
         if (ids.isEmpty) {
           return _mensaje(
             icono: Icons.dynamic_feed_outlined,
-            titulo: 'Aún no sigues a nadie',
-            detalle: 'Sigue a tus amigos para ver aquí su progreso.',
+            titulo: 'Aún no tienes amigos',
+            detalle: 'Agrega amigos y acepta solicitudes para compartir el progreso.',
             accion: 'Buscar amigos',
             onAccion: () {
               Navigator.push(
@@ -157,7 +151,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Container(
               width: 76,
               height: 76,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: _C.mintSoft,
                 shape: BoxShape.circle,
               ),
@@ -167,7 +161,7 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Text(
               titulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _C.navy,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
@@ -177,29 +171,14 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
             Text(
               detalle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
+              style: TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
             ),
             if (accion != null && onAccion != null) ...[
               const SizedBox(height: 18),
-              SizedBox(
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: onAccion,
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: Text(
-                    accion,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _C.mint,
-                    foregroundColor: _C.navy,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
+              SocialActionButton(
+                label: accion,
+                icon: Icons.person_add_alt_1_rounded,
+                onPressed: onAccion,
               ),
             ],
           ],
@@ -247,7 +226,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(uid).snapshots(),
+      stream: _db.collection('public_profiles').doc(uid).snapshots(),
       builder: (context, snap) {
         if (!snap.hasData || !snap.data!.exists) {
           return const SizedBox.shrink();
@@ -259,6 +238,28 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final username = _texto(d['username']);
         final nivel = _num(_primero(d, ['level']), 1);
         final racha = _num(_primero(d, ['currentStreak', 'streakDays']), 0);
+        final rawSettings = d['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
+        final acceptsReactions = rawSettings is! Map ||
+            rawSettings['permitirReacciones'] != false;
+        final achievementVisibility = rawSettings is Map
+            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
+            : 'Solo amigos';
+        final achievements = achievementVisibility == 'Solo yo'
+            ? const <String>[]
+            : LogrosService.catalogo.where((definition) {
+                if (!const {'nivel', 'xp', 'racha'}
+                    .contains(definition.tipo)) {
+                  return false;
+                }
+                return LogrosService.obtenido(
+                  definition,
+                  LogrosService.progreso(
+                    definition, d, 0, 0, const <String>{},
+                  ),
+                );
+              }).take(3).map((item) => item.nombre).toList();
         final xpActual = _num(_primero(d, ['currentXp']), 0);
         final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
         final progresoXp =
@@ -269,12 +270,9 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
         final progresoLogro =
             _doble(_primero(d, ['nextAchievementProgress']), -1);
 
-        final color =
-            _C.avatars[uid.codeUnits.fold<int>(0, (a, b) => a + b) %
-                _C.avatars.length];
-
+    
         return Material(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(22),
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
@@ -310,17 +308,10 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: color,
-                        child: Text(
-                          nombre.characters.first.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                      HealthyProfileAvatar(
+                        photoUrl: d['photoUrl']?.toString(),
+                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
+                        size: 44,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -331,7 +322,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                               nombre,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _C.navy,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
@@ -350,8 +341,8 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                   ),
                                   child: Text(
                                     'Nivel $nivel',
-                                    style: const TextStyle(
-                                      color: _C.green,
+                                    style: TextStyle(
+                                      color: HealthyAdaptive.accent,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -359,8 +350,8 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '$racha días 🔥',
-                                  style: const TextStyle(
+                                  publicStreak ? '$racha días 🔥' : 'Racha privada',
+                                  style: TextStyle(
                                     color: _C.navy,
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -377,7 +368,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Progreso de nivel',
                         style: TextStyle(
                           color: _C.grey,
@@ -387,7 +378,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       ),
                       Text(
                         '$xpActual / $xpSiguiente XP',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _C.navy,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
@@ -405,6 +396,40 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       valueColor: const AlwaysStoppedAnimation(_C.green),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      Chip(
+                        avatar: const Icon(Icons.emoji_events_outlined, size: 16),
+                        label: Text('${_num(d['completedHabits'])} hábitos completados'),
+                      ),
+                      Chip(
+                        avatar: const Icon(Icons.star_outline_rounded, size: 16),
+                        label: Text('Nivel $nivel'),
+                      ),
+                    ],
+                  ),
+                  if (achievements.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Text('Logros destacados',
+                      style: TextStyle(fontWeight: FontWeight.w800,
+                        fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final achievement in achievements)
+                          Chip(
+                            avatar: const Icon(Icons.military_tech_outlined,
+                              size: 16),
+                            label: Text(achievement),
+                          ),
+                      ],
+                    ),
+                  ],
                   if (logro.isNotEmpty && progresoLogro >= 0) ...[
                     const SizedBox(height: 12),
                     Row(
@@ -415,7 +440,7 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                             '🏅 $logro',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: _C.navy,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
@@ -443,6 +468,27 @@ class _TarjetaProgresoAmigo extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 13),
+                  if (acceptsReactions) Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      key: ValueKey('feed-encourage-$uid'),
+                      onPressed: () {
+                        final me = AmigosServicio.uidActual;
+                        if (me == null || me == uid) return;
+                        showDialog<void>(
+                          context: context,
+                          builder: (_) => ReactionPickerDialog(
+                            fromUid: me,
+                            toUid: uid,
+                            friendName: nombre,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_reaction_outlined, size: 18),
+                      label: const Text('Animar'),
+                    ),
+                  ),
                 ],
               ),
             ),

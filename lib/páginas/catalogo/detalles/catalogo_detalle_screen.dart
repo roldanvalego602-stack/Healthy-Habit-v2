@@ -1,37 +1,21 @@
 import 'package:flutter/material.dart';
+import '../catalogo_media.dart';
+import '../../../tema/healthy_theme.dart';
 import '../modelos/catalogo_item.dart';
+import '../catalogo_explorador.dart';
+import '../datos/catalogo_datos.dart';
+import 'catalogo_detalle_interactivo.dart';
+import 'catalogo_resumen.dart';
+import '../datos/bebidas_catalogo.dart';
 
 class CatalogoDetalleScreen extends StatelessWidget {
   final CatalogoItem item;
   const CatalogoDetalleScreen({super.key, required this.item});
 
-  static const _verde = Color(0xFF08B889);
-  static const _oscuro = Color(0xFF193344);
-  static const _fondo = Color(0xFFF5F8F6);
-  static const _gris = Color(0xFF71879A);
-
-  IconData get _icono {
-    switch (item.icono) {
-      case 'grain':
-        return Icons.grain;
-      case 'egg':
-        return Icons.egg_outlined;
-      case 'eco':
-        return Icons.eco_outlined;
-      case 'fitness_center':
-        return Icons.fitness_center;
-      case 'accessibility_new':
-        return Icons.accessibility_new;
-      case 'directions_walk':
-        return Icons.directions_walk;
-      case 'bedtime':
-        return Icons.bedtime_outlined;
-      case 'health_and_safety':
-        return Icons.health_and_safety_outlined;
-      default:
-        return Icons.self_improvement;
-    }
-  }
+  Color get _verde => HealthyAdaptive.accent;
+  Color get _oscuro => HealthyAdaptive.text;
+  Color get _fondo => HealthyAdaptive.background;
+  Color get _gris => HealthyAdaptive.muted;
 
   @override
   Widget build(BuildContext context) {
@@ -45,25 +29,28 @@ class CatalogoDetalleScreen extends StatelessWidget {
           item.categoria,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Consultar o resumir información',
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => _abrirResumen(context),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Image.asset(
-              item.imagen,
-              height: 190,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 190, child: ColoredBox(color: Color(0xFFE4F7EF), child: Icon(Icons.image_outlined, size: 56, color: _verde))),
-            ),
+          CatalogoMedia(
+            item: item,
+            altura: 190,
+            radio: 24,
+            usarHero: true,
           ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: HealthyAdaptive.surface,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -72,15 +59,16 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE4F7EF),
+                    color: HealthyAdaptive.mint,
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: Icon(_icono, size: 36, color: _verde),
+                  child: Icon(CatalogoMedia.icono(item),
+                      size: 36, color: _verde),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   item.titulo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     color: _oscuro,
@@ -89,11 +77,18 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   item.descripcion,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     color: _gris,
                     height: 1.5,
                   ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  key: const ValueKey('catalogo-resumir'),
+                  onPressed: () => _abrirResumen(context),
+                  icon: const Icon(Icons.summarize_outlined),
+                  label: const Text('Resumir o consultar un dato'),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
@@ -107,6 +102,11 @@ class CatalogoDetalleScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (item.categoria == 'Alimentos') ...[
+            const SizedBox(height: 18),
+            _seccion('Información nutricional',
+                ResumenNutricionalCatalogo(item: item)),
+          ],
           if (item.detalles.isNotEmpty) ...[
             const SizedBox(height: 18),
             _seccion(
@@ -123,14 +123,14 @@ class CatalogoDetalleScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     e.key,
-                                    style: const TextStyle(color: _gris),
+                                    style: TextStyle(color: _gris),
                                   ),
                                 ),
                                 Expanded(
                                   child: Text(
                                     e.value,
                                     textAlign: TextAlign.right,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: _oscuro,
                                     ),
@@ -156,7 +156,9 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 : item.categoria == 'Alimentos'
                 ? 'Sugerencias de consumo'
                 : 'Acciones recomendadas',
-            _lista(item.pasos, Icons.arrow_forward_ios, numerada: true),
+            item.categoria == 'Ejercicios'
+                ? GuiaPasosCatalogo(item: item)
+                : _lista(item.pasos, Icons.arrow_forward_ios, numerada: true),
           ),
           const SizedBox(height: 18),
           _seccion(
@@ -174,25 +176,51 @@ class CatalogoDetalleScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
                       children: [
-                        const Icon(Icons.link, color: _verde, size: 18),
+                        Icon(Icons.link, color: _verde, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             h,
-                            style: const TextStyle(color: _oscuro),
+                            style: TextStyle(color: _oscuro),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const Text(
+                Text(
                   'Vinculación informativa. No activa hábitos ni concede XP.',
                   style: TextStyle(color: _gris, fontSize: 12),
                 ),
               ],
             ),
           ),
+          if (_relacionados.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _seccion(
+              'También puede interesarte',
+              Column(children: [
+                for (final relacionado in _relacionados)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: HealthyAdaptive.mint,
+                      child: Icon(CatalogoMedia.icono(relacionado),
+                          color: _verde),
+                    ),
+                    title: Text(relacionado.titulo),
+                    subtitle: Text(relacionado.categoria),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CatalogoDetalleScreen(
+                            item: relacionado),
+                      ),
+                    ),
+                  ),
+              ]),
+            ),
+          ],
           const SizedBox(height: 18),
           _seccion(
             'Fuente de referencia',
@@ -201,7 +229,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
               children: [
                 Text(
                   item.fuente,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: _oscuro,
                   ),
@@ -209,10 +237,10 @@ class CatalogoDetalleScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 SelectableText(
                   item.fuenteUrl,
-                  style: const TextStyle(color: _verde, fontSize: 12),
+                  style: TextStyle(color: _verde, fontSize: 12),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Contenido educativo general; no sustituye asesoramiento médico o nutricional individualizado.',
                   style: TextStyle(color: _gris, fontSize: 12),
                 ),
@@ -225,16 +253,49 @@ class CatalogoDetalleScreen extends StatelessWidget {
     );
   }
 
+  void _abrirResumen(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.7,
+        child: ResumenFichaCatalogo(item: item),
+      ),
+    );
+  }
+
+  List<CatalogoItem> get _relacionados {
+    final todos = <CatalogoItem>[
+      ...alimentosCatalogo, ...ejerciciosCatalogo, ...consejosCatalogo,
+      ...bebidasCatalogo,
+    ];
+    final claves = item.etiquetas
+        .map(CatalogoExplorador.normalizar).toSet();
+    final resultados = todos.where((otro) =>
+        otro.id != item.id && otro.categoria == item.categoria).toList();
+    int puntos(CatalogoItem value) => value.etiquetas
+        .map(CatalogoExplorador.normalizar)
+        .where(claves.contains).length;
+    resultados.removeWhere((value) => puntos(value) == 0);
+    resultados.sort((a, b) {
+      final diferencia = puntos(b).compareTo(puntos(a));
+      return diferencia == 0
+          ? a.titulo.compareTo(b.titulo) : diferencia;
+    });
+    return resultados.take(3).toList();
+  }
+
   Widget _chip(String s) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
     decoration: BoxDecoration(
-      color: const Color(0xFFE4F7EF),
+      color: HealthyAdaptive.mint,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       s,
-      style: const TextStyle(
-        color: Color(0xFF078765),
+      style: TextStyle(
+        color: _verde,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
@@ -244,7 +305,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
   Widget _seccion(String titulo, Widget contenido) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Column(
@@ -252,7 +313,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
       children: [
         Text(
           titulo,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
             color: _oscuro,
@@ -279,10 +340,10 @@ class CatalogoDetalleScreen extends StatelessWidget {
                         numerada
                             ? CircleAvatar(
                               radius: 12,
-                              backgroundColor: const Color(0xFFE4F7EF),
+                              backgroundColor: HealthyAdaptive.mint,
                               child: Text(
                                 '${e.key + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   color: _verde,
                                 ),
@@ -293,7 +354,7 @@ class CatalogoDetalleScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             e.value,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               height: 1.4,
                               color: _oscuro,

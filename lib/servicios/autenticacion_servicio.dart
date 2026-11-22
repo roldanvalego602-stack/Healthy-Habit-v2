@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'firebase_servicios.dart';
+import 'shop_demo_bootstrap.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -112,7 +113,40 @@ class AuthService {
     }
   }
 
+  /// Acceso anónimo exclusivamente al proyecto demo y Auth Emulator.
+  /// No requiere OAuth ni una dirección de correo real.
+  Future<User?> signInToIsolatedDemo() async {
+    ShopDemoBootstrap.validateOfficialHabitsMode();
+    if (!ShopDemoBootstrap.officialHabitsEnabled ||
+        _auth.app.options.projectId != ShopDemoBootstrap.demoProjectId) {
+      throw StateError('Inicio de sesión de prueba fuera del emulador.');
+    }
+
+    final current = _auth.currentUser;
+    if (current != null && !current.isAnonymous) {
+      throw StateError(
+        'Cierra primero la sesión anterior para entrar como usuario de prueba.');
+    }
+    final user = current ??
+        (await _auth.signInAnonymously()).user;
+    if (user == null || !user.isAnonymous) {
+      throw StateError('No se pudo iniciar la sesión anónima de prueba.');
+    }
+    await _firebaseService.saveUserData(
+      uid: user.uid,
+      name: 'Usuario de prueba',
+      username: 'demo_${user.uid.substring(0, 8)}',
+      email: '',
+    );
+    return user;
+  }
+
   Future<User?> signInWithGoogle() async {
+    if (ShopDemoBootstrap.officialHabitsEnabled) {
+      throw StateError(
+        'Google no está habilitado en el entorno demo. '
+        'Utiliza el acceso de prueba.');
+    }
     final googleUser = await GoogleSignIn().signIn();
 
     if (googleUser == null) return null;
@@ -145,7 +179,9 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      await GoogleSignIn().signOut();
+      if (!ShopDemoBootstrap.officialHabitsEnabled) {
+        await GoogleSignIn().signOut();
+      }
     } finally {
       await _auth.signOut();
     }

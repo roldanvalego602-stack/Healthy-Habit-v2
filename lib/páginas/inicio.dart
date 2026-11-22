@@ -1,7 +1,12 @@
+import 'perfil/profile_avatar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../tema/healthy_theme.dart';
+import '../tema/healthy_coin.dart';
+import '../tema/healthy_motion.dart';
+import '../tema/healthy_float.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
@@ -28,26 +33,24 @@ class HabitTrackerApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Healthy Habit',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.page,
-        useMaterial3: true,
-      ),
+      theme: HealthyThemes.light(),
+      darkTheme: HealthyThemes.dark(),
+      themeMode: HealthyThemeController.instance.mode,
       home: const HomeScreen2(),
     );
   }
 }
 
 class AppColors {
-  static const primaryGreen = Color(0xFF08B889);
-  static const darkGreenCard = Color(0xFF143834);
-  static const textDark = Color(0xFF193344);
-  static const textGrey = Color(0xFF71879A);
-  static const yellowCard = Color(0xFFFDE89D);
-  static const blueWaterCard = Color(0xFFE8F6FC);
-  static const purpleCard = Color(0xFFF0EBFC);
-  static const mintCard = Color(0xFFE2F7ED);
-  static const page = Color(0xFFF5F8F6);
+  static Color get primaryGreen => HealthyAdaptive.accent;
+  static Color get darkGreenCard => HealthyAdaptive.isDark ? const Color(0xFF19453A) : const Color(0xFF143834);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get yellowCard => HealthyAdaptive.yellow;
+  static Color get blueWaterCard => HealthyAdaptive.water;
+  static Color get purpleCard => HealthyAdaptive.lavender;
+  static Color get mintCard => HealthyAdaptive.mint;
+  static Color get page => HealthyAdaptive.background;
 }
 
 int _number(dynamic value, [int fallback = 0]) {
@@ -102,13 +105,13 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
     return Scaffold(
       backgroundColor: AppColors.page,
-      body: SafeArea(child: screens[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: screens[_selectedIndex])),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Color(0xFFE5ECE9))),
+          decoration: BoxDecoration(
+            color: HealthyAdaptive.surface,
+            border: Border(top: BorderSide(color: HealthyAdaptive.border)),
           ),
           child: Row(
             children: List.generate(
@@ -315,10 +318,10 @@ class _HomeContent extends StatelessWidget {
                 height: 38,
                 errorBuilder:
                     (_, __, ___) =>
-                        const Icon(Icons.eco, color: AppColors.primaryGreen),
+                        Icon(Icons.eco, color: AppColors.primaryGreen),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Healthy Habit',
                   style: TextStyle(
@@ -345,16 +348,9 @@ class _HomeContent extends StatelessWidget {
                 child: InkWell(
                   onTap: onProfile,
                   borderRadius: BorderRadius.circular(30),
-                  child: CircleAvatar(
-                    backgroundColor: AppColors.mintCard,
-                    foregroundImage:
-                        photoUrl != null && photoUrl!.isNotEmpty
-                            ? NetworkImage(photoUrl!)
-                            : null,
-                    child: const Icon(
-                      Icons.person,
-                      color: AppColors.primaryGreen,
-                    ),
+                  child: HealthyProfileAvatar(
+                    photoUrl: photoUrl,
+                    size: 44,
                   ),
                 ),
               ),
@@ -365,14 +361,14 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             '¡Hola, $name!',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w900,
               color: AppColors.textDark,
             ),
           ),
 
-          const Text(
+          Text(
             'Continúa con tus hábitos de hoy.',
             style: TextStyle(color: AppColors.textGrey),
           ),
@@ -383,16 +379,7 @@ class _HomeContent extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: ActionChip(
-              avatar: Image.asset(
-                'assets/monedas/h coin.png',
-                width: 23,
-                height: 23,
-                errorBuilder:
-                    (_, __, ___) => const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size: 19,
-                    ),
-              ),
+              avatar: const HealthyCoinIcon(size: 23),
               label: Text('$coins Habit Coins · Ir a tienda'),
               onPressed: onStore,
             ),
@@ -449,7 +436,7 @@ class _HomeContent extends StatelessWidget {
                   Icons.check_circle_outline,
                   '$completed / $total',
                   'Hábitos completados',
-                  Colors.white,
+                  HealthyAdaptive.surfaceAlt,
                 ),
               ),
             ],
@@ -470,8 +457,8 @@ class _HomeContent extends StatelessWidget {
               icon: const Icon(Icons.insights_rounded),
               label: const Text('Ver mis estadísticas y progreso'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkGreenCard,
-                side: const BorderSide(color: AppColors.primaryGreen),
+                foregroundColor: AppColors.primaryGreen,
+                side: BorderSide(color: AppColors.primaryGreen),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -505,12 +492,17 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 18),
+
+          // Accesos rápidos a los tres pasos centrales del recorrido.
+          _demoJourney(context),
+
           const SizedBox(height: 24),
 
           // MISIÓN DEL DÍA
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Tu misión de hoy',
                   style: TextStyle(
@@ -633,7 +625,7 @@ class _HomeContent extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
 
@@ -649,14 +641,18 @@ class _HomeContent extends StatelessWidget {
 
           if (next != null) ...[
             const SizedBox(height: 6),
-            Text(
-              'Próxima recompensa prevista: '
-              '${next.rewardCoins} Habit Coins',
-              style: const TextStyle(
-                color: Color(0xFFFFE49A),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 5,
+              children: [
+                const Text('Próxima recompensa prevista:',
+                  style: TextStyle(color: Color(0xFFFFE49A),
+                    fontSize: 12, fontWeight: FontWeight.w700)),
+                HealthyCoinAmount(amount: '${next.rewardCoins}',
+                  size: 18, suffix: ' Habit Coins',
+                  style: const TextStyle(color: Color(0xFFFFE49A),
+                    fontSize: 12, fontWeight: FontWeight.w700)),
+              ],
             ),
           ],
         ],
@@ -673,7 +669,9 @@ class _HomeContent extends StatelessWidget {
   // --------------------------------------------------
 
   Widget _stat(IconData icon, String value, String caption, Color bg) {
-    return Container(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: bg,
@@ -682,21 +680,142 @@ class _HomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primaryGreen),
+          icon == Icons.local_fire_department
+              ? HealthyGlowIcon(icon: icon, color: const Color(0xFFE5A34B))
+              : Icon(icon, color: AppColors.primaryGreen),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          caption == 'Racha actual'
+              ? HealthyStreakNumber(
+                  days: int.tryParse(value.split(' ').first) ?? 0,
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
+              : Text(
+                  value,
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
           Text(
             caption,
-            style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
+            style: TextStyle(color: AppColors.textGrey, fontSize: 11),
           ),
         ],
+      ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // RECORRIDO PRINCIPAL
+  // --------------------------------------------------
+
+  Widget _demoJourney(BuildContext context) {
+    return Container(
+      key: const Key('inicio-recorrido'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        border: Border.all(color: HealthyAdaptive.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tu recorrido saludable',
+            style: TextStyle(color: AppColors.textDark,
+              fontWeight: FontWeight.w900, fontSize: 17)),
+          const SizedBox(height: 5),
+          Text('Registra una actividad y observa tus avances.',
+            style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.add_task_rounded,
+                  title: 'Registrar',
+                  subtitle: 'Hábitos',
+                  onTap: onHabits,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Icon(Icons.arrow_forward_ios_rounded,
+                size: 12, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.insights_rounded,
+                  title: 'Progreso',
+                  subtitle: 'Estadísticas',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProgresoScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Icon(Icons.arrow_forward_ios_rounded,
+                size: 12, color: HealthyAdaptive.muted),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _journeyAction(
+                  context,
+                  icon: Icons.emoji_events_rounded,
+                  title: 'Logros',
+                  subtitle: 'Insignias',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LogrosScreen()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyAction(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: HealthyAdaptive.surfaceAlt,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 13),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 23, color: HealthyAdaptive.accent),
+              const SizedBox(height: 6),
+              Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: AppColors.textDark,
+                  fontSize: 12, fontWeight: FontWeight.w800)),
+              Text(subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: HealthyAdaptive.muted, fontSize: 10)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -714,12 +833,12 @@ class _HomeContent extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: HealthyAdaptive.surface,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.flag_outlined,
               color: AppColors.primaryGreen,
               size: 40,
@@ -745,11 +864,15 @@ class _HomeContent extends StatelessWidget {
 
     final category = (data['category'] ?? 'Bienestar').toString();
 
-    final attemptId = (data['latestAttemptId'] ?? '').toString();
+    // Los intentos anteriores a la sincronización de campos «latest»
+    // solamente tienen lastAttemptId. Mantener ambos evita perder el botón.
+    final attemptId =
+        (data['latestAttemptId'] ?? data['lastAttemptId'] ?? '').toString();
 
     final progress = _number(data['latestProgress']);
 
-    final target = _number(data['latestTarget'], 1).clamp(1, 100000).toInt();
+    final target = _number(data['latestTarget'] ?? data['target'], 1)
+        .clamp(1, 100000).toInt();
 
     final fraction = (progress / target).clamp(0.0, 1.0);
 
@@ -764,7 +887,7 @@ class _HomeContent extends StatelessWidget {
         children: [
           Text(
             category.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.primaryGreen,
               fontWeight: FontWeight.w800,
               fontSize: 11,
@@ -775,7 +898,7 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textDark,
               fontWeight: FontWeight.w900,
               fontSize: 21,
@@ -790,7 +913,7 @@ class _HomeContent extends StatelessWidget {
               value: fraction,
               minHeight: 8,
               backgroundColor: Colors.white,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
 
@@ -798,7 +921,7 @@ class _HomeContent extends StatelessWidget {
 
           Text(
             '$progress de $target sesiones',
-            style: const TextStyle(color: AppColors.textGrey),
+            style: TextStyle(color: AppColors.textGrey),
           ),
 
           const SizedBox(height: 14),
@@ -906,7 +1029,7 @@ class _HomeContent extends StatelessWidget {
                   Container(
                     width: 46,
                     height: 46,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.yellowCard,
                       shape: BoxShape.circle,
                     ),
@@ -939,7 +1062,7 @@ class _HomeContent extends StatelessWidget {
 
                         Text(
                           siguiente?.nombre ?? '¡Todos los logros conseguidos!',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textDark,
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
@@ -954,7 +1077,7 @@ class _HomeContent extends StatelessWidget {
                               : '${siguiente.descripcion} · '
                                   '${progreso.clamp(0, siguiente.meta)} '
                                   '/ ${siguiente.meta}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textGrey,
                             fontSize: 11,
                           ),
@@ -974,7 +1097,7 @@ class _HomeContent extends StatelessWidget {
                     ),
                   ),
 
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.textGrey,
                   ),
@@ -1004,7 +1127,7 @@ class _HomeContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'MR. HEALTHY',
                   style: TextStyle(
                     color: AppColors.primaryGreen,
@@ -1014,7 +1137,7 @@ class _HomeContent extends StatelessWidget {
 
                 const SizedBox(height: 7),
 
-                const Text(
+                Text(
                   'Cada pequeño paso cuenta.',
                   style: TextStyle(color: AppColors.textDark),
                 ),

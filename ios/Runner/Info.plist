@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Healthy Habit usa el micrófono solo cuando activas el dictado de Mr. Healthy.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Healthy Habit convierte tu voz a texto cuando eliges dictar un mensaje a Mr. Healthy.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Healthy Habit utiliza la cámara únicamente cuando eliges tomar una foto para tu perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Healthy Habit accede a las fotos cuando eliges una imagen de perfil.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Healthy Habit puede guardar fotografías que elijas desde la aplicación.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Healthy Habit consulta tu ubicación aproximada solamente cuando pides el clima a Mr. Healthy.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

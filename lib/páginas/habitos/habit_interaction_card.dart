@@ -2,13 +2,43 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../tema/healthy_theme.dart';
+
+/// Ayudas breves compartidas por las herramientas de hábitos.
+class HabitToolGuide {
+  static String titleFor(String type, String unit) {
+    if (type == 'timer') return 'Temporizador';
+    if (type == 'stopwatch') return 'Cronómetro';
+    return unit.trim().toLowerCase() == 'ml'
+        ? 'Contador de hidratación'
+        : 'Contador de actividad';
+  }
+
+  static String instructionsFor(String type, String unit) {
+    if (type == 'timer') {
+      return 'Pulsa Iniciar para comenzar la cuenta regresiva. '
+          'Puedes pausar y reanudar. Al llegar a cero, continúa con el siguiente paso.';
+    }
+    if (type == 'stopwatch') {
+      return 'Pulsa Iniciar para medir el tiempo transcurrido. '
+          'Pausa o reanuda hasta alcanzar la duración objetivo.';
+    }
+    if (unit.trim().toLowerCase() == 'ml') {
+      return 'Registra cada cantidad de agua con +100, +250 o +500 ml. '
+          'Usa Corregir −100 ml para ajustar el registro.';
+    }
+    return 'Pulsa Registrar cada vez que completes una unidad. '
+        'Utiliza el botón menos si necesitas corregir el contador.';
+  }
+}
 
 class HabitInteractionCard extends StatefulWidget {
   const HabitInteractionCard({super.key, required this.type, required this.target,
-    required this.unit, required this.onChanged, this.enabled = true});
+    required this.unit, required this.onChanged, this.enabled = true, this.initialValue = 0});
   final String type, unit;
   final int target;
   final bool enabled;
+  final int initialValue;
   final void Function(bool completed, int value) onChanged;
   @override
   State<HabitInteractionCard> createState() => _HabitInteractionCardState();
@@ -22,6 +52,21 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   int? _stepBaseline;
   int _stepsBeforeResume = 0;
   bool _stepsStarted = false;
+  int _baseSeconds = 0;
+
+  void _restoreInitialValue() {
+    final value = widget.initialValue.clamp(0, widget.target.clamp(1, 86400));
+    _count = value;
+    _seconds = value;
+    _baseSeconds = value;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreInitialValue();
+  }
+
   String? _sensorError;
 
   bool get _timed => ['timer', 'stopwatch', 'breathing', 'pomodoro'].contains(widget.type);
@@ -32,7 +77,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
 
   void _tick(Timer timer) {
     if (!mounted || !widget.enabled) return;
-    final value = _watch.elapsed.inSeconds.clamp(0, _target);
+    final value = (_baseSeconds + _watch.elapsed.inSeconds).clamp(0, _target);
     if (value == _seconds) return;
     setState(() => _seconds = value);
     if (_done) {
@@ -107,13 +152,13 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   @override
   void didUpdateWidget(covariant HabitInteractionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.type != widget.type || oldWidget.target != widget.target) {
+    if (oldWidget.type != widget.type || oldWidget.target != widget.target ||
+        oldWidget.initialValue != widget.initialValue || oldWidget.unit != widget.unit) {
       _ticker?.cancel();
       _watch.stop();
       _watch.reset();
       _stepsSubscription?.cancel();
-      _seconds = 0;
-      _count = 0;
+      _restoreInitialValue();
       _stepBaseline = null;
       _stepsBeforeResume = 0;
       _stepsStarted = false;
@@ -158,7 +203,7 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF08B889), ink = Color(0xFF193344);
+    final green = HealthyAdaptive.accent, ink = HealthyAdaptive.text;
     final remaining = (_target - _seconds).clamp(0, _target);
     final display = widget.type == 'timer' || widget.type == 'pomodoro' ? remaining : _seconds;
     final icon = widget.type == 'steps' ? Icons.directions_walk_rounded :
@@ -169,25 +214,25 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFFE2F7ED), borderRadius: BorderRadius.circular(26)),
+      decoration: BoxDecoration(color: HealthyAdaptive.mint, borderRadius: BorderRadius.circular(26)),
       child: Column(children: [
         Row(children: [Icon(icon, color: green), const SizedBox(width: 8),
-          Expanded(child: Text(_heading, style: const TextStyle(color: ink, fontSize: 17, fontWeight: FontWeight.w900)))]),
+          Expanded(child: Text(_heading, style: TextStyle(color: ink, fontSize: 17, fontWeight: FontWeight.w900)))]),
         const SizedBox(height: 20),
         Stack(alignment: Alignment.center, children: [
           SizedBox(width: 176, height: 176, child: CircularProgressIndicator(
             value: (_value / _target).clamp(0.0, 1.0), strokeWidth: 12,
-            backgroundColor: Colors.white, color: green)),
+            backgroundColor: HealthyAdaptive.surface, color: green)),
           Column(children: [
             Text(_timed ? _clock(display) : '$_count / $_target',
-              style: const TextStyle(color: ink, fontSize: 30, fontWeight: FontWeight.w900)),
+              style: TextStyle(color: ink, fontSize: 30, fontWeight: FontWeight.w900)),
             Text(_timed ? 'Meta ${_clock(_target)}' : widget.unit,
-              style: const TextStyle(color: Color(0xFF71879A))),
+              style: TextStyle(color: HealthyAdaptive.muted)),
           ]),
         ]),
         const SizedBox(height: 16),
         if (widget.type == 'breathing' && !_done)
-          Text(_breathingPhase, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: ink)),
+          Text(_breathingPhase, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: ink)),
         if (widget.type == 'steps') ...[
           const Text('Cuenta los pasos nuevos desde que inicias la medición. No representa el total diario.',
             textAlign: TextAlign.center),
@@ -229,8 +274,27 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
           ]),
         ],
         const SizedBox(height: 12),
+        ExpansionTile(
+          key: const ValueKey('habit-tool-instructions'),
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          leading: Icon(Icons.help_outline_rounded, color: green),
+          title: Text(
+            'Cómo usar esta herramienta',
+            style: TextStyle(color: ink, fontWeight: FontWeight.w700),
+          ),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                HabitToolGuide.instructionsFor(widget.type, widget.unit),
+                style: TextStyle(color: ink, height: 1.45),
+              ),
+            ),
+          ],
+        ),
         Text(_done ? '¡Actividad lista! Guarda tu registro.' : 'Completa la actividad para guardar.',
-          textAlign: TextAlign.center, style: const TextStyle(color: ink)),
+          textAlign: TextAlign.center, style: TextStyle(color: ink)),
       ]),
     );
   }

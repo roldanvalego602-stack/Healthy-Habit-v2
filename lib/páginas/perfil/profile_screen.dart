@@ -2,15 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
+import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
 import 'amigos_screen.dart';
 import '../logros/logros_screen.dart';
+import '../logros/logros_service.dart';
+import '../estadisticas/progreso_screen.dart';
 import 'buscar_amigos_screen.dart';
 import 'configuracion_screen.dart';
 import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
+import 'profile_avatar.dart';
+import 'profile_monthly_summary.dart';
+import 'profile_habit_insights.dart';
+import '../tienda/wardrobe_screen.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -18,10 +27,10 @@ class ProfileScreen extends StatelessWidget {
 
   static const Color green = Color(0xFF198568);
   static const Color mint = Color(0xFF8DE0C0);
-  static const Color navy = Color(0xFF173544);
-  static const Color background = Color(0xFFF4F8F5);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
   static const Color gold = Color(0xFFD5A33E);
-  static const Color muted = Color(0xFF8496A0);
+  Color get muted => HealthyAdaptive.muted;
 
   FirebaseFirestore get _db =>
       FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
@@ -34,7 +43,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: background,
         body: Center(child: Text('Inicia sesión para ver tu perfil.')),
       );
@@ -58,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                       color: green,
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'No se pudo cargar tu perfil.',
                       style: TextStyle(
                         color: navy,
@@ -89,7 +98,7 @@ class ProfileScreen extends StatelessWidget {
           );
         }
         if (!snapshot.hasData) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: background,
             body: Center(child: CircularProgressIndicator(color: green)),
           );
@@ -102,11 +111,20 @@ class ProfileScreen extends StatelessWidget {
         final username = _string(
           data['username'],
         ).replaceFirst(RegExp(r'^@+'), '');
-        final email = _string(data['email'], fallback: user.email ?? '');
+        // Firebase Auth es la referencia del correo actual verificado.
+        final email = _string(user.email, fallback: _string(data['email']));
         final level = _integer(data['level'], fallback: 1);
         final xp = _integer(data['xp']);
         final coins = _integer(data['habitCoins']);
         final streak = _integer(data['currentStreak']);
+        final rawSettings = data['settings'];
+        final prefs = rawSettings is Map ? rawSettings : const <String, dynamic>{};
+        bool visible(String key) =>
+            prefs[key] != false && prefs['modoDiscreto'] != true;
+        final showXp = visible('mostrarXp');
+        final showCoins = visible('mostrarPuntos');
+        final showLevel = visible('mostrarNivelPerfil');
+        final showStreak = visible('mostrarRachasDiarias');
         return Scaffold(
           backgroundColor: background,
           body: SafeArea(
@@ -123,14 +141,25 @@ class ProfileScreen extends StatelessWidget {
                     username: username,
                     email: email,
                     coins: coins,
+                    showCoins: showCoins,
                     data: data,
                   ),
                   const SizedBox(height: 16),
                   _friendsCard(context, user.uid),
                   const SizedBox(height: 22),
-                  _levelCard(level: level, xp: xp),
-                  const SizedBox(height: 14),
-                  _statistics(streak: streak, coins: coins, uid: user.uid),
+                  if (showLevel || showXp) ...[
+                    _levelCard(level: level, xp: xp,
+                      showLevel: showLevel, showXp: showXp),
+                    const SizedBox(height: 14),
+                  ],
+                  _statistics(streak: streak, coins: coins,
+                    uid: user.uid, showStreak: showStreak, showCoins: showCoins),
+                  if (prefs['modoDiscreto'] != true) ...[
+                    const SizedBox(height: 24),
+                    _sectionTitle('Mis hábitos destacados', null, null),
+                    const SizedBox(height: 12),
+                    ProfileHabitInsightsCard(userRef: userRef),
+                  ],
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Mis logros',
@@ -138,13 +167,14 @@ class ProfileScreen extends StatelessWidget {
                     () => _open(context, const LogrosScreen()),
                   ),
                   const SizedBox(height: 14),
-                  _achievementsCard(userRef, context),
+                  _achievementsCard(userRef, context, data),
                   const SizedBox(height: 12),
-                  _specialAchievements(),
-                  const SizedBox(height: 28),
                   _sectionTitle('Tu mes, paso a paso', null, null),
                   const SizedBox(height: 14),
-                  _monthlyProgress(),
+                  ProfileMonthlySummary(
+                     userRef: userRef,
+                     onViewProgress: () => _open(context, const ProgresoScreen()),
+                   ),
                   const SizedBox(height: 28),
                   _sectionTitle(
                     'Hecho a tu manera',
@@ -153,6 +183,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _customizationCard(data),
+                   const SizedBox(height: 12),
+                   SizedBox(
+                     width: double.infinity,
+                     child: OutlinedButton.icon(
+                       onPressed: () => _open(context, const WardrobeScreen()),
+                       icon: const Icon(Icons.checkroom_rounded),
+                       label: const Text('Abrir mi armario y equipar cosméticos'),
+                     ),
+                   ),
                   const SizedBox(height: 20),
                   _mascotCard(streak: streak),
                   const SizedBox(height: 20),
@@ -234,7 +273,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _header(BuildContext context) => Row(
     children: [
-      const Expanded(
+      Expanded(
         child: Text(
           'Perfil',
           style: TextStyle(
@@ -266,7 +305,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _headerButton(String tooltip, IconData icon, VoidCallback onPressed) =>
       Material(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(16),
         child: IconButton(
           tooltip: tooltip,
@@ -281,12 +320,13 @@ class ProfileScreen extends StatelessWidget {
     required String username,
     required String email,
     required int coins,
+    required bool showCoins,
     required Map<String, dynamic> data,
   }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -298,90 +338,118 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 150,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(
-                colors: _bannerColors(
-                  _string(data['profileBanner'], fallback: 'Amanecer'),
-                ),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Align(
-                  alignment: Alignment.topLeft,
+              child: Stack(fit: StackFit.expand, children: [
+                // Una sola superficie de banner: PNG o degradado de reserva.
+                if (HealthyAssetCatalog.banners.containsKey(
+                    _string(data['profileBanner'], fallback: 'Amanecer')))
+                  Image.asset(
+                    HealthyAssetCatalog.banners[
+                      _string(data['profileBanner'], fallback: 'Amanecer')]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => DecoratedBox(
+                      decoration: BoxDecoration(gradient: LinearGradient(
+                        colors: _bannerColors(_string(data['profileBanner'],
+                            fallback: 'Amanecer')),
+                      )),
+                    ),
+                  )
+                else
+                  DecoratedBox(
+                    decoration: BoxDecoration(gradient: LinearGradient(
+                      colors: _bannerColors(_string(data['profileBanner'],
+                          fallback: 'Amanecer')),
+                    )),
+                  ),
+                Positioned(
+                  left: 13,
+                  top: 12,
                   child: Text(
-                    _string(
-                      data['profileBanner'],
-                      fallback: 'Amanecer',
-                    ).toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white70,
+                    _string(data['profileBanner'], fallback: 'Amanecer')
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF6D989),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+              ]),
             ),
           ),
           Transform.translate(
             offset: const Offset(0, -45),
             child: Column(
               children: [
-                Container(
-                  width: 94,
-                  height: 94,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _frameColor(
-                        _string(data['profileFrame'], fallback: 'Brote dorado'),
-                      ),
-                      width: 3,
+                Semantics(
+                  button: true,
+                  label: 'Editar foto de perfil',
+                  child: InkWell(
+                    key: const Key('profile-edit-photo'),
+                    customBorder: const CircleBorder(),
+                    onTap: () => _open(context, const EditarPerfilScreen()),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 94,
+                          height: 94,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: HealthyAdaptive.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _frameColor(
+                                _string(data['profileFrame'],
+                                    fallback: 'Brote dorado'),
+                              ),
+                              width: 3,
+                            ),
+                          ),
+                          child: HealthyProfileAvatar(
+                            photoUrl: data.containsKey('photoUrl')
+                                ? data['photoUrl']?.toString() ?? ''
+                                : FirebaseAuth.instance.currentUser
+                                        ?.photoURL ?? '',
+                            preset: _string(data['profileAvatarStyle'], fallback: 'foto'),
+                            size: 86,
+                          ),
+                        ),
+                        Positioned(
+                          right: -3,
+                          bottom: -3,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: HealthyAdaptive.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: HealthyAdaptive.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: CircleAvatar(
-                    backgroundColor: const Color(0xFFE6F1EC),
-                    backgroundImage:
-                        _string(data['photoUrl']).isNotEmpty
-                            ? NetworkImage(_string(data['photoUrl']))
-                            : null,
-                    child:
-                        _string(data['photoUrl']).isEmpty
-                            ? const Icon(
-                              Icons.person_rounded,
-                              size: 54,
-                              color: green,
-                            )
-                            : null,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
@@ -391,7 +459,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   username.isNotEmpty ? '@$username' : email,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: muted, fontSize: 13),
+                  style: TextStyle(color: muted, fontSize: 13),
                 ),
                 const SizedBox(height: 9),
                 Container(
@@ -400,22 +468,31 @@ class ProfileScreen extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF2D2),
+                    color: HealthyAdaptive.isDark
+                      ? const Color(0xFF443825)
+                      : const Color(0xFFFFF2D2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '✦ ${_string(data['profileTitle'], fallback: 'Cultivador de constancia')}',
                     style: TextStyle(
-                      color: gold,
+                      color: HealthyAdaptive.isDark
+                          ? const Color(0xFFFFD477)
+                          : const Color(0xFF977020),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                     ),
                   ),
                 ),
                 const SizedBox(height: 9),
-                const Text(
-                  'Pequeños pasos, raíces fuertes.',
-                  style: TextStyle(color: muted, fontSize: 13),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Text(
+                    _string(data['bio'],
+                      fallback: 'Pequeños pasos, raíces fuertes.'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(height: 15),
                 Padding(
@@ -434,7 +511,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: mint,
-                              foregroundColor: navy,
+                              foregroundColor: const Color(0xFF10392F),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
@@ -443,24 +520,18 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (showCoins) ...[
                       const SizedBox(width: 10),
                       Container(
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 13),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3D7),
+                          color: HealthyAdaptive.yellow,
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           children: [
-                            Image.asset(
-                              'assets/monedas/h coin.png',
-                              width: 20,
-                              height: 20,
-                              errorBuilder:
-                                  (_, __, ___) =>
-                                      const SizedBox(width: 20, height: 20),
-                            ),
+                            const HealthyCoinIcon(size: 20),
                             const SizedBox(width: 6),
                             Text(
                               '$coins',
@@ -472,6 +543,7 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -487,7 +559,7 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
@@ -504,13 +576,13 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2F4EB),
+                  color: HealthyAdaptive.mint,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.groups_rounded, color: green, size: 20),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Amigos',
                   style: TextStyle(
@@ -537,20 +609,12 @@ class ProfileScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _friendStat(context, uid, 'following', 'Siguiendo', 0),
+                child: _friendStat(context, uid, 'friends', 'Amigos', 0),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _friendStat(context, uid, 'followers', 'Seguidores', 1),
-              ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: _friendStat(
-                  context,
-                  uid,
-                  'solicitudes',
-                  'Solicitudes',
-                  2,
+                  context, uid, 'solicitudes', 'Solicitudes', 1,
                 ),
               ),
             ],
@@ -630,7 +694,7 @@ class ProfileScreen extends StatelessWidget {
                 builder:
                     (context, snap) => Text(
                       snap.hasError ? '—' : '${snap.data ?? 0}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: navy,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -638,7 +702,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 3),
-              Text(label, style: const TextStyle(color: muted, fontSize: 12)),
+              Text(label, style: TextStyle(color: muted, fontSize: 12)),
             ],
           ),
         ),
@@ -650,7 +714,7 @@ class ProfileScreen extends StatelessWidget {
     _open(context, AmigosScreen(initialTab: tab));
   }
 
-  Widget _levelCard({required int level, required int xp}) {
+  Widget _levelCard({required int level, required int xp, required bool showLevel, required bool showXp}) {
     const xpForNextLevel = 1000;
     final xpInLevel = xp % xpForNextLevel;
     final progress = xpInLevel / xpForNextLevel;
@@ -667,7 +731,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
+          if (showLevel) Row(
             children: [
               Container(
                 width: 60,
@@ -718,6 +782,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (showXp) ...[
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -757,6 +822,7 @@ class ProfileScreen extends StatelessWidget {
               style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
           ),
+          ],
         ],
       ),
     );
@@ -775,16 +841,18 @@ class ProfileScreen extends StatelessWidget {
         return attempts.docs.length;
       }),
     );
-    return counts.fold<int>(0, (sum, count) => sum + count);
+    return counts.fold<int>(0, (total, amount) => total + amount);
   }
 
   Widget _statistics({
     required int streak,
     required int coins,
     required String uid,
+    required bool showStreak,
+    required bool showCoins,
   }) => Row(
     children: [
-      Expanded(
+      if (showStreak) Expanded(
         child: _statCard(
           icon: Icons.local_fire_department_outlined,
           value: '$streak',
@@ -793,7 +861,7 @@ class ProfileScreen extends StatelessWidget {
           iconColor: gold,
         ),
       ),
-      const SizedBox(width: 9),
+      if (showStreak) const SizedBox(width: 9),
       Expanded(
         child: FutureBuilder<int>(
           future: _completedCount(uid),
@@ -807,23 +875,18 @@ class ProfileScreen extends StatelessWidget {
                         ? '${snap.data}'
                         : '…',
                 label: 'Hábitos completados',
-                color: const Color(0xFFE0F3FB),
+                color: HealthyAdaptive.water,
                 iconColor: const Color(0xFF459FCB),
               ),
         ),
       ),
-      const SizedBox(width: 9),
-      Expanded(
+      if (showCoins) const SizedBox(width: 9),
+      if (showCoins) Expanded(
         child: _statCard(
-          customIcon: Image.asset(
-            'assets/monedas/h coin.png',
-            width: 22,
-            height: 22,
-            errorBuilder: (_, __, ___) => const SizedBox(width: 22, height: 22),
-          ),
+          customIcon: const HealthyCoinIcon(size: 22),
           value: '$coins',
           label: 'Habit Coins',
-          color: const Color(0xFFEDE5FB),
+          color: HealthyAdaptive.lavender,
           iconColor: const Color(0xFF8C72C6),
         ),
       ),
@@ -841,8 +904,8 @@ class ProfileScreen extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 128),
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(22),
     ),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -858,7 +921,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 21,
             fontWeight: FontWeight.w900,
@@ -868,7 +931,7 @@ class ProfileScreen extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: muted, fontSize: 10),
+          style: TextStyle(color: muted, fontSize: 10),
         ),
       ],
     ),
@@ -880,7 +943,7 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 21,
                 fontWeight: FontWeight.w900,
@@ -902,283 +965,113 @@ class ProfileScreen extends StatelessWidget {
         ],
       );
 
+  /// Los mismos cálculos que LogrosScreen, sin otorgar recompensas.
   Widget _achievementsCard(
     DocumentReference<Map<String, dynamic>> userRef,
     BuildContext context,
-  ) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: userRef.collection('achievements').doc('primer_paso').snapshots(),
-      builder: (context, snapshot) {
-        final unlocked = snapshot.data?.exists ?? false;
-        return InkWell(
-          onTap: () => _open(context, const LogrosScreen()),
-          borderRadius: BorderRadius.circular(25),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
+    Map<String, dynamic> profile,
+  ) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    stream: userRef.collection('user_habits').snapshots(),
+    builder: (context, habitsSnapshot) =>
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: userRef.collection('achievements').snapshots(),
+        builder: (context, badgesSnapshot) {
+          if (habitsSnapshot.hasError || badgesSnapshot.hasError) {
+            return ListTile(
+              title: const Text('No se pudieron consultar tus logros'),
+              onTap: () => _open(context, const LogrosScreen()),
+            );
+          }
+          if (!habitsSnapshot.hasData || !badgesSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final habits = habitsSnapshot.data!.docs;
+          final completed = habits.where(
+            (doc) => doc.data()['latestStatus'] == 'completed',
+          ).length;
+          final ids = badgesSnapshot.data!.docs.map((doc) => doc.id).toSet();
+          final obtained = LogrosService.catalogo.where((def) =>
+            LogrosService.obtenido(def,
+              LogrosService.progreso(def, profile, habits.length, completed, ids),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ).length;
+          final next = LogrosService.siguiente(
+            profile, habits.length, completed, ids,
+          );
+          final total = LogrosService.catalogo.length;
+          final fraction = total == 0 ? 0.0 : obtained / total;
+          return Material(
+            color: HealthyAdaptive.surface,
+            borderRadius: BorderRadius.circular(24),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () => _open(context, const LogrosScreen()),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'ESTANTE · MIS LOGROS',
-                      style: TextStyle(
-                        color: muted,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                    Text(
-                      snapshot.hasError
-                          ? 'Sin conexión'
-                          : unlocked
-                          ? '1 desbloqueado'
-                          : '0 desbloqueados',
-                      style: const TextStyle(
-                        color: green,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      width: 62,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color:
-                            unlocked
-                                ? const Color(0xFFE3F7EC)
-                                : const Color(0xFFF0F2F2),
-                        border: Border.all(
-                          color: unlocked ? green : muted,
-                          width: 1.8,
+                    Row(children: [
+                      Expanded(child: Text(
+                        'ESTANTE · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: muted,
+                          fontWeight: FontWeight.w800, fontSize: 11))),
+                      Text('$obtained de $total',
+                        style: TextStyle(color: HealthyAdaptive.accent,
+                          fontWeight: FontWeight.w900)),
+                    ]),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Container(
+                        width: 64, height: 64,
+                        decoration: BoxDecoration(
+                          color: HealthyAdaptive.mint,
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        child: Icon(next?.icono ?? Icons.workspace_premium_rounded,
+                          color: HealthyAdaptive.accent, size: 32),
                       ),
-                      child: Icon(
-                        unlocked
-                            ? Icons.workspace_premium_rounded
-                            : Icons.lock_outline,
-                        color: unlocked ? green : muted,
-                        size: 35,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Primer paso',
-                            style: TextStyle(
-                              color: navy,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          Text(next?.nombre ?? '¡Colección completa!',
+                            style: TextStyle(color: navy,
+                              fontSize: 15, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 5),
-                          Text(
-                            unlocked
-                                ? '¡Logro desbloqueado!'
-                                : 'Registra tu primer hábito',
-                            style: const TextStyle(color: muted, fontSize: 12),
-                          ),
-                          const SizedBox(height: 5),
-                          const Text(
-                            '+25 XP · +10 Habit Coins',
-                            style: TextStyle(
-                              color: green,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          Text(next?.descripcion ??
+                              'Has alcanzado todos los objetivos disponibles.',
+                            style: TextStyle(color: muted, fontSize: 12)),
                         ],
+                      )),
+                      Icon(Icons.chevron_right_rounded, color: muted),
+                    ]),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: fraction, minHeight: 7,
+                        backgroundColor: HealthyAdaptive.border,
+                        color: HealthyAdaptive.accent,
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: muted),
+                    const SizedBox(height: 8),
+                    Text('Toca para ver los detalles de tus insignias',
+                      style: TextStyle(color: muted, fontSize: 11)),
                   ],
                 ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: LinearProgressIndicator(
-                    value: unlocked ? 1 : 0,
-                    minHeight: 5,
-                    backgroundColor: const Color(0xFFE5EEE9),
-                    valueColor: const AlwaysStoppedAnimation<Color>(green),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Toca para ver todos los logros y desafíos.',
-                  style: TextStyle(color: muted, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _specialAchievements() => Row(
-    children: [
-      Expanded(
-        child: _specialCard(
-          Icons.nightlight_round,
-          'Ritmo lunar',
-          'PRÓXIMAMENTE',
-          'Los logros de sueño llegarán después.',
-          const Color(0xFFF0E9FB),
-          const Color(0xFF8D77C3),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: _specialCard(
-          Icons.lock_outline_rounded,
-          'Un mes floreciendo',
-          'PRÓXIMAMENTE',
-          'Los logros de racha llegarán después.',
-          const Color(0xFFEAF1ED),
-          const Color(0xFF80958F),
-        ),
-      ),
-    ],
-  );
-
-  Widget _specialCard(
-    IconData icon,
-    String title,
-    String rarity,
-    String description,
-    Color color,
-    Color iconColor,
-  ) => Container(
-    constraints: const BoxConstraints(minHeight: 155),
-    padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(21),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: iconColor, size: 20),
-            const Spacer(),
-            Flexible(
-              child: Text(
-                rarity,
-                textAlign: TextAlign.end,
-                style: TextStyle(
-                  color: iconColor,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
-                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            color: navy,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          description,
-          style: const TextStyle(color: muted, fontSize: 10, height: 1.4),
-        ),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: const LinearProgressIndicator(
-            value: 0,
-            minHeight: 5,
-            backgroundColor: Colors.white70,
-          ),
-        ),
-      ],
-    ),
+          );
+        },
+      ),
   );
-
-  Widget _monthlyProgress() => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(26),
-    ),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _monthLabel(DateTime.now()),
-                style: const TextStyle(
-                  color: navy,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const Icon(Icons.calendar_month_rounded, color: muted),
-          ],
-        ),
-        const SizedBox(height: 20),
-        const Icon(Icons.insights_outlined, color: green, size: 42),
-        const SizedBox(height: 12),
-        const Text(
-          'Resumen mensual pendiente de integración',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: navy, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Aquí se mostrarán tus registros reales cuando conectemos las estadísticas.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: muted, fontSize: 11),
-        ),
-      ],
-    ),
-  );
-
-  static String _monthLabel(DateTime date) {
-    const months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
 
   Widget _customizationCard(Map<String, dynamic> data) => Column(
     children: [
-      const Row(
+      Row(
         children: [
           Icon(Icons.palette_outlined, color: green, size: 16),
           SizedBox(width: 7),
@@ -1196,7 +1089,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.landscape_rounded,
               'Banner',
               _string(data['profileBanner'], fallback: 'Amanecer'),
-              const Color(0xFFE2F4EB),
+              HealthyAdaptive.mint,
               green,
             ),
           ),
@@ -1206,7 +1099,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.circle_outlined,
               'Marco',
               _string(data['profileFrame'], fallback: 'Brote dorado'),
-              const Color(0xFFFFF1D1),
+              HealthyAdaptive.yellow,
               gold,
             ),
           ),
@@ -1220,7 +1113,7 @@ class ProfileScreen extends StatelessWidget {
               Icons.workspace_premium_outlined,
               'Estante',
               _string(data['profileShelf'], fallback: 'Mis favoritos'),
-              const Color(0xFFE1F1FB),
+              HealthyAdaptive.water,
               const Color(0xFF459FCB),
             ),
           ),
@@ -1233,7 +1126,7 @@ class ProfileScreen extends StatelessWidget {
                 data['profileTitle'],
                 fallback: 'Cultivador de constancia',
               ),
-              const Color(0xFFF0E5FB),
+              HealthyAdaptive.lavender,
               const Color(0xFF9877C7),
             ),
           ),
@@ -1252,8 +1145,8 @@ class ProfileScreen extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 85),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(18),
     ),
     child: Row(
       children: [
@@ -1271,11 +1164,11 @@ class ProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title, style: const TextStyle(color: muted, fontSize: 9)),
+              Text(title, style: TextStyle(color: muted, fontSize: 9)),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -1291,7 +1184,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _mascotCard({required int streak}) => Container(
     padding: const EdgeInsets.all(17),
     decoration: BoxDecoration(
-      color: const Color(0xFFE2F3E7),
+      color: HealthyAdaptive.mint,
       borderRadius: BorderRadius.circular(25),
     ),
     child: Row(
@@ -1330,7 +1223,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 9),
               Text(
                 '¡$streak días cultivando tu mejor versión!',
-                style: const TextStyle(
+                style: TextStyle(
                   color: navy,
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -1365,8 +1258,8 @@ class ProfileScreen extends StatelessWidget {
   Widget _professionalsCard(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(25),
+      color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(25),
       boxShadow: [
         BoxShadow(
           color: navy.withValues(alpha: 0.04),
@@ -1380,7 +1273,7 @@ class ProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE2F0FB),
+            color: HealthyAdaptive.water,
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Icon(
@@ -1390,7 +1283,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1422,7 +1315,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         IconButton(
           onPressed: () => _open(context, const ProfesionalesScreen()),
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_forward_ios_rounded,
             color: navy,
             size: 18,
@@ -1433,7 +1326,7 @@ class ProfileScreen extends StatelessWidget {
   );
 
   Widget _settingsCard(BuildContext context) => Material(
-    color: Colors.white,
+    color: HealthyAdaptive.surface,
     borderRadius: BorderRadius.circular(20),
     child: InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -1445,7 +1338,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: const Color(0xFFE2F4EB),
+                color: HealthyAdaptive.mint,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Icon(
@@ -1455,7 +1348,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1475,7 +1368,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: navy),
+            Icon(Icons.chevron_right_rounded, color: navy),
           ],
         ),
       ),
@@ -1536,7 +1429,7 @@ class ProfileScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Personaliza tu perfil',
                       style: TextStyle(
                         fontSize: 21,
@@ -1545,7 +1438,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Selecciona un estilo. Los cambios se guardan en tu cuenta.',
                       style: TextStyle(color: muted, fontSize: 12),
                     ),

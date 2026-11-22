@@ -1,5 +1,20 @@
 import 'package:flutter/material.dart';
 
+/// Jerarquía visual, no altera ni concede recompensas.
+enum RarezaLogro { frecuente, pocoFrecuente, especial, epico, legendario }
+
+extension RarezaLogroInfo on RarezaLogro {
+  String get etiqueta {
+    switch (this) {
+      case RarezaLogro.frecuente: return 'Frecuente';
+      case RarezaLogro.pocoFrecuente: return 'Poco frecuente';
+      case RarezaLogro.especial: return 'Especial';
+      case RarezaLogro.epico: return 'Épico';
+      case RarezaLogro.legendario: return 'Legendario';
+    }
+  }
+}
+
 class LogroDefinicion {
   const LogroDefinicion({
     required this.id,
@@ -8,10 +23,12 @@ class LogroDefinicion {
     required this.meta,
     required this.tipo,
     required this.icono,
+    this.rareza = RarezaLogro.frecuente,
   });
   final String id, nombre, descripcion, tipo;
   final int meta;
   final IconData icono;
+  final RarezaLogro rareza;
 }
 
 class LogrosService {
@@ -25,6 +42,7 @@ class LogrosService {
   static const List<LogroDefinicion> catalogo = [
     LogroDefinicion(
       id: 'primer_paso',
+      rareza: RarezaLogro.frecuente,
       nombre: 'Primer paso',
       descripcion: 'Registra tu primer hábito',
       meta: 1,
@@ -33,6 +51,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'explorador',
+      rareza: RarezaLogro.frecuente,
       nombre: 'Explorador saludable',
       descripcion: 'Agrega 3 hábitos a tu colección',
       meta: 3,
@@ -41,6 +60,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'coleccionista',
+      rareza: RarezaLogro.pocoFrecuente,
       nombre: 'Coleccionista de hábitos',
       descripcion: 'Agrega 6 hábitos',
       meta: 6,
@@ -49,6 +69,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'primera_meta',
+      rareza: RarezaLogro.frecuente,
       nombre: 'Meta cumplida',
       descripcion: 'Completa un hábito',
       meta: 1,
@@ -57,6 +78,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'triple_victoria',
+      rareza: RarezaLogro.pocoFrecuente,
       nombre: 'Triple victoria',
       descripcion: 'Completa 3 hábitos',
       meta: 3,
@@ -65,6 +87,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'cinco_logros',
+      rareza: RarezaLogro.especial,
       nombre: 'Cinco objetivos',
       descripcion: 'Completa 5 hábitos',
       meta: 5,
@@ -73,6 +96,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'racha_3',
+      rareza: RarezaLogro.pocoFrecuente,
       nombre: 'Tres días de constancia',
       descripcion: 'Alcanza una racha de 3 días',
       meta: 3,
@@ -81,6 +105,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'racha_7',
+      rareza: RarezaLogro.especial,
       nombre: 'Semana imparable',
       descripcion: 'Alcanza una racha de 7 días',
       meta: 7,
@@ -89,6 +114,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'racha_30',
+      rareza: RarezaLogro.legendario,
       nombre: 'Constancia legendaria',
       descripcion: 'Alcanza una racha de 30 días',
       meta: 30,
@@ -97,6 +123,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'nivel_3',
+      rareza: RarezaLogro.especial,
       nombre: 'En crecimiento',
       descripcion: 'Alcanza el nivel 3',
       meta: 3,
@@ -105,6 +132,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'nivel_5',
+      rareza: RarezaLogro.epico,
       nombre: 'Cultivador experto',
       descripcion: 'Alcanza el nivel 5',
       meta: 5,
@@ -113,6 +141,7 @@ class LogrosService {
     ),
     LogroDefinicion(
       id: 'xp_1000',
+      rareza: RarezaLogro.epico,
       nombre: 'Mil razones para seguir',
       descripcion: 'Acumula 1000 XP',
       meta: 1000,

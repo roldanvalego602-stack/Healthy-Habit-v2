@@ -4,18 +4,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-/// Seguir / dejar de seguir, solicitudes de amistad y listas de amigos.
+/// Amistades recíprocas y solicitudes de amistad.
 ///
 /// Estructura en Firestore:
-///   users/{miUid}/following/{otroUid}          -> a quién sigo yo
-///   users/{otroUid}/followers/{miUid}          -> quién me sigue a mí
-///   users/{miUid}/solicitudes/{otroUid}        -> solicitudes que ME envían (recibidas)
-///   users/{otroUid}/solicitudes_enviadas/{miUid} -> solicitudes que YO envié (reflejo)
+///   users/{uid}/friends/{otherUid}                -> amistad recíproca
+///   users/{uid}/solicitudes/{senderUid}            -> solicitudes recibidas
+///   users/{uid}/solicitudes_enviadas/{recipientUid} -> solicitudes enviadas
 ///
-/// Para seguir a alguien ya no se escribe "following" directamente: primero
-/// se crea una solicitud, y solo cuando el destinatario la acepta se crea la
-/// relación de following/followers.
-/// Cada documento guarda solo { createdAt }.
+/// Aceptar una solicitud crea ambos vínculos `friends`. La versión anterior
+/// utilizaba relaciones unilaterales; no deben usarse para este módulo.
 class AmigosServicio {
   AmigosServicio._();
 
@@ -24,25 +21,26 @@ class AmigosServicio {
 
   static String? get uidActual => FirebaseAuth.instance.currentUser?.uid;
 
-  static Stream<QuerySnapshot<Map<String, dynamic>>> siguiendo(String uid) {
-    return _db
-        .collection('users')
-        .doc(uid)
-        .collection('following')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+  /// Relación recíproca aceptada. Ya no existe el concepto de seguir.
+  static Stream<QuerySnapshot<Map<String, dynamic>>> amigos(String uid) =>
+      _db.collection('users').doc(uid).collection('friends')
+          .orderBy('createdAt', descending: true).snapshots();
+
+  /// Eliminación simétrica: ambos dejan de estar en la lista de amigos.
+  static Future<void> eliminarAmigo(String otroUid) async {
+    final yo = uidActual;
+    if (yo == null || otroUid.isEmpty || yo == otroUid) {
+      throw StateError('Se requiere una amistad y una sesión válida.');
+    }
+    final batch = _db.batch();
+    batch.delete(_db.collection('users').doc(yo)
+        .collection('friends').doc(otroUid));
+    batch.delete(_db.collection('users').doc(otroUid)
+        .collection('friends').doc(yo));
+    await batch.commit();
   }
 
-  static Stream<QuerySnapshot<Map<String, dynamic>>> seguidores(String uid) {
-    return _db
-        .collection('users')
-        .doc(uid)
-        .collection('followers')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-  }
-
-  /// Cantidad en vivo. [coleccion] = 'following' o 'followers'.
+  /// Cantidad en vivo de 'friends' o 'solicitudes'.
   static Stream<int> contar(String uid, String coleccion) {
     return _db
         .collection('users')
@@ -50,22 +48,6 @@ class AmigosServicio {
         .collection(coleccion)
         .snapshots()
         .map((s) => s.size);
-  }
-
-  static Future<void> seguir(String otroUid) async {
-    final yo = uidActual;
-    if (yo == null || yo == otroUid) return;
-
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(yo).collection('following').doc(otroUid),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    batch.set(
-      _db.collection('users').doc(otroUid).collection('followers').doc(yo),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    await batch.commit();
   }
 
   // ---------- Solicitudes de amistad ----------
@@ -94,26 +76,42 @@ class AmigosServicio {
         .snapshots();
   }
 
-  /// Envía una solicitud de amistad a [otroUid]. No sigue de inmediato: el
-  /// destinatario debe aceptarla desde su pantalla de Solicitudes.
+  /// Envía una solicitud solo si todavía no son amigos y no hay otra
+  /// pendiente. Evita duplicados y autoinvitaciones con una transacción.
   static Future<void> enviarSolicitud(String otroUid) async {
     final yo = uidActual;
-    if (yo == null || yo == otroUid) return;
-
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(otroUid).collection('solicitudes').doc(yo),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    batch.set(
-      _db
-          .collection('users')
-          .doc(yo)
-          .collection('solicitudes_enviadas')
-          .doc(otroUid),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    await batch.commit();
+    if (yo == null || otroUid.isEmpty || yo == otroUid) {
+      throw StateError('Selecciona un usuario diferente de tu cuenta.');
+    }
+    final friendRef = _db.collection('users').doc(yo)
+        .collection('friends').doc(otroUid);
+    final sentRef = _db.collection('users').doc(yo)
+        .collection('solicitudes_enviadas').doc(otroUid);
+    final receivedRef = _db.collection('users').doc(yo)
+        .collection('solicitudes').doc(otroUid);
+    final destinationRef = _db.collection('users').doc(otroUid)
+        .collection('solicitudes').doc(yo);
+    await _db.runTransaction((tx) async {
+      final friend = await tx.get(friendRef);
+      final sent = await tx.get(sentRef);
+      final received = await tx.get(receivedRef);
+      if (friend.exists) {
+        throw StateError('Esta persona ya es tu amiga.');
+      }
+      if (sent.exists) {
+        throw StateError('Ya enviaste una solicitud a esta persona.');
+      }
+      if (received.exists) {
+        throw StateError('Esta persona ya te invitó. '
+            'Acepta su solicitud desde Amigos.');
+      }
+      tx.set(destinationRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      tx.set(sentRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   /// Cancela una solicitud que YO envié y sigue pendiente.
@@ -135,32 +133,35 @@ class AmigosServicio {
     await batch.commit();
   }
 
-  /// Acepto la solicitud que me envió [deUid]: se crea la relación de
-  /// following/followers (deUid pasa a seguirme) y se borra la solicitud.
+  /// La aceptación genera amistad mutua, nunca un seguimiento unilateral.
+  /// Primero se comprueba que la solicitud esté pendiente.
   static Future<void> aceptarSolicitud(String deUid) async {
     final yo = uidActual;
-    if (yo == null) return;
-
-    final batch = _db.batch();
-    batch.set(
-      _db.collection('users').doc(deUid).collection('following').doc(yo),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    batch.set(
-      _db.collection('users').doc(yo).collection('followers').doc(deUid),
-      {'createdAt': FieldValue.serverTimestamp()},
-    );
-    batch.delete(
-      _db.collection('users').doc(yo).collection('solicitudes').doc(deUid),
-    );
-    batch.delete(
-      _db
-          .collection('users')
-          .doc(deUid)
-          .collection('solicitudes_enviadas')
-          .doc(yo),
-    );
-    await batch.commit();
+    if (yo == null || deUid.isEmpty || yo == deUid) {
+      throw StateError('Solicitud de amistad inválida.');
+    }
+    final recibido = _db.collection('users').doc(yo)
+        .collection('solicitudes').doc(deUid);
+    final enviado = _db.collection('users').doc(deUid)
+        .collection('solicitudes_enviadas').doc(yo);
+    final miAmigo = _db.collection('users').doc(yo)
+        .collection('friends').doc(deUid);
+    final suAmigo = _db.collection('users').doc(deUid)
+        .collection('friends').doc(yo);
+    await _db.runTransaction((transaction) async {
+      final pending = await transaction.get(recibido);
+      if (!pending.exists) {
+        throw StateError('La solicitud ya fue procesada o cancelada.');
+      }
+      transaction.set(miAmigo, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      transaction.set(suAmigo, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      transaction.delete(recibido);
+      transaction.delete(enviado);
+    });
   }
 
   /// Rechazo la solicitud que me envió [deUid]: solo se borra, sin crear
@@ -183,20 +184,6 @@ class AmigosServicio {
     await batch.commit();
   }
 
-  static Future<void> dejarDeSeguir(String otroUid) async {
-    final yo = uidActual;
-    if (yo == null) return;
-
-    final batch = _db.batch();
-    batch.delete(
-      _db.collection('users').doc(yo).collection('following').doc(otroUid),
-    );
-    batch.delete(
-      _db.collection('users').doc(otroUid).collection('followers').doc(yo),
-    );
-    await batch.commit();
-  }
-
   /// Trae los datos de varios usuarios (uid -> datos) en bloques de 30.
   static Future<Map<String, Map<String, dynamic>>> perfiles(
     List<String> ids,
@@ -208,7 +195,7 @@ class AmigosServicio {
       final bloque = ids.sublist(i, math.min(i + 30, ids.length));
       final snap =
           await _db
-              .collection('users')
+              .collection('public_profiles')
               .where(FieldPath.documentId, whereIn: bloque)
               .get();
       for (final doc in snap.docs) {

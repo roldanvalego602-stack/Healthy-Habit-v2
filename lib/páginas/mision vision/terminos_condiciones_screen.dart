@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_coin.dart';
 
 class TerminosCondicionesScreen extends StatelessWidget {
   const TerminosCondicionesScreen({super.key});
@@ -52,7 +53,7 @@ class TerminosCondicionesScreen extends StatelessWidget {
           'pensadas para apoyar tu constancia y mostrarte tu progreso.',
     ),
     _Seccion(
-      icon: Icons.monetization_on_outlined,
+      icon: Icons.info_outline,
       titulo: 'HabitCoins',
       texto:
           'Las HabitCoins son monedas propias de la aplicación. No son dinero '
@@ -358,7 +359,9 @@ class _SeccionCard extends StatelessWidget {
               color: const Color(0xFFE8F6FC),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(seccion.icon, color: color, size: 24),
+            child: seccion.titulo == 'HabitCoins'
+                  ? const HealthyCoinIcon(size: 30)
+                  : Icon(seccion.icon, color: color, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(

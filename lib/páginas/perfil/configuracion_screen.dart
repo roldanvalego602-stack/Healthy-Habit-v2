@@ -2,8 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
+import '../sesion/sobre_nosotros_screen.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_visual_mode.dart';
+import '../../servicios/healthy_reminders_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,9 +18,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   static const green = Color(0xFF198568);
-  static const navy = Color(0xFF172B36);
-  static const muted = Color(0xFF7A869A);
-  static const bg = Color(0xFFF7F9F8);
+  Color get navy => Theme.of(context).colorScheme.onSurface;
+  Color get muted => Theme.of(context).colorScheme.onSurfaceVariant;
+  Color get bg => Theme.of(context).scaffoldBackgroundColor;
+  Color get panel => Theme.of(context).colorScheme.surface;
+  Color get panelBorder => Theme.of(context).colorScheme.outlineVariant;
   static const categories = [
     'Alimentación',
     'Hidratación',
@@ -50,6 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'dificultad': 'Moderado',
     'frecuencia': 'Diaria',
     'tema': 'Sistema',
+    'modoVisual': 'Normal',
     'tamanoTexto': 'Normal',
     'idioma': 'Español',
     'visibilidadLogros': 'Solo amigos',
@@ -89,32 +97,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
         settings = {
           ...defaults,
           if (stored is Map) ...Map<String, dynamic>.from(stored),
+          // La selección local se aplica incluso sin conexión Firebase.
+          'tema': HealthyThemeController.label(HealthyThemeController.instance.mode),
+          'modoVisual': HealthyVisualController.label(HealthyVisualController.instance.mode),
         };
         loading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => loading = false);
+      setState(() {
+        settings['tema'] = HealthyThemeController.label(HealthyThemeController.instance.mode);
+        settings['modoVisual'] = HealthyVisualController.label(HealthyVisualController.instance.mode);
+        loading = false;
+      });
       _message('No se pudieron cargar tus preferencias: $e');
     }
   }
 
   Future<void> _save(String key, dynamic value) async {
+    // La apariencia se aplica inmediatamente y se conserva en el dispositivo.
+    // La copia en Firestore es opcional; no revierte la preferencia local.
+    if (key == 'tema') {
+      try {
+        await HealthyThemeController.instance.select(
+          HealthyThemeController.parse(value.toString()),
+        );
+      } catch (e) {
+        _message('No se pudo guardar el tema en este dispositivo: $e');
+        return;
+      }
+      if (mounted) setState(() => settings[key] = value);
+      try {
+        await userRef?.set({
+          'settings': {'tema': value},
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // El tema sigue disponible sin conexión.
+      }
+      return;
+    }
+    if (key == 'modoVisual') {
+      try {
+        await HealthyVisualController.instance.select(
+          HealthyVisualController.parse(value.toString()),
+        );
+      } catch (e) {
+        _message('No se pudo guardar el modo visual: $e');
+        return;
+      }
+      if (mounted) setState(() => settings[key] = value);
+      try {
+        await userRef?.set({
+          'settings': {'modoVisual': value},
+        }, SetOptions(merge: true));
+      } catch (_) {
+        // La preferencia global sigue activa sin conexión.
+      }
+      return;
+    }
     final before = settings[key];
+    const reminderKeys = {
+      'permitirRecordatorios',
+      'horarioRecordatorio',
+      'recordatorioHabito',
+      'recordatorioRacha',
+      'recordatorioDesafios',
+      'descansoSemanal',
+      'sonidosApp',
+      'vibracionHaptica',
+    };
     setState(() {
       settings[key] = value;
       saving = true;
     });
+    DocumentReference<Map<String, dynamic>>? ref;
+    var committed = false;
     try {
-      final ref = userRef;
+      ref = userRef;
       if (ref == null) throw StateError('Sesión cerrada');
       await ref.set({
         'settings': {key: value},
       }, SetOptions(merge: true));
+      committed = true;
+      if (reminderKeys.contains(key)) {
+        final active = await HealthyRemindersService.instance.synchronize(
+          settings,
+          askPermission: key == 'permitirRecordatorios' && value == true,
+        );
+        if (!active && settings['permitirRecordatorios'] == true) {
+          throw StateError(
+            'Android no tiene habilitadas las notificaciones. '
+            'Permítelas en los ajustes del teléfono.',
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() => settings[key] = before);
-        _message('No se guardó el cambio: $e');
+        _message('No se aplicó el cambio: $e');
+      }
+      if (committed && ref != null) {
+        try {
+          await ref.set({
+            'settings': {key: before},
+          }, SetOptions(merge: true));
+          if (reminderKeys.contains(key)) {
+            await HealthyRemindersService.instance.synchronize(settings);
+          }
+        } catch (_) {
+          if (mounted) {
+            _message('No se pudo restaurar la preferencia. Comprueba tu conexión.');
+          }
+        }
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -301,6 +395,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _showVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Versión de Healthy Habit'),
+          content: Text(
+            'Versión: ${info.version}\n'
+            'Compilación: ${info.buildNumber}\n'
+            'Paquete: ${info.packageName}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      _message('No se pudo consultar la versión instalada: $e');
+    }
+  }
+
   Future<void> _showEvidence() async {
     final ref = userRef;
     if (ref == null) return;
@@ -383,15 +503,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: panel,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5EEE9)),
+                border: Border.all(color: panelBorder),
               ),
               child: Column(
                 children: [
                   for (var i = 0; i < children.length; i++) ...[
                     if (i > 0)
-                      const Divider(height: 1, color: Color(0xFFF2F5F3)),
+                      Divider(height: 1, color: panelBorder),
                     children[i],
                   ],
                 ],
@@ -411,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     dense: true,
     title: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: navy,
         fontSize: 13.5,
         fontWeight: FontWeight.w700,
@@ -427,10 +547,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               value,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: muted),
+              style: TextStyle(fontSize: 12, color: muted),
             ),
           ),
-        const Icon(Icons.chevron_right, color: muted, size: 19),
+        Icon(Icons.chevron_right, color: muted, size: 19),
       ],
     ),
     onTap: onTap,
@@ -442,7 +562,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         dense: true,
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: navy,
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
@@ -453,7 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? null
                 : Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 11, color: muted),
+                  style: TextStyle(fontSize: 11, color: muted),
                 ),
         value: _bool(key),
         activeTrackColor: green,
@@ -476,7 +596,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: bg,
-        title: const Text(
+        title: Text(
           'Configuración',
           style: TextStyle(color: navy, fontWeight: FontWeight.w900),
         ),
@@ -537,8 +657,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Mantener constancia',
               ]),
               value: _str('objetivoPrincipal'),
+              subtitle: 'Se guarda como preferencia; aún no genera un plan automático.',
             ),
-            _action('Categorías de interés', _categories, value: selected),
+            _action('Categorías de interés', _categories, value: selected,
+              subtitle: 'Preferencia guardada; recomendaciones automáticas pendientes.'),
             _action(
               'Nivel de dificultad',
               () => _choose('dificultad', 'Dificultad', [
@@ -547,11 +669,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Difícil',
               ]),
               value: _str('dificultad'),
+              subtitle: 'Aún no modifica automáticamente la dificultad de tus hábitos.',
             ),
             _action(
               'Frecuencia de hábitos',
               () => _choose('frecuencia', 'Frecuencia', ['Diaria', 'Semanal']),
               value: _str('frecuencia'),
+              subtitle: 'Aún no reprograma tus hábitos activos.',
             ),
             _action(
               'Máximo de hábitos activos',
@@ -592,9 +716,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               () => _choose('tema', 'Tema', ['Sistema', 'Claro', 'Oscuro']),
               value: _str('tema'),
             ),
+            _action(
+              'Modo visual',
+              () => _choose('modoVisual', 'Rendimiento visual', ['Lite', 'Normal']),
+              value: _str('modoVisual'),
+              subtitle: 'Lite reduce animaciones y efectos sin quitar funciones',
+            ),
             _toggle('sonidosApp', 'Sonidos de la app'),
             _toggle('vibracionHaptica', 'Vibración háptica'),
-            _toggle('animacionesDivertidas', 'Animaciones divertidas'),
+            _toggle('animacionesDivertidas', 'Animaciones divertidas',
+              subtitle: 'Reduce animaciones compatibles con HealthyVisualEffects en toda la app.'),
             _action(
               'Tamaño de texto',
               () => _choose('tamanoTexto', 'Tamaño de texto', [
@@ -619,6 +750,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Solo yo',
               ]),
               value: _str('visibilidadLogros'),
+              subtitle: 'Aún no restringe el acceso a logros. Requiere reglas de Firestore.',
             ),
             _action(
               'Quién puede enviarme desafíos',
@@ -628,9 +760,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Nadie',
               ]),
               value: _str('desafiosDe'),
+              subtitle: 'Aún no restringe invitaciones a desafíos.',
             ),
             _toggle('mostrarRachaAmigos', 'Mostrar racha a mis amigos'),
-            _toggle('permitirReacciones', 'Permitir reacciones'),
+            _toggle('permitirReacciones', 'Permitir reacciones',
+              subtitle: 'Pendiente de conectarse con los módulos sociales.'),
             _action(
               'Administrar usuarios bloqueados',
               () => _message(
@@ -643,7 +777,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'permitirRecordatorios',
               'Permitir recordatorios',
               subtitle:
-                  'Preferencia guardada. No programa notificaciones del dispositivo.',
+                  'Programa avisos locales aproximados; Android puede retrasarlos.',
+            ),
+            _action(
+              'Enviar notificación de prueba',
+              () async {
+                try {
+                  final sent = await HealthyRemindersService.instance.sendTest();
+                  if (!mounted) return;
+                  _message(sent
+                      ? 'Notificación enviada. Revisa la bandeja de Android.'
+                      : 'Android no autorizó las notificaciones. Actívalas en ajustes.');
+                } catch (error) {
+                  _message('No se pudo mostrar la notificación: $error');
+                }
+              },
+              subtitle: 'Comprueba los permisos antes de programar avisos.',
             ),
             _action('Horario preferido', () async {
               final parts = _str('horarioRecordatorio').split(':');
@@ -661,10 +810,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             }, value: _str('horarioRecordatorio')),
-            _toggle('recordatorioHabito', 'Recordatorios por hábito'),
-            _toggle('recordatorioRacha', 'Recordatorio de racha'),
-            _toggle('recordatorioDesafios', 'Recordatorios de desafíos'),
-            _toggle('descansoSemanal', 'Descanso semanal'),
+            _toggle('recordatorioHabito', 'Recordatorios por hábito',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('recordatorioRacha', 'Recordatorio de racha',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('recordatorioDesafios', 'Recordatorios de desafíos',
+              subtitle: 'Se programa a la hora preferida si los avisos están activados.'),
+            _toggle('descansoSemanal', 'Descanso semanal',
+              subtitle: 'Omite los recordatorios los domingos; no cambia tus metas.'),
           ]),
           _section('GAMIFICACIÓN', Icons.emoji_events_outlined, [
             _toggle('mostrarXp', 'Mostrar XP lograda'),
@@ -672,24 +825,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _toggle('mostrarNivelPerfil', 'Mostrar nivel en perfil'),
             _toggle('mostrarRachasDiarias', 'Mostrar rachas diarias'),
             _toggle('efectosRecompensa', 'Efectos visuales de recompensa'),
-            _toggle('modoDiscreto', 'Modo discreto'),
+            _toggle('modoDiscreto', 'Modo discreto',
+              subtitle: 'Oculta datos en tu perfil y efectos de compra; faltan otros módulos.'),
           ]),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 14),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
             child: Text(
               'Los ajustes de visualización, funciones sociales, IA y avisos se guardan en tu cuenta. Para aplicarlos en todas las pantallas, cada módulo debe leer estas preferencias.',
               style: TextStyle(color: muted, fontSize: 12),
             ),
           ),
           _section('INFORMACIÓN Y SOPORTE', Icons.info_outline, [
+            _action('Sobre nosotros', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SobreNosotrosScreen()))),
             _action('Acerca de Healthy Habit', () => _page('acerca')),
             _action('Términos de uso', () => _page('terminos')),
             _action('Aviso de privacidad', () => _page('privacidad')),
             _action(
               'Versión de la aplicación',
-              () => _message(
-                'Versión: consultar pubspec.yaml / compilación instalada.',
-              ),
+              _showVersion,
               value: 'Ver detalle',
             ),
             _action('Ayuda y soporte técnico', () => _page('ayuda')),

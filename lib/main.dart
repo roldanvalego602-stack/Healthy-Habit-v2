@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_options.dart';
+import 'tema/healthy_theme.dart';
+import 'tema/healthy_visual_mode.dart';
+import 'tema/healthy_motion.dart';
+import 'tema/healthy_float.dart';
+import 'servicios/preferencias_app.dart';
+import 'servicios/healthy_reminders_service.dart';
+import 'servicios/healthy_public_profile_service.dart';
+import 'servicios/shop_demo_bootstrap.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -20,27 +30,81 @@ late final FirebaseFirestore firestoreDb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await HealthyThemeController.instance.load();
+  await HealthyVisualController.instance.load();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  final firestore = FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'default',
+  // Modo demo aislado: el arranque falla si los flags no coinciden.
+  // Nunca se inicializa la app real cuando las compras demo están habilitadas.
+  ShopDemoBootstrap.validateMode(
+    ShopDemoBootstrap.enabled, ShopDemoBootstrap.purchaseEnabled);
+  ShopDemoBootstrap.validateOfficialHabitsMode();
+  if (ShopDemoBootstrap.enabled) {
+    ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
+    if (Firebase.apps.isNotEmpty) {
+      // Android puede haber inicializado el proyecto de google-services.json.
+      // No tomar una app de producción ni sustituirla silenciosamente.
+      throw StateError(
+        'Firebase ya está inicializado. Para el modo demo usa una '
+        'configuración nativa aislada sin proyecto real.');
+    }
+  }
+  await Firebase.initializeApp(
+    options: ShopDemoBootstrap.enabled
+        ? ShopDemoBootstrap.demoOptions
+        : DefaultFirebaseOptions.currentPlatform,
   );
+
+  final firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(), databaseId: 'default');
+
+  if (ShopDemoBootstrap.enabled) {
+    ShopDemoBootstrap.validateInitializedProject(
+      Firebase.app().options.projectId);
+    await FirebaseAuth.instance.useAuthEmulator(
+      ShopDemoBootstrap.host, 9099);
+    firestore.useFirestoreEmulator(ShopDemoBootstrap.host, 8080);
+    if (ShopDemoBootstrap.officialHabitsEnabled) {
+      FirebaseFunctions.instanceFor(
+        app: Firebase.app(), region: 'us-central1',
+      ).useFunctionsEmulator(ShopDemoBootstrap.host, 5001);
+      debugPrint('Healthy Habit: hábitos oficiales conectados a Functions Emulator.');
+    }
+    debugPrint('Healthy Habit: proyecto DEMO aislado, sin datos de producción.');
+  }
 
   debugPrint('Firestore databaseId: ${firestore.databaseId}');
 
-  try {
-    await firestore.collection('users').limit(1).get();
-    debugPrint('Firestore: conexión de lectura correcta');
-  } catch (e) {
-    debugPrint('Firestore: error de lectura: $e');
-  }
+  // No consultar toda la colección users: contiene perfiles privados.
+  // La conexión se verificará mediante lecturas autorizadas en cada pantalla.
 
   firestoreDb = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'default',
   );
 
+  // Configura y reconstruye los avisos del usuario actual al iniciar sesión.
+  // Si cambia o se cierra la cuenta, cancela la agenda del usuario anterior.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    FirebaseAuth.instance.authStateChanges().listen((user) async {
+      try {
+        if (user == null) {
+          await HealthyRemindersService.instance.cancel();
+          return;
+        }
+        final ref = firestoreDb.collection('users').doc(user.uid);
+        final doc = await ref.get();
+        if (FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+        final raw = doc.data()?['settings'];
+        await HealthyRemindersService.instance.synchronize(
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{},
+        );
+      } catch (error) {
+        debugPrint('Recordatorios: no se pudo restaurar la agenda: $error');
+      }
+    });
+  }
+
+  HealthyPublicProfileService.instance.start();
   runApp(const HabitTrackerApp());
 }
 
@@ -49,29 +113,46 @@ class HabitTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Healthy Habit',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF7F9F8),
-        useMaterial3: true,
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        HealthyThemeController.instance,
+        HealthyVisualController.instance,
+      ]),
+      builder: (context, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Healthy Habit',
+        theme: HealthyThemes.light(),
+        darkTheme: HealthyThemes.dark(),
+        themeMode: HealthyThemeController.instance.mode,
+        // La escala de Configuración se aplica a todas las rutas,
+        // respetando también la escala de accesibilidad del dispositivo.
+        builder: (context, child) => PreferenciasApp(
+          builder: (context, _, textScale) {
+            final baseScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(baseScale * textScale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
+        home: const SplashScreen(),
       ),
-      home: const SplashScreen(),
     );
   }
 }
 
 // ---------- Paleta de Colores ----------
 class AppColors {
-  static const primaryGreen = Color(0xFF00C88C);
-  static const darkGreenCard = Color(0xFF143834);
-  static const textDark = Color(0xFF0E1A30);
-  static const textGrey = Color(0xFF7A869A);
-  static const yellowCard = Color(0xFFFDE89D);
-  static const blueWaterCard = Color(0xFFE8F6FC);
-  static const purpleCard = Color(0xFFF0EBFC);
-  static const mintCard = Color(0xFFE2F7ED);
+  static Color get primaryGreen => HealthyAdaptive.accent;
+  static Color get darkGreenCard => HealthyAdaptive.isDark ? const Color(0xFF19453A) : const Color(0xFF143834);
+  static Color get textDark => HealthyAdaptive.text;
+  static Color get textGrey => HealthyAdaptive.muted;
+  static Color get yellowCard => HealthyAdaptive.yellow;
+  static Color get blueWaterCard => HealthyAdaptive.water;
+  static Color get purpleCard => HealthyAdaptive.lavender;
+  static Color get mintCard => HealthyAdaptive.mint;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -107,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
       stream: firestoreDb.collection('users').doc(currentUser.uid).snapshots(),
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
             child: CircularProgressIndicator(color: AppColors.primaryGreen),
           );
         }
@@ -180,14 +261,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   Text(
                     '¡Hola, $name!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                       color: AppColors.textDark,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Continúa con tus hábitos de hoy.',
                     style: TextStyle(
                       fontSize: 14,
@@ -231,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _tabs[_selectedIndex]),
+      body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: _tabs[_selectedIndex])),
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: _onNavTap,
@@ -262,7 +343,7 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        const Text(
+        Text(
           'Healthy Habit',
           style: TextStyle(
             fontSize: 18,
@@ -290,7 +371,7 @@ class _TopBar extends StatelessWidget {
                 ),
               );
             },
-            child: const Icon(
+            child: Icon(
               Icons.dynamic_feed_rounded,
               color: AppColors.textDark,
             ),
@@ -316,7 +397,7 @@ class _TopBar extends StatelessWidget {
                 ),
               );
             },
-            child: const Icon(
+            child: Icon(
               Icons.notifications_none_rounded,
               color: AppColors.textDark,
             ),
@@ -340,7 +421,7 @@ class _TopBar extends StatelessWidget {
           ),
           child:
               photoUrl == null
-                  ? const Icon(Icons.person, color: AppColors.primaryGreen)
+                  ? Icon(Icons.person, color: AppColors.primaryGreen)
                   : null,
         ),
       ],
@@ -410,7 +491,7 @@ class _LevelCard extends StatelessWidget {
                   children: [
                     Text(
                       'NIVEL $level',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.primaryGreen,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -460,7 +541,7 @@ class _LevelCard extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primaryGreen),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
             ),
           ),
           const SizedBox(height: 10),
@@ -491,7 +572,9 @@ class _StatsRow extends StatelessWidget {
     final double habitProgress =
         totalHabits > 0 ? completedHabits / totalHabits : 0.0;
 
-    return Row(
+    return HealthyMotionCard(
+      enablePress: false,
+      child: Row(
       children: [
         Expanded(
           child: Container(
@@ -505,14 +588,16 @@ class _StatsRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text('🔥', style: TextStyle(fontSize: 18)),
+                    const HealthyFloat(
+                      distance: 2,
+                      child: Text('🔥', style: TextStyle(fontSize: 18)),
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(
-                        '$streakDays días',
+                      child: HealthyStreakNumber(
+                        days: streakDays,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
@@ -522,7 +607,7 @@ class _StatsRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Racha actual',
                   style: TextStyle(fontSize: 11, color: AppColors.textGrey),
                 ),
@@ -535,7 +620,7 @@ class _StatsRow extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: HealthyAdaptive.surfaceAlt,
               borderRadius: BorderRadius.circular(22),
             ),
             child: Row(
@@ -547,7 +632,7 @@ class _StatsRow extends StatelessWidget {
                     value: habitProgress,
                     strokeWidth: 4,
                     backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-                    valueColor: const AlwaysStoppedAnimation(
+                    valueColor: AlwaysStoppedAnimation(
                       AppColors.primaryGreen,
                     ),
                   ),
@@ -559,13 +644,13 @@ class _StatsRow extends StatelessWidget {
                     children: [
                       Text(
                         '$completedHabits / $totalHabits',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textDark,
                         ),
                       ),
-                      const Text(
+                      Text(
                         'Completados',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -582,6 +667,7 @@ class _StatsRow extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -596,7 +682,7 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
+        Text(
           'Tu misión de hoy',
           style: TextStyle(
             fontSize: 20,
@@ -606,7 +692,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         GestureDetector(
           onTap: onTapViewHabits,
-          child: const Text(
+          child: Text(
             'Ver hábitos',
             style: TextStyle(
               fontSize: 14,
@@ -678,7 +764,7 @@ class _MissionCard extends StatelessWidget {
                 ),
                 child: Text(
                   '+$xpBonus XP',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textDark,
                     fontWeight: FontWeight.w800,
                     fontSize: 11,
@@ -690,7 +776,7 @@ class _MissionCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: AppColors.textDark,
@@ -737,14 +823,14 @@ class _MissionCard extends StatelessWidget {
             children: [
               Text(
                 '$currentVal de $targetVal',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                 ),
               ),
               Text(
                 'Solo faltan ${(targetVal - currentVal).clamp(0, targetVal)} vasos',
-                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 12),
               ),
             ],
           ),
@@ -803,7 +889,7 @@ class _NextAchievementCard extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.yellowCard,
               shape: BoxShape.circle,
             ),
@@ -828,7 +914,7 @@ class _NextAchievementCard extends StatelessWidget {
                 ),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
@@ -836,7 +922,7 @@ class _NextAchievementCard extends StatelessWidget {
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textGrey,
                   ),
@@ -844,7 +930,7 @@ class _NextAchievementCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textGrey),
+          Icon(Icons.chevron_right_rounded, color: AppColors.textGrey),
         ],
       ),
     );
@@ -870,7 +956,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'MR. HEALTHY',
                   style: TextStyle(
                     fontSize: 11,
@@ -880,7 +966,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Un vaso con tu almuerzo mantiene tu racha fácil.',
                   style: TextStyle(
                     fontSize: 13,
@@ -899,7 +985,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
                     );
                   },
                   borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -933,7 +1019,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
               'assets/mascot/healthy.png',
               fit: BoxFit.contain,
               errorBuilder:
-                  (context, error, stackTrace) => const Icon(
+                  (context, error, stackTrace) => Icon(
                     Icons.eco_rounded,
                     color: AppColors.primaryGreen,
                     size: 50,

@@ -2,6 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../servicios/profile_photo_service.dart';
+import 'profile_avatar.dart';
+import '../../tema/healthy_theme.dart';
 
 import '../../Contenido_del_tema/colores.dart';
 import '../../Contenido_del_tema/boton_principal.dart';
@@ -21,6 +26,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   final _fraseController = TextEditingController();
   bool _cargando = true;
   bool _guardando = false;
+  bool _subiendoFoto = false;
+  String? _errorFoto;
+  String? _photoUrl;
+  String _avatarStyle = 'foto';
+  final ProfilePhotoService _photoService = ProfilePhotoService();
   String? _errorCarga;
   int _cargaActual = 0;
 
@@ -70,6 +80,10 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         data['bio'],
         'Pequeños pasos, raíces fuertes.',
       );
+      _photoUrl = data.containsKey('photoUrl')
+          ? data['photoUrl']?.toString() ?? ''
+          : user.photoURL ?? '';
+      _avatarStyle = _texto(data['profileAvatarStyle'], 'foto');
       setState(() {
         _cargando = false;
         _errorCarga = null;
@@ -83,8 +97,157 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     }
   }
 
+  Future<void> _elegirFoto() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Elegir de galería'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Tomar una foto'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+    setState(() => _errorFoto = null);
+    try {
+      final selected = await _photoService.pick(source);
+      if (selected == null || !mounted) return;
+      setState(() => _subiendoFoto = true);
+      final url = await _photoService.upload(selected);
+      if (!mounted) return;
+      setState(() { _photoUrl = url; _avatarStyle = 'foto'; _errorFoto = null; });
+      _mensaje('Foto de perfil actualizada.');
+    } on ProfilePhotoException catch (error) {
+      if (mounted) setState(() => _errorFoto = error.message);
+      // El mensaje queda visible junto a la foto; evitar duplicarlo
+      // en un SnackBar que ocupe media pantalla en Android.
+    } on PlatformException catch (error) {
+      if (mounted) setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
+      _mensaje('No se pudo acceder a cámara o galería '
+          '(código: ${error.code}). Revisa los permisos del dispositivo.');
+    } catch (error) {
+      if (mounted) setState(() => _errorFoto = 'Falló el procesamiento o la subida (${error.runtimeType}). Revisa Firebase Storage.');
+      _mensaje('No fue posible procesar la foto. Revisa que sea una '
+          'imagen válida y comprueba tu conexión.');
+    } finally {
+      if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
+
+  Future<void> _elegirAvatar() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    const styles = <String, String>{
+      'foto': 'Fotografía o clásico',
+      'naturaleza': 'Naturaleza',
+      'agua': 'Hidratación',
+      'energia': 'Energía',
+    };
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const ListTile(title: Text('Elegir avatar'),
+            subtitle: Text('No necesita Firebase Storage.')),
+          for (final item in styles.entries)
+            ListTile(
+              leading: Icon(switch (item.key) {
+                'naturaleza' => Icons.spa_rounded,
+                'agua' => Icons.water_drop_rounded,
+                'energia' => Icons.bolt_rounded,
+                _ => Icons.person_rounded,
+              }, color: HealthyAdaptive.accent),
+              title: Text(item.value),
+              trailing: _avatarStyle == item.key
+                  ? Icon(Icons.check_rounded, color: HealthyAdaptive.accent)
+                  : null,
+              onTap: () => Navigator.pop(sheetContext, item.key),
+            ),
+        ]),
+      ),
+    );
+    if (selected == null || !mounted || selected == _avatarStyle) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _mensaje('Inicia sesión nuevamente para editar tu avatar.');
+      return;
+    }
+    setState(() => _guardando = true);
+    try {
+      await _db.collection('users').doc(user.uid).set({
+        'profileAvatarStyle': selected,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      if (!mounted) return;
+      setState(() => _avatarStyle = selected);
+      _mensaje('Avatar actualizado.');
+    } catch (_) {
+      _mensaje('No se pudo cambiar el avatar. Revisa tu conexión.');
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
+
+  Future<void> _quitarFoto() async {
+    if (_subiendoFoto || _guardando || _cargando) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Quitar foto de perfil?'),
+        content: const Text(
+          'Volverá a mostrarse el avatar predeterminado. '
+          'Tu nombre y los demás datos no cambiarán.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Quitar foto'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !mounted) return;
+    setState(() => _subiendoFoto = true);
+    try {
+      await _photoService.remove();
+      if (!mounted) return;
+      setState(() => _photoUrl = '');
+      _mensaje('La foto se quitó de tu perfil.');
+    } on ProfilePhotoException catch (error) {
+      _mensaje(error.message);
+    } catch (_) {
+      _mensaje('No se pudo quitar la foto. Revisa la conexión.');
+    } finally {
+      if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
+
   Future<void> _guardarCambios() async {
-    if (_guardando || _cargando) return;
+    if (_guardando || _cargando || _subiendoFoto) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _mensaje('Tu sesión ha terminado. Inicia sesión nuevamente.');
@@ -137,27 +300,31 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
 
   void _mensaje(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 7),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColores.fondoClaro,
+      backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColores.textoOscuro),
-          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
+          icon: Icon(Icons.arrow_back, color: HealthyAdaptive.text),
+          onPressed: _guardando || _subiendoFoto ? null : () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Editar Perfil',
           style: TextStyle(
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
             fontWeight: FontWeight.w800,
             fontSize: 20,
           ),
@@ -207,39 +374,117 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                   child: Column(
                     children: [
                       Center(
-                        child: Stack(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColores.verdePrincipal,
-                                  width: 3,
+                            Semantics(
+                              button: true,
+                              label: 'Cambiar foto de perfil',
+                              child: InkWell(
+                                key: const Key('edit-profile-photo'),
+                                onTap: _subiendoFoto ? null : _elegirFoto,
+                                customBorder: const CircleBorder(),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      width: 104,
+                                      height: 104,
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColores.verdePrincipal,
+                                          width: 3,
+                                        ),
+                                      ),
+                                      child: HealthyProfileAvatar(
+                                        photoUrl: _photoUrl,
+                                        preset: _avatarStyle,
+                                        size: 96,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: const BoxDecoration(
+                                          color: AppColores.verdePrincipal,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: Colors.white,
+                                          size: 19,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_subiendoFoto)
+                                      const Positioned.fill(
+                                        child: ColoredBox(
+                                          color: Color(0x77000000),
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                color: Colors.white,
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                size: 58,
-                                color: AppColores.verdePrincipal,
                               ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: AppColores.verdePrincipal,
-                                  shape: BoxShape.circle,
+                            const SizedBox(height: 8),
+                            Text(
+                              _subiendoFoto
+                                  ? 'Subiendo fotografía…'
+                                  : 'Toca la foto para cambiarla',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: HealthyAdaptive.muted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if ((_photoUrl ?? '').isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              TextButton.icon(
+                                onPressed: _subiendoFoto ? null : _quitarFoto,
+                                icon: const Icon(Icons.delete_outline_rounded,
+                                  size: 17),
+                                label: const Text('Quitar foto'),
+                              ),
+                            ],
+                            OutlinedButton.icon(
+                              onPressed: _guardando || _subiendoFoto ? null : _elegirAvatar,
+                              icon: const Icon(Icons.face_retouching_natural_rounded),
+                              label: const Text('Elegir avatar sin foto'),
+                            ),
+                            const SizedBox(height: 6),
+                            if (_errorFoto != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                key: const ValueKey('profile-photo-error'),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
+                                child: Row(children: [
+                                  const Icon(Icons.error_outline_rounded,
+                                      color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(_errorFoto!,
+                                    style: const TextStyle(
+                                      color: Colors.red, fontSize: 12))),
+                                ]),
+                              ),
+                            ],
+                            Text(
+                              'La fotografía se guarda al subirla.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: HealthyAdaptive.muted,
                               ),
                             ),
                           ],
@@ -293,7 +538,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                       SizedBox(
                         width: double.infinity,
                         child:
-                            _guardando
+                            _guardando || _subiendoFoto
                                 ? const Center(
                                   child: Padding(
                                     padding: EdgeInsets.all(12),
@@ -326,10 +571,10 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: AppColores.textoOscuro,
+            color: HealthyAdaptive.text,
           ),
         ),
         const SizedBox(height: 6),
@@ -343,11 +588,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                   ? TextCapitalization.sentences
                   : TextCapitalization.none,
           autocorrect: label != 'Nombre de usuario',
-          style: const TextStyle(fontSize: 14, color: AppColores.textoOscuro),
+          style: TextStyle(fontSize: 14, color: HealthyAdaptive.text),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColores.textoGris, size: 20),
+            prefixIcon: Icon(icon, color: HealthyAdaptive.muted, size: 20),
             filled: true,
-            fillColor: AppColores.fondoClaro,
+            fillColor: HealthyAdaptive.background,
             contentPadding: const EdgeInsets.symmetric(
               vertical: 12,
               horizontal: 16,

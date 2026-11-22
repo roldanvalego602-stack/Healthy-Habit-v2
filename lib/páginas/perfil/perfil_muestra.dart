@@ -2,6 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_asset_catalog.dart';
+import 'social_action_button.dart';
+import 'profile_avatar.dart';
+import 'amigos_servicio.dart';
+import '../logros/logros_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -32,8 +38,8 @@ class PublicProfileScreen extends StatefulWidget {
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   static const Color green = Color(0xFF198568);
   static const Color mint = Color(0xFF8DE0C0);
-  static const Color navy = Color(0xFF173544);
-  static const Color background = Color(0xFFF4F8F5);
+  Color get navy => HealthyAdaptive.text;
+  Color get background => HealthyAdaptive.background;
   static const Color gold = Color(0xFFD5A33E);
   bool _isLoading = false;
 
@@ -42,7 +48,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
-  DocumentReference<Map<String, dynamic>>? get _friendRef {
+  DocumentReference<Map<String, dynamic>>? get _followingRef {
     final currentUser = _currentUser;
     if (currentUser == null || currentUser.uid == widget.userId) {
       return null;
@@ -55,51 +61,60 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         .doc(widget.userId);
   }
 
-  Future<void> _toggleFriendship(bool isFriend) async {
+  DocumentReference<Map<String, dynamic>>? get _pendingRef {
     final currentUser = _currentUser;
-    final friendRef = _friendRef;
+    if (currentUser == null || currentUser.uid == widget.userId) {
+      return null;
+    }
+    return _db.collection('users').doc(currentUser.uid)
+        .collection('solicitudes_enviadas').doc(widget.userId);
+  }
 
-    if (currentUser == null || friendRef == null) {
-      _showMessage('Inicia sesión para agregar amigos.');
+  Future<void> _toggleFriendship(bool isFollowing, bool isPending) async {
+    if (_currentUser == null || _currentUser!.uid == widget.userId ||
+        _isLoading) {
       return;
     }
-
-    setState(() => _isLoading = true);
-
-    try {
-      if (isFriend) {
-        await friendRef.delete();
-      } else {
-        await friendRef.set({
-          'uid': widget.userId,
-          'name': widget.name,
-          'username': widget.username,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (!mounted) return;
-
-      _showMessage(
-        isFriend
-            ? 'Has eliminado a ${widget.name} de tus amigos.'
-            : '¡Agregaste a ${widget.name} a tus amigos!',
+    if (isFollowing) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Eliminar amigo'),
+          content: Text('¿Quieres eliminar a ${widget.name} de tus amigos?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar')),
+          ],
+        ),
       );
+      if (confirm != true || !mounted) return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      if (isFollowing) {
+        await AmigosServicio.eliminarAmigo(widget.userId);
+      } else if (isPending) {
+        await AmigosServicio.cancelarSolicitud(widget.userId);
+      } else {
+        await AmigosServicio.enviarSolicitud(widget.userId);
+      }
+      if (!mounted) return;
+      _showMessage(isFollowing
+          ? 'Eliminaste a ${widget.name} de tus amigos.'
+          : isPending
+              ? 'Solicitud cancelada.'
+              : 'Solicitud enviada a ${widget.name}.');
     } on FirebaseException catch (e) {
       if (!mounted) return;
-
-      _showMessage(
-        e.code == 'permission-denied'
-            ? 'Firestore no permite esta operación. Revisa las reglas.'
-            : 'No se pudo actualizar tu lista de amigos.',
-      );
+      _showMessage(e.code == 'permission-denied'
+          ? 'Esta acción no está permitida por Firestore.'
+          : 'No se pudo completar la solicitud. Inténtalo de nuevo.');
     } catch (_) {
-      if (!mounted) return;
-      _showMessage('Ocurrió un error al actualizar tus amigos.');
+      if (mounted) _showMessage('No se pudo completar la acción.');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -126,11 +141,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('users').doc(widget.userId).snapshots(),
+      stream: _db.collection(isOwnAccount(widget.userId) ? 'users' : 'public_profiles').doc(widget.userId).snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() ?? <String, dynamic>{};
 
         final name = _readString(data, 'name', widget.name);
+        final photoUrl = data.containsKey('photoUrl')
+            ? data['photoUrl']?.toString() ?? ''
+            : isOwnAccount(widget.userId)
+                ? _currentUser?.photoURL ?? ''
+                : '';
         final username = _formatUsername(
           _readString(data, 'username', widget.username),
         );
@@ -146,6 +166,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         );
         final level = _readInt(data, 'level', widget.level);
         final streak = _readInt(data, 'currentStreak', widget.streakDays);
+        final rawSettings = data['settings'];
+        final publicStreak = rawSettings is! Map ||
+            rawSettings['mostrarRachaAmigos'] != false;
+        final achievementsVisibility = rawSettings is Map
+            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
+            : 'Solo amigos';
         final completed = _readInt(
           data,
           'completedHabits',
@@ -154,7 +180,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
         final currentUser = _currentUser;
         final isOwnProfile = currentUser?.uid == widget.userId;
-        final friendRef = _friendRef;
+        final friendRef = _followingRef;
 
         return Scaffold(
           backgroundColor: background,
@@ -163,12 +189,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             elevation: 0,
             scrolledUnderElevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: navy),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: navy),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
               username,
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -201,6 +227,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         children: [
                           _publicProfileCard(
                             name: name,
+                            photoUrl: photoUrl,
+                            avatarStyle: _readString(data, 'profileAvatarStyle', 'foto'),
+                            bannerStyle: _readString(data, 'profileBanner', 'Amanecer'),
                             username: username,
                             bio: bio,
                             title: title,
@@ -210,11 +239,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           const SizedBox(height: 22),
                           _levelCard(level),
                           const SizedBox(height: 14),
-                          _statistics(streak, completed),
+                          _statistics(streak, completed,
+                            showStreak: isOwnProfile || publicStreak),
                           const SizedBox(height: 28),
-                          _sectionTitle('Logros destacados'),
-                          const SizedBox(height: 14),
-                          _achievementsCard(),
+                          _visibleAchievements(
+                            own: isOwnProfile,
+                            visibility: achievementsVisibility,
+                            data: data,
+                          ),
                           const SizedBox(height: 28),
                           _mascotSupportCard(name),
                         ],
@@ -226,12 +258,17 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
+  bool isOwnAccount(String uid) => _currentUser?.uid == uid;
+
   String _formatUsername(String username) {
     return username.startsWith('@') ? username : '@$username';
   }
 
   Widget _publicProfileCard({
     required String name,
+    required String photoUrl,
+    required String avatarStyle,
+    required String bannerStyle,
     required String username,
     required String bio,
     required String title,
@@ -241,7 +278,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -253,29 +290,42 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 130,
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF174D4B), Color(0xFF498A75)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Align(
-              alignment: Alignment.topLeft,
-              child: Text(
-                'PERFIL PÚBLICO',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+              child: Stack(fit: StackFit.expand, children: [
+                if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
+                  Image.asset(
+                    HealthyAssetCatalog.banners[bannerStyle]!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                            ),
+                          ),
+                        ),
+                  )
+                else
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF174D4B), Color(0xFF498A75)],
+                      ),
+                    ),
+                  ),
+                const Positioned(
+                  left: 12, top: 10,
+                  child: Text('PERFIL PÚBLICO',
+                    style: TextStyle(color: Colors.white, fontSize: 10,
+                      fontWeight: FontWeight.w800, letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)]),
+                  ),
                 ),
-              ),
+              ]),
             ),
           ),
           Transform.translate(
@@ -287,20 +337,21 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   height: 88,
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: HealthyAdaptive.surfaceAlt,
                     shape: BoxShape.circle,
                     border: Border.all(color: mint, width: 2),
                   ),
-                  child: const CircleAvatar(
-                    backgroundColor: Color(0xFFE6F1EC),
-                    child: Icon(Icons.person_rounded, size: 50, color: green),
+                  child: HealthyProfileAvatar(
+                    photoUrl: photoUrl,
+                    preset: avatarStyle,
+                    size: 80,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: navy,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -309,8 +360,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   username,
-                  style: const TextStyle(
-                    color: Color(0xFF8496A0),
+                  style: TextStyle(
+                    color: HealthyAdaptive.muted,
                     fontSize: 13,
                   ),
                 ),
@@ -322,13 +373,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF2D2),
+                      color: HealthyAdaptive.isDark
+                          ? const Color(0xFF473A26)
+                          : const Color(0xFFFFF2D2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '✦ $title',
-                      style: const TextStyle(
-                        color: gold,
+                      style: TextStyle(
+                        color: HealthyAdaptive.isDark
+                            ? const Color(0xFFF7D58D) : gold,
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                       ),
@@ -353,55 +407,37 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child:
-                        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                          stream: friendRef.snapshots(),
-                          builder: (context, snapshot) {
-                            final isFriend = snapshot.data?.exists ?? false;
-
+                    child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: friendRef.snapshots(),
+                      builder: (context, followingSnapshot) {
+                        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                          stream: _pendingRef!.snapshots(),
+                          builder: (context, pendingSnapshot) {
+                            final isFollowing = followingSnapshot.data?.exists ?? false;
+                            final isPending = pendingSnapshot.data?.exists ?? false;
+                            final ready = followingSnapshot.hasData &&
+                                pendingSnapshot.hasData &&
+                                !followingSnapshot.hasError &&
+                                !pendingSnapshot.hasError;
                             return SizedBox(
                               width: double.infinity,
-                              height: 46,
-                              child: ElevatedButton.icon(
-                                onPressed:
-                                    _isLoading || snapshot.hasError
-                                        ? null
-                                        : () => _toggleFriendship(isFriend),
-                                icon:
-                                    _isLoading
-                                        ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                        : Icon(
-                                          isFriend
-                                              ? Icons.check_circle_rounded
-                                              : Icons.person_add_rounded,
-                                          size: 18,
-                                        ),
-                                label: Text(
-                                  isFriend ? 'Amigos' : 'Agregar amigo',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isFriend ? navy : green,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
+                              child: SocialActionButton(
+                                label: isFollowing ? 'Amigos'
+                                    : isPending ? 'Pendiente' : 'Agregar amigo',
+                                icon: isFollowing ? Icons.check_circle_rounded
+                                    : isPending ? Icons.schedule_rounded
+                                    : Icons.person_add_rounded,
+                                outlined: isFollowing || isPending,
+                                busy: _isLoading || !ready,
+                                onPressed: !ready || _isLoading
+                                    ? null
+                                    : () => _toggleFriendship(isFollowing, isPending),
                               ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ],
@@ -472,10 +508,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _statistics(int streak, int completed) {
+  Widget _statistics(int streak, int completed, {required bool showStreak}) {
     return Row(
       children: [
-        Expanded(
+        if (showStreak) Expanded(
           child: _statCard(
             icon: Icons.local_fire_department_outlined,
             value: '$streak',
@@ -484,7 +520,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             iconColor: gold,
           ),
         ),
-        const SizedBox(width: 10),
+        if (showStreak) const SizedBox(width: 10),
         Expanded(
           child: _statCard(
             icon: Icons.check_circle_outline_rounded,
@@ -508,7 +544,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -524,7 +560,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: navy,
               fontSize: 20,
               fontWeight: FontWeight.w900,
@@ -534,7 +570,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF8496A0), fontSize: 11),
+            style: TextStyle(color: HealthyAdaptive.muted, fontSize: 11),
           ),
         ],
       ),
@@ -544,7 +580,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: navy,
         fontSize: 20,
         fontWeight: FontWeight.w900,
@@ -552,35 +588,94 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _achievementsCard() {
+  Widget _visibleAchievements({
+    required bool own,
+    required String visibility,
+    required Map<String, dynamic> data,
+  }) {
+    Widget content() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Logros destacados'),
+        const SizedBox(height: 14),
+        _achievementsCard(data),
+      ],
+    );
+
+    Widget privateMessage() => Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        'Los logros de este usuario son privados.',
+        style: TextStyle(color: HealthyAdaptive.muted),
+      ),
+    );
+
+    if (own || visibility == 'Todos') return content();
+    if (visibility == 'Solo yo') return privateMessage();
+    final viewer = _currentUser?.uid;
+    if (viewer == null) return privateMessage();
+
+    // La aceptación de una amistad crea un documento recíproco.
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _db.collection('users').doc(widget.userId)
+          .collection('friends').doc(viewer).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return privateMessage();
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return snapshot.data!.exists ? content() : privateMessage();
+      },
+    );
+  }
+
+  /// Solo se muestran insignias deducibles de los datos publicados
+  /// (nivel, XP y racha compartida); nunca medallas ficticias.
+  Widget _achievementsCard(Map<String, dynamic> data) {
+    const visibleTypes = {'nivel', 'xp', 'racha'};
+    final visible = LogrosService.catalogo.where((definition) {
+      if (!visibleTypes.contains(definition.tipo)) return false;
+      return LogrosService.obtenido(
+        definition,
+        LogrosService.progreso(definition, data, 0, 0, const <String>{}),
+      );
+    }).take(3).toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _achievement(
-            Icons.water_drop_outlined,
-            'Gota constante',
-            const Color(0xFF62B7DD),
-          ),
-          _achievement(Icons.local_fire_department_outlined, 'En llamas', gold),
-          _achievement(
-            Icons.spa_outlined,
-            'Primer brote',
-            const Color(0xFF369B7B),
-          ),
-        ],
-      ),
+      child: visible.isEmpty
+          ? Text(
+              'Todavía no hay insignias compartidas de nivel, XP o racha.',
+              style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12),
+            )
+          : Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                for (final logro in visible)
+                  _achievement(
+                    logro.icono,
+                    logro.nombre,
+                    HealthyAdaptive.accent,
+                  ),
+              ],
+            ),
     );
   }
 
   Widget _achievement(IconData icon, String name, Color color) {
-    return Column(
-      children: [
+    return SizedBox(
+      width: 95,
+      child: Column(children: [
         Container(
           width: 58,
           height: 64,
@@ -594,13 +689,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         const SizedBox(height: 8),
         Text(
           name,
-          style: const TextStyle(
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
             color: navy,
             fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
         ),
-      ],
+      ]),
     );
   }
 
@@ -608,7 +706,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2F3E7),
+        color: HealthyAdaptive.mint,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
@@ -618,7 +716,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           Expanded(
             child: Text(
               '¡Acompaña a $name a mantener sus hábitos saludables!',
-              style: const TextStyle(
+              style: TextStyle(
                 color: navy,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
