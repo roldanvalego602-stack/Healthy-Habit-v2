@@ -73,7 +73,7 @@ void main() {
   testWidgets('un valor completo se restaura como completado',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: _StepHarness(
-      type: 'counter', unit: 'ml', target: 250,
+      type: 'hydration', unit: 'ml', target: 250,
     )));
     await tester.tap(find.text('+250 ml'));
     await tester.pump();
