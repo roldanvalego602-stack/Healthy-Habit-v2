@@ -99,14 +99,16 @@ void main() {
     await HealthyVisualController.instance.select(HealthyVisualMode.normal);
   });
 
-  test('los nueve artículos están enlazados a JPG en assets', () {
+  test('las nueve fichas fotografiadas enlazan JPG válidos', () {
     final items = [
       ...alimentosCatalogo,
       ...ejerciciosCatalogo,
       ...consejosCatalogo,
     ];
-    expect(items.length, 9);
-    for (final item in items) {
+    expect(items.length, 28);
+    final photographed = items.where((item) => item.imagen.isNotEmpty).toList();
+    expect(photographed, hasLength(9));
+    for (final item in photographed) {
       expect(item.imagen, endsWith('.jpg'));
       expect(item.imagen, startsWith('assets/images/catalogo/'));
     }
