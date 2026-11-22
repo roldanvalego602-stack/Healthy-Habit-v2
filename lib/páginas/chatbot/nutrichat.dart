@@ -644,8 +644,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         'cancelar', 'salir del calculo', 'detener calculo',
       ]) && (_calculatorService.pasoIMC > 0 ||
             _calculatorService.pasoGET > 0)) {
-        _calculatorService.resetIMC();
-        _calculatorService.resetGET();
+        _calculatorService.reset();
         response = 'Cálculo cancelado. ¿Te ayudo con otra cosa? 🌿';
       } else {
         final activeCalculator = _calculatorService.pasoIMC > 0 ||
