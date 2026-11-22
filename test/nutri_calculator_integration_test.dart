@@ -52,10 +52,10 @@ void main() {
       expect(calc.pasoIMC, 3);
 
       final response = calc.procesarMensaje('¿Qué clima hay?');
-      expect(response, contains('¿Quieres seguir'));
+      expect(response, contains('¿Deseas continuar o salir?'));
       expect(calc.pasoIMC, 3);
-      expect(calc.opcionesRapidas, contains('No, salir'));
-      calc.procesarMensaje('No, salir');
+      expect(calc.opcionesRapidas, contains('Salir del cálculo'));
+      calc.procesarMensaje('Salir del cálculo');
       expect(calc.pasoIMC, 0);
     });
 
