@@ -594,7 +594,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (checked.attemptId != entry.attempt.id) {
         throw StateError('El intento cambió; actualiza tus hábitos.');
       }
-      final result = await _habitActions.execute(checked, interaction: interaction);
+      final result = await _habitActions.execute(checked);
       if (!mounted) return;
       _showMessage(result.chargedCoins == 0
           ? 'Hábito abandonado. Tu historial se conserva.'
@@ -616,7 +616,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     try {
       final checked = preview ??
           await _habitActions.preview(habit.id, remove: false);
-      await _habitActions.execute(checked);
+      await _habitActions.execute(checked, interaction: interaction);
       if (!mounted) return;
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
       await _load();
