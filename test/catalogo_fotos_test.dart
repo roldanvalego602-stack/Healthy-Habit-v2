@@ -22,7 +22,8 @@ void main() {
   };
 
   test('cada fotografía del ZIP pertenece a la ficha correcta', () {
-    expect(all.length, 9);
+    expect(all.length, 28);
+    expect(all.where((item) => item.imagen.isNotEmpty), hasLength(9));
     for (final entry in photos.entries) {
       final items = all.where((item) => item.id == entry.key).toList();
       expect(items, hasLength(1), reason: entry.key);
@@ -32,12 +33,12 @@ void main() {
   });
 
   test('el catálogo conserva las fichas y categorías existentes', () {
-    expect(alimentosCatalogo.length, 3);
-    expect(ejerciciosCatalogo.length, 3);
-    expect(consejosCatalogo.length, 3);
+    expect(alimentosCatalogo.length, 12);
+    expect(ejerciciosCatalogo.length, 10);
+    expect(consejosCatalogo.length, 6);
     expect(all.every((item) =>
         item.titulo.isNotEmpty &&
         item.descripcion.isNotEmpty &&
-        item.imagen.endsWith('.jpg')), isTrue);
+        (item.imagen.isEmpty || item.imagen.endsWith('.jpg'))), isTrue);
   });
 }
