@@ -129,6 +129,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
     '¿Qué nutrientes tienen las lentejas?',
     'Muéstrame los beneficios de la avena',
     'Quiero calcular mi GET',
+    '¿Cómo mejorar mi racha?',
+    '¿Qué misión tengo hoy?',
+    'Quiero mejorar mi hidratación',
+    'Sugiere hábitos para mí',
     '¿Cómo está el clima hoy?',
   ];
 
@@ -269,6 +273,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   Future<void> _openSession(String id) async {
     if (isTyping) return;
+    _calculatorService.reset();
     setState(() => _historyLoading = true);
     try {
       final records = await _history.loadMessages(id);
@@ -324,6 +329,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   void _newConversation() {
     if (isTyping) return;
+    _calculatorService.reset();
     setState(() {
       _manuallyStartedNew = true;
       _sessionId = null;
@@ -900,7 +906,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     1 +
                     messages.length +
                     (isTyping ? 1 : 0) +
-                    (!_hasSentMessage && !keyboardVisible ? 1 : 0),
+                    (!_hasSentMessage && !keyboardVisible ? 1 : 0) +
+                    (_hasSentMessage && !keyboardVisible &&
+                            _calculatorService.opcionesRapidas.isNotEmpty
+                        ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return _hasSentMessage || keyboardVisible
@@ -924,7 +933,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       ),
                     );
                   }
-                  return _buildQuickOptions();
+                  return _hasSentMessage
+                      ? _buildCalculatorOptions()
+                      : _buildQuickOptions();
                 },
               ),
             ),
@@ -981,6 +992,30 @@ class _NutriChatPageState extends State<NutriChatPage> {
     ),
   );
 
+  Widget _buildCalculatorOptions() => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Opciones del cálculo',
+            style: TextStyle(color: _muted,
+                fontWeight: FontWeight.w800, fontSize: 12)),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            for (final option in _calculatorService.opcionesRapidas)
+              ActionChip(
+                label: Text(option),
+                onPressed: isTyping ? null : () => sendMessage(option),
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+
   Widget _buildQuickOptions() => Padding(
     padding: const EdgeInsets.only(top: 8, bottom: 10),
     child: Column(
@@ -996,7 +1031,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         ),
         const SizedBox(height: 10),
         if (_calculatorService.opcionesRapidas.isNotEmpty) ...[
-          Text('Continuar o salir del cálculo',
+          Text('Opciones del cálculo',
             style: TextStyle(color: _muted,
               fontWeight: FontWeight.w700, fontSize: 12)),
           const SizedBox(height: 7),
