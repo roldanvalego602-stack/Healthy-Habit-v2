@@ -53,7 +53,7 @@ class NutriCalculatorService {
 
   /// Opciones que el chat muestra como botones según el paso actual.
   List<String> get opcionesRapidas {
-    if (_confirmandoSalida) return ['Sí, seguir', 'No, salir'];
+    if (_confirmandoSalida) return ['Continuar cálculo', 'Salir del cálculo'];
     switch (pasoGET) {
       case 1:
       case 8:
@@ -115,6 +115,7 @@ class NutriCalculatorService {
   }
 
   void resetGET() {
+    _confirmandoSalida = false;
     pasoGET = 0;
     sexoGET = null;
     sexoEtiquetaGET = null;
@@ -133,6 +134,7 @@ class NutriCalculatorService {
   }
 
   void resetIMC() {
+    _confirmandoSalida = false;
     pasoIMC = 0;
     pesoUsuario = null;
     pesoIMCEnLibras = false;
@@ -187,10 +189,11 @@ class NutriCalculatorService {
       pasoGET = pasoGETAntes;
       pasoIMC = pasoIMCAntes;
       _confirmandoSalida = true;
-      final calculo = pasoGET > 0 ? 'el GET' : 'el IMC';
-      return 'Eso no corresponde al cálculo de $calculo. '
-          '¿Quieres seguir con la conversación del cálculo?\n\n'
-          'Elige "sí" para continuar o "no" para salir.';
+      final calculo = pasoGET > 0 ? 'GET' : 'IMC';
+      return 'Estábamos realizando un cálculo de $calculo. '
+          '¿Deseas continuar o salir?\n\n'
+          'Elige «Continuar cálculo» para retomarlo o '
+          '«Salir del cálculo» para cancelarlo.';
     }
     return respuesta;
   }
@@ -222,7 +225,7 @@ class NutriCalculatorService {
     _confirmandoSalida = false;
     resetGET();
     resetIMC();
-    return 'Listo, salí del cálculo. Cuando quieras retomarlo, pídeme calcular '
+    return 'Cálculo cancelado. Cuando quieras retomarlo, pídeme calcular '
         'tu GET o tu IMC. ¿En qué más puedo ayudarte?';
   }
 
