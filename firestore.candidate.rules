@@ -82,7 +82,34 @@ service cloud.firestore {
         'leaf_hoodie': 200,
         'wellness_medal': 100,
         'water_bottle': 90,
-        'leaf_backpack': 170
+        'leaf_backpack': 170,
+        'cat_headphones_pink': 190,
+        'chef_hat_green': 170,
+        'paper_sailor_hat': 120,
+        'green_gloves': 140,
+        'superhero_cape_red': 230,
+        'star_backpack_blue': 170,
+        'rock_face_mask': 230,
+        'space_helmet': 280,
+        'hero_mask_blue': 160,
+        'frame_arcane': 300,
+        'frame_emerald': 160,
+        'frame_cyber': 350,
+        'frame_nature': 210,
+        'banner_space': 260,
+        'banner_sunset': 130,
+        'banner_floral': 150,
+        'banner_ice': 190,
+        'avatar_snowman': 300,
+        'avatar_christmas': 210,
+        'avatar_gingerbread': 210,
+        'avatar_gift': 210,
+        'reaction_compas': 90,
+        'reaction_celebrate': 90,
+        'reaction_love': 90,
+        'reaction_goal': 90,
+        'reaction_support': 90,
+        'reaction_like': 90
       }.get(id, -1);
     }
 
@@ -160,19 +187,20 @@ service cloud.firestore {
       let inventory = request.resource.data.get('shopInventory', []);
       return look.keys().hasOnly([
           'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
-          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano'
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos'
         ])
-        && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame'])
-        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner'])
+        && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame', 'frame_arcane', 'frame_emerald', 'frame_cyber', 'frame_nature'])
+        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner', 'banner_space', 'banner_sunset', 'banner_floral', 'banner_ice'])
         && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
-        && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar'])
+        && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar', 'avatar_snowman', 'avatar_christmas', 'avatar_gingerbread', 'avatar_gift'])
         && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
-        && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses'])
-        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones'])
+        && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses', 'rock_face_mask', 'hero_mask_blue'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones', 'cat_headphones_pink', 'chef_hat_green', 'paper_sailor_hat', 'space_helmet'])
         && validEquippedSlot(look, inventory, 'aura', ['mint_aura'])
-        && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack'])
+        && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack', 'superhero_cape_red', 'star_backpack_blue'])
         && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
-        && validEquippedSlot(look, inventory, 'mano', ['water_bottle']);
+        && validEquippedSlot(look, inventory, 'mano', ['water_bottle'])
+        && validEquippedSlot(look, inventory, 'brazos', ['green_gloves']);
     }
 
     // Descuento por abandono: requiere que los DOS documentos del hábito
@@ -446,7 +474,8 @@ service cloud.firestore {
           in ['foto', 'naturaleza', 'agua', 'energia']
         && request.resource.data.get('healthyEquipped', {}) is map
         && request.resource.data.get('healthyEquipped', {}).keys().hasOnly([
-          'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura'
+          'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
+          'brazos', 'perfil_marco', 'perfil_banner', 'perfil_avatar'
         ])
         && request.resource.data.settings is map
         && request.resource.data.settings.keys().hasOnly([
@@ -481,6 +510,230 @@ service cloud.firestore {
         && request.resource.data.emoji.size() > 0
         && request.resource.data.challengeId is string
         && request.resource.data.challengeId.size() <= 128
+        // Los stickers de pago requieren posesión; las reacciones
+        // convencionales conservan challengeId vacío o de desafíos.
+        && (
+          !request.resource.data.challengeId.matches('^sticker:.*
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt <= request.time
+        && request.resource.data.createdAt >= request.time - duration.value(5, 'm');
+      allow update: if authenticated()
+        && resource.data.toUid == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['leido'])
+            && request.resource.data.leido == true
+          )
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['estado', 'respondedAt'])
+            && request.resource.data.estado in ['aceptado', 'rechazado']
+            && request.resource.data.respondedAt == request.time
+          )
+        );
+      allow delete: if false;
+    }
+
+
+    // Invitaciones voluntarias; sólo los participantes pueden consultar.
+    // El cliente no escribe XP ni progreso de otros usuarios aquí.
+    match /shared_habit_invites/{inviteId} {
+      function isMember(data) {
+        return authenticated()
+          && (request.auth.uid == data.senderUid ||
+              request.auth.uid == data.recipientUid);
+      }
+
+      function validInviteFields() {
+        return request.resource.data.keys().hasOnly([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.recipientUid is string
+          && request.resource.data.recipientUid.size() > 0
+          && request.resource.data.recipientUid != request.auth.uid
+          && request.resource.data.habitId is string
+          && request.resource.data.habitId.size() > 0
+          && request.resource.data.habitTitle is string
+          && request.resource.data.habitTitle.size() > 0
+          && request.resource.data.habitTitle.size() <= 120
+          && request.resource.data.status == 'pendiente'
+          && request.resource.data.resolvedAt == null
+          && request.resource.data.createdAt == request.time
+          && exists(friendsRef(request.auth.uid,
+              request.resource.data.recipientUid));
+      }
+
+      function validInviteTransition() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'resolvedAt'])
+          && request.resource.data.resolvedAt == request.time
+          && (
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.recipientUid
+              && request.resource.data.status in ['aceptada', 'rechazada']
+              && exists(friendsRef(request.auth.uid,
+                  resource.data.senderUid)))
+            ||
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.senderUid
+              && request.resource.data.status == 'cancelada')
+            ||
+            (resource.data.status == 'aceptada'
+              && request.resource.data.status == 'finalizada')
+          );
+      }
+
+      allow get, list: if isMember(resource.data);
+      allow create: if authenticated() && validInviteFields();
+      allow update: if isMember(resource.data) && validInviteTransition();
+      allow delete: if false;
+    }
+
+    // Solo agregados anónimos publicados por procesos con privilegios
+    // administrativos. Nunca se admiten escrituras desde un cliente.
+    // Regla CANDIDATA para probar exclusivamente en el emulador.
+    match /public_habit_popularity/{habitId} {
+      allow get, list: if authenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /system/{path=**} {
+      allow read: if authenticated();
+      allow write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+          || (
+            request.resource.data.challengeId.matches(
+              '^sticker:reaction_(compas|celebrate|love|goal|support|like)
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt <= request.time
+        && request.resource.data.createdAt >= request.time - duration.value(5, 'm');
+      allow update: if authenticated()
+        && resource.data.toUid == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['leido'])
+            && request.resource.data.leido == true
+          )
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['estado', 'respondedAt'])
+            && request.resource.data.estado in ['aceptado', 'rechazado']
+            && request.resource.data.respondedAt == request.time
+          )
+        );
+      allow delete: if false;
+    }
+
+
+    // Invitaciones voluntarias; sólo los participantes pueden consultar.
+    // El cliente no escribe XP ni progreso de otros usuarios aquí.
+    match /shared_habit_invites/{inviteId} {
+      function isMember(data) {
+        return authenticated()
+          && (request.auth.uid == data.senderUid ||
+              request.auth.uid == data.recipientUid);
+      }
+
+      function validInviteFields() {
+        return request.resource.data.keys().hasOnly([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.recipientUid is string
+          && request.resource.data.recipientUid.size() > 0
+          && request.resource.data.recipientUid != request.auth.uid
+          && request.resource.data.habitId is string
+          && request.resource.data.habitId.size() > 0
+          && request.resource.data.habitTitle is string
+          && request.resource.data.habitTitle.size() > 0
+          && request.resource.data.habitTitle.size() <= 120
+          && request.resource.data.status == 'pendiente'
+          && request.resource.data.resolvedAt == null
+          && request.resource.data.createdAt == request.time
+          && exists(friendsRef(request.auth.uid,
+              request.resource.data.recipientUid));
+      }
+
+      function validInviteTransition() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'resolvedAt'])
+          && request.resource.data.resolvedAt == request.time
+          && (
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.recipientUid
+              && request.resource.data.status in ['aceptada', 'rechazada']
+              && exists(friendsRef(request.auth.uid,
+                  resource.data.senderUid)))
+            ||
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.senderUid
+              && request.resource.data.status == 'cancelada')
+            ||
+            (resource.data.status == 'aceptada'
+              && request.resource.data.status == 'finalizada')
+          );
+      }
+
+      allow get, list: if isMember(resource.data);
+      allow create: if authenticated() && validInviteFields();
+      allow update: if isMember(resource.data) && validInviteTransition();
+      allow delete: if false;
+    }
+
+    // Solo agregados anónimos publicados por procesos con privilegios
+    // administrativos. Nunca se admiten escrituras desde un cliente.
+    // Regla CANDIDATA para probar exclusivamente en el emulador.
+    match /public_habit_popularity/{habitId} {
+      allow get, list: if authenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /system/{path=**} {
+      allow read: if authenticated();
+      allow write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+            && get(/databases/$(database)/documents/users/$(request.auth.uid))
+              .data.get('shopInventory', []).hasAny([
+                request.resource.data.challengeId.substring(
+                  8, request.resource.data.challengeId.size())
+              ])
+          )
+        )
         && request.resource.data.tipo == 'reaccion'
         && request.resource.data.estado == 'enviado'
         && request.resource.data.leido == false
