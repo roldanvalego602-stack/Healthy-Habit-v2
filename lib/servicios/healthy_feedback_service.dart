@@ -8,6 +8,30 @@ import 'package:flutter/services.dart';
 class HealthyFeedbackService {
   const HealthyFeedbackService._();
 
+  /// Confirmación breve al equipar o retirar un artículo. Consulta el ajuste
+  /// real de la cuenta; la compra y el inventario no dependen de la vibración.
+  static Future<void> onEquip() async {
+    var enabled = true;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final db = FirebaseFirestore.instanceFor(
+          app: Firebase.app(), databaseId: 'default',
+        );
+        final doc = await db.collection('users').doc(user.uid).get();
+        final settings = doc.data()?['settings'];
+        if (settings is Map) enabled = settings['vibracionHaptica'] != false;
+      } catch (_) {
+        // La lectura de preferencias no impide equipar el objeto.
+      }
+    }
+    if (enabled) {
+      try {
+        await HapticFeedback.selectionClick();
+      } catch (_) {}
+    }
+  }
+
   static Future<bool> onReward() async {
     var enableSound = true;
     var enableHaptics = true;
@@ -38,7 +62,7 @@ class HealthyFeedbackService {
     }
     if (enableHaptics) {
       try {
-        await HapticFeedback.lightImpact();
+        await HapticFeedback.mediumImpact();
       } catch (_) {}
     }
     return enableCelebration;
