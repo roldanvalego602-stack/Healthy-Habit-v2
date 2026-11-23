@@ -30,6 +30,9 @@ void main() {
         .any((item) => item.id == 'banner_gradient_black_blue'), isTrue);
     expect(wardrobeItemsForSlot('piel-inexistente'), isEmpty);
     expect(wardrobeItemsForSlot('pies'), isEmpty);
+    final auras = wardrobeItemsForSlot('aura');
+    expect(auras.map((item) => item.id), contains('leaf_aura'));
+    expect(auras.map((item) => item.id), isNot(contains('mint_aura')));
   });
 
   test('el armario oculta las piezas genéricas retiradas', () {
