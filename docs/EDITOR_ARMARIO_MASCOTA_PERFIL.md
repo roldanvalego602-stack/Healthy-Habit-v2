@@ -36,3 +36,20 @@ flutter run
 Probar con un celular Android: abrir Armario, desplazarse por Cabeza y Banner, verificar que el escenario no se mueva, alternar entre Perfil y Mr. Healthy, comprobar los candados y equipamiento, y observar el comportamiento en pantallas de poca altura.
 
 Los cambios se han guardado en GitHub, **pero no se ejecutó Flutter en este entorno**. Validar el análisis y el diseño final en dispositivo antes de considerarlo terminado.
+
+## Animación de reposo de Mr. Healthy
+Se implementó en `lib/páginas/tienda/healthy_mascot_idle.dart` un ciclo continuo de 3.2 segundos:
+- Balanceo lateral máximo de 1.3 grados en torno a los pies.
+- Respiración con ascenso máximo de 2 píxeles y expansión vertical menor a 0.6 %.
+- La mascota completa, su skin y todos los cosméticos equipados se transforman juntos, sin alterar las coordenadas internas de las prendas.
+- La sombra del escenario permanece fija; el inventario mantiene desplazamiento independiente.
+- Se detiene con las animaciones del sistema desactivadas, con `modoVisual = Lite`, con `animacionesDivertidas = false`, o cuando el escenario deja de estar activo.
+- No precisa GIF, video, paquete nuevo ni archivos creados mediante IA.
+
+Verificación:
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/tienda/healthy_mascot_idle_test.dart test/tienda/wardrobe_slots_test.dart
+flutter run
+```
+En Android comprobar reposo, accesorios superpuestos, modo Perfil y configuración de animaciones.
