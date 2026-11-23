@@ -15,7 +15,6 @@ import 'configuracion_screen.dart';
 import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
-import 'profile_avatar.dart';
 import 'healthy_framed_avatar.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
