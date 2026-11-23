@@ -69,4 +69,16 @@ void main() {
     }, now: DateTime.parse('2026-11-22T22:00:00Z')), 0);
   });
 
+
+  test('zona estable del contador prevalece sobre la zona de hábitos', () {
+    // En Durango todavía es el 22; en UTC ya es el 23.
+    final instant = DateTime.parse('2026-11-23T01:30:00Z');
+    expect(DailyStreakDisplay.current({
+      'serverLastStreakDay': '2026-11-22',
+      'serverStreakDays': 3,
+      'serverStreakTimeZone': 'America/Monterrey',
+      'calendarTimeZone': 'UTC',
+    }, now: instant), 3);
+  });
+
 }
