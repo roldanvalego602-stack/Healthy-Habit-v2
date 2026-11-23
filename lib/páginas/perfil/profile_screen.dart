@@ -367,9 +367,9 @@ class ProfileScreen extends StatelessWidget {
                       photoUrl: data.containsKey('photoUrl')
                           ? data['photoUrl']?.toString() ?? ''
                           : FirebaseAuth.instance.currentUser?.photoURL,
-                      preset: _string(
-                        data['profileAvatarStyle'], fallback: 'foto',
-                      ),
+                      preset: HealthyCosmetics.equippedId(
+                            data, 'perfil_avatar') ??
+                          _string(data['profileAvatarStyle'], fallback: 'foto'),
                       onEdit: () => _open(context, const EditarPerfilScreen()),
                     ),
                     child: Stack(
