@@ -14,6 +14,12 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.id == 'leaf_aura') {
+      return SizedBox.square(
+        dimension: size,
+        child: const HealthyLeafAuraThumbnail(),
+      );
+    }
     final asset = HealthyCosmetics.assetFor(item.id) ??
         HealthyAssetCatalog.shopImages[item.id];
     return SizedBox.square(
