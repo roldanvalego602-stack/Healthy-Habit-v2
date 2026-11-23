@@ -774,3 +774,91 @@ test('perfil público acepta banners definidos y rechaza identificadores arbitra
   await assertSucceeds(updateDoc(ref, { profileBanner: 'Bosque' }));
   await assertFails(updateDoc(ref, { profileBanner: '../private' }));
 });
+
+test('cosméticos nuevos: precio real, inventario y ranuras correctas', async () => {
+  const uid = 'cosmetic-purchase-check';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), `users/${uid}`), {
+      uid, name: 'Prueba', username: 'prueba', xp: 0,
+      habitCoins: 1000, shopInventory: [], shopEquipped: {},
+    });
+  });
+  const db = env.authenticatedContext(uid).firestore();
+  const ref = doc(db, `users/${uid}`);
+  await assertFails(updateDoc(ref, {
+    habitCoins: 800,
+    shopInventory: arrayUnion('frame_arcane'),
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    habitCoins: 700,
+    shopInventory: arrayUnion('frame_arcane'),
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    shopEquipped: { perfil_marco: 'frame_arcane' },
+  }));
+  await assertFails(updateDoc(ref, {
+    shopEquipped: { cabeza: 'frame_arcane' },
+  }));
+  await assertFails(updateDoc(ref, {
+    shopEquipped: { perfil_avatar: 'avatar_snowman' },
+  }));
+});
+
+test('perfil público permite cosméticos equipados y bloquea campos privados', async () => {
+  const uid = 'cosmetic-public';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), `users/${uid}`), {
+      uid, name: 'Usuario', username: 'usuario',
+      xp: 0, habitCoins: 900,
+    });
+  });
+  const ref = doc(env.authenticatedContext(uid).firestore(),
+    `public_profiles/${uid}`);
+  await assertSucceeds(setDoc(ref, {
+    name: 'Usuario', username: 'usuario', xp: 0,
+    settings: { mostrarRachaAmigos: true },
+    healthyEquipped: {
+      perfil_marco: 'frame_arcane',
+      perfil_banner: 'banner_space',
+      perfil_avatar: 'avatar_snowman',
+      brazos: 'green_gloves',
+    },
+  }));
+  await assertFails(updateDoc(ref, { shopInventory: ['frame_arcane'] }));
+  await assertFails(updateDoc(ref, {
+    healthyEquipped: { '__secret': 'not-public' },
+  }));
+});
+
+test('stickers sociales solo se envían si el usuario posee el artículo', async () => {
+  const ownerUid = 'sticker-sender';
+  const friendUid = 'sticker-friend';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `users/${ownerUid}`), {
+      name: 'Emisor', xp: 0, habitCoins: 0,
+      shopInventory: ['reaction_like'],
+      shopEquipped: {},
+    });
+    await setDoc(doc(db, `users/${ownerUid}/friends/${friendUid}`), {
+      createdAt: new Date(),
+    });
+    await setDoc(doc(db, `public_profiles/${friendUid}`), {
+      name: 'Amigo', username: 'amigo', xp: 0,
+      settings: { permitirReacciones: true },
+    });
+  });
+  const db = env.authenticatedContext(ownerUid).firestore();
+  const payload = (id, reaction) => ({
+    challengeId: `sticker:${id}`,
+    createdAt: serverTimestamp(),
+    emoji: reaction, estado: 'enviado', fromUid: ownerUid,
+    leido: false, respondedAt: null, tipo: 'reaccion', toUid: friendUid,
+  });
+  await assertSucceeds(setDoc(doc(db, 'interactions/sticker-paid'),
+    payload('reaction_like', '🔥')));
+  await assertFails(setDoc(doc(db, 'interactions/sticker-unowned'),
+    payload('reaction_goal', '⭐')));
+  await assertFails(setDoc(doc(db, 'interactions/sticker-invalid'),
+    payload('reaction_unknown', '🔥')));
+});
