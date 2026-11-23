@@ -6,6 +6,10 @@ import '../tema/healthy_theme.dart';
 import '../tema/healthy_float.dart';
 import '../tema/healthy_motion.dart';
 import '../tema/healthy_visual_mode.dart';
+import '../tema/healthy_profile_presentation.dart';
+import 'perfil/profile_avatar.dart';
+import 'perfil/profile_screen.dart';
+import 'perfil/perfil_muestra.dart';
 
 import 'niveles/levels_system.dart';
 
@@ -34,6 +38,24 @@ class RankingScreen extends StatelessWidget {
 
   String _photo(Map<String, dynamic> data) {
     return (data['photoUrl'] ?? '').toString().trim();
+  }
+
+  void _openUserProfile(
+    BuildContext context,
+    String uid,
+    Map<String, dynamic> data,
+  ) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid.isEmpty) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => currentUid == uid
+          ? const ProfileScreen()
+          : PublicProfileScreen(
+              userId: uid,
+              name: _name(data),
+              username: (data['username'] ?? '').toString(),
+            ),
+    ));
   }
 
   Widget _levelBadge(int xp, {double size = 35}) {
@@ -292,6 +314,11 @@ class RankingScreen extends StatelessWidget {
       name: _name(data),
       xp: _xp(data),
       compact: compact,
+      photoUrl: HealthyProfilePresentation.photoUrl(
+          data, publicProfile: true),
+      avatarPreset: HealthyProfilePresentation.avatarPreset(
+          data, publicProfile: true),
+      onTap: (context) => _openUserProfile(context, user.id, data),
     );
   }
 
@@ -304,15 +331,21 @@ class RankingScreen extends StatelessWidget {
     final xp = _xp(data);
     final level = LevelSystem.fromXp(xp);
     final name = _name(data);
-    final photo = _photo(data);
-
-    final hasPhoto =
-        photo.startsWith('https://') || photo.startsWith('http://');
+    final photo = HealthyProfilePresentation.photoUrl(
+        data, publicProfile: true);
+    final avatarPreset = HealthyProfilePresentation.avatarPreset(
+        data, publicProfile: true);
 
     return HealthyMotionCard(
       enableEntrance: isMe,
       enablePress: false,
-      child: Container(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('ranking-abrir-perfil-${user.id}'),
+          onTap: () => _openUserProfile(context, user.id, data),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
       margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
         color: isMe ? HealthyAdaptive.mint : HealthyAdaptive.surface,
@@ -341,18 +374,10 @@ class RankingScreen extends StatelessWidget {
                 ),
               ),
             ),
-            CircleAvatar(
-              radius: 19,
-              backgroundColor: HealthyAdaptive.mint,
-              backgroundImage: hasPhoto ? NetworkImage(photo) : null,
-              child:
-                  hasPhoto
-                      ? null
-                      : Icon(
-                        Icons.person_rounded,
-                        color: green,
-                        size: 21,
-                      ),
+            HealthyProfileAvatar(
+              photoUrl: photo,
+              preset: avatarPreset,
+              size: 38,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -398,6 +423,8 @@ class RankingScreen extends StatelessWidget {
           ],
         ),
       ),
+        ),
+      ),
       ),
     );
   }
@@ -432,12 +459,18 @@ class RankingPodiumCard extends StatelessWidget {
     required this.name,
     required this.xp,
     this.compact = false,
+    this.photoUrl,
+    this.avatarPreset = 'foto',
+    this.onTap,
   });
 
   final int rank;
   final String name;
   final int xp;
   final bool compact;
+  final String? photoUrl;
+  final String avatarPreset;
+  final void Function(BuildContext context)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -464,15 +497,16 @@ class RankingPodiumCard extends StatelessWidget {
     final badge = Container(
       width: compact ? 46 : 54,
       height: compact ? 46 : 54,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.13),
         shape: BoxShape.circle,
         border: Border.all(color: accent.withValues(alpha: 0.5)),
       ),
-      child: HealthyFloat(
-        enabled: first,
-        distance: 3.5,
-        child: Icon(level.icon, color: accent, size: compact ? 26 : 29),
+      child: HealthyProfileAvatar(
+        photoUrl: photoUrl,
+        preset: avatarPreset,
+        size: compact ? 42 : 50,
       ),
     );
 
@@ -512,7 +546,13 @@ class RankingPodiumCard extends StatelessWidget {
 
     return HealthyMotionCard(
       enablePress: false,
-      child: Container(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('ranking-podio-abrir-perfil-$rank'),
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap == null ? null : () => onTap!(context),
+          child: Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(18),
@@ -562,6 +602,8 @@ class RankingPodiumCard extends StatelessWidget {
                 mainInfo,
               ],
             ),
+          ),
+        ),
       ),
     );
   }
