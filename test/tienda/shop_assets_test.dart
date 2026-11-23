@@ -45,6 +45,25 @@ void main() {
     }
   });
 
+  test('un artículo comprado desaparece de la tienda pero permanece en catálogo', () {
+    final state = ShopState(
+      coins: 500,
+      owned: {'frame_arcane', 'banner_gradient_yellow_pink'},
+      equipped: {'perfil_marco': 'frame_arcane'},
+    );
+    final available = availableShopItems(state);
+    expect(available.any((item) => item.id == 'frame_arcane'), isFalse);
+    expect(available.any((item) =>
+      item.id == 'banner_gradient_yellow_pink'), isFalse);
+    expect(available.any((item) => item.id == 'frame_emerald'), isTrue);
+    expect(shopItemById('frame_arcane'), isNotNull);
+    expect(state.owns('frame_arcane'), isTrue);
+    expect(availableShopItems(state, category: 'Marcos')
+        .every((item) => item.category == 'Marcos'), isTrue);
+    expect(availableShopItems(state, category: 'Marcos')
+        .any((item) => item.id == 'frame_arcane'), isFalse);
+  });
+
   test('no hay identificadores duplicados en tienda', () {
     final ids = shopCatalog.map((item) => item.id).toList();
     expect(ids.toSet().length, ids.length);
