@@ -117,7 +117,8 @@ class HealthyPublicProfileService {
       'name': stringValue('name', 'Usuario'),
       'username': stringValue('username', 'usuario'),
       // No publicar la URL de una fotografía si eligió un avatar local.
-      'photoUrl': avatarStyle == 'foto'
+      'photoUrl': avatarStyle == 'foto' &&
+              !publicEquipped.containsKey('perfil_avatar')
           ? stringValue('photoUrl', '', maxLength: 2048)
           : '',
       'profileAvatarStyle': avatarStyle,
