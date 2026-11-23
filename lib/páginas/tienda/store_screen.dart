@@ -188,8 +188,11 @@ class _StoreScreenState extends State<StoreScreen> {
           stream: ShopService.instance.watch(),
           builder: (context, snapshot) {
             final state = snapshot.data;
+            // Un artículo adquirido sale de la tienda, pero permanece
+            // disponible en el armario/inventario para equiparlo.
             final items = shopCatalog
-                .where((item) => _filter == 'Todos' || item.category == _filter)
+                .where((item) => (_filter == 'Todos' || item.category == _filter) &&
+                    (state == null || !state.owns(item.id)))
                 .toList();
 
             return CustomScrollView(
@@ -210,6 +213,7 @@ class _StoreScreenState extends State<StoreScreen> {
                     items: featuredShopItemIds
                         .map(shopItemById)
                         .whereType<ShopItem>()
+                        .where((item) => state == null || !state.owns(item.id))
                         .toList(),
                     shopState: state,
                     onSelected: (item) => _showFeaturedPreview(item, state),
@@ -252,7 +256,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 30),
                           child: Center(
-                            child: Text('No hay artículos en esta categoría.'),
+                            child: Text('Ya adquiriste todos los artículos de esta categoría o no hay disponibles.'),
                           ),
                         ),
                       ...items.map((item) => _offerCard(item, state)),
