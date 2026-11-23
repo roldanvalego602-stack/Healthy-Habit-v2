@@ -264,10 +264,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     }
     setState(() => _guardando = true);
     try {
-      await _db.collection('users').doc(user.uid).set({
+      await _db.collection('users').doc(user.uid).update({
         'profileAvatarStyle': selected,
+        'shopEquipped.perfil_avatar': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
       if (!mounted) return;
       setState(() => _avatarStyle = selected);
       _mensaje('Avatar actualizado.');
