@@ -95,6 +95,19 @@ void main() {
         'avatar_snowman');
   });
 
+  test('la skin se comparte sin revelar inventario o monedas', () {
+    final projection = HealthyPublicProfileService.project({
+      'name': 'Lia',
+      'habitCoins': 400,
+      'shopInventory': ['skin_christmas_cartoon'],
+      'shopEquipped': {'skin': 'skin_christmas_cartoon'},
+    });
+    expect((projection['healthyEquipped'] as Map)['skin'],
+        'skin_christmas_cartoon');
+    expect(projection.containsKey('shopInventory'), isFalse);
+    expect(projection.containsKey('habitCoins'), isFalse);
+  });
+
   test('public profile without purchases shows default mascot', () {
     final profile = HealthyPublicProfileService.project({
       'name': 'Alex',
