@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'perfil/profile_avatar.dart';
+import '../tema/healthy_profile_presentation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -252,7 +253,10 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
         final name = (data['name'] ?? user.displayName ?? 'Usuario').toString();
 
-        final photo = (data['photoUrl'] ?? user.photoURL)?.toString();
+        final photo = HealthyProfilePresentation.photoUrl(data) ??
+            (HealthyProfilePresentation.avatarPreset(data) == 'foto'
+                ? user.photoURL : null);
+        final avatarPreset = HealthyProfilePresentation.avatarPreset(data);
 
         final xp =
             _number(
@@ -282,6 +286,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
               key: ValueKey(user.uid),
               name: name,
               photoUrl: photo,
+              avatarPreset: avatarPreset,
               xp: xp,
               level: level,
               streak: streak,
@@ -320,6 +325,7 @@ class _HomeContent extends StatelessWidget {
     super.key,
     required this.name,
     required this.photoUrl,
+    required this.avatarPreset,
     required this.xp,
     required this.level,
     required this.streak,
@@ -333,6 +339,7 @@ class _HomeContent extends StatelessWidget {
 
   final String name;
   final String? photoUrl;
+  final String avatarPreset;
 
   final int xp;
   final int level;
@@ -410,6 +417,7 @@ class _HomeContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   child: HealthyProfileAvatar(
                     photoUrl: photoUrl,
+                    preset: avatarPreset,
                     size: 44,
                   ),
                 ),
