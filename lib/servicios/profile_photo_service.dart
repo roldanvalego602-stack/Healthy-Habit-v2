@@ -64,11 +64,13 @@ class ProfilePhotoService {
     try {
       final current = await doc.get();
       final oldPath = current.data()?['profilePhotoPath']?.toString() ?? '';
-      await doc.set({
+      await doc.update({
         'photoUrl': '',
         'profilePhotoPath': '',
+        'profileAvatarStyle': 'foto',
+        'shopEquipped.perfil_avatar': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
       try {
         await user.updatePhotoURL(null);
       } catch (_) {}
@@ -160,12 +162,13 @@ class ProfilePhotoService {
       throw explainFirebaseError(error, stage: 'obtención de la URL');
     }
     try {
-      await userRef.set({
+      await userRef.update({
         'photoUrl': url,
         'profileAvatarStyle': 'foto',
         'profilePhotoPath': object.fullPath,
+        'shopEquipped.perfil_avatar': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
     } on FirebaseException catch (error) {
       try { await object.delete(); } catch (_) {}
       throw explainFirebaseError(error, stage: 'guardado en Firestore');
