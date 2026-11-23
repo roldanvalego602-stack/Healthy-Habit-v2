@@ -74,3 +74,27 @@ La prueba de usuario mostró que el premio podía cobrarse mientras el contador 
 - Se agregaron pruebas del cruce UTC del día `2026-11-22/23`, `America/Monterrey` y zona no reconocida.
 
 Validación local: `flutter analyze --no-fatal-infos lib`; `flutter test test/daily_streak_display_test.dart`; `flutter test test/daily_streak_reward_dialog_test.dart`. Comprobar en `users/{uid}` del emulador los campos `serverLastStreakDay`, `serverStreakDays`, `serverLongestStreak` y `calendarTimeZone`, no los campos heredados `currentStreak` y `streakDays`. El primer día verificado de una cuenta de demo nueva debe indicar **1 día**, no heredar automáticamente días anteriores.
+
+## Racha global con calendario estable — revisión siguiente
+
+- El motor oficial fija `serverStreakTimeZone` al emitir el primer día verificado. La prioridad es zona ya fijada, `calendarTimeZone` del usuario, zona del intento; la zona no se solicita al cliente al registrar.
+- `DailyStreakDisplay` lee `serverStreakTimeZone` para todas las vistas (Inicio, Perfil, Progreso, Racha), incluso si otra configuración de hábito tiene calendario diferente.
+- `firestore.candidate.rules` prohíbe al propietario modificar el campo. **La regla sigue siendo candidata y no está desplegada.**
+- La pantalla de racha muestra la última fecha verificada y su zona; sirve para comprobar el momento exacto en el que el servidor reconoce un nuevo día.
+- Pruebas añadidas: Flutter respeta la zona fijada y la integración Firestore registra el 22 de noviembre en `America/Monterrey` aunque en UTC ya sea 23.
+
+### Actualización local
+
+```bash
+cd ~/Documentos/Integradora/Healthy-Habit-racha
+git status --short
+git fetch origin feature/daily-streak-rewards-20261122
+git merge --ff-only origin/feature/daily-streak-rewards-20261122
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/daily_streak_display_test.dart test/daily_streak_reward_dialog_test.dart
+npm --prefix functions test
+firebase emulators:exec --config firebase.emulator.json --project demo-healthy-habit --only firestore "cd functions && npm run test:integration"
+```
+
+**Atención:** no se fusionó el PR #20 ni se hizo despliegue. Los tests recién añadidos requieren validación local. La racha y el premio siguen aislados hasta migrar el registro normal al backend autorizado.
