@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'shop_service.dart';
+import 'healthy_leaf_aura.dart';
 
 /// Usa las imágenes reales subidas por el equipo y conserva el emoji
 /// como respaldo para los cosméticos que todavía no tienen ilustración.
