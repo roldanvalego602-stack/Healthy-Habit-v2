@@ -154,7 +154,6 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
                               _zoom, image,
                             );
                           });
-                          _gestureStartOffset = _offset;
                         },
                         child: ClipOval(
                           child: SizedBox.square(
