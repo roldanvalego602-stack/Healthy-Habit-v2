@@ -8,10 +8,10 @@ import 'shop_item_artwork.dart';
 
 /// Destacados del catálogo real. La lista se puede ampliar sin tocar el carrusel.
 const featuredShopItemIds = <String>[
-  'crown',
-  'mint_aura',
-  'elite_avatar',
-  'avatar_frame',
+  'leaf_crown',
+  'avatar_snowman',
+  'frame_emerald',
+  'skin_christmas_cartoon',
 ];
 
 /// Un carrusel manual: no se desplaza solo, conserva el catálogo tradicional
