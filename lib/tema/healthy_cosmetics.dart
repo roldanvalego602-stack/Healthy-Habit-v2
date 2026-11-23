@@ -37,6 +37,18 @@ class HealthyCosmetics {
     'reaction_goal': 'assets/cosmeticos/social/reacciones/healthy meta.png',
     'reaction_support': 'assets/cosmeticos/social/reacciones/healthy perro.png',
     'reaction_like': 'assets/cosmeticos/social/reacciones/like healthy.png',
+    'aviator_goggles_gold': 'assets/cosmeticos/mr_healthy/cabeza/Gafas de aviador de cuero dorado.png',
+    'leaf_glow_hat': 'assets/cosmeticos/mr_healthy/cabeza/Hoja verde brillante con destellos amarillos.png',
+    'leaf_crown': 'assets/cosmeticos/mr_healthy/cabeza/corona_hojas_healthy.png',
+    'skin_christmas_cartoon': 'assets/cosmeticos/mr_healthy/skins/skin cartoon.png',
+    'banner_gradient_yellow_pink': 'assets/cosmeticos/perfil/banners/Degradado_Amarillo-Rosa.png',
+    'banner_gradient_blue_pink': 'assets/cosmeticos/perfil/banners/Degradado_Azul-Rosa.png',
+    'banner_gradient_teal_yellow': 'assets/cosmeticos/perfil/banners/Degradado_Azulverdoso-Amarillo.png',
+    'banner_gradient_gold_black': 'assets/cosmeticos/perfil/banners/Degradado_Dorado-Negro.png',
+    'banner_gradient_purple_teal': 'assets/cosmeticos/perfil/banners/Degradado_Morad-Azulverdoso.png',
+    'banner_gradient_pink_violet': 'assets/cosmeticos/perfil/banners/Degradado_Rosa-Violeta.png',
+    'banner_gradient_turquoise_blue': 'assets/cosmeticos/perfil/banners/Degradado_Turqueza-Azul.png',
+    'banner_gradient_black_blue': 'assets/cosmeticos/perfil/banners/Degradado_negro-Azul.png',
   };
 
   static const Map<String, String> reactionEmoji = {
