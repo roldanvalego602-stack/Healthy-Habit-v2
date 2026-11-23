@@ -4,6 +4,7 @@ import 'profile_avatar.dart';
 import 'perfil_muestra.dart';
 import 'interaction_model.dart';
 import 'interaction_service.dart';
+import '../../tema/healthy_cosmetics.dart';
 
 /// Reacciones verdaderas del usuario autenticado, sin eventos inventados.
 class ReaccionesRecibidasPanel extends StatefulWidget {
@@ -130,11 +131,30 @@ class _ReaccionesRecibidasPanelState
                                         : FontWeight.w800,
                                   ),
                                 ),
-                                subtitle: Text(
-                                  '${item.emoji} · '
-                                  '${item.createdAt.day}/'
-                                  '${item.createdAt.month}/'
-                                  '${item.createdAt.year}',
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${item.emoji} · '
+                                      '${item.createdAt.day}/'
+                                      '${item.createdAt.month}/'
+                                      '${item.createdAt.year}',
+                                    ),
+                                    if (item.challengeId.startsWith('sticker:') &&
+                                        HealthyCosmetics.artwork.containsKey(
+                                          item.challengeId.substring(8)))
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Image.asset(
+                                          HealthyCosmetics.artwork[
+                                            item.challengeId.substring(8)]!,
+                                          width: 86, height: 86,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) =>
+                                              const SizedBox.shrink(),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 onTap: friend == null ? null : () {
                                   Navigator.of(context).push(
