@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
-import '../tema/healthy_float.dart';
 import '../tema/healthy_motion.dart';
 import '../tema/healthy_visual_mode.dart';
 import '../tema/healthy_profile_presentation.dart';
@@ -34,10 +33,6 @@ class RankingScreen extends StatelessWidget {
   String _name(Map<String, dynamic> data) {
     final name = (data['name'] ?? 'Usuario').toString().trim();
     return name.isEmpty ? 'Usuario' : name;
-  }
-
-  String _photo(Map<String, dynamic> data) {
-    return (data['photoUrl'] ?? '').toString().trim();
   }
 
   void _openUserProfile(
