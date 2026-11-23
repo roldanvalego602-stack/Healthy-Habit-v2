@@ -43,6 +43,7 @@ class _StoreScreenState extends State<StoreScreen> {
     'Marcos',
     'Banners',
     'Reacciones',
+    'Skins',
     'Insignias',
     'Extras',
     'Ropa',
