@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
+import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
 import 'amigos_servicio.dart';
 import '../logros/logros_service.dart';
@@ -230,8 +231,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _publicProfileCard(
                             name: name,
                             photoUrl: photoUrl,
-                            avatarStyle: _readString(data, 'profileAvatarStyle', 'foto'),
-                            bannerStyle: _readString(data, 'profileBanner', 'Amanecer'),
+                            avatarStyle: HealthyCosmetics.equippedId(
+                                  data, 'perfil_avatar', publicProfile: true) ??
+                                _readString(data, 'profileAvatarStyle', 'foto'),
+                            bannerStyle: HealthyCosmetics.equippedId(
+                                  data, 'perfil_banner', publicProfile: true) ??
+                                _readString(data, 'profileBanner', 'Amanecer'),
+                            frameAsset: HealthyCosmetics.equippedAsset(
+                                data, 'perfil_marco', publicProfile: true),
                             username: username,
                             bio: bio,
                             title: title,
@@ -273,6 +280,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     required String photoUrl,
     required String avatarStyle,
     required String bannerStyle,
+    required String? frameAsset,
     required String username,
     required String bio,
     required String title,
@@ -315,10 +323,21 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: mint, width: 2),
                   ),
-                  child: HealthyProfileAvatar(
-                    photoUrl: photoUrl,
-                    preset: avatarStyle,
-                    size: 80,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      HealthyProfileAvatar(
+                        photoUrl: photoUrl,
+                        preset: avatarStyle,
+                        size: 80,
+                      ),
+                      if (frameAsset != null)
+                        IgnorePointer(
+                          child: Image.asset(frameAsset, fit: BoxFit.fill,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink()),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
