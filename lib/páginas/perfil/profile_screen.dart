@@ -1520,10 +1520,18 @@ class ProfileScreen extends StatelessWidget {
         );
         if (choice == null) return;
         try {
-          await userRef.set({
+          final changes = <String, dynamic>{
             field: choice,
             'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+          };
+          // Elegir el aspecto clásico elimina únicamente el cosmético
+          // equipado; la compra permanece guardada en el inventario.
+          if (field == 'profileBanner') {
+            changes['shopEquipped.perfil_banner'] = FieldValue.delete();
+          } else if (field == 'profileFrame') {
+            changes['shopEquipped.perfil_marco'] = FieldValue.delete();
+          }
+          await userRef.update(changes);
           if (context.mounted) Navigator.pop(context);
         } catch (e) {
           if (context.mounted) {
