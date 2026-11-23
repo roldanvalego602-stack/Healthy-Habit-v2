@@ -17,6 +17,7 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import '../../servicios/daily_streak_display.dart';
 import 'profile_monthly_summary.dart';
 import 'profile_habit_insights.dart';
 import '../tienda/wardrobe_screen.dart';
@@ -116,7 +117,7 @@ class ProfileScreen extends StatelessWidget {
         final level = _integer(data['level'], fallback: 1);
         final xp = _integer(data['xp']);
         final coins = _integer(data['habitCoins']);
-        final streak = _integer(data['currentStreak']);
+        final streak = DailyStreakDisplay.current(data);
         final rawSettings = data['settings'];
         final prefs = rawSettings is Map ? rawSettings : const <String, dynamic>{};
         bool visible(String key) =>
