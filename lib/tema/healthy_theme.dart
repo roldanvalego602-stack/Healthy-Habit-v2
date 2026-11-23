@@ -2,11 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_motion.dart';
 
+enum HealthyThemeStyle { original, emeraldChristmas }
+
+extension HealthyThemeStyleLabel on HealthyThemeStyle {
+  String get label => switch (this) {
+    HealthyThemeStyle.original => 'Healthy Original',
+    HealthyThemeStyle.emeraldChristmas => 'Navidad Esmeralda',
+  };
+}
+
 /// Preferencia de apariencia del dispositivo. No depende de una sesión Firebase.
 class HealthyThemeController extends ChangeNotifier {
   HealthyThemeController._();
   static final HealthyThemeController instance = HealthyThemeController._();
   static const preferenceKey = 'healthy_habit_theme_v1';
+  static const stylePreferenceKey = 'healthy_habit_style_v1';
+
+  HealthyThemeStyle _style = HealthyThemeStyle.original;
+  HealthyThemeStyle get style => _style;
+
+  static HealthyThemeStyle parseStyle(String? value) =>
+      value == HealthyThemeStyle.emeraldChristmas.label
+          ? HealthyThemeStyle.emeraldChristmas
+          : HealthyThemeStyle.original;
+
+  Future<void> selectStyle(HealthyThemeStyle next) async {
+    if (next == _style) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(stylePreferenceKey, next.label);
+    _style = next;
+    notifyListeners();
+  }
 
   ThemeMode _mode = ThemeMode.light;
   ThemeMode get mode => _mode;
@@ -38,6 +64,7 @@ class HealthyThemeController extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _mode = parse(prefs.getString(preferenceKey));
+    _style = parseStyle(prefs.getString(stylePreferenceKey));
     notifyListeners();
   }
 
@@ -52,7 +79,12 @@ class HealthyThemeController extends ChangeNotifier {
 
 class HealthyThemes {
   static const _green = Color(0xFF00C88C);
-  static ThemeData light() => ThemeData(
+  static ThemeData light() {
+    if (HealthyThemeController.instance.style ==
+        HealthyThemeStyle.emeraldChristmas) {
+      return _christmas(Brightness.light);
+    }
+    return ThemeData(
     useMaterial3: true,
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
       TargetPlatform.android: HealthyRouteTransitions(),
@@ -73,8 +105,14 @@ class HealthyThemes {
       foregroundColor: Color(0xFF0E1A30),
     ),
   );
+  }
 
-  static ThemeData dark() => ThemeData(
+  static ThemeData dark() {
+    if (HealthyThemeController.instance.style ==
+        HealthyThemeStyle.emeraldChristmas) {
+      return _christmas(Brightness.dark);
+    }
+    return ThemeData(
     useMaterial3: true,
     fontFamily: 'Inter',
     brightness: Brightness.dark,
@@ -89,11 +127,66 @@ class HealthyThemes {
       foregroundColor: Color(0xFFF1F5F6),
     ),
   );
+  }
+
+  static ThemeData _christmas(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    const evergreen = Color(0xFF087B58);
+    const ruby = Color(0xFFB9364D);
+    const gold = Color(0xFFD6A646);
+    final background = dark
+        ? const Color(0xFF101E1C) : const Color(0xFFF7FAF6);
+    final surface = dark
+        ? const Color(0xFF1C302B) : Colors.white;
+    final scheme = ColorScheme.fromSeed(
+      seedColor: evergreen,
+      brightness: brightness,
+      primary: dark ? const Color(0xFF75D9AE) : evergreen,
+      secondary: dark ? const Color(0xFFE7B969) : ruby,
+      tertiary: gold,
+      surface: surface,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Inter',
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: background,
+      cardColor: surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: background,
+        foregroundColor: dark
+            ? const Color(0xFFF2F8F3) : const Color(0xFF12372F),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        indicatorColor: dark
+            ? const Color(0xFF285F4A) : const Color(0xFFDDF4E9),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: dark
+            ? const Color(0xFF264B40) : const Color(0xFFE8F4EC),
+        selectedColor: dark
+            ? const Color(0xFF3C715A) : const Color(0xFFC6EBD9),
+      ),
+      dividerColor: dark
+          ? const Color(0xFF36574D) : const Color(0xFFD8E8DF),
+    );
+  }
 }
 
 /// Tokens compartidos para migrar pantallas que antes tenían colores fijos.
 /// La instancia global reconstruye MaterialApp al cambiar la preferencia.
 class HealthyAdaptive {
+  static bool get isChristmas =>
+      HealthyThemeController.instance.style ==
+      HealthyThemeStyle.emeraldChristmas;
   static bool get isDark {
     final mode = HealthyThemeController.instance.mode;
     if (mode == ThemeMode.dark) return true;
@@ -103,19 +196,19 @@ class HealthyAdaptive {
   }
 
   static Color get background =>
-      isDark ? const Color(0xFF101923) : const Color(0xFFF7F9F8);
+      isChristmas ? (isDark ? const Color(0xFF101E1C) : const Color(0xFFF7FAF6)) : (isDark ? const Color(0xFF101923) : const Color(0xFFF7F9F8));
   static Color get surface =>
-      isDark ? const Color(0xFF1B2935) : Colors.white;
+      isChristmas ? (isDark ? const Color(0xFF1C302B) : Colors.white) : (isDark ? const Color(0xFF1B2935) : Colors.white);
   static Color get surfaceAlt =>
-      isDark ? const Color(0xFF263947) : const Color(0xFFEAF3EF);
+      isChristmas ? (isDark ? const Color(0xFF294B3E) : const Color(0xFFE8F4EC)) : (isDark ? const Color(0xFF263947) : const Color(0xFFEAF3EF));
   static Color get text =>
-      isDark ? const Color(0xFFF1F5F6) : const Color(0xFF193344);
+      isChristmas ? (isDark ? const Color(0xFFF2F8F3) : const Color(0xFF12372F)) : (isDark ? const Color(0xFFF1F5F6) : const Color(0xFF193344));
   static Color get muted =>
-      isDark ? const Color(0xFFB4C1CB) : const Color(0xFF71879A);
+      isChristmas ? (isDark ? const Color(0xFFB8D0C3) : const Color(0xFF627E70)) : (isDark ? const Color(0xFFB4C1CB) : const Color(0xFF71879A));
   static Color get border =>
-      isDark ? const Color(0xFF344A57) : const Color(0xFFE0EAE6);
+      isChristmas ? (isDark ? const Color(0xFF36574D) : const Color(0xFFD8E8DF)) : (isDark ? const Color(0xFF344A57) : const Color(0xFFE0EAE6));
   static Color get accent =>
-      isDark ? const Color(0xFF6CD3A1) : const Color(0xFF078765);
+      isChristmas ? (isDark ? const Color(0xFF75D9AE) : const Color(0xFF087B58)) : (isDark ? const Color(0xFF6CD3A1) : const Color(0xFF078765));
 
   /// Tarjetas de categorías conservan su identidad cromática, sin
   /// dejar texto oscuro sobre un panel oscuro.
