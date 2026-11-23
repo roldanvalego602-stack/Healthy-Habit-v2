@@ -4,6 +4,10 @@ import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
 import 'shop_item_artwork.dart';
 import 'healthy_mascot_outfit.dart';
+import '../../tema/healthy_cosmetics.dart';
+import '../perfil/profile_banner.dart';
+import '../perfil/profile_avatar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
@@ -141,6 +145,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 ),
                 const SizedBox(height: 20),
                 _preview(state),
+                const SizedBox(height: 14),
+                _profilePreview(state),
                 const SizedBox(height: 20),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -260,6 +266,63 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           style: TextStyle(color: navy, fontWeight: FontWeight.w600),
         ),
       ]),
+    );
+  }
+
+  /// Previsualiza los cosméticos de perfil en la ranura correcta.
+  /// En el perfil real se utilizará la foto y los datos del usuario.
+  Widget _profilePreview(ShopState? state) {
+    final equipped = state?.equipped ?? const <String, String>{};
+    final bannerId = equipped['perfil_banner'] ?? 'Amanecer';
+    final avatarId = equipped['perfil_avatar'] ?? 'foto';
+    final frameAsset = HealthyCosmetics.artwork[equipped['perfil_marco']];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        border: Border.all(color: HealthyAdaptive.border),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Vista previa de perfil',
+            style: TextStyle(color: navy, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 11),
+          ProfileBanner(
+            bannerStyle: bannerId,
+            label: 'MI PERFIL',
+            fallbackColors: const [
+              Color(0xFF174D4B), Color(0xFF498A75),
+            ],
+          ),
+          Center(
+            child: Transform.translate(
+              offset: const Offset(0, -26),
+              child: SizedBox.square(
+                dimension: 88,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    HealthyProfileAvatar(
+                      photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
+                      preset: avatarId,
+                      size: 88,
+                    ),
+                    if (frameAsset != null)
+                      Image.asset(frameAsset, fit: BoxFit.fill,
+                        errorBuilder: (_, __, ___) =>
+                            const SizedBox.shrink()),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Text('Se verá así en tu perfil y en el de tus amigos.',
+            style: TextStyle(color: muted, fontSize: 12)),
+        ],
+      ),
     );
   }
 
