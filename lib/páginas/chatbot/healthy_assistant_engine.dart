@@ -386,7 +386,8 @@ class HealthyAssistantEngine {
       );
     }
 
-    for (final item in shopCatalog) {
+    for (final item in shopCatalog.where(
+        (item) => isShopItemVisible(item.id))) {
       final itemName = NutriRespuestasService.normalizar(item.name);
       final uniqueWords = itemName
           .split(' ')
