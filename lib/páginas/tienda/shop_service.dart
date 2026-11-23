@@ -120,6 +120,12 @@ const shopCatalog = <ShopItem>[
   ShopItem('leaf_aura', 'Aura de hojas', 'Especiales',
       'Hojas flotantes, luz verde y halo vegetal alrededor de Mr. Healthy.',
       180, emoji: '🍃', slot: 'aura'),
+  ShopItem('stellar_aura', 'Aura estelar', 'Especiales',
+      'Órbita luminosa, estrellas en movimiento y brillo azul violeta.',
+      280, emoji: '🌌', slot: 'aura'),
+  ShopItem('golden_aura', 'Aura dorada', 'Especiales',
+      'Halo dorado, resplandor radiante y laureles de celebración.',
+      400, emoji: '🌟', slot: 'aura'),
   ShopItem(
     'cape',
     'Capa de héroe',
