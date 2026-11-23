@@ -61,6 +61,17 @@ void main() {
     }
   });
 
+  test('identifica fallas de red al subir la fotografía', () {
+    final issue = ProfilePhotoService.explainFirebaseError(
+      FirebaseException(
+        plugin: 'firebase_storage', code: 'retry-limit-exceeded',
+      ),
+      stage: 'subida a Storage',
+    );
+    expect(issue.code, 'retry-limit-exceeded');
+    expect(issue.message.toLowerCase(), contains('conexión'));
+  });
+
   testWidgets('sin foto muestra un icono de respaldo',
       (tester) async {
     await tester.pumpWidget(
