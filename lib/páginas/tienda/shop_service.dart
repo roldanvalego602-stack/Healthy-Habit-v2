@@ -280,9 +280,20 @@ class ShopState {
 
 /// Artículos pendientes de adquirir. El inventario comprado se conserva
 /// en ShopState y se administra desde el armario, no desde esta lista.
+/// Artículos antiguos de demostración que no deben seguir vendiéndose.
+/// Permanecen en el catálogo técnico para conservar inventarios y precios
+/// históricos de cuentas existentes; no se conceden ni eliminan compras.
+const retiredShopItemIds = <String>{
+  'crown', 'mint_aura', 'elite_avatar', 'banner',
+  'streak_guard', 'mint_scarf', 'cape', 'pixel_glasses', 'cat_ears',
+};
+
+bool isShopItemVisible(String id) => !retiredShopItemIds.contains(id);
+
 List<ShopItem> availableShopItems(ShopState? state,
     {String category = 'Todos'}) {
   return shopCatalog.where((item) =>
+    isShopItemVisible(item.id) &&
     (category == 'Todos' || item.category == category) &&
     (state == null || !state.owns(item.id))
   ).toList(growable: false);
