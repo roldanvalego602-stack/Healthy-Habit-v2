@@ -67,6 +67,12 @@ class HealthyMascotOutfit extends StatelessWidget {
                   ),
                 if (equipped['espalda'] == 'leaf_backpack')
                   accessory('leaf_backpack', left: 165, top: 115, size: 85),
+                if (equipped['espalda'] == 'superhero_cape_red')
+                  accessory('superhero_cape_red',
+                      left: 31, top: 132, size: 218),
+                if (equipped['espalda'] == 'star_backpack_blue')
+                  accessory('star_backpack_blue',
+                      left: 165, top: 115, size: 90),
 
                 Positioned(
                   left: 30, top: 7,
@@ -97,12 +103,33 @@ class HealthyMascotOutfit extends StatelessWidget {
                   accessory('crown', left: 94, top: 35, size: 92),
                 if (equipped['cabeza'] == 'cat_ears')
                   accessory('cat_ears', left: 85, top: 40, size: 110),
+                if (equipped['cabeza'] == 'cat_headphones_pink')
+                  accessory('cat_headphones_pink',
+                      left: 55, top: 42, size: 174),
+                if (equipped['cabeza'] == 'chef_hat_green')
+                  accessory('chef_hat_green',
+                      left: 73, top: 15, size: 145),
+                if (equipped['cabeza'] == 'paper_sailor_hat')
+                  accessory('paper_sailor_hat',
+                      left: 64, top: 17, size: 160),
+                if (equipped['cabeza'] == 'space_helmet')
+                  accessory('space_helmet',
+                      left: 62, top: 33, size: 159),
 
                 if (equipped['ojos'] == 'sunglasses')
                   accessory('sunglasses', left: 91, top: 107, size: 100),
                 if (equipped['ojos'] == 'pixel_glasses')
                   accessory('pixel_glasses',
                     left: 85, top: 107, size: 110),
+                if (equipped['ojos'] == 'rock_face_mask')
+                  accessory('rock_face_mask',
+                      left: 64, top: 110, size: 154),
+                if (equipped['ojos'] == 'hero_mask_blue')
+                  accessory('hero_mask_blue',
+                      left: 79, top: 114, size: 120),
+                if (equipped['brazos'] == 'green_gloves')
+                  accessory('green_gloves',
+                      left: 28, top: 154, size: 225),
 
                 if (equipped['cuello'] == 'wellness_medal')
                   accessory('wellness_medal',
