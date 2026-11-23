@@ -17,7 +17,8 @@ class DailyStreakDisplay {
 
   static String _todayInZone(Map<String, dynamic> profile, DateTime now) {
     final zone = profile['serverLastStreakDay'] is String
-        ? (profile['calendarTimeZone'] ?? 'UTC').toString()
+        ? (profile['serverStreakTimeZone'] ??
+            profile['calendarTimeZone'] ?? 'UTC').toString()
         : '';
     if (zone.isEmpty) return _dayKey(now.toLocal());
 
