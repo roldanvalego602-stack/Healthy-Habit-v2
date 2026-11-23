@@ -37,6 +37,36 @@ void main() {
     });
   });
 
+  test('public profile shares only equipped mascot items', () {
+    final profile = HealthyPublicProfileService.project({
+      'name': 'Mariana',
+      'xp': 42,
+      'habitCoins': 700,
+      'shopInventory': ['crown', 'banner', 'water_bottle'],
+      'shopEquipped': {
+        'cabeza': 'crown',
+        'mano': 'water_bottle',
+        'perfil_banner': 'banner',
+        'untrusted_key': 'private',
+      },
+    });
+    expect(profile['healthyEquipped'], {
+      'cabeza': 'crown',
+      'mano': 'water_bottle',
+    });
+    expect(profile.containsKey('shopInventory'), isFalse);
+    expect(profile.containsKey('shopEquipped'), isFalse);
+    expect(profile.containsKey('habitCoins'), isFalse);
+  });
+
+  test('public profile without purchases shows default mascot', () {
+    final profile = HealthyPublicProfileService.project({
+      'name': 'Alex',
+      'xp': 0,
+    });
+    expect(profile['healthyEquipped'], isEmpty);
+  });
+
   test('public streak is available only when opted in', () {
     final public = HealthyPublicProfileService.project({
       'name': 'Bruno',
