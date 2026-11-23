@@ -567,59 +567,39 @@ exports.registerOfficialHabitDemo = officialDemoCallable(
 );
 
 
-// Reclamo de racha: NUNCA se concede por la racha escrita desde Flutter.
-// Requiere un día verificado por el registro oficial del servidor.
-const {rewardCoins: dailyStreakCoins} = require("./streak_day_policy");
-const {FieldValue: StreakFieldValue} = require("firebase-admin/firestore");
+// Reclamo de premios habilitado únicamente en el emulador aislado.
+// No exponerlo en producción hasta finalizar la migración de hábitos
+// y publicar reglas económicas seguras en una entrega coordinada.
+const {
+  claimDailyStreakRewardTransaction, DailyStreakClaimError,
+} = require("./streak_claim_transaction");
 
 exports.claimDailyStreakReward = onCall(
   {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
   async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError("failed-precondition",
+        "Los premios diarios siguen en pruebas aisladas.");
+    }
+    if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Inicia sesión.");
     }
-    const input = request.data ?? {};
-    const day = input.day;
-    if (Object.keys(input).length !== 1 || typeof day !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
-      throw new HttpsError("invalid-argument", "Selecciona un día válido.");
+    const data = request.data ?? {};
+    if (!data || typeof data !== "object" ||
+        Array.isArray(data) ||
+        Object.keys(data).length !== 1) {
+      throw new HttpsError("invalid-argument", "Solicitud inválida.");
     }
-    const userRef = db.collection("users").doc(uid);
-    const dayRef = userRef.collection("daily_streak_days").doc(day);
-    return db.runTransaction(async (tx) => {
-      const [userSnap, daySnap] = await Promise.all([
-        tx.get(userRef), tx.get(dayRef),
-      ]);
-      if (!userSnap.exists || !daySnap.exists) {
-        throw new HttpsError("failed-precondition",
-          "Este día no tiene un registro de racha validado por el servidor.");
-      }
-      const verified = daySnap.data();
-      if (verified.day !== day || !verified.verifiedAt ||
-          !Number.isSafeInteger(verified.streak) || verified.streak < 1) {
-        throw new HttpsError("failed-precondition",
-          "El registro diario no es válido.");
-      }
-      if (verified.claimed === true) {
-        return {alreadyClaimed: true, day, coinsAwarded: 0};
-      }
-      const coins = userSnap.data().habitCoins ?? 0;
-      if (!Number.isSafeInteger(coins) || coins < 0 ||
-          coins > 1000000000 - dailyStreakCoins(verified.streak)) {
-        throw new HttpsError("failed-precondition",
-          "Saldo de Habit Coins inválido.");
-      }
-      const award = dailyStreakCoins(verified.streak);
-      tx.update(userRef, {
-        habitCoins: coins + award,
-        updatedAt: StreakFieldValue.serverTimestamp(),
+    try {
+      return await claimDailyStreakRewardTransaction({
+        db, uid: request.auth.uid, day: data.day,
       });
-      tx.update(dayRef, {
-        claimed: true,
-        claimedAt: StreakFieldValue.serverTimestamp(),
-      });
-      return {alreadyClaimed: false, day, coinsAwarded: award};
-    });
+    } catch (error) {
+      if (error instanceof DailyStreakClaimError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
   }
 );
