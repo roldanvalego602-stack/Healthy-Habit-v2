@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../servicios/profile_photo_service.dart';
 import 'profile_avatar.dart';
+import 'profile_photo_crop_screen.dart';
+import 'profile_photo_viewer.dart';
 import '../../tema/healthy_theme.dart';
 
 import '../../Contenido_del_tema/colores.dart';
@@ -131,15 +133,23 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     try {
       final selected = await _photoService.pick(source);
       if (selected == null || !mounted) return;
+      final cropped = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute<XFile>(
+          builder: (_) => ProfilePhotoCropScreen(original: selected),
+        ),
+      );
+      if (cropped == null || !mounted) return;
       setState(() => _subiendoFoto = true);
-      final url = await _photoService.upload(selected);
+      final url = await _photoService.upload(cropped);
       if (!mounted) return;
       setState(() { _photoUrl = url; _avatarStyle = 'foto'; _errorFoto = null; });
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
-      if (mounted) setState(() => _errorFoto = error.message);
-      // El mensaje queda visible junto a la foto; evitar duplicarlo
-      // en un SnackBar que ocupe media pantalla en Android.
+      if (mounted) {
+        setState(() => _errorFoto =
+            '${error.message} (código: ${error.code})');
+      }
+      // El error permanece visible y puede copiarse desde el perfil.
     } on PlatformException catch (error) {
       if (mounted) setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
       _mensaje('No se pudo acceder a cámara o galería '
@@ -156,36 +166,96 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   Future<void> _elegirAvatar() async {
     if (_subiendoFoto || _guardando || _cargando) return;
     const styles = <String, String>{
-      'foto': 'Fotografía o clásico',
+      'foto': 'Mi fotografía',
       'naturaleza': 'Naturaleza',
       'agua': 'Hidratación',
       'energia': 'Energía',
     };
     final selected = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: HealthyAdaptive.surface,
       builder: (sheetContext) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const ListTile(title: Text('Elegir avatar'),
-            subtitle: Text('No necesita Firebase Storage.')),
-          for (final item in styles.entries)
-            ListTile(
-              leading: Icon(switch (item.key) {
-                'naturaleza' => Icons.spa_rounded,
-                'agua' => Icons.water_drop_rounded,
-                'energia' => Icons.bolt_rounded,
-                _ => Icons.person_rounded,
-              }, color: HealthyAdaptive.accent),
-              title: Text(item.value),
-              trailing: _avatarStyle == item.key
-                  ? Icon(Icons.check_rounded, color: HealthyAdaptive.accent)
-                  : null,
-              onTap: () => Navigator.pop(sheetContext, item.key),
-            ),
-        ]),
+        child: SingleChildScrollView(
+          child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Elige tu avatar',
+                  style: Theme.of(sheetContext).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text('Puedes volver a tu foto o elegir una imagen gratuita.',
+                  style: Theme.of(sheetContext).textTheme.bodySmall),
+              const SizedBox(height: 18),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.12,
+                children: [
+                  for (final entry in styles.entries)
+                    InkWell(
+                      key: ValueKey('avatar-choice-${entry.key}'),
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => Navigator.pop(sheetContext, entry.key),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _avatarStyle == entry.key
+                                ? HealthyAdaptive.accent
+                                : HealthyAdaptive.border,
+                            width: _avatarStyle == entry.key ? 2 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            HealthyProfileAvatar(
+                              photoUrl: entry.key == 'foto' ? _photoUrl : null,
+                              preset: entry.key,
+                              size: 72,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(entry.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(sheetContext, 'upload'),
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Subir otra fotografía'),
+                ),
+              ),
+            ],
+          ),
+          ),
+        ),
       ),
     );
+    if (selected == 'upload') {
+      if (mounted) await _elegirFoto();
+      return;
+    }
+    if (selected == 'foto' && (_photoUrl ?? '').trim().isEmpty) {
+      if (mounted) await _elegirFoto();
+      return;
+    }
     if (selected == null || !mounted || selected == _avatarStyle) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -379,10 +449,17 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                           children: [
                             Semantics(
                               button: true,
-                              label: 'Cambiar foto de perfil',
+                              label: 'Opciones de foto de perfil',
                               child: InkWell(
                                 key: const Key('edit-profile-photo'),
-                                onTap: _subiendoFoto ? null : _elegirFoto,
+                                onTap: _subiendoFoto || _guardando
+                                    ? null
+                                    : () => showProfilePhotoActions(
+                                        context,
+                                        photoUrl: _photoUrl,
+                                        preset: _avatarStyle,
+                                        onEdit: _elegirFoto,
+                                      ),
                                 customBorder: const CircleBorder(),
                                 child: Stack(
                                   clipBehavior: Clip.none,
@@ -439,7 +516,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                             Text(
                               _subiendoFoto
                                   ? 'Subiendo fotografía…'
-                                  : 'Toca la foto para cambiarla',
+                                  : 'Toca tu imagen para verla o editarla',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HealthyAdaptive.muted,
@@ -458,7 +535,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                             OutlinedButton.icon(
                               onPressed: _guardando || _subiendoFoto ? null : _elegirAvatar,
                               icon: const Icon(Icons.face_retouching_natural_rounded),
-                              label: const Text('Elegir avatar sin foto'),
+                              label: const Text('Elegir avatar'),
                             ),
                             const SizedBox(height: 6),
                             if (_errorFoto != null) ...[
@@ -477,6 +554,19 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                                   Expanded(child: Text(_errorFoto!,
                                     style: const TextStyle(
                                       color: Colors.red, fontSize: 12))),
+                                  IconButton(
+                                    tooltip: 'Copiar error de fotografía',
+                                    icon: const Icon(Icons.copy_rounded,
+                                      color: Colors.red, size: 19),
+                                    onPressed: () async {
+                                      await Clipboard.setData(
+                                        ClipboardData(text: _errorFoto!),
+                                      );
+                                      if (mounted) {
+                                        _mensaje('Diagnóstico copiado.');
+                                      }
+                                    },
+                                  ),
                                 ]),
                               ),
                             ],
