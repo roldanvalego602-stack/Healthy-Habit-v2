@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../lib/páginas/tienda/shop_service.dart';
 import '../../lib/tema/healthy_asset_catalog.dart';
+import '../../lib/tema/healthy_cosmetics.dart';
 
 void main() {
   test('los 8 accesorios gráficos están vinculados al catálogo', () {
@@ -11,6 +13,35 @@ void main() {
       expect(item, isNotNull, reason: entry.key);
       expect(entry.value.endsWith('.png'), isTrue);
       expect(item!.slot, isNotNull);
+    }
+  });
+
+  test('cada cosmético nuevo existe, tiene nombre, precio y PNG/GIF', () {
+    expect(HealthyCosmetics.artwork.length, 27);
+    for (final entry in HealthyCosmetics.artwork.entries) {
+      final item = shopItemById(entry.key);
+      expect(item, isNotNull, reason: 'No existe: ${entry.key}');
+      expect(item!.price, greaterThan(0), reason: entry.key);
+      expect(File(entry.value).existsSync(), isTrue, reason: entry.value);
+      expect(entry.value.endsWith('.png') || entry.value.endsWith('.gif'),
+          isTrue, reason: entry.value);
+    }
+    expect(HealthyCosmetics.artwork['avatar_snowman']!.endsWith('.gif'),
+        isTrue);
+  });
+
+  test('los marcos y banners equipan las ranuras de perfil', () {
+    for (final item in shopCatalog) {
+      if (item.category == 'Marcos') expect(item.slot, 'perfil_marco');
+      if (item.category == 'Banners') expect(item.slot, 'perfil_banner');
+      if (item.category == 'Avatares' &&
+          HealthyCosmetics.artwork.containsKey(item.id)) {
+        expect(item.slot, 'perfil_avatar');
+      }
+    }
+    for (final id in HealthyCosmetics.reactionEmoji.keys) {
+      expect(shopItemById(id)?.category, 'Reacciones');
+      expect(shopItemById(id)?.slot, isNull);
     }
   });
 
