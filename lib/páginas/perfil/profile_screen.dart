@@ -16,6 +16,7 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import 'healthy_framed_avatar.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
 import 'profile_photo_viewer.dart';
@@ -375,42 +376,23 @@ class ProfileScreen extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Container(
-                          width: 94,
-                          height: 94,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: HealthyAdaptive.surface,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _frameColor(
-                                _string(data['profileFrame'],
-                                    fallback: 'Brote dorado'),
-                              ),
-                              width: 3,
-                            ),
+                        HealthyFramedAvatar(
+                          size: 94,
+                          photoUrl: data.containsKey('photoUrl')
+                              ? data['photoUrl']?.toString() ?? ''
+                              : FirebaseAuth.instance.currentUser?.photoURL,
+                          preset: HealthyCosmetics.equippedId(
+                                data, 'perfil_avatar') ??
+                              _string(data['profileAvatarStyle'],
+                                  fallback: 'foto'),
+                          frameAsset: HealthyCosmetics.equippedAsset(
+                              data, 'perfil_marco'),
+                          backgroundColor: HealthyAdaptive.surface,
+                          borderColor: _frameColor(
+                            _string(data['profileFrame'],
+                                fallback: 'Brote dorado'),
                           ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              HealthyProfileAvatar(
-                                photoUrl: data.containsKey('photoUrl')
-                                    ? data['photoUrl']?.toString() ?? ''
-                                    : FirebaseAuth.instance.currentUser
-                                            ?.photoURL ?? '',
-                                preset: HealthyCosmetics.equippedId(data, 'perfil_avatar') ??
-                                    _string(data['profileAvatarStyle'], fallback: 'foto'),
-                                size: 86,
-                              ),
-                              if (HealthyCosmetics.equippedAsset(data, 'perfil_marco')
-                                  case final frame?)
-                                IgnorePointer(
-                                  child: Image.asset(frame, fit: BoxFit.fill,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox.shrink()),
-                                ),
-                            ],
-                          ),
+                          borderWidth: 3,
                         ),
                         Positioned(
                           right: -3,
