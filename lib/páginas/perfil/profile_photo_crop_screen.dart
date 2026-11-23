@@ -86,13 +86,13 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
       final displayedWidth = base.width * _zoom;
       final displayedHeight = base.height * _zoom;
       final side = (_viewport / displayedWidth * image.width)
-          .round().clamp(1, math.min(image.width, image.height));
+          .round().clamp(1, math.min(image.width, image.height)).toInt();
       final x = ((displayedWidth - _viewport) / 2 - _offset.dx) *
           image.width / displayedWidth;
       final y = ((displayedHeight - _viewport) / 2 - _offset.dy) *
           image.height / displayedHeight;
-      final left = x.round().clamp(0, image.width - side);
-      final top = y.round().clamp(0, image.height - side);
+      final left = x.round().clamp(0, image.width - side).toInt();
+      final top = y.round().clamp(0, image.height - side).toInt();
       final cropped = img.copyCrop(
         image, x: left, y: top, width: side, height: side,
       );
