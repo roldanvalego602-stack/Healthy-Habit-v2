@@ -2,7 +2,7 @@
 
 ## Regla de producto
 
-Un día se considera cumplido cuando el usuario registra al menos una actividad válida mediante el motor oficial del servidor. La racha avanza como máximo una vez por fecha calendario en la zona horaria fijada por el intento (no enviada por el cliente). Si se pierde un día, la racha empieza de nuevo en 1 al registrar otra actividad. Los registros de hábitos semanales también pueden contar como una actividad del día, pero no se entregan premios adicionales por acumular registros el mismo día.
+La primera sesión de cualquier hábito registrada correctamente durante un día calendario activa la racha global. No hace falta completar el hábito entero. El primer registro debe estar validado por el motor oficial del servidor. La racha avanza como máximo una vez por fecha calendario en la zona horaria fijada por el intento (no enviada por el cliente). Si se pierde un día, la racha empieza de nuevo en 1 al registrar otra actividad. Los registros de hábitos semanales también pueden contar como una actividad del día, pero no se entregan premios adicionales por acumular registros el mismo día.
 
 Premios diarios pequeños: día 1 = 2 Habit Coins; días 2–3 = 3; días 4–6 = 4; días 7 en adelante = 5. Las cifras son propuesta inicial, sujetas a balance económico del juego. No se concede XP adicional.
 
