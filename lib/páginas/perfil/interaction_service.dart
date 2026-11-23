@@ -92,11 +92,39 @@ class InteractionService {
     });
   }
 
-  /// Registrar cuando el usuario responde a una interacción
+  /// Solo el destinatario puede responder y la respuesta es definitiva.
+  /// Firestore Rules debe validar la misma autorización en el servidor.
   Future<void> responderInteraccion(String interactionId, String nuevoEstado) async {
-    await _interactionsRef.doc(interactionId).update({
-      'estado': nuevoEstado,
-      'respondedAt': FieldValue.serverTimestamp(),
+    final me = FirebaseAuth.instance.currentUser?.uid;
+    if (me == null) throw StateError('Inicia sesión.');
+    if (interactionId.trim().isEmpty) {
+      throw ArgumentError('La interacción no es válida.');
+    }
+    if (nuevoEstado != 'aceptado' && nuevoEstado != 'rechazado') {
+      throw ArgumentError('La respuesta no es válida.');
+    }
+
+    await FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    ).runTransaction((tx) async {
+      final ref = _interactionsRef.doc(interactionId);
+      final snapshot = await tx.get(ref);
+      if (!snapshot.exists) {
+        throw StateError('Esta interacción ya no existe.');
+      }
+      final data = snapshot.data() as Map<String, dynamic>?;
+      if (data?['toUid'] != me) {
+        throw StateError('Solo el destinatario puede responder.');
+      }
+      if (data?['tipo'] != 'reaccion' ||
+          data?['estado'] != 'enviado' ||
+          data?['respondedAt'] != null) {
+        throw StateError('Esta interacción ya fue respondida o no es válida.');
+      }
+      tx.update(ref, {
+        'estado': nuevoEstado,
+        'respondedAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 }
