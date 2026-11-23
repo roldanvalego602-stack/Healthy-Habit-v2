@@ -126,7 +126,7 @@ class HealthyMascotOutfit extends StatelessWidget {
                 if (equipped['mano'] == 'water_bottle')
                   accessory('water_bottle',
                     left: 202, top: 163, size: 61),
-              ]),,
+              ]),
     );
   }
 }
