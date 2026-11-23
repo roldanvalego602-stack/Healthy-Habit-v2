@@ -315,11 +315,16 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             );
             if (!mounted) return;
-          } else if (action == StreakRewardAction.claimed) {
+          } else if (action == StreakRewardAction.claimed ||
+              action == StreakRewardAction.alreadyClaimed) {
             HealthyCelebration.show(
               context,
-              title: '¡Premio diario recogido!',
-              subtitle: '+$bonus Habit Coins por tu racha.',
+              title: action == StreakRewardAction.claimed
+                  ? '¡Premio diario recogido!'
+                  : 'Este premio ya se había recogido',
+              subtitle: action == StreakRewardAction.claimed
+                  ? '+$bonus Habit Coins por tu racha.'
+                  : 'Puedes consultar tu historial de racha.',
               icon: Icons.redeem_rounded,
             );
           }
