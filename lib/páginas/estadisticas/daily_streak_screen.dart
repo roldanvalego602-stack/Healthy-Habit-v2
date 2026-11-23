@@ -102,6 +102,19 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+              if (server)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'Última sesión verificada: '
+                    '${DailyStreakDisplay.lastDay(profile)} · '
+                    'Zona de racha: ${profile['serverStreakTimeZone'] ??
+                        profile['calendarTimeZone'] ?? 'UTC'}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               const SizedBox(height: 12),
               Text('Recompensas por constancia',
                   style: Theme.of(context).textTheme.titleLarge),
