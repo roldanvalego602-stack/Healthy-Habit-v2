@@ -214,6 +214,7 @@ class RankingScreen extends StatelessWidget {
               else
                 ...List.generate(users.length, (index) {
                   return _rankingTile(
+                    context,
                     users[index],
                     index + 1,
                     users[index].id == uid,
@@ -318,6 +319,7 @@ class RankingScreen extends StatelessWidget {
   }
 
   Widget _rankingTile(
+    BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>> user,
     int position,
     bool isMe,
