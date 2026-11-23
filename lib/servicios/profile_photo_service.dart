@@ -30,7 +30,6 @@ class ProfilePhotoService {
 
   /// Rechaza imágenes dañadas y genera un JPEG pequeño que se puede subir
   /// mediante putData también desde Flutter web (sin dart:io).
-  @visibleForTesting
   static Uint8List prepareJpeg(Uint8List bytes) {
     if (bytes.isEmpty || bytes.length > 12 * 1024 * 1024) {
       throw const ProfilePhotoException(
@@ -92,7 +91,17 @@ class ProfilePhotoService {
           code: 'unauthenticated');
     }
 
-    final bytes = prepareJpeg(await selected.readAsBytes());
+    late final Uint8List bytes;
+    try {
+      bytes = prepareJpeg(await selected.readAsBytes());
+    } on ProfilePhotoException {
+      rethrow;
+    } catch (_) {
+      throw const ProfilePhotoException(
+        'No se pudo leer o procesar la fotografía seleccionada.',
+        code: 'image-processing-failed',
+      );
+    }
     final userRef = _db.collection('users').doc(user.uid);
     var oldPath = '';
     try {
@@ -147,6 +156,7 @@ class ProfilePhotoService {
     try {
       url = await object.getDownloadURL();
     } on FirebaseException catch (error) {
+      try { await object.delete(); } catch (_) {}
       throw explainFirebaseError(error, stage: 'obtención de la URL');
     }
     try {
@@ -197,6 +207,15 @@ class ProfilePhotoService {
       return ProfilePhotoException(
         'No se encontró el bucket de Firebase Storage. '
         'Comprueba su creación, nombre y plan Blaze en Firebase Console. '
+        'Código: ${error.code}.',
+        code: code,
+      );
+    }
+    if (code == 'retry-limit-exceeded' || code == 'canceled' ||
+        code == 'cancelled' || code == 'network-request-failed') {
+      return ProfilePhotoException(
+        'No se completó la transferencia en $stage. '
+        'Revisa la conexión e inténtalo nuevamente. '
         'Código: ${error.code}.',
         code: code,
       );
