@@ -67,4 +67,16 @@ class OfficialHabitEmulatorService {
     'attemptId': attemptId,
     'operationId': operationId,
   });
+
+  /// Reclamo transaccional; utiliza el UID autenticado, nunca el del cliente.
+  /// Exclusivo del entorno Firebase Emulator aislado.
+  Future<Map<String, dynamic>> claimDailyStreakReward({
+    required String day,
+  }) {
+    if (!RegExp(r'^\\d{4}-\\d{2}-\\d{2}}
+).hasMatch(day)) {
+      throw ArgumentError('Selecciona un día válido para recoger el premio.');
+    }
+    return _call('claimDailyStreakReward', {'day': day});
+  }
 }
