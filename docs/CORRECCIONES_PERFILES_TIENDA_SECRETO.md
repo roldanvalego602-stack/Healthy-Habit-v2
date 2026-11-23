@@ -30,6 +30,16 @@ La bonificación acredita **1,000 Habit Coins una sola vez por usuario**, pero *
 
 Para habilitar la llamada de pruebas se requiere el arranque demo existente del proyecto, incluidos `HH_DEMO_SHOP_PURCHASE=true`, `ShopDemoBootstrap.enabled`, un host compatible y los emuladores de Auth, Firestore y Functions. **No desplegar ni eliminar las barreras de entorno para intentar obtener monedas en producción.**
 
+## Uso temporal con Firebase real (solo cuenta administradora)
+
+También está disponible la recompensa en **compilaciones Flutter de depuración** con el proyecto Firebase real. El botón llama a la función ya existente `adjustHabitCoins`, cuyo servidor exige `request.auth.token.admin === true`, nunca un permiso otorgado por el propio teléfono. Se acredita a la **cuenta que inició sesión**, con monto fijo de 1,000 y operación determinista `test_bonus_1000_v1_<uid>`. La transacción del backend registra el movimiento y no vuelve a otorgar monedas si se repite la operación.
+
+**Requisitos:** que `adjustHabitCoins` esté desplegada en el proyecto real y que la cuenta de pruebas posea el claim personalizado `admin: true` emitido de forma segura mediante Firebase Admin SDK. No basta con modificar campos de Firestore; la autorización se revisa en el token de Firebase Auth. Si el token se acaba de actualizar, cerrar e iniciar sesión o forzar renovación del token antes de intentarlo.
+
+Para evitar conceder privilegios administrativos amplios a una cuenta normal, es preferible crear **una cuenta de prueba independiente**. No compartir ni versionar archivos de credenciales de Admin SDK. El mantenimiento/revocación del rol debe realizarlo quien administra Firebase. La alternativa más sencilla, sin habilitar ningún acceso administrativo en la app, es ajustar temporalmente el saldo del documento de la **cuenta de pruebas** desde la consola Firebase, respaldando el valor previo.
+
+La recompensa no está disponible en APK de distribución (`release`). Tras probar, retirar el acceso secreto y eliminar el claim `admin` de la cuenta de pruebas; revisar el saldo, el movimiento auditado y cualquier artículo adquirido durante el ensayo.
+
 ## 4. Validación local
 
 ```bash
