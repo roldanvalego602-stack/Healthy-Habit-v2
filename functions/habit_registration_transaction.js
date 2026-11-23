@@ -197,12 +197,29 @@ async function registerHabitTransaction(
       .doc(periodKey);
     // Leer contador antes de efectuar cualquier escritura transaccional.
     const periodSnap = await tx.get(periodRef);
+    // La racha es GLOBAL por usuario: su calendario se fija cuando
+    // se registra el primer día oficial y no depende de cada hábito.
+    // Compatibilidad: perfiles sin zona previa heredan la del primer intento.
+    const streakZone = userSnap.data().serverStreakTimeZone ??
+      userSnap.data().calendarTimeZone ?? zone;
+    if (mode === "official") {
+      try {
+        validateTimeZone(streakZone);
+      } catch (error) {
+        if (error instanceof HabitCalendarError) {
+          throw new RegistrationPolicyError(
+            "failed-precondition", error.message
+          );
+        }
+        throw error;
+      }
+    }
     // La prueba diaria es creada SOLO por el motor oficial vía Admin SDK.
     const streakPlan = mode === "official" ? planVerifiedDay({
       previousDay: userSnap.data().serverLastStreakDay ?? null,
       previousStreak: userSnap.data().serverStreakDays ?? 0,
       previousBest: userSnap.data().serverLongestStreak ?? 0,
-      now, timeZone: zone,
+      now, timeZone: streakZone,
     }) : null;
     const streakDayRef = streakPlan
       ? userRef.collection("daily_streak_days").doc(streakPlan.day) : null;
@@ -289,6 +306,7 @@ async function registerHabitTransaction(
         dailyStreakCount: streakPlan.streak,
         dailyStreakReward: streakPlan.rewardCoins,
         dailyStreakNew: streakPlan.isNewDay && !streakDaySnap.exists,
+        dailyStreakTimeZone: streakZone,
       } : {}),
       ...(Object.hasOwn(streakUpdate, "periodStreak") ?
         {periodStreak: streakUpdate.periodStreak} : {}),
@@ -346,6 +364,7 @@ async function registerHabitTransaction(
         serverLastStreakDay: streakPlan.day,
         serverStreakDays: streakPlan.streak,
         serverLongestStreak: streakPlan.best,
+        serverStreakTimeZone: streakZone,
       } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
