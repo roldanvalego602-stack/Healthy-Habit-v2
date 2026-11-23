@@ -656,13 +656,33 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       );
     }).take(3).toList();
 
+    final rawEquipment = data['healthyEquipped'];
+    final exhibitor = rawEquipment is Map &&
+        rawEquipment['perfil_expositor'] == 'achievement_display';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
+        border: exhibitor
+            ? Border.all(color: gold, width: 2)
+            : null,
         borderRadius: BorderRadius.circular(25),
       ),
-      child: visible.isEmpty
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (exhibitor) ...[
+            Row(children: [
+              const Icon(Icons.workspace_premium_rounded,
+                color: gold, size: 19),
+              const SizedBox(width: 8),
+              Text('EXPOSITOR DE LOGROS', style: TextStyle(
+                color: navy, fontWeight: FontWeight.w900, fontSize: 12)),
+            ]),
+            const SizedBox(height: 12),
+          ],
+          visible.isEmpty
           ? Text(
               'Todavía no hay insignias compartidas de nivel, XP o racha.',
               style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12),
@@ -679,6 +699,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
               ],
             ),
+        ],
+      ),
     );
   }
 
