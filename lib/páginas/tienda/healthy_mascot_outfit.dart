@@ -78,7 +78,9 @@ class HealthyMascotOutfit extends StatelessWidget {
                   left: 30, top: 7,
                   width: 220, height: 260,
                   child: Image.asset(
-                    'assets/mascot/healthy.png',
+                    equipped['skin'] == 'skin_christmas_cartoon'
+                      ? 'assets/cosmeticos/mr_healthy/skins/skin cartoon.png'
+                      : 'assets/mascot/healthy.png',
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) =>
                         Icon(Icons.sentiment_satisfied,
@@ -115,6 +117,15 @@ class HealthyMascotOutfit extends StatelessWidget {
                 if (equipped['cabeza'] == 'space_helmet')
                   accessory('space_helmet',
                       left: 62, top: 33, size: 159),
+                if (equipped['cabeza'] == 'aviator_goggles_gold')
+                  accessory('aviator_goggles_gold',
+                      left: 76, top: 53, size: 135),
+                if (equipped['cabeza'] == 'leaf_glow_hat')
+                  accessory('leaf_glow_hat',
+                      left: 87, top: 13, size: 116),
+                if (equipped['cabeza'] == 'leaf_crown')
+                  accessory('leaf_crown',
+                      left: 68, top: 24, size: 149),
 
                 if (equipped['ojos'] == 'sunglasses')
                   accessory('sunglasses', left: 91, top: 107, size: 100),
