@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Tres segmentos de la fruta, sin contorno negro ni bordes de aplicación. -->
+    <path android:fillColor="#FFBDE858"
+        android:pathData="M55,37 C54,32 58,27 65,25 C66,31 63,35 55,37 Z"/>
+    <path android:fillColor="#FFFFCB60"
+        android:pathData="M33,51 C33,42 42,38 52,39 C58,40 61,42 67,40 C75,38 79,41 79,47 C77,53 69,55 60,55 L35,57 C34,55 33,53 33,51 Z"/>
+    <path android:fillColor="#FF8FD973"
+        android:pathData="M35,59 C43,57 53,57 64,55 C71,54 76,51 79,49 C80,56 75,62 67,64 C56,67 45,67 38,68 C35,65 35,62 35,59 Z"/>
+    <path android:fillColor="#FFFF6673"
+        android:pathData="M39,71 C48,69 62,69 70,66 C75,65 78,63 79,60 C79,74 68,81 56,81 C48,81 42,77 39,71 Z"/>
+</vector>
