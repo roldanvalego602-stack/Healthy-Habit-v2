@@ -31,7 +31,8 @@ void main() {
     expect(wardrobeItemsForSlot('piel-inexistente'), isEmpty);
     expect(wardrobeItemsForSlot('pies'), isEmpty);
     final auras = wardrobeItemsForSlot('aura');
-    expect(auras.map((item) => item.id), contains('leaf_aura'));
+    expect(auras.map((item) => item.id),
+        containsAll(['leaf_aura', 'stellar_aura', 'golden_aura']));
     expect(auras.map((item) => item.id), isNot(contains('mint_aura')));
   });
 
