@@ -67,7 +67,7 @@ void main() {
   test('los cosméticos provisionales no se ofrecen ni se equipan', () {
     const removed = {
       'crown', 'mint_aura', 'elite_avatar', 'banner',
-      'streak_guard', 'mint_scarf', 'cape', 'pixel_glasses',
+      'avatar_frame', 'streak_guard', 'mint_scarf', 'bandana', 'cape', 'pixel_glasses',
       'cat_ears',
     };
     for (final id in removed) {
