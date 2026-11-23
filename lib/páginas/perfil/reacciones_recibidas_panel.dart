@@ -162,7 +162,6 @@ class _ReaccionesRecibidasPanelState
                       );
                     },
                   ),
-                  ),
               ],
             ),
           ),
