@@ -15,6 +15,7 @@ const SHOP_PRICES = Object.freeze({
   "cap": 100,
   "crown": 180,
   "mint_aura": 120,
+  "leaf_aura": 180,
   "cape": 200,
   "pixel_glasses": 80,
   "cat_ears": 150,
