@@ -11,6 +11,7 @@ import 'shop_service.dart';
 import 'shop_item_artwork.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
+import 'secret_test_bonus_screen.dart';
 
 /// Tienda con tarjetas horizontales grandes. Conserva el catálogo y las compras.
 class StoreScreen extends StatefulWidget {
@@ -54,6 +55,25 @@ class _StoreScreenState extends State<StoreScreen> {
 
   String _filter = 'Todos';
   String? _busy;
+  int _secretTaps = 0;
+  DateTime? _lastSecretTap;
+
+  void _trySecretEntry() {
+    final now = DateTime.now();
+    if (_lastSecretTap == null ||
+        now.difference(_lastSecretTap!) > const Duration(seconds: 5)) {
+      _secretTaps = 0;
+    }
+    _lastSecretTap = now;
+    _secretTaps++;
+    if (_secretTaps >= 7) {
+      _secretTaps = 0;
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const SecretTestBonusScreen(),
+      ));
+    }
+  }
+
 
   void _message(String message) {
     if (!mounted) return;
@@ -286,29 +306,34 @@ class _StoreScreenState extends State<StoreScreen> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                decoration: BoxDecoration(
-                  color: _green,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x22004E37), offset: Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _coinIcon(size: 23),
-                    const SizedBox(width: 7),
-                    Text(
-                      state == null ? '...' : '${state.coins}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
+              GestureDetector(
+                key: const Key('tienda-acceso-secreto'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _trySecretEntry,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _green,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x22004E37), offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _coinIcon(size: 23),
+                      const SizedBox(width: 7),
+                      Text(
+                        state == null ? '...' : '${state.coins}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
