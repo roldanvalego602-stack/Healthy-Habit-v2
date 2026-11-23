@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
+import 'profile_photo_viewer.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
 import 'amigos_servicio.dart';
@@ -314,30 +315,46 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             offset: const Offset(0, -40),
             child: Column(
               children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: HealthyAdaptive.surfaceAlt,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: mint, width: 2),
-                  ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      HealthyProfileAvatar(
-                        photoUrl: photoUrl,
-                        preset: avatarStyle,
-                        size: 80,
-                      ),
-                      if (frameAsset != null)
-                        IgnorePointer(
-                          child: Image.asset(frameAsset, fit: BoxFit.fill,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox.shrink()),
+                Semantics(
+                  button: true,
+                  label: 'Ampliar fotografía de perfil',
+                  child: InkWell(
+                    key: const Key('public-profile-open-avatar'),
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProfilePhotoFullScreen(
+                          photoUrl: photoUrl,
+                          preset: avatarStyle,
                         ),
-                    ],
+                      ),
+                    ),
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: HealthyAdaptive.surfaceAlt,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: mint, width: 2),
+                      ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          HealthyProfileAvatar(
+                            photoUrl: photoUrl,
+                            preset: avatarStyle,
+                            size: 80,
+                          ),
+                          if (frameAsset != null)
+                            IgnorePointer(
+                              child: Image.asset(frameAsset, fit: BoxFit.fill,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink()),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
