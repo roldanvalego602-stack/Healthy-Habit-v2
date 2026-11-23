@@ -21,6 +21,7 @@ import 'notifications_screen.dart';
 import 'logros/logros_screen.dart';
 import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
+import 'estadisticas/daily_streak_screen.dart';
 
 // Firebase se inicializa realmente en lib/main.dart.
 void main() => runApp(const HabitTrackerApp());
@@ -202,7 +203,22 @@ class _HomeScreen2State extends State<HomeScreen2> {
         // El nivel visible depende solamente de XP.
         final level = LevelSystem.fromXp(xp).number;
 
-        final streak = _number(data['currentStreak'] ?? data['streakDays']);
+        final latestStreakDay = (data['serverLastStreakDay'] ??
+            data['lastStreakDate'] ?? '').toString();
+        final savedStreak = _number(
+          data['serverStreakDays'] ?? data['currentStreak'] ??
+          data['streakDays'],
+        );
+        final lastDay = DateTime.tryParse(latestStreakDay);
+        final localNow = DateTime.now();
+        final localToday = DateTime(
+          localNow.year, localNow.month, localNow.day,
+        );
+        final gap = lastDay == null ? 99999 :
+            localToday.difference(
+              DateTime(lastDay.year, lastDay.month, lastDay.day),
+            ).inDays;
+        final streak = gap == 0 || gap == 1 ? savedStreak : 0;
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
@@ -423,11 +439,21 @@ class _HomeContent extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _stat(
-                  Icons.local_fire_department,
-                  '$streak días',
-                  'Racha actual',
-                  AppColors.yellowCard,
+                child: InkWell(
+                  key: const ValueKey('open-daily-streak'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DailyStreakScreen(),
+                    ),
+                  ),
+                  child: _stat(
+                    Icons.local_fire_department,
+                    '$streak días',
+                    'Racha actual',
+                    AppColors.yellowCard,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
