@@ -484,6 +484,30 @@ exports.cancelDemoOfficialHabit = onCall(
 );
 
 
+// Easter egg de pruebas: nunca habilitado en Firebase de producción.
+const {isSecretTestEnvironment, claimSecretTestBonus} =
+  require("./secret_test_bonus");
+
+exports.claimSecretTestBonus = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (!isSecretTestEnvironment(process.env)) {
+      throw new HttpsError("failed-precondition",
+        "La bonificación secreta solo existe en el emulador demo.");
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated",
+        "Debes iniciar sesión en el entorno de prueba.");
+    }
+    try {
+      return await claimSecretTestBonus({db, uid: request.auth.uid});
+    } catch (error) {
+      throw new HttpsError("failed-precondition",
+        error.message || "No fue posible entregar la bonificación.");
+    }
+  }
+);
+
 // Piloto de compra de cosméticos desde Admin SDK (solo emulador demo).
 // No modifica ShopService de Flutter ni permite compras en producción.
 const {purchaseDemoShopItem} = require("./shop_purchase_transaction");
