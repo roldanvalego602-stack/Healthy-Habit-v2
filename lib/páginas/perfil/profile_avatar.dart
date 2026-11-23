@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_asset_catalog.dart';
+import '../../tema/healthy_cosmetics.dart';
 
 /// Avatar compartido de Perfil, Editar perfil y Perfil público.
 /// Protege la interfaz de URLs de fotografía inválidas o inaccesibles.
@@ -26,7 +27,8 @@ class HealthyProfileAvatar extends StatelessWidget {
     final validUrl = preset == 'foto' &&
         (Uri.tryParse(url)?.hasScheme ?? false) &&
         (url.startsWith('https://') || url.startsWith('http://'));
-    final asset = HealthyAssetCatalog.avatars[preset];
+    final asset = HealthyCosmetics.assetFor(preset) ??
+        HealthyAssetCatalog.avatars[preset];
     return SizedBox.square(
       dimension: size,
       child: ClipOval(
