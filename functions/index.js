@@ -582,7 +582,7 @@ exports.claimDailyStreakReward = onCall(
     const input = request.data ?? {};
     const day = input.day;
     if (Object.keys(input).length !== 1 || typeof day !== "string" ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(day)) {
+        !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
       throw new HttpsError("invalid-argument", "Selecciona un día válido.");
     }
     const userRef = db.collection("users").doc(uid);
