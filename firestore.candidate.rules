@@ -211,7 +211,7 @@ service cloud.firestore {
         && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
         && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses', 'rock_face_mask', 'hero_mask_blue'])
         && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones', 'cat_headphones_pink', 'chef_hat_green', 'paper_sailor_hat', 'space_helmet', 'aviator_goggles_gold', 'leaf_glow_hat', 'leaf_crown'])
-        && validEquippedSlot(look, inventory, 'aura', ['mint_aura', 'leaf_aura'])
+        && validEquippedSlot(look, inventory, 'aura', ['mint_aura', 'leaf_aura', 'stellar_aura', 'golden_aura'])
         && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack', 'superhero_cape_red', 'star_backpack_blue'])
         && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
         && validEquippedSlot(look, inventory, 'mano', ['water_bottle'])
