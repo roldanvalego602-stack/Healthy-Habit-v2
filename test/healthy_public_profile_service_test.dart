@@ -83,6 +83,18 @@ void main() {
     expect(result.containsKey('habitCoins'), isFalse);
   });
 
+  test('a collectible avatar hides the previous public photo URL', () {
+    final result = HealthyPublicProfileService.project({
+      'name': 'Maya',
+      'photoUrl': 'https://example.test/private-old-photo.jpg',
+      'profileAvatarStyle': 'foto',
+      'shopEquipped': {'perfil_avatar': 'avatar_snowman'},
+    });
+    expect(result['photoUrl'], isEmpty);
+    expect((result['healthyEquipped'] as Map)['perfil_avatar'],
+        'avatar_snowman');
+  });
+
   test('public profile without purchases shows default mascot', () {
     final profile = HealthyPublicProfileService.project({
       'name': 'Alex',
