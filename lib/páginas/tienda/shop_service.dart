@@ -284,8 +284,8 @@ class ShopState {
 /// Permanecen en el catálogo técnico para conservar inventarios y precios
 /// históricos de cuentas existentes; no se conceden ni eliminan compras.
 const retiredShopItemIds = <String>{
-  'crown', 'mint_aura', 'elite_avatar', 'banner',
-  'streak_guard', 'mint_scarf', 'cape', 'pixel_glasses', 'cat_ears',
+  'crown', 'mint_aura', 'elite_avatar', 'banner', 'avatar_frame',
+  'streak_guard', 'mint_scarf', 'bandana', 'cape', 'pixel_glasses', 'cat_ears',
 };
 
 bool isShopItemVisible(String id) => !retiredShopItemIds.contains(id);
