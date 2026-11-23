@@ -177,7 +177,8 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       showDragHandle: true,
       backgroundColor: HealthyAdaptive.surface,
       builder: (sheetContext) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -242,6 +243,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
