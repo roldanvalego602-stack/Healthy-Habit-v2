@@ -45,7 +45,7 @@ class HealthyRemindersService {
     // Nunca suponer la zona horaria del usuario por ubicación o IP.
     tz.setLocalLocation(tz.getLocation(zone.identifier));
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('ic_healthy_notification'),
     );
     await _plugin.initialize(settings);
     _initialized = true;
