@@ -17,7 +17,7 @@ void main() {
   });
 
   test('cada cosmético nuevo existe, tiene nombre, precio y PNG/GIF', () {
-    expect(HealthyCosmetics.artwork.length, 27);
+    expect(HealthyCosmetics.artwork.length, 39);
     for (final entry in HealthyCosmetics.artwork.entries) {
       final item = shopItemById(entry.key);
       expect(item, isNotNull, reason: 'No existe: ${entry.key}');
