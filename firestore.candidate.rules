@@ -109,7 +109,19 @@ service cloud.firestore {
         'reaction_love': 90,
         'reaction_goal': 90,
         'reaction_support': 90,
-        'reaction_like': 90
+        'reaction_like': 90,
+        'aviator_goggles_gold': 175,
+        'leaf_glow_hat': 145,
+        'leaf_crown': 180,
+        'skin_christmas_cartoon': 420,
+        'banner_gradient_yellow_pink': 95,
+        'banner_gradient_blue_pink': 95,
+        'banner_gradient_teal_yellow': 95,
+        'banner_gradient_gold_black': 110,
+        'banner_gradient_purple_teal': 95,
+        'banner_gradient_pink_violet': 95,
+        'banner_gradient_turquoise_blue': 95,
+        'banner_gradient_black_blue': 110
       }.get(id, -1);
     }
 
@@ -187,20 +199,21 @@ service cloud.firestore {
       let inventory = request.resource.data.get('shopInventory', []);
       return look.keys().hasOnly([
           'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
-          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos'
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos', 'skin'
         ])
         && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame', 'frame_arcane', 'frame_emerald', 'frame_cyber', 'frame_nature'])
-        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner', 'banner_space', 'banner_sunset', 'banner_floral', 'banner_ice'])
+        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner', 'banner_space', 'banner_sunset', 'banner_floral', 'banner_ice', 'banner_gradient_yellow_pink', 'banner_gradient_blue_pink', 'banner_gradient_teal_yellow', 'banner_gradient_gold_black', 'banner_gradient_purple_teal', 'banner_gradient_pink_violet', 'banner_gradient_turquoise_blue', 'banner_gradient_black_blue'])
         && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
         && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar', 'avatar_snowman', 'avatar_christmas', 'avatar_gingerbread', 'avatar_gift'])
         && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
         && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses', 'rock_face_mask', 'hero_mask_blue'])
-        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones', 'cat_headphones_pink', 'chef_hat_green', 'paper_sailor_hat', 'space_helmet'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones', 'cat_headphones_pink', 'chef_hat_green', 'paper_sailor_hat', 'space_helmet', 'aviator_goggles_gold', 'leaf_glow_hat', 'leaf_crown'])
         && validEquippedSlot(look, inventory, 'aura', ['mint_aura'])
         && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack', 'superhero_cape_red', 'star_backpack_blue'])
         && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
         && validEquippedSlot(look, inventory, 'mano', ['water_bottle'])
-        && validEquippedSlot(look, inventory, 'brazos', ['green_gloves']);
+        && validEquippedSlot(look, inventory, 'brazos', ['green_gloves'])
+        && validEquippedSlot(look, inventory, 'skin', ['skin_christmas_cartoon']);
     }
 
     // Descuento por abandono: requiere que los DOS documentos del hábito
@@ -475,7 +488,7 @@ service cloud.firestore {
         && request.resource.data.get('healthyEquipped', {}) is map
         && request.resource.data.get('healthyEquipped', {}).keys().hasOnly([
           'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
-          'brazos', 'perfil_marco', 'perfil_banner', 'perfil_avatar'
+          'brazos', 'skin', 'perfil_marco', 'perfil_banner', 'perfil_avatar'
         ])
         && request.resource.data.settings is map
         && request.resource.data.settings.keys().hasOnly([
