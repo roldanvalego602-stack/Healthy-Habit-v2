@@ -32,6 +32,17 @@ void main() {
     expect(wardrobeItemsForSlot('pies'), isEmpty);
   });
 
+  test('el armario oculta las piezas genéricas retiradas', () {
+    for (final slot in [...mascotWardrobeSlots, ...profileWardrobeSlots]) {
+      final ids = wardrobeItemsForSlot(slot.id)
+          .map((item) => item.id).toSet();
+      expect(ids.intersection(retiredShopItemIds), isEmpty,
+          reason: slot.id);
+    }
+    expect(wardrobeItemsForSlot('perfil_expositor')
+        .any((item) => item.id == 'achievement_display'), isTrue);
+  });
+
   test('los artículos sin ranura no se presentan como vestimenta', () {
     final visible = <String>{
       for (final slot in [...mascotWardrobeSlots, ...profileWardrobeSlots])
