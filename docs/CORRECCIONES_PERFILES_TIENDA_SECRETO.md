@@ -10,8 +10,10 @@ Los siguientes objetos se **retiran de las interfaces visibles**, pero conservan
 - `mint_aura`: Aura menta
 - `elite_avatar`: Avatar Élite
 - `banner`: Banner genérico
+- `avatar_frame`: Marco genérico sin ilustración
 - `streak_guard`: Protector de racha (**pendiente de diseño y de lógica de consumo**)
 - `mint_scarf`: Pañuelo Menta
+- `bandana`: Bufanda genérica sin ilustración
 - `cape`: Capa de héroe genérica
 - `pixel_glasses`: Lentes pixel
 - `cat_ears`: Orejas felinas
@@ -41,7 +43,7 @@ npm --prefix functions test
 
 Pruebas manuales:
 1. Desde otra cuenta, abrir foto de perfil de un amigo y ampliar con dos dedos.
-2. Abrir Tienda y Armario; ninguno de los nueve objetos retirados debe aparecer.
+2. Abrir Tienda y Armario; ninguno de los once objetos retirados debe aparecer.
 3. Comprobar que el expositor está en Perfil y que la tarjeta de logros cambia cuando se equipa.
 4. Pulsar el saldo de Tienda siete veces para encontrar la página secreta.
 5. Verificar que, fuera del emulador demo, el botón de otorgamiento esté deshabilitado.
