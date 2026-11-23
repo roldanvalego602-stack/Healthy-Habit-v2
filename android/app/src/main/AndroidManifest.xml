@@ -10,6 +10,13 @@
         android:label="Healthy Habit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Icono monocromático para avisos FCM; el launcher usa otro recurso. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_healthy_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/healthy_notification_color" />
         <!-- Receptores del programador local, para ejecutar avisos y recuperarlos tras reiniciar. -->
         <receiver android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
