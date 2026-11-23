@@ -565,3 +565,41 @@ exports.cancelOfficialHabitDemo = officialDemoCallable(
 exports.registerOfficialHabitDemo = officialDemoCallable(
   registerOfficialHabitTransaction
 );
+
+
+// Reclamo de premios habilitado únicamente en el emulador aislado.
+// No exponerlo en producción hasta finalizar la migración de hábitos
+// y publicar reglas económicas seguras en una entrega coordinada.
+const {
+  claimDailyStreakRewardTransaction, DailyStreakClaimError,
+} = require("./streak_claim_transaction");
+
+exports.claimDailyStreakReward = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError("failed-precondition",
+        "Los premios diarios siguen en pruebas aisladas.");
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión.");
+    }
+    const data = request.data ?? {};
+    if (!data || typeof data !== "object" ||
+        Array.isArray(data) ||
+        Object.keys(data).length !== 1) {
+      throw new HttpsError("invalid-argument", "Solicitud inválida.");
+    }
+    try {
+      return await claimDailyStreakRewardTransaction({
+        db, uid: request.auth.uid, day: data.day,
+      });
+    } catch (error) {
+      if (error instanceof DailyStreakClaimError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
+);

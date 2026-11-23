@@ -23,6 +23,8 @@ import 'perfil/social_notification_bell.dart';
 import 'logros/logros_screen.dart';
 import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
+import 'estadisticas/daily_streak_screen.dart';
+import '../servicios/daily_streak_display.dart';
 
 // Firebase se inicializa realmente en lib/main.dart.
 void main() => runApp(const HabitTrackerApp());
@@ -259,7 +261,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
         // El nivel visible depende solamente de XP.
         final level = LevelSystem.fromXp(xp).number;
 
-        final streak = _number(data['currentStreak'] ?? data['streakDays']);
+        final streak = DailyStreakDisplay.current(data);
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: userRef.collection('user_habits').snapshots(),
@@ -479,11 +481,21 @@ class _HomeContent extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _stat(
-                  Icons.local_fire_department,
-                  '$streak días',
-                  'Racha actual',
-                  AppColors.yellowCard,
+                child: InkWell(
+                  key: const ValueKey('open-daily-streak'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DailyStreakScreen(),
+                    ),
+                  ),
+                  child: _stat(
+                    Icons.local_fire_department,
+                    '$streak días',
+                    'Racha actual',
+                    AppColors.yellowCard,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),

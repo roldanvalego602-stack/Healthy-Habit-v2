@@ -67,4 +67,15 @@ class OfficialHabitEmulatorService {
     'attemptId': attemptId,
     'operationId': operationId,
   });
+
+  /// Reclamo seguro: el backend determina el usuario y las monedas.
+  /// Únicamente en el Firebase Emulator del proyecto demo.
+  Future<Map<String, dynamic>> claimDailyStreakReward({
+    required String day,
+  }) {
+    if (!RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$').hasMatch(day)) {
+      throw ArgumentError('Selecciona un día válido para recoger el premio.');
+    }
+    return _call('claimDailyStreakReward', {'day': day});
+  }
 }

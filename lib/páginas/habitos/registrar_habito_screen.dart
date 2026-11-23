@@ -1,4 +1,6 @@
 import '../niveles/levels_system.dart';
+import '../estadisticas/daily_streak_screen.dart';
+import '../estadisticas/daily_streak_reward_dialog.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -291,15 +293,52 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         final progress = _leerEntero(response['progress'], 0);
         final target = _leerEntero(response['target'], _meta);
         final completed = response['completed'] == true;
-        HealthyCelebration.show(
-          context,
-          title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
-          subtitle: '+$xp XP'
-              '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
-              ' · $progress/$target registros',
-          icon: completed
-              ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
-        );
+        if (response['dailyStreakNew'] == true) {
+          final dayCount = _leerEntero(response['dailyStreakCount'], 1);
+          final bonus = _leerEntero(response['dailyStreakReward'], 2);
+          final day = response['dailyStreakDay']?.toString() ?? '';
+          final action = await showDialog<StreakRewardAction>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => DailyStreakRewardDialog(
+              streak: dayCount,
+              coins: bonus,
+              xp: xp,
+              onClaim: () => service.claimDailyStreakReward(day: day),
+            ),
+          );
+          if (!mounted) return;
+          if (action == StreakRewardAction.showHistory) {
+            await Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => const DailyStreakScreen(),
+              ),
+            );
+            if (!mounted) return;
+          } else if (action == StreakRewardAction.claimed ||
+              action == StreakRewardAction.alreadyClaimed) {
+            HealthyCelebration.show(
+              context,
+              title: action == StreakRewardAction.claimed
+                  ? '¡Premio diario recogido!'
+                  : 'Este premio ya se había recogido',
+              subtitle: action == StreakRewardAction.claimed
+                  ? '+$bonus Habit Coins por tu racha.'
+                  : 'Puedes consultar tu historial de racha.',
+              icon: Icons.redeem_rounded,
+            );
+          }
+        } else {
+          HealthyCelebration.show(
+            context,
+            title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
+            subtitle: '+$xp XP'
+                '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
+                ' · $progress/$target registros',
+            icon: completed
+                ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
+          );
+        }
         Navigator.pop(context, true);
         return;
       }

@@ -245,6 +245,11 @@ service cloud.firestore {
       // Una compra inválida nunca debe disparar get()/getAfter() de hábitos.
       let cancellationChanged = changed.hasAny(['habitCancellation']);
       return owner(uid)
+        // Sólo Admin SDK puede emitir rachas verificadas.
+        && !changed.hasAny([
+          'serverStreakDays', 'serverLastStreakDay',
+          'serverLongestStreak', 'serverStreakTimeZone'
+        ])
         && (!changed.hasAny(['shopEquipped']) || validEquipped())
         && (
           (!inventoryChanged && !coinsDecreased && !cancellationChanged)
@@ -315,6 +320,12 @@ service cloud.firestore {
       // Datos privados: sin autorización comodín sobre relaciones sociales.
       match /user_habits/{path=**} {
         allow read, write: if owner(uid);
+      }
+      // Recompensas de racha: lectura propietaria, escritura EXCLUSIVA
+      // del backend. Nunca confiar en documentos diarios del cliente.
+      match /daily_streak_days/{day} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
       }
       // Evidencia temporal privada. Solo se crea una vez y se purga desde
       // la cuenta propietaria o mediante un proceso administrativo.
