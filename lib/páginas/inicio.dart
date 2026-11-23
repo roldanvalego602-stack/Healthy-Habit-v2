@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'perfil/profile_avatar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +19,7 @@ import 'perfil/profile_screen.dart';
 import 'catalogo/catalogo_screen.dart';
 import 'chatbot/nutrichat.dart';
 import 'notifications_screen.dart';
+import 'perfil/social_notification_bell.dart';
 import 'logros/logros_screen.dart';
 import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
@@ -69,6 +71,56 @@ class _HomeScreen2State extends State<HomeScreen2> {
   int _selectedIndex = 0;
 
   late final FirebaseFirestore _db;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _reactionSubscription;
+  bool _reactionStreamInitialized = false;
+
+  // Sólo avisa por documentos NUEVOS después de establecer el listener.
+  // Las reacciones antiguas siguen disponibles en Notificaciones.
+  void _watchLiveReactions() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _reactionSubscription = _db.collection('interactions')
+        .where('toUid', isEqualTo: uid)
+        .snapshots().listen((snapshot) {
+      if (!_reactionStreamInitialized) {
+        _reactionStreamInitialized = true;
+        return;
+      }
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final newReactions = snapshot.docChanges.where((change) {
+        if (change.type != DocumentChangeType.added ||
+            change.doc.metadata.hasPendingWrites) return false;
+        final item = change.doc.data();
+        return item != null && item['tipo'] == 'reaccion' &&
+            item['leido'] == false;
+      }).toList();
+      if (newReactions.isEmpty) return;
+      final reaction = newReactions.last.doc.data()!;
+      final emoji = reaction['emoji']?.toString() ?? '👏';
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(newReactions.length == 1
+            ? 'Recibiste una reacción $emoji de un amigo'
+            : 'Recibiste ${newReactions.length} reacciones nuevas'),
+        action: SnackBarAction(
+          label: 'Ver',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const NotificationsScreen(),
+            ),
+          ),
+        ),
+      ));
+    }, onError: (Object error) {
+      debugPrint('Avisos sociales: no se pudo escuchar Firestore: $error');
+    });
+  }
+
+  @override
+  void dispose() {
+    _reactionSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -78,6 +130,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
       app: Firebase.app(),
       databaseId: 'default',
     );
+    _watchLiveReactions();
   }
 
   // NAVEGACIÓN PRINCIPAL
@@ -331,16 +384,15 @@ class _HomeContent extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton.filledTonal(
+              SocialNotificationBell(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    MaterialPageRoute<void>(
                       builder: (_) => const NotificationsScreen(),
                     ),
                   );
                 },
-                icon: const Icon(Icons.notifications_none_rounded),
               ),
               const SizedBox(width: 7),
               Tooltip(
