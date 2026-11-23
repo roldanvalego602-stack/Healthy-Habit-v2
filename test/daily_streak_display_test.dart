@@ -42,4 +42,31 @@ void main() {
     expect(DailyStreakDisplay.longest(profile), 5);
     expect(DailyStreakDisplay.verified(profile), true);
   });
+  test('UTC evening does not erase a verified streak', () {
+    // 19:30 in Durango is already 01:30 UTC the next day.
+    final utcEvening = DateTime.parse('2026-11-23T01:30:00Z');
+    expect(DailyStreakDisplay.current({
+      'serverLastStreakDay': '2026-11-23',
+      'serverStreakDays': 1,
+      'calendarTimeZone': 'UTC',
+    }, now: utcEvening), 1);
+  });
+
+  test('server time zone America/Monterrey uses local civil day', () {
+    final utcEvening = DateTime.parse('2026-11-23T01:30:00Z');
+    expect(DailyStreakDisplay.current({
+      'serverLastStreakDay': '2026-11-22',
+      'serverStreakDays': 2,
+      'calendarTimeZone': 'America/Monterrey',
+    }, now: utcEvening), 2);
+  });
+
+  test('unknown time zone does not invent streak status', () {
+    expect(DailyStreakDisplay.current({
+      'serverLastStreakDay': '2026-11-22',
+      'serverStreakDays': 4,
+      'calendarTimeZone': 'Mars/Olympus',
+    }, now: DateTime.parse('2026-11-22T22:00:00Z')), 0);
+  });
+
 }
