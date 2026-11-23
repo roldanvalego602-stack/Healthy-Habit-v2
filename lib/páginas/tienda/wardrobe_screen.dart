@@ -314,6 +314,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     final banner = equipped['perfil_banner'] ?? 'Amanecer';
     final avatar = equipped['perfil_avatar'] ?? 'foto';
     final frame = HealthyCosmetics.assetFor(equipped['perfil_marco'] ?? '');
+    final hasExhibitor = equipped['perfil_expositor'] == 'achievement_display';
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
       final avatarSize = (constraints.maxHeight * .32).clamp(48.0, 86.0);
@@ -338,6 +339,26 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               ),
             ),
           ),
+          if (hasExhibitor)
+            Positioned(
+              left: 12, bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: HealthyAdaptive.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFD5A33E)),
+                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.workspace_premium_rounded,
+                    size: 15, color: Color(0xFFD5A33E)),
+                  SizedBox(width: 4),
+                  Text('Expositor', style: TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+            ),
           Positioned(
             bottom: 9,
             left: 0, right: 0,
