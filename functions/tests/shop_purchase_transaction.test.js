@@ -10,14 +10,14 @@ const {validateShopPurchase, calculatePurchase} =
 const {RegistrationPolicyError} =
   require("../habit_registration_policy");
 
-test("los veinte artículos y sus precios coinciden con Flutter", () => {
+test("todos los artículos y sus precios coinciden con Flutter", () => {
   const dart = fs.readFileSync(path.resolve(__dirname,
     "../../lib/páginas/tienda/shop_service.dart"), "utf8");
   const entries = [...dart.matchAll(
     /ShopItem\(\s*'([^']+)'[\s\S]*?,\s*(\d+)\s*,\s*(?:emoji:|slot:|\))/g
   )].map((match) => [match[1], Number(match[2])]);
-  assert.equal(entries.length, 20);
-  assert.equal(new Set(entries.map(([id]) => id)).size, 20);
+  assert.equal(entries.length, 47);
+  assert.equal(new Set(entries.map(([id]) => id)).size, 47);
   assert.deepEqual(SHOP_PRICES, Object.fromEntries(entries));
   assert.equal(Object.values(SHOP_PRICES).filter((price) => price === 0).length, 2);
 });
