@@ -17,7 +17,7 @@ test("todos los artículos y sus precios coinciden con Flutter", () => {
     /ShopItem\(\s*'([^']+)'[\s\S]*?,\s*(\d+)\s*,\s*(?:emoji:|slot:|\))/g
   )].map((match) => [match[1], Number(match[2])]);
   assert.equal(entries.length, 59);
-  assert.equal(new Set(entries.map(([id]) => id)).size, 47);
+  assert.equal(new Set(entries.map(([id]) => id)).size, 59);
   assert.deepEqual(SHOP_PRICES, Object.fromEntries(entries));
   assert.equal(Object.values(SHOP_PRICES).filter((price) => price === 0).length, 2);
 });
