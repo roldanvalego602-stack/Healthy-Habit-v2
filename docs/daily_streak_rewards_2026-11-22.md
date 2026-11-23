@@ -63,3 +63,14 @@ firebase emulators:exec --config firebase.emulator.json --project demo-healthy-h
 ```
 
 **Limitación:** Esta mejora cierra el flujo UI de reclamo **solo para sesiones del backend oficial en Emulator**. No transforma el registro normal actual en una operación segura. No ejecutar `firebase deploy` desde esta rama.
+
+## Corrección de presentación del día civil (23 nov 2026)
+
+La prueba de usuario mostró que el premio podía cobrarse mientras el contador de racha no aumentaba visualmente. Causa compatible con ese síntoma: el servidor almacena `serverLastStreakDay` en la zona fijada para el hábito (puede ser `UTC`); Flutter antes lo comparaba exclusivamente con `DateTime.now()` local y descartaba un día UTC posterior como «fecha futura».
+
+- `DailyStreakDisplay` usa la zona `calendarTimeZone` del perfil al comparar fechas verificadas; utiliza `UTC` si la cuenta oficial conserva el valor por defecto.
+- `DailyStreakScreen`, Inicio, Perfil y Progreso comparten el mismo helper de presentación.
+- La lógica de acreditación no cambia: el backend ya persiste `serverStreakDays` en la transacción de la primera sesión, y el reclamo de Habit Coins es independiente.
+- Se agregaron pruebas del cruce UTC del día `2026-11-22/23`, `America/Monterrey` y zona no reconocida.
+
+Validación local: `flutter analyze --no-fatal-infos lib`; `flutter test test/daily_streak_display_test.dart`; `flutter test test/daily_streak_reward_dialog_test.dart`. Comprobar en `users/{uid}` del emulador los campos `serverLastStreakDay`, `serverStreakDays`, `serverLongestStreak` y `calendarTimeZone`, no los campos heredados `currentStreak` y `streakDays`. El primer día verificado de una cuenta de demo nueva debe indicar **1 día**, no heredar automáticamente días anteriores.
