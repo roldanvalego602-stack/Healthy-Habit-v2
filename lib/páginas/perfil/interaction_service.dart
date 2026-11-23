@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'interaction_model.dart';
+import '../../tema/healthy_cosmetics.dart';
 
 class InteractionService {
   final CollectionReference _interactionsRef =
@@ -28,6 +29,23 @@ class InteractionService {
     }
     if (!const ['🔥', '❤️', '👏', '💪', '🎉', '⭐'].contains(emoji)) {
       throw ArgumentError('La reacción seleccionada no es válida.');
+    }
+    // Un sticker es una reacción normal con identificador en challengeId.
+    // Valida la compra antes de enviar; las reglas candidatas repiten
+    // esta autorización en servidor.
+    if (challengeId.startsWith('sticker:')) {
+      final sticker = challengeId.substring(8);
+      if (!HealthyCosmetics.reactionEmoji.containsKey(sticker) ||
+          HealthyCosmetics.reactionEmoji[sticker] != emoji) {
+        throw ArgumentError('Sticker desconocido o emoji incompatible.');
+      }
+      final meDoc = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(), databaseId: 'default',
+      ).collection('users').doc(fromUid).get();
+      final inventory = meDoc.data()?['shopInventory'];
+      if (inventory is! List || !inventory.contains(sticker)) {
+        throw StateError('Primero debes adquirir este sticker en la tienda.');
+      }
     }
     final friendship = await FirebaseFirestore.instanceFor(
       app: Firebase.app(), databaseId: 'default',
