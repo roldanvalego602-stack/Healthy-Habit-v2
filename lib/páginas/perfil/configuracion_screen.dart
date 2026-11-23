@@ -58,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'dificultad': 'Moderado',
     'frecuencia': 'Diaria',
     'tema': 'Sistema',
+    'estiloVisual': 'Healthy Original',
     'modoVisual': 'Normal',
     'tamanoTexto': 'Normal',
     'idioma': 'Español',
@@ -100,6 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (stored is Map) ...Map<String, dynamic>.from(stored),
           // La selección local se aplica incluso sin conexión Firebase.
           'tema': HealthyThemeController.label(HealthyThemeController.instance.mode),
+          'estiloVisual': HealthyThemeController.instance.style.label,
           'modoVisual': HealthyVisualController.label(HealthyVisualController.instance.mode),
         };
         loading = false;
@@ -108,6 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() {
         settings['tema'] = HealthyThemeController.label(HealthyThemeController.instance.mode);
+        settings['estiloVisual'] = HealthyThemeController.instance.style.label;
         settings['modoVisual'] = HealthyVisualController.label(HealthyVisualController.instance.mode);
         loading = false;
       });
@@ -135,6 +138,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (_) {
         // El tema sigue disponible sin conexión.
       }
+      return;
+    }
+    if (key == 'estiloVisual') {
+      try {
+        await HealthyThemeController.instance.selectStyle(
+          HealthyThemeController.parseStyle(value.toString()),
+        );
+      } catch (e) {
+        _message('No se pudo guardar el estilo visual: $e');
+        return;
+      }
+      if (mounted) setState(() => settings[key] = value);
+      // Selección local: sin sincronización ni compra automática.
       return;
     }
     if (key == 'modoVisual') {
@@ -723,6 +739,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Tema',
               () => _choose('tema', 'Tema', ['Sistema', 'Claro', 'Oscuro']),
               value: _str('tema'),
+            ),
+            _action(
+              'Estilo visual',
+              () => _choose('estiloVisual', 'Estilo visual',
+                ['Healthy Original', 'Navidad Esmeralda']),
+              value: _str('estiloVisual'),
+              subtitle: 'Personaliza la paleta sin cambiar Claro / Oscuro',
             ),
             _action(
               'Modo visual',
