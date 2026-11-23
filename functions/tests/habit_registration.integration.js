@@ -899,4 +899,72 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal((await user.get()).data().habitMutationVersion, 1);
   });
 
+
+  test("racha global: primera sesión del día crea un solo premio", async () => {
+    const uid = "integration-streak-first-session";
+    const {ref} = await seedOfficial(uid, "alim_009", {xp: 11000});
+    const now = new Date("2026-11-21T13:00:00Z");
+    const first = await registerOfficialHabitTransaction(officialInput(
+      uid, "alim_009", "official_streak_session_01", now
+    ));
+    const second = await registerOfficialHabitTransaction(officialInput(
+      uid, "alim_009", "official_streak_session_02", now
+    ));
+    assert.equal(first.dailyStreakNew, true);
+    assert.equal(first.dailyStreakCount, 1);
+    assert.equal(second.dailyStreakNew, false);
+    assert.equal(second.dailyStreakCount, 1);
+    assert.equal((await ref.get()).data().serverStreakDays, 1);
+    const days = await ref.collection("daily_streak_days").get();
+    assert.equal(days.size, 1);
+    assert.equal(days.docs[0].data().rewardCoins, 2);
+    assert.equal(days.docs[0].data().claimed, false);
+  });
+
+  test("racha global: día consecutivo aumenta, día omitido reinicia", async () => {
+    const uid = "integration-streak-consecutive";
+    const {ref} = await seedOfficial(uid, "alim_001");
+    const dates = ["2026-11-21", "2026-11-22", "2026-11-24"];
+    const results = [];
+    for (const [index, date] of dates.entries()) {
+      results.push(await registerOfficialHabitTransaction(officialInput(
+        uid, "alim_001", `official_streak_date_0${index + 1}`,
+        new Date(`${date}T13:00:00Z`)
+      )));
+    }
+    assert.deepEqual(results.map((r) => r.dailyStreakCount), [1, 2, 1]);
+    assert.deepEqual(results.map((r) => r.dailyStreakReward), [2, 3, 2]);
+    assert.equal((await ref.get()).data().serverStreakDays, 1);
+    assert.equal((await ref.get()).data().serverLongestStreak, 2);
+    assert.equal((await ref.collection("daily_streak_days").get()).size, 3);
+  });
+
+  test("premio diario: concurrencia y reintento abonan solo una vez", async () => {
+    const {claimDailyStreakRewardTransaction: claim} =
+      require("../streak_claim_transaction");
+    const uid = "integration-streak-claim-race";
+    const {ref} = await seedOfficial(uid, "alim_001");
+    const recorded = await registerOfficialHabitTransaction(officialInput(
+      uid, "alim_001", "official_streak_claim_001"
+    ));
+    const day = recorded.dailyStreakDay;
+    const claims = await Promise.all([
+      claim({db, uid, day}), claim({db, uid, day}),
+    ]);
+    assert.deepEqual(claims.map((r) => r.coinsAwarded).sort(), [0, 2]);
+    const reward = (await ref.collection("daily_streak_days").doc(day).get())
+      .data();
+    assert.equal(reward.claimed, true);
+    assert.ok(reward.claimedAt);
+    assert.equal((await ref.get()).data().habitCoins, 102);
+    const retry = await claim({db, uid, day});
+    assert.equal(retry.alreadyClaimed, true);
+    assert.equal(retry.coinsAwarded, 0);
+    await assert.rejects(claim({
+      db, uid, day: "2026-11-30",
+    }), /verificado/);
+    assert.equal((await ref.get()).data().habitCoins, 102);
+  });
+
+
 }
