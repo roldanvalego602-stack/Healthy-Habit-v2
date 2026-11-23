@@ -4,7 +4,6 @@ import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
 import 'shop_item_artwork.dart';
 import 'healthy_mascot_outfit.dart';
-import '../../servicios/healthy_feedback_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
@@ -28,7 +27,6 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     'Avatares',
     'Marcos',
     'Banners',
-    'Reacciones',
     'Extras',
   ];
 
@@ -42,55 +40,20 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Future<void> _onTap(ShopItem item, ShopState state) async {
     if (_busy != null) return;
     if (!state.owns(item.id)) {
-      final accepted = await showDialog<bool>(
-        context: context,
-        builder:
-            (ctx) => AlertDialog(
-              title: Text('¿Comprar ${item.name}?'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.description),
-                  const SizedBox(height: 12),
-                  const Text('Costo:'),
-                  HealthyCoinAmount(amount: '${item.price}',
-                    size: 22, suffix: ' Habit Coins',
-                    style: TextStyle(color: navy,
-                      fontWeight: FontWeight.w800)),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Comprar'),
-                ),
-              ],
-            ),
-      );
-      if (accepted != true || !mounted) return;
+      _message('Este objeto está bloqueado. Adquiérelo en la tienda.');
+      return;
     }
     setState(() => _busy = item.id);
     try {
-      if (!state.owns(item.id)) {
-        await ShopService.instance.buy(item);
-        await HealthyFeedbackService.onReward();
-      }
       if (item.slot != null) {
         await ShopService.instance.equip(
           item,
           remove: state.equippedItem(item.id),
         );
         _message(
-          state.owns(item.id)
-              ? (state.equippedItem(item.id)
-                  ? 'Objeto retirado.'
-                  : 'Objeto equipado.')
-              : 'Comprado y equipado.',
+          state.equippedItem(item.id)
+              ? 'Objeto retirado.'
+              : 'Objeto equipado.',
         );
       } else {
         _message(
@@ -127,7 +90,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           final state = snapshot.data;
           final visible =
               shopCatalog
-                  .where((i) => _filter == 'Todos' || i.category == _filter)
+                  .where((i) => i.slot != null &&
+                      (_filter == 'Todos' || i.category == _filter))
                   .toList();
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -248,7 +212,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Widget _preview(ShopState? state) {
     final equipped = state?.equipped ?? <String, String>{};
     final names = equipped.entries
-        .where((entry) => !entry.key.startsWith('perfil_') || entry.key == 'brazos')
+        .where((entry) => !entry.key.startsWith('perfil_'))
         .map((entry) => shopItemById(entry.value)?.name)
         .whereType<String>()
         .join(' + ');
