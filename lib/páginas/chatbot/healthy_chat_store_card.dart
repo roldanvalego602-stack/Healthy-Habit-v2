@@ -57,7 +57,8 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
       _stateStream = _shopStream();
     }
     if (oldWidget.initialItemId != widget.initialItemId) {
-      _itemId = shopItemById(widget.initialItemId)?.id;
+      _itemId = isShopItemVisible(widget.initialItemId)
+          ? shopItemById(widget.initialItemId)?.id : null;
     }
   }
 
