@@ -97,6 +97,7 @@ class HealthyPublicProfileService {
     const allowedSlots = {
       'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
       'brazos', 'skin', 'perfil_marco', 'perfil_banner', 'perfil_avatar',
+      'perfil_expositor',
     };
     if (rawEquipped is Map) {
       for (final entry in rawEquipped.entries) {
