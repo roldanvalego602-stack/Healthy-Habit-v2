@@ -145,9 +145,11 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
       setState(() { _photoUrl = url; _avatarStyle = 'foto'; _errorFoto = null; });
       _mensaje('Foto de perfil actualizada.');
     } on ProfilePhotoException catch (error) {
-      if (mounted) setState(() => _errorFoto = error.message);
-      // El mensaje queda visible junto a la foto; evitar duplicarlo
-      // en un SnackBar que ocupe media pantalla en Android.
+      if (mounted) {
+        setState(() => _errorFoto =
+            '${error.message} (código: ${error.code})');
+      }
+      // El error permanece visible y puede copiarse desde el perfil.
     } on PlatformException catch (error) {
       if (mounted) setState(() => _errorFoto = 'Permiso de cámara o galería: ${error.code}. Revisa ajustes de Android.');
       _mensaje('No se pudo acceder a cámara o galería '
@@ -550,6 +552,19 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
                                   Expanded(child: Text(_errorFoto!,
                                     style: const TextStyle(
                                       color: Colors.red, fontSize: 12))),
+                                  IconButton(
+                                    tooltip: 'Copiar error de fotografía',
+                                    icon: const Icon(Icons.copy_rounded,
+                                      color: Colors.red, size: 19),
+                                    onPressed: () async {
+                                      await Clipboard.setData(
+                                        ClipboardData(text: _errorFoto!),
+                                      );
+                                      if (mounted) {
+                                        _mensaje('Diagnóstico copiado.');
+                                      }
+                                    },
+                                  ),
                                 ]),
                               ),
                             ],
