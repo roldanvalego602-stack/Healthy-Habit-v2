@@ -114,3 +114,34 @@ El código no puede publicar ni habilitar reglas de Firebase por sí solo.
 
 Los cambios están guardados en GitHub, pero no se ejecutaron pruebas Flutter
 o subidas reales contra Firebase desde el entorno de edición.
+
+## Cierre de edición y diagnóstico — rama PR #19 (22 nov 2026)
+
+- El editor de encuadre convierte la fotografía seleccionada en un JPEG normalizado, permite ajustar zoom y posición, y recorta exactamente la región cuadrada de la vista previa circular. La geometría se separó en `profile_photo_crop_geometry.dart` con pruebas de horizontal, vertical, zoom y arrastres extremos.
+- El código permite ver la fotografía en pantalla completa o seleccionar una nueva, y elegir avatares mediante cuadrícula.
+- Los fallos de imagen, transferencia, Firebase Storage y Firestore se muestran con su código. Si aparece un error, **toca el icono de copiar** en Editar perfil y compártelo para diagnosticarlo. No enviar tokens, contraseñas ni URLs de descarga con token.
+- En subidas fallidas tras crear el objeto, se intenta eliminar el archivo temporal antes de devolver el error.
+- Las reglas y el bucket de Storage **no pueden verificarse con el repositorio solamente**: `firebase.json` no versiona reglas de Storage. No sobreescribir las reglas existentes de Firebase Console ni publicar reglas candidatas sin revisar todo el conjunto.
+
+### Descargar el PR #19 en el worktree ya creado
+
+```bash
+cd ~/Documentos/Integradora/Healthy-Habit-perfil
+git status --short
+git fetch origin feature/profile-photo-crop-avatar-grid-20261122
+git merge --ff-only origin/feature/profile-photo-crop-avatar-grid-20261122
+flutter pub get
+flutter analyze --no-fatal-infos lib/páginas/perfil lib/servicios/profile_photo_service.dart
+flutter test test/profile_photo_service_test.dart test/profile_photo_crop_geometry_test.dart
+```
+
+### Prueba manual
+
+1. En Android, entrar a **Perfil → Editar perfil** y seleccionar la fotografía.
+2. Moverla, ampliar, restablecer y guardar el recorte; comprobar si se sube y aparece al volver al perfil.
+3. Si falla, copiar el error visible y consultar el estado del bucket y las reglas *ya publicadas* de Storage.
+4. Sustituir foto, ver a pantalla completa, probar la cuadrícula de avatares y quitar foto.
+5. Verificar la imagen desde otra cuenta si el perfil público debe mostrar fotografías.
+6. Comprobar en Firestore `users/{uid}.photoUrl` y `profilePhotoPath`. Nunca compartir URLs privadas con token en reportes.
+
+**Estado:** no se ha ejecutado `flutter analyze` ni se ha subido una fotografía real desde la sesión de edición. El PR es borrador, no se ha fusionado ni desplegado nada. La subida real necesita una prueba de dispositivo y la inspección de Storage para marcarla como resuelta.
