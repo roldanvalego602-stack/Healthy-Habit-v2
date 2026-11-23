@@ -40,3 +40,26 @@ Premios diarios pequeños: día 1 = 2 Habit Coins; días 2–3 = 3; días 4–6 
 - `DailyStreakDisplay.current` unifica Inicio, Perfil y Progreso. Una racha con última sesión anteayer o antes se muestra como cero, pero su récord persiste.
 - Pruebas añadidas: política, fecha imposible, doble sesión el mismo día, salto de día, reclamos simultáneos y segundo reclamo sin premio adicional.
 - **Para verificar localmente:** usar el worktree `Healthy-Habit-racha` y ejecutar `node --test`, el emulador de Firestore y `flutter test test/daily_streak_display_test.dart`. Estas pruebas están añadidas, no se afirma que hayan pasado.
+
+## Integración de la ventana y el reclamo (siguiente fase)
+
+- `RegistrarHabitoScreen` usa el resultado de `registerOfficialHabitDemo` para abrir `DailyStreakRewardDialog` solo cuando `dailyStreakNew == true`. Se muestran tres acciones: **Recoger**, **Más tarde**, **Ver racha**.
+- `OfficialHabitEmulatorService.claimDailyStreakReward` usa la misma conexión aislada a Functions que el registro. La identidad del usuario y la cantidad de monedas se validan en el servidor.
+- Al tocar **Recoger**, Flutter espera respuesta confirmada de la transacción. Un fallo deja el diálogo abierto y no concede monedas visualmente. Se distingue explícitamente entre un pago nuevo y uno previamente reclamado.
+- `DailyStreakScreen` reutiliza el mismo servicio en lugar de llamar directamente a Functions desde un cliente que podría estar en producción. El documento de usuario se actualiza en vivo mediante su `StreamBuilder`.
+- Pruebas widget nuevas: cobro correcto, diferir, excepción de conexión y recompensa ya cobrada.
+
+### Comandos para validación en el worktree
+
+```bash
+cd ~/Documentos/Integradora/Healthy-Habit-racha
+git status --short
+git fetch origin feature/daily-streak-rewards-20261122
+git merge --ff-only origin/feature/daily-streak-rewards-20261122
+flutter analyze --no-fatal-infos lib
+flutter test test/daily_streak_display_test.dart test/daily_streak_reward_dialog_test.dart
+npm --prefix functions test
+firebase emulators:exec --config firebase.emulator.json --project demo-healthy-habit --only firestore "cd functions && npm run test:integration"
+```
+
+**Limitación:** Esta mejora cierra el flujo UI de reclamo **solo para sesiones del backend oficial en Emulator**. No transforma el registro normal actual en una operación segura. No ejecutar `firebase deploy` desde esta rama.
