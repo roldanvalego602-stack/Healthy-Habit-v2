@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_asset_catalog.dart';
+import '../../tema/healthy_cosmetics.dart';
 import 'shop_service.dart';
 
 /// Usa las imágenes reales subidas por el equipo y conserva el emoji
@@ -12,7 +13,8 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = HealthyAssetCatalog.shopImages[item.id];
+    final asset = HealthyCosmetics.assetFor(item.id) ??
+        HealthyAssetCatalog.shopImages[item.id];
     return SizedBox.square(
       dimension: size,
       child: asset == null
