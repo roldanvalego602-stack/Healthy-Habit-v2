@@ -64,6 +64,25 @@ void main() {
         .any((item) => item.id == 'frame_arcane'), isFalse);
   });
 
+  test('los cosméticos provisionales no se ofrecen ni se equipan', () {
+    const removed = {
+      'crown', 'mint_aura', 'elite_avatar', 'banner',
+      'streak_guard', 'mint_scarf', 'cape', 'pixel_glasses',
+      'cat_ears',
+    };
+    for (final id in removed) {
+      expect(isShopItemVisible(id), isFalse, reason: id);
+      expect(shopItemById(id), isNotNull,
+          reason: 'Las compras antiguas deben conservar su identificador.');
+    }
+    final available = availableShopItems(null);
+    expect(available.any((item) => removed.contains(item.id)), isFalse);
+    expect(available.any((item) =>
+        item.id == 'achievement_display'), isTrue);
+    expect(available.any((item) =>
+        item.id == 'leaf_crown'), isTrue);
+  });
+
   test('no hay identificadores duplicados en tienda', () {
     final ids = shopCatalog.map((item) => item.id).toList();
     expect(ids.toSet().length, ids.length);
