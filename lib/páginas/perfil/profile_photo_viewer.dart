@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../tema/healthy_asset_catalog.dart';
+import '../../tema/healthy_cosmetics.dart';
 import 'profile_avatar.dart';
 
 /// Acciones rápidas para la foto actual, desde Perfil y Editar perfil.
@@ -59,7 +60,8 @@ class ProfilePhotoFullScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = photoUrl?.trim() ?? '';
-    final asset = HealthyAssetCatalog.avatars[preset];
+    final asset = HealthyCosmetics.assetFor(preset) ??
+        HealthyAssetCatalog.avatars[preset];
     final validPhoto = preset == 'foto' && url.startsWith('https://');
     return Scaffold(
       backgroundColor: Colors.black,
