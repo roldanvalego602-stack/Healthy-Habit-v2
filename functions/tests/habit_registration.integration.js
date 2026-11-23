@@ -939,6 +939,27 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal((await ref.collection("daily_streak_days").get()).size, 3);
   });
 
+  test("racha global: fija una zona de usuario, no la del dispositivo", async () => {
+    const uid = "integration-streak-global-zone";
+    const {ref, habit, attempt} = await seedOfficial(uid, "alim_001");
+    await Promise.all([
+      ref.update({calendarTimeZone: "America/Monterrey"}),
+      habit.update({calendarTimeZone: "America/Monterrey"}),
+      attempt.update({calendarTimeZone: "America/Monterrey"}),
+    ]);
+    // En UTC ya es 23 de noviembre; para el usuario aún es día 22.
+    const result = await registerOfficialHabitTransaction(officialInput(
+      uid, "alim_001", "official_streak_zone_0001",
+      new Date("2026-11-23T01:30:00Z")
+    ));
+    const saved = (await ref.get()).data();
+    assert.equal(result.dailyStreakDay, "2026-11-22");
+    assert.equal(result.dailyStreakTimeZone, "America/Monterrey");
+    assert.equal(saved.serverStreakTimeZone, "America/Monterrey");
+    assert.equal(saved.serverStreakDays, 1);
+    assert.equal((await ref.collection("daily_streak_days").get()).size, 1);
+  });
+
   test("premio diario: concurrencia y reintento abonan solo una vez", async () => {
     const {claimDailyStreakRewardTransaction: claim} =
       require("../streak_claim_transaction");
