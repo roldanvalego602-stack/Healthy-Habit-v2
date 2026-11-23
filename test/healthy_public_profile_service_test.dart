@@ -53,10 +53,34 @@ void main() {
     expect(profile['healthyEquipped'], {
       'cabeza': 'crown',
       'mano': 'water_bottle',
+      'perfil_banner': 'banner',
     });
     expect(profile.containsKey('shopInventory'), isFalse);
     expect(profile.containsKey('shopEquipped'), isFalse);
     expect(profile.containsKey('habitCoins'), isFalse);
+  });
+
+  test('profile cosmetics and gloves are publicly projected without wallet', () {
+    final result = HealthyPublicProfileService.project({
+      'name': 'Eva',
+      'shopInventory': ['frame_arcane', 'banner_space', 'avatar_snowman'],
+      'habitCoins': 50,
+      'shopEquipped': {
+        'perfil_marco': 'frame_arcane',
+        'perfil_banner': 'banner_space',
+        'perfil_avatar': 'avatar_snowman',
+        'brazos': 'green_gloves',
+        'perfil_password': 'no',
+      },
+    });
+    expect(result['healthyEquipped'], {
+      'perfil_marco': 'frame_arcane',
+      'perfil_banner': 'banner_space',
+      'perfil_avatar': 'avatar_snowman',
+      'brazos': 'green_gloves',
+    });
+    expect(result.containsKey('shopInventory'), isFalse);
+    expect(result.containsKey('habitCoins'), isFalse);
   });
 
   test('public profile without purchases shows default mascot', () {
