@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import 'social_action_button.dart';
-import 'profile_avatar.dart';
 import 'healthy_framed_avatar.dart';
 import 'profile_photo_viewer.dart';
 import '../../tema/healthy_cosmetics.dart';
