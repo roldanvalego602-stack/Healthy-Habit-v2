@@ -125,6 +125,8 @@ async function registerHabitTransaction(
     ? validateDemoRegistration(data) : parseOfficialRegistration(data);
   const catalog = SERVER_CATALOG[ids.habitId];
   const date = utcDay(now);
+  // La racha global se valida independientemente de la racha por intento.
+  const {planVerifiedDay} = require("./streak_day_policy");
   const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(ids.habitId);
   const attemptRef = habitRef.collection("attempts").doc(ids.attemptId);
@@ -195,6 +197,17 @@ async function registerHabitTransaction(
       .doc(periodKey);
     // Leer contador antes de efectuar cualquier escritura transaccional.
     const periodSnap = await tx.get(periodRef);
+    // La prueba diaria es creada SOLO por el motor oficial vía Admin SDK.
+    const streakPlan = mode === "official" ? planVerifiedDay({
+      previousDay: userSnap.data().serverLastStreakDay ?? null,
+      previousStreak: userSnap.data().serverStreakDays ?? 0,
+      previousBest: userSnap.data().serverLongestStreak ?? 0,
+      now, timeZone: zone,
+    }) : null;
+    const streakDayRef = streakPlan
+      ? userRef.collection("daily_streak_days").doc(streakPlan.day) : null;
+    const streakDaySnap = streakDayRef ? await tx.get(streakDayRef) : null;
+
     if (attempt.target !== catalog.target ||
         habit.frequencyType !== catalog.frequencyType ||
         attempt.frequencyType !== catalog.frequencyType ||
@@ -274,6 +287,15 @@ async function registerHabitTransaction(
       ...(Object.hasOwn(streakUpdate, "periodStreak") ?
         {periodStreak: streakUpdate.periodStreak} : {}),
     };
+    // Una sola marca diaria (no económica) por cuenta, incluso si registra
+    // varios hábitos o dos operaciones concurrentes en el mismo día.
+    if (streakPlan && streakPlan.isNewDay && !streakDaySnap.exists) {
+      tx.create(streakDayRef, {
+        day: streakPlan.day, streak: streakPlan.streak,
+        rewardCoins: streakPlan.rewardCoins, claimed: false,
+        verifiedAt: FieldValue.serverTimestamp(),
+      });
+    }
     if (usesLegacyDailyMarker) {
       tx.create(dayRef, {
         operationId: ids.operationId, createdAt: FieldValue.serverTimestamp(),
@@ -314,6 +336,11 @@ async function registerHabitTransaction(
       xp: reward.xp, currentXp: reward.xp, level: reward.level,
       habitCoins: reward.coins,
       claimedLevelRewards: reward.claimedLevelRewards,
+      ...(streakPlan && streakPlan.isNewDay ? {
+        serverLastStreakDay: streakPlan.day,
+        serverStreakDays: streakPlan.streak,
+        serverLongestStreak: streakPlan.best,
+      } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.create(operationRef, {
