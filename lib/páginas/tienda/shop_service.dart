@@ -117,6 +117,9 @@ const shopCatalog = <ShopItem>[
     emoji: '✨',
     slot: 'aura',
   ),
+  ShopItem('leaf_aura', 'Aura de hojas', 'Especiales',
+      'Hojas flotantes, luz verde y halo vegetal alrededor de Mr. Healthy.',
+      180, emoji: '🍃', slot: 'aura'),
   ShopItem(
     'cape',
     'Capa de héroe',
