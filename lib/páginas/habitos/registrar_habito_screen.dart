@@ -1,5 +1,6 @@
 import '../niveles/levels_system.dart';
 import '../estadisticas/daily_streak_screen.dart';
+import '../estadisticas/daily_streak_reward_dialog.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -295,37 +296,32 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         if (response['dailyStreakNew'] == true) {
           final dayCount = _leerEntero(response['dailyStreakCount'], 1);
           final bonus = _leerEntero(response['dailyStreakReward'], 2);
-          final open = await showDialog<bool>(
+          final day = response['dailyStreakDay']?.toString() ?? '';
+          final action = await showDialog<StreakRewardAction>(
             context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: Text('🔥 Día $dayCount de racha'),
-              content: Text(
-                '¡Actividad registrada! +$xp XP. '
-                'Tienes un premio de $bonus Habit Coins '
-                'verificado y listo para recoger.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Más tarde'),
-                ),
-                FilledButton.icon(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  icon: const Icon(Icons.card_giftcard_rounded),
-                  label: const Text('Ver premio'),
-                ),
-              ],
+            barrierDismissible: false,
+            builder: (_) => DailyStreakRewardDialog(
+              streak: dayCount,
+              coins: bonus,
+              xp: xp,
+              onClaim: () => service.claimDailyStreakReward(day: day),
             ),
           );
           if (!mounted) return;
-          if (open == true) {
-            await Navigator.push(
-              context,
+          if (action == StreakRewardAction.showHistory) {
+            await Navigator.of(context).push<void>(
               MaterialPageRoute<void>(
                 builder: (_) => const DailyStreakScreen(),
               ),
             );
             if (!mounted) return;
+          } else if (action == StreakRewardAction.claimed) {
+            HealthyCelebration.show(
+              context,
+              title: '¡Premio diario recogido!',
+              subtitle: '+$bonus Habit Coins por tu racha.',
+              icon: Icons.redeem_rounded,
+            );
           }
         } else {
           HealthyCelebration.show(
