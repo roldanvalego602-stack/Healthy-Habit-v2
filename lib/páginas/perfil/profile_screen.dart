@@ -17,6 +17,7 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import 'profile_banner.dart';
 import 'profile_photo_viewer.dart';
 import '../../servicios/daily_streak_display.dart';
 import 'profile_monthly_summary.dart';
@@ -340,49 +341,12 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SizedBox(
-            height: 150,
-            width: double.infinity,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(fit: StackFit.expand, children: [
-                // Una sola superficie de banner: PNG o degradado de reserva.
-                if (HealthyAssetCatalog.banners.containsKey(
-                    _string(data['profileBanner'], fallback: 'Amanecer')))
-                  Image.asset(
-                    HealthyAssetCatalog.banners[
-                      _string(data['profileBanner'], fallback: 'Amanecer')]!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => DecoratedBox(
-                      decoration: BoxDecoration(gradient: LinearGradient(
-                        colors: _bannerColors(_string(data['profileBanner'],
-                            fallback: 'Amanecer')),
-                      )),
-                    ),
-                  )
-                else
-                  DecoratedBox(
-                    decoration: BoxDecoration(gradient: LinearGradient(
-                      colors: _bannerColors(_string(data['profileBanner'],
-                          fallback: 'Amanecer')),
-                    )),
-                  ),
-                Positioned(
-                  left: 13,
-                  top: 12,
-                  child: Text(
-                    _string(data['profileBanner'], fallback: 'Amanecer')
-                        .toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
-                    ),
-                  ),
-                ),
-              ]),
+          ProfileBanner(
+            bannerStyle: _string(data['profileBanner'], fallback: 'Amanecer'),
+            label: _string(data['profileBanner'], fallback: 'Amanecer')
+                .toUpperCase(),
+            fallbackColors: _bannerColors(
+              _string(data['profileBanner'], fallback: 'Amanecer'),
             ),
           ),
           Transform.translate(
