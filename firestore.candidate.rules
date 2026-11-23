@@ -248,7 +248,7 @@ service cloud.firestore {
         // Sólo Admin SDK puede emitir rachas verificadas.
         && !changed.hasAny([
           'serverStreakDays', 'serverLastStreakDay',
-          'serverLongestStreak'
+          'serverLongestStreak', 'serverStreakTimeZone'
         ])
         && (!changed.hasAny(['shopEquipped']) || validEquipped())
         && (
