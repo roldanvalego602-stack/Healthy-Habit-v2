@@ -18,11 +18,6 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
 
   int _number(dynamic value) => value is num ? value.toInt() : 0;
 
-  String _day(DateTime date) =>
-      '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
-
   int _daysAgo(String date) {
     final parsed = DateTime.tryParse(date);
     if (parsed == null) return 100000;
