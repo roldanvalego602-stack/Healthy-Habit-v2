@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Selección del usuario al registrar su primera sesión válida del día.
-enum StreakRewardAction { claimed, later, showHistory }
+enum StreakRewardAction { claimed, alreadyClaimed, later, showHistory }
 
 /// El widget sólo presenta datos confirmados y llama al backend inyectado.
 /// No escribe monedas ni rachas desde Flutter.
@@ -37,8 +37,11 @@ class _DailyStreakRewardDialogState extends State<DailyStreakRewardDialog> {
     try {
       final result = await widget.onClaim();
       if (!mounted) return;
-      if (result['alreadyClaimed'] == true ||
-          result['coinsAwarded'] == widget.coins) {
+      if (result['alreadyClaimed'] == true) {
+        Navigator.of(context).pop(StreakRewardAction.alreadyClaimed);
+        return;
+      }
+      if (result['coinsAwarded'] == widget.coins) {
         Navigator.of(context).pop(StreakRewardAction.claimed);
         return;
       }
