@@ -163,8 +163,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'recordatorioRacha',
       'recordatorioDesafios',
       'descansoSemanal',
-      'sonidosApp',
-      'vibracionHaptica',
     };
     setState(() {
       settings[key] = value;
