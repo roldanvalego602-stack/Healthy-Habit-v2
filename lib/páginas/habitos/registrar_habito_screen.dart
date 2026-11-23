@@ -1,4 +1,5 @@
 import '../niveles/levels_system.dart';
+import '../estadisticas/daily_streak_screen.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -291,15 +292,52 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         final progress = _leerEntero(response['progress'], 0);
         final target = _leerEntero(response['target'], _meta);
         final completed = response['completed'] == true;
-        HealthyCelebration.show(
-          context,
-          title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
-          subtitle: '+$xp XP'
-              '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
-              ' · $progress/$target registros',
-          icon: completed
-              ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
-        );
+        if (response['dailyStreakNew'] == true) {
+          final dayCount = _leerEntero(response['dailyStreakCount'], 1);
+          final bonus = _leerEntero(response['dailyStreakReward'], 2);
+          final open = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: Text('🔥 Día $dayCount de racha'),
+              content: Text(
+                '¡Actividad registrada! +$xp XP. '
+                'Tienes un premio de $bonus Habit Coins '
+                'verificado y listo para recoger.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Más tarde'),
+                ),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  icon: const Icon(Icons.card_giftcard_rounded),
+                  label: const Text('Ver premio'),
+                ),
+              ],
+            ),
+          );
+          if (!mounted) return;
+          if (open == true) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const DailyStreakScreen(),
+              ),
+            );
+            if (!mounted) return;
+          }
+        } else {
+          HealthyCelebration.show(
+            context,
+            title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
+            subtitle: '+$xp XP'
+                '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
+                ' · $progress/$target registros',
+            icon: completed
+                ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
+          );
+        }
         Navigator.pop(context, true);
         return;
       }
