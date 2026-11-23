@@ -16,6 +16,7 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
 import 'profile_photo_viewer.dart';
 import '../../servicios/daily_streak_display.dart';
@@ -341,9 +342,12 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         children: [
           ProfileBanner(
-            bannerStyle: _string(data['profileBanner'], fallback: 'Amanecer'),
-            label: _string(data['profileBanner'], fallback: 'Amanecer')
-                .toUpperCase(),
+            bannerStyle: HealthyCosmetics.equippedId(data, 'perfil_banner') ??
+                _string(data['profileBanner'], fallback: 'Amanecer'),
+            label: HealthyCosmetics.equippedId(data, 'perfil_banner') != null
+                ? 'MI PERFIL'
+                : _string(data['profileBanner'], fallback: 'Amanecer')
+                    .toUpperCase(),
             fallbackColors: _bannerColors(
               _string(data['profileBanner'], fallback: 'Amanecer'),
             ),
@@ -386,13 +390,26 @@ class ProfileScreen extends StatelessWidget {
                               width: 3,
                             ),
                           ),
-                          child: HealthyProfileAvatar(
-                            photoUrl: data.containsKey('photoUrl')
-                                ? data['photoUrl']?.toString() ?? ''
-                                : FirebaseAuth.instance.currentUser
-                                        ?.photoURL ?? '',
-                            preset: _string(data['profileAvatarStyle'], fallback: 'foto'),
-                            size: 86,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              HealthyProfileAvatar(
+                                photoUrl: data.containsKey('photoUrl')
+                                    ? data['photoUrl']?.toString() ?? ''
+                                    : FirebaseAuth.instance.currentUser
+                                            ?.photoURL ?? '',
+                                preset: HealthyCosmetics.equippedId(data, 'perfil_avatar') ??
+                                    _string(data['profileAvatarStyle'], fallback: 'foto'),
+                                size: 86,
+                              ),
+                              if (HealthyCosmetics.equippedAsset(data, 'perfil_marco')
+                                  case final frame?)
+                                IgnorePointer(
+                                  child: Image.asset(frame, fit: BoxFit.fill,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.shrink()),
+                                ),
+                            ],
                           ),
                         ),
                         Positioned(
