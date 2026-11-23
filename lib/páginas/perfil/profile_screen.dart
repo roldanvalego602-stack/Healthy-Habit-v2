@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
-import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
