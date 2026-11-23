@@ -87,7 +87,8 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: _navy, fontWeight: FontWeight.w900),
             ),
-      content: AnimatedSwitcher(
+      content: SingleChildScrollView(
+        child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 150),
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeIn,
@@ -96,6 +97,7 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
           child: FadeTransition(opacity: animation, child: child),
         ),
         child: _enviado ? _buildConfirmacion() : _buildSelectorEmojis(),
+        ),
       ),
     );
   }
