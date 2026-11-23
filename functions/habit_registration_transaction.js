@@ -284,6 +284,12 @@ async function registerHabitTransaction(
       registrationPeriod: periodKey,
       calendarTimeZone: zone,
       periodCount: periodResult.periodCountAfter,
+      ...(streakPlan ? {
+        dailyStreakDay: streakPlan.day,
+        dailyStreakCount: streakPlan.streak,
+        dailyStreakReward: streakPlan.rewardCoins,
+        dailyStreakNew: streakPlan.isNewDay && !streakDaySnap.exists,
+      } : {}),
       ...(Object.hasOwn(streakUpdate, "periodStreak") ?
         {periodStreak: streakUpdate.periodStreak} : {}),
     };
