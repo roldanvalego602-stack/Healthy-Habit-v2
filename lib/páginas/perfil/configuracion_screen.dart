@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'editar_perfil_screen.dart';
 import 'informacion_app_screen.dart';
@@ -575,7 +576,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
         value: _bool(key),
         activeTrackColor: green,
-        onChanged: saving ? null : (v) => _save(key, v),
+        onChanged: saving ? null : (v) async {
+          await _save(key, v);
+          // Comprobación inmediata y perceptible del ajuste en Android.
+          if (key == 'vibracionHaptica' && v && mounted &&
+              settings[key] == true) {
+            try {
+              await HapticFeedback.mediumImpact();
+            } catch (_) {}
+          }
+        },
       );
 
   @override
