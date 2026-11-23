@@ -116,7 +116,7 @@ class HealthyMascotOutfit extends StatelessWidget {
                         horizontal: 22, vertical: 4),
                       decoration: BoxDecoration(
                         color: equipped['cuello'] == 'mint_scarf'
-                            ? green : const Color(0xFF1D7666),
+                            ? const Color(0xFF198568) : const Color(0xFF1D7666),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text('✦  ✦  ✦',
