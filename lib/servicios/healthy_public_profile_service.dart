@@ -96,7 +96,7 @@ class HealthyPublicProfileService {
     final publicEquipped = <String, String>{};
     const allowedSlots = {
       'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
-      'brazos', 'perfil_marco', 'perfil_banner', 'perfil_avatar',
+      'brazos', 'skin', 'perfil_marco', 'perfil_banner', 'perfil_avatar',
     };
     if (rawEquipped is Map) {
       for (final entry in rawEquipped.entries) {
