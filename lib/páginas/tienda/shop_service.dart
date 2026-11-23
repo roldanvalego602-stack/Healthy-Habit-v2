@@ -278,6 +278,16 @@ class ShopState {
   }
 }
 
+/// Artículos pendientes de adquirir. El inventario comprado se conserva
+/// en ShopState y se administra desde el armario, no desde esta lista.
+List<ShopItem> availableShopItems(ShopState? state,
+    {String category = 'Todos'}) {
+  return shopCatalog.where((item) =>
+    (category == 'Todos' || item.category == category) &&
+    (state == null || !state.owns(item.id))
+  ).toList(growable: false);
+}
+
 class ShopException implements Exception {
   const ShopException(this.message);
   final String message;
