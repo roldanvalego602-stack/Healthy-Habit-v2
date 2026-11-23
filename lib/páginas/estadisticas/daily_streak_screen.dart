@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/daily_streak_display.dart';
 import 'package:flutter/material.dart';
 
 /// Racha diaria y recompensas verificadas por el servidor.
@@ -17,20 +18,6 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
   String? _claiming;
 
   int _number(dynamic value) => value is num ? value.toInt() : 0;
-
-  int _daysAgo(String date) {
-    final parsed = DateTime.tryParse(date);
-    if (parsed == null) return 100000;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return today.difference(DateTime(parsed.year, parsed.month, parsed.day))
-        .inDays;
-  }
-
-  int _activeStreak(int stored, String lastDay) {
-    final elapsed = _daysAgo(lastDay);
-    return elapsed == 0 || elapsed == 1 ? stored : 0;
-  }
 
   int _reward(int streak) {
     if (streak >= 7) return 5;
@@ -87,14 +74,9 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final profile = userSnapshot.data!.data() ?? <String, dynamic>{};
-          final server = profile['serverLastStreakDay'] is String;
-          final latest = (profile[server
-              ? 'serverLastStreakDay' : 'lastStreakDate'] ?? '').toString();
-          final rawStreak = _number(profile[server
-              ? 'serverStreakDays' : 'currentStreak']);
-          final streak = _activeStreak(rawStreak, latest);
-          final best = _number(profile[server
-              ? 'serverLongestStreak' : 'longestStreak']);
+          final server = DailyStreakDisplay.verified(profile);
+          final streak = DailyStreakDisplay.current(profile);
+          final best = DailyStreakDisplay.longest(profile);
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -112,9 +94,8 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                               ?.copyWith(fontWeight: FontWeight.w900)),
                       Text(streak == 0
                           ? 'Registra una actividad válida para iniciar.'
-                          : _daysAgo(latest) == 0
-                              ? '¡Ya registraste actividad hoy!'
-                              : 'Registra una actividad hoy para mantenerla.'),
+                          : 'Llevas $streak días de constancia. '
+                              'Registra una sesión cada día para continuar.'),
                       const SizedBox(height: 12),
                       Text('Mejor racha: $best días'),
                     ],
