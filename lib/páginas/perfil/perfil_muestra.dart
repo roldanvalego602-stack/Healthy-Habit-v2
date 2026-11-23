@@ -6,6 +6,7 @@ import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_asset_catalog.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
+import 'profile_banner.dart';
 import 'amigos_servicio.dart';
 import '../logros/logros_service.dart';
 import '../tienda/healthy_mascot_outfit.dart';
@@ -294,43 +295,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ),
       child: Column(
         children: [
-          SizedBox(
-            height: 130,
-            width: double.infinity,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(fit: StackFit.expand, children: [
-                if (HealthyAssetCatalog.banners.containsKey(bannerStyle))
-                  Image.asset(
-                    HealthyAssetCatalog.banners[bannerStyle]!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) =>
-                        const DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF174D4B), Color(0xFF498A75)],
-                            ),
-                          ),
-                        ),
-                  )
-                else
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF174D4B), Color(0xFF498A75)],
-                      ),
-                    ),
-                  ),
-                const Positioned(
-                  left: 12, top: 10,
-                  child: Text('PERFIL PÚBLICO',
-                    style: TextStyle(color: Colors.white, fontSize: 10,
-                      fontWeight: FontWeight.w800, letterSpacing: 1,
-                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)]),
-                  ),
-                ),
-              ]),
-            ),
+          ProfileBanner(
+            bannerStyle: bannerStyle,
+            label: 'PERFIL PÚBLICO',
+            fallbackColors: const [
+              Color(0xFF174D4B),
+              Color(0xFF498A75),
+            ],
           ),
           Transform.translate(
             offset: const Offset(0, -40),
