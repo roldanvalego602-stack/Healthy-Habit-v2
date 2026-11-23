@@ -73,13 +73,7 @@ class OfficialHabitEmulatorService {
   Future<Map<String, dynamic>> claimDailyStreakReward({
     required String day,
   }) {
-    if (!RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}) {
-      throw ArgumentError('Selecciona un día válido para recoger el premio.');
-    }
-    return _call('claimDailyStreakReward', {'day': day});
-  }
-}
-).hasMatch(day)) {
+    if (!RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$').hasMatch(day)) {
       throw ArgumentError('Selecciona un día válido para recoger el premio.');
     }
     return _call('claimDailyStreakReward', {'day': day});
