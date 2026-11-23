@@ -8,6 +8,7 @@ import '../../tema/healthy_theme.dart';
 import '../perfil/profile_avatar.dart';
 import '../perfil/profile_banner.dart';
 import 'healthy_mascot_outfit.dart';
+import 'healthy_mascot_idle.dart';
 import 'shop_item_artwork.dart';
 import 'shop_service.dart';
 
@@ -293,8 +294,12 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             child: FittedBox(
               fit: BoxFit.contain,
               alignment: Alignment.center,
-              child: HealthyMascotOutfit(
-                equipped: state?.equipped ?? const <String, String>{},
+              // El balanceo incluye todas las capas para que ningún
+              // accesorio se separe de Mr. Healthy al respirar.
+              child: HealthyMascotIdle(
+                child: HealthyMascotOutfit(
+                  equipped: state?.equipped ?? const <String, String>{},
+                ),
               ),
             ),
           ),
