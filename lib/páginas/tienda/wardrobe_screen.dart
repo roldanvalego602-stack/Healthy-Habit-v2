@@ -155,7 +155,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _sectionTitle(slots, state),
+                  _sectionTitle(slots),
                   const SizedBox(height: 7),
                   _slotBar(slots),
                   const SizedBox(height: 9),
@@ -365,7 +365,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     });
   }
 
-  Widget _sectionTitle(List<WardrobeSlot> slots, ShopState? state) {
+  Widget _sectionTitle(List<WardrobeSlot> slots) {
     final label = slots.firstWhere((s) => s.id == _slot).label;
     final count = wardrobeItemsForSlot(_slot).length;
     return Row(children: [
