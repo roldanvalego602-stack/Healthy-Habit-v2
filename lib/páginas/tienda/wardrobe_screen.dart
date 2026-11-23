@@ -44,7 +44,8 @@ const profileWardrobeSlots = <WardrobeSlot>[
 /// Selecciona exclusivamente artículos equipables de la ranura elegida.
 /// Las reacciones consumibles y extras sin ranura permanecen en la tienda.
 List<ShopItem> wardrobeItemsForSlot(String slot) =>
-    shopCatalog.where((item) => item.slot == slot).toList(growable: false);
+    shopCatalog.where((item) => item.slot == slot &&
+        (isShopItemVisible(item.id))).toList(growable: false);
 
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
