@@ -50,7 +50,19 @@ const SHOP_PRICES = Object.freeze({
   "reaction_love": 90,
   "reaction_goal": 90,
   "reaction_support": 90,
-  "reaction_like": 90
+  "reaction_like": 90,
+  "aviator_goggles_gold": 175,
+  "leaf_glow_hat": 145,
+  "leaf_crown": 180,
+  "skin_christmas_cartoon": 420,
+  "banner_gradient_yellow_pink": 95,
+  "banner_gradient_blue_pink": 95,
+  "banner_gradient_teal_yellow": 95,
+  "banner_gradient_gold_black": 110,
+  "banner_gradient_purple_teal": 95,
+  "banner_gradient_pink_violet": 95,
+  "banner_gradient_turquoise_blue": 95,
+  "banner_gradient_black_blue": 110
 });
 
 module.exports = {SHOP_PRICES};
