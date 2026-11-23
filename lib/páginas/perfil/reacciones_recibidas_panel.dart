@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'amigos_servicio.dart';
+import 'profile_avatar.dart';
+import 'perfil_muestra.dart';
 import 'interaction_model.dart';
 import 'interaction_service.dart';
 
@@ -79,24 +81,87 @@ class _ReaccionesRecibidasPanelState
                 const SizedBox(height: 9),
                 if (visibles.isEmpty)
                   const Text('Aún no has recibido reacciones de otros usuarios.'),
-                for (final item in visibles)
-                  ListTile(
-                    key: ValueKey('reaction-${item.id}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: Text(item.emoji.isEmpty ? '👏' : item.emoji,
-                      style: const TextStyle(fontSize: 24)),
-                    title: Text(item.leido
-                        ? 'Reacción recibida'
-                        : 'Nueva reacción recibida'),
-                    subtitle: Text('De un usuario de Healthy Habit · '
-                      '${item.createdAt.day}/${item.createdAt.month}'),
-                    trailing: item.leido
-                      ? const Icon(Icons.done_all_rounded)
-                      : TextButton(
-                          onPressed: _ocupadas.contains(item.id)
-                              ? null : () => _marcarLeida(item),
-                          child: const Text('Marcar leída'),
-                        ),
+                if (visibles.isNotEmpty)
+                  FutureBuilder<Map<String, Map<String, dynamic>>>(
+                    future: AmigosServicio.perfiles(
+                      visibles.map((e) => e.fromUid).toSet().toList(),
+                    ),
+                    builder: (context, profiles) {
+                      final publicProfiles = profiles.data ??
+                          <String, Map<String, dynamic>>{};
+                      return Column(
+                        children: [
+                          for (final item in visibles)
+                            Builder(builder: (context) {
+                              final friend = publicProfiles[item.fromUid];
+                              final name = friend?['name']?.toString() ??
+                                  'Amigo de Healthy Habit';
+                              final username =
+                                  friend?['username']?.toString() ?? '';
+                              return ListTile(
+                                key: ValueKey('reaction-${item.id}'),
+                                contentPadding: EdgeInsets.zero,
+                                leading: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    HealthyProfileAvatar(
+                                      photoUrl: friend?['photoUrl']?.toString(),
+                                      preset: friend?['profileAvatarStyle']
+                                              ?.toString() ?? 'foto',
+                                      size: 44,
+                                    ),
+                                    Positioned(
+                                      right: -5,
+                                      bottom: -5,
+                                      child: Text(
+                                        item.emoji.isEmpty ? '👏' : item.emoji,
+                                        style: const TextStyle(fontSize: 19),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                title: Text(
+                                  item.leido ? name : '$name te animó',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: item.leido
+                                        ? FontWeight.w500
+                                        : FontWeight.w800,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${item.emoji} · '
+                                  '${item.createdAt.day}/'
+                                  '${item.createdAt.month}/'
+                                  '${item.createdAt.year}',
+                                ),
+                                onTap: friend == null ? null : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => PublicProfileScreen(
+                                        userId: item.fromUid,
+                                        name: name,
+                                        username: username,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                trailing: item.leido
+                                    ? const Icon(Icons.done_all_rounded)
+                                    : TextButton(
+                                        onPressed:
+                                            _ocupadas.contains(item.id)
+                                                ? null
+                                                : () => _marcarLeida(item),
+                                        child: const Text('Marcar leída'),
+                                      ),
+                              );
+                            }),
+                        ],
+                      );
+                    },
+                  ),
                   ),
               ],
             ),
