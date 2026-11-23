@@ -31,3 +31,12 @@ Premios diarios pequeños: día 1 = 2 Habit Coins; días 2–3 = 3; días 4–6 
 - Un usuario no puede fabricar el día, saldo, XP o racha desde el cliente.
 - Cuenta con racha histórica: la ve, sin premios económicos retroactivos.
 - Al completarse un nuevo día verificado aparece el diálogo «Ver premio».
+
+
+## Mejoras de esta revisión
+
+- Regla explícita: **primera sesión del día en cualquier hábito** crea una única marca global; las sesiones adicionales del mismo día no aumentan racha ni premio.
+- Se separó la operación de cobro en `streak_claim_transaction.js` para probarla directamente en el emulador. El endpoint `claimDailyStreakReward` queda restringido por ahora a `FUNCTIONS_EMULATOR=true` y proyecto `demo-healthy-habit`, incluso si accidentalmente se despliega el código.
+- `DailyStreakDisplay.current` unifica Inicio, Perfil y Progreso. Una racha con última sesión anteayer o antes se muestra como cero, pero su récord persiste.
+- Pruebas añadidas: política, fecha imposible, doble sesión el mismo día, salto de día, reclamos simultáneos y segundo reclamo sin premio adicional.
+- **Para verificar localmente:** usar el worktree `Healthy-Habit-racha` y ejecutar `node --test`, el emulador de Firestore y `flutter test test/daily_streak_display_test.dart`. Estas pruebas están añadidas, no se afirma que hayan pasado.
