@@ -26,6 +26,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     'Especiales',
     'Personalización',
     'Avatares',
+    'Marcos',
+    'Banners',
+    'Reacciones',
     'Extras',
   ];
 
@@ -245,7 +248,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Widget _preview(ShopState? state) {
     final equipped = state?.equipped ?? <String, String>{};
     final names = equipped.entries
-        .where((entry) => !entry.key.startsWith('perfil_'))
+        .where((entry) => !entry.key.startsWith('perfil_') || entry.key == 'brazos')
         .map((entry) => shopItemById(entry.value)?.name)
         .whereType<String>()
         .join(' + ');
