@@ -3,6 +3,7 @@ import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'shop_service.dart';
 import 'healthy_leaf_aura.dart';
+import 'healthy_special_auras.dart';
 
 /// Usa las imágenes reales subidas por el equipo y conserva el emoji
 /// como respaldo para los cosméticos que todavía no tienen ilustración.
@@ -18,6 +19,16 @@ class ShopItemArtwork extends StatelessWidget {
       return SizedBox.square(
         dimension: size,
         child: const HealthyLeafAuraThumbnail(),
+      );
+    }
+    if (item.id == 'stellar_aura' || item.id == 'golden_aura') {
+      return SizedBox.square(
+        dimension: size,
+        child: HealthySpecialAuraThumbnail(
+          kind: item.id == 'stellar_aura'
+              ? HealthySpecialAura.stellar
+              : HealthySpecialAura.golden,
+        ),
       );
     }
     final asset = HealthyCosmetics.assetFor(item.id) ??
