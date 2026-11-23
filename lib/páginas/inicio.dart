@@ -73,6 +73,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
   late final FirebaseFirestore _db;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _reactionSubscription;
   bool _reactionStreamInitialized = false;
+  late final DateTime _reactionListenerStartedAt = DateTime.now();
 
   // Sólo avisa por documentos NUEVOS después de establecer el listener.
   // Las reacciones antiguas siguen disponibles en Notificaciones.
@@ -91,8 +92,11 @@ class _HomeScreen2State extends State<HomeScreen2> {
         if (change.type != DocumentChangeType.added ||
             change.doc.metadata.hasPendingWrites) return false;
         final item = change.doc.data();
+        final timestamp = item?['createdAt'];
         return item != null && item['tipo'] == 'reaccion' &&
-            item['leido'] == false;
+            item['leido'] == false &&
+            timestamp is Timestamp &&
+            timestamp.toDate().isAfter(_reactionListenerStartedAt);
       }).toList();
       if (newReactions.isEmpty) return;
       final reaction = newReactions.last.doc.data()!;
