@@ -8,6 +8,8 @@ import 'social_action_button.dart';
 import 'profile_avatar.dart';
 import 'amigos_servicio.dart';
 import '../logros/logros_service.dart';
+import '../tienda/healthy_mascot_outfit.dart';
+import '../tienda/shop_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
@@ -247,7 +249,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             visibility: achievementsVisibility,
                             data: data,
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
+                          _myHealthyCard(data),
+                          const SizedBox(height: 20),
                           _mascotSupportCard(name),
                         ],
                       ),
@@ -699,6 +703,67 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _myHealthyCard(Map<String, dynamic> data) {
+    final raw = data['healthyEquipped'];
+    final equipped = <String, String>{};
+    if (raw is Map) {
+      for (final entry in raw.entries) {
+        if (entry.key is! String || entry.value is! String) continue;
+        final item = shopItemById(entry.value as String);
+        if (item != null && item.slot == entry.key &&
+            !entry.key.toString().startsWith('perfil_')) {
+          equipped[entry.key as String] = item.id;
+        }
+      }
+    }
+    final names = equipped.values
+        .map((id) => shopItemById(id)?.name)
+        .whereType<String>()
+        .toList();
+    return Container(
+      key: const ValueKey('public-profile-my-healthy'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        border: Border.all(color: HealthyAdaptive.border),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.auto_awesome_rounded, color: HealthyAdaptive.accent),
+            const SizedBox(width: 9),
+            Text('Mi Healthy', style: TextStyle(
+              color: navy, fontSize: 18, fontWeight: FontWeight.w800,
+            )),
+          ]),
+          const SizedBox(height: 5),
+          Text('Así luce Mr. Healthy con sus accesorios equipados.',
+            style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 275,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: HealthyMascotOutfit(equipped: equipped),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              names.isEmpty ? 'Mr. Healthy sin accesorios' : names.join(' · '),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: navy, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
