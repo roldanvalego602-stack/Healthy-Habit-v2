@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'shop_service.dart';
 import 'shop_item_artwork.dart';
+import 'healthy_leaf_aura.dart';
 
 /// Representación compartida de Mr. Healthy: guardarropa y perfiles públicos.
 /// No consulta Firestore ni permite comprar/equipar. Dibuja exclusivamente
@@ -35,10 +36,7 @@ class HealthyMascotOutfit extends StatelessWidget {
       required double size,
     }) => _accessory(id, left: left, top: top, size: size);
 
-    return SizedBox(
-      width: 280,
-      height: 275,
-      child: Stack(clipBehavior: Clip.none, children: [
+    final outfit = Stack(clipBehavior: Clip.none, children: [
                 if (equipped['aura'] == 'mint_aura')
                   Positioned(
                     left: 30, top: 17,
@@ -164,7 +162,13 @@ class HealthyMascotOutfit extends StatelessWidget {
                 if (equipped['mano'] == 'water_bottle')
                   accessory('water_bottle',
                     left: 202, top: 163, size: 61),
-              ]),
+              ]);
+    return SizedBox(
+      width: 280,
+      height: 275,
+      child: equipped['aura'] == 'leaf_aura'
+          ? HealthyLeafAura(child: outfit)
+          : outfit,
     );
   }
 }
