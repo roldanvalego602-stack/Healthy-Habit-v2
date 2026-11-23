@@ -30,7 +30,6 @@ class ProfilePhotoService {
 
   /// Rechaza imágenes dañadas y genera un JPEG pequeño que se puede subir
   /// mediante putData también desde Flutter web (sin dart:io).
-  @visibleForTesting
   static Uint8List prepareJpeg(Uint8List bytes) {
     if (bytes.isEmpty || bytes.length > 12 * 1024 * 1024) {
       throw const ProfilePhotoException(
