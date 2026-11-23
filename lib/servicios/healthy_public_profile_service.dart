@@ -89,7 +89,26 @@ class HealthyPublicProfileService {
         ? rawAvatarStyle as String
         : 'foto';
 
+    // Compartir solo los cosméticos actualmente equipados; nunca el
+    // inventario, Habit Coins ni el historial de compras.
+    final rawEquipped = privateData['shopEquipped'];
+    final publicEquipped = <String, String>{};
+    const allowedSlots = {
+      'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
+    };
+    if (rawEquipped is Map) {
+      for (final entry in rawEquipped.entries) {
+        final slot = entry.key;
+        final itemId = entry.value;
+        if (slot is String && itemId is String &&
+            allowedSlots.contains(slot) && itemId.length <= 40) {
+          publicEquipped[slot] = itemId;
+        }
+      }
+    }
+
     return {
+      'healthyEquipped': publicEquipped,
       'name': stringValue('name', 'Usuario'),
       'username': stringValue('username', 'usuario'),
       // No publicar la URL de una fotografía si eligió un avatar local.
