@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import '../páginas/tienda/shop_service.dart';
 
 /// Proyección EXCLUSIVAMENTE pública del perfil.
 ///
@@ -102,7 +103,10 @@ class HealthyPublicProfileService {
         final itemId = entry.value;
         if (slot is String && itemId is String &&
             allowedSlots.contains(slot) && itemId.length <= 40) {
-          publicEquipped[slot] = itemId;
+          final item = shopItemById(itemId);
+          if (item != null && item.slot == slot) {
+            publicEquipped[slot] = itemId;
+          }
         }
       }
     }
