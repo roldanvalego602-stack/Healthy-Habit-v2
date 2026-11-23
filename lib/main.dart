@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
+import 'tema/healthy_profile_presentation.dart';
+import 'páginas/perfil/profile_avatar.dart';
 import 'tema/healthy_visual_mode.dart';
 import 'tema/healthy_motion.dart';
 import 'tema/healthy_float.dart';
@@ -202,8 +204,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final userData = userSnapshot.data?.data() ?? {};
 
         final String name = userData['name'] as String? ?? 'Usuario';
+        final avatarPreset = HealthyProfilePresentation.avatarPreset(userData);
         final String? photoUrl =
-            userData['photoUrl'] as String? ?? currentUser.photoURL;
+            HealthyProfilePresentation.photoUrl(userData) ??
+            (avatarPreset == 'foto' ? currentUser.photoURL : null);
         final int level = (userData['level'] as num?)?.toInt() ?? 1;
         final String levelTitle =
             userData['title'] as String? ?? 'Cultivador Constante';
@@ -257,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _TopBar(photoUrl: photoUrl),
+                  _TopBar(photoUrl: photoUrl, avatarPreset: avatarPreset),
                   const SizedBox(height: 16),
                   Text(
                     '¡Hola, $name!',
@@ -324,8 +328,9 @@ class _HomeScreenState extends State<HomeScreen> {
 // ---------- Top Bar ----------
 class _TopBar extends StatelessWidget {
   final String? photoUrl;
+  final String avatarPreset;
 
-  const _TopBar({this.photoUrl});
+  const _TopBar({this.photoUrl, this.avatarPreset = 'foto'});
 
   @override
   Widget build(BuildContext context) {
@@ -407,22 +412,17 @@ class _TopBar extends StatelessWidget {
         Container(
           width: 42,
           height: 42,
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.mintCard,
             border: Border.all(color: Colors.white, width: 2),
-            image:
-                photoUrl != null
-                    ? DecorationImage(
-                      image: NetworkImage(photoUrl!),
-                      fit: BoxFit.cover,
-                    )
-                    : null,
           ),
-          child:
-              photoUrl == null
-                  ? Icon(Icons.person, color: AppColors.primaryGreen)
-                  : null,
+          child: HealthyProfileAvatar(
+            photoUrl: photoUrl,
+            preset: avatarPreset,
+            size: 38,
+          ),
         ),
       ],
     );
