@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../servicios/daily_streak_display.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
@@ -339,9 +340,9 @@ class _ProgresoScreenState extends State<ProgresoScreen> {
           ]),
           const SizedBox(height: 10),
           Row(children: [
-            Expanded(child: _tile('Racha actual', '${_int(profile['currentStreak'] ?? profile['streakDays'])} días', Icons.local_fire_department_rounded, const Color(0xFFE6A83D))),
+            Expanded(child: _tile('Racha actual', '${DailyStreakDisplay.current(profile)} días', Icons.local_fire_department_rounded, const Color(0xFFE6A83D))),
             const SizedBox(width: 10),
-            Expanded(child: _tile('Mejor racha', '${_int(profile['longestStreak'])} días', Icons.military_tech_outlined, mint)),
+            Expanded(child: _tile('Mejor racha', '${DailyStreakDisplay.longest(profile)} días', Icons.military_tech_outlined, mint)),
           ]),
           _section('Actividad de los últimos 7 días'),
           _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
