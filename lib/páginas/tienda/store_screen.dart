@@ -190,10 +190,7 @@ class _StoreScreenState extends State<StoreScreen> {
             final state = snapshot.data;
             // Un artículo adquirido sale de la tienda, pero permanece
             // disponible en el armario/inventario para equiparlo.
-            final items = shopCatalog
-                .where((item) => (_filter == 'Todos' || item.category == _filter) &&
-                    (state == null || !state.owns(item.id)))
-                .toList();
+            final items = availableShopItems(state, category: _filter);
 
             return CustomScrollView(
               slivers: [
