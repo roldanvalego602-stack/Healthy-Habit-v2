@@ -5,7 +5,7 @@ import '../../servicios/healthy_feedback_service.dart';
 import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_cosmetics.dart';
 import '../../tema/healthy_theme.dart';
-import '../perfil/profile_avatar.dart';
+import '../perfil/healthy_framed_avatar.dart';
 import '../perfil/profile_banner.dart';
 import 'healthy_mascot_outfit.dart';
 import 'healthy_mascot_idle.dart';
@@ -363,27 +363,14 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             bottom: 9,
             left: 0, right: 0,
             child: Center(
-              child: Container(
-                width: avatarSize + 9,
-                height: avatarSize + 9,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: HealthyAdaptive.surface,
-                ),
-                child: Stack(fit: StackFit.expand, children: [
-                  HealthyProfileAvatar(
-                    photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
-                    preset: avatar,
-                    size: avatarSize,
-                  ),
-                  if (frame != null)
-                    IgnorePointer(
-                      child: Image.asset(frame, fit: BoxFit.fill,
-                        errorBuilder: (_, __, ___) =>
-                            const SizedBox.shrink()),
-                    ),
-                ]),
+              child: HealthyFramedAvatar(
+                size: avatarSize,
+                photoUrl: FirebaseAuth.instance.currentUser?.photoURL,
+                preset: avatar,
+                frameAsset: frame,
+                backgroundColor: HealthyAdaptive.surface,
+                borderColor: HealthyAdaptive.accent,
+                frameOverflow: 9,
               ),
             ),
           ),
