@@ -45,7 +45,8 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
   @override
   void initState() {
     super.initState();
-    _itemId = shopItemById(widget.initialItemId)?.id;
+    _itemId = isShopItemVisible(widget.initialItemId)
+        ? shopItemById(widget.initialItemId)?.id : null;
     _stateStream = _shopStream();
   }
 
@@ -78,9 +79,9 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                   color: HealthyAdaptive.text)),
             ),
             Expanded(child: ListView.builder(
-              itemCount: shopCatalog.length,
+              itemCount: availableShopItems(null).length,
               itemBuilder: (_, index) {
-                final item = shopCatalog[index];
+                final item = availableShopItems(null)[index];
                 return ListTile(
                   key: ValueKey('chat-shop-option-${item.id}'),
                   leading: Text(item.emoji, style: const TextStyle(fontSize: 27)),
