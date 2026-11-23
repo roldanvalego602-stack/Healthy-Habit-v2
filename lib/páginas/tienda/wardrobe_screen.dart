@@ -4,6 +4,7 @@ import '../../tema/healthy_coin.dart';
 import 'shop_service.dart';
 import 'shop_item_artwork.dart';
 import 'healthy_mascot_outfit.dart';
+import '../../servicios/healthy_feedback_service.dart';
 import '../../tema/healthy_cosmetics.dart';
 import '../perfil/profile_banner.dart';
 import '../perfil/profile_avatar.dart';
@@ -31,6 +32,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     'Avatares',
     'Marcos',
     'Banners',
+    'Skins',
     'Extras',
   ];
 
@@ -54,6 +56,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           item,
           remove: state.equippedItem(item.id),
         );
+        await HealthyFeedbackService.onEquip();
         _message(
           state.equippedItem(item.id)
               ? 'Objeto retirado.'
@@ -329,7 +332,6 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Widget _itemCard(ShopItem item, ShopState state) {
     final owned = state.owns(item.id);
     final equipped = state.equippedItem(item.id);
-    final affordable = state.coins >= item.price;
     return Material(
       color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(22),
@@ -358,7 +360,26 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         : const Color(0xFFE5F7EF),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: ShopItemArtwork(item: item, size: 74),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Opacity(
+                        opacity: owned ? 1 : .32,
+                        child: ShopItemArtwork(item: item, size: 74),
+                      ),
+                      if (!owned)
+                        Container(
+                          key: ValueKey('armario-candado-${item.id}'),
+                          padding: const EdgeInsets.all(9),
+                          decoration: BoxDecoration(
+                            color: HealthyAdaptive.surface.withValues(alpha: .92),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.lock_rounded, size: 24,
+                            color: HealthyAdaptive.text),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 9),
@@ -372,28 +393,21 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 ),
               ),
               const SizedBox(height: 7),
-              !owned && affordable && _busy != item.id
-                  ? HealthyCoinAmount(amount: '${item.price}',
-                      size: 17, suffix: ' H. Coins',
-                      style: TextStyle(
-                        color: muted, fontWeight: FontWeight.w700,
-                        fontSize: 11))
-                  : Text(
-                      _busy == item.id
-                          ? 'Guardando...'
-                          : equipped
-                              ? 'Equipado · Toca para quitar'
-                              : owned
-                                  ? (item.slot == null
-                                      ? 'Adquirido' : 'Toca para equipar')
-                                  : 'Saldo insuficiente',
-                      maxLines: 2,
-                      style: TextStyle(
-                        color: equipped ? green : muted,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
+              Text(
+                _busy == item.id
+                    ? 'Guardando...'
+                    : !owned
+                        ? 'Bloqueado · Ver en tienda'
+                        : equipped
+                            ? 'Equipado · Toca para quitar'
+                            : 'Toca para equipar',
+                maxLines: 2,
+                style: TextStyle(
+                  color: equipped ? green : muted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
               const SizedBox(height: 6),
               Text(
                 item.description,
