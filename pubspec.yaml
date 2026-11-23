@@ -61,6 +61,17 @@ flutter:
     - assets/banners/
     - assets/vestimenta/
     - assets/knowledge/
+    - assets/cosmeticos/mr_healthy/cabeza/
+    - assets/cosmeticos/mr_healthy/rostro/
+    - assets/cosmeticos/mr_healthy/torso/
+    - assets/cosmeticos/mr_healthy/brazos_manos/
+    - assets/cosmeticos/mr_healthy/pies/
+    - assets/cosmeticos/mr_healthy/espalda/
+    - assets/cosmeticos/mr_healthy/skins/
+    - assets/cosmeticos/perfil/banners/
+    - assets/cosmeticos/perfil/marcos/
+    - assets/cosmeticos/perfil/avatares_animados/
+    - assets/cosmeticos/social/reacciones/
 
 flutter_launcher_icons:
   min_sdk_android: 21
