@@ -17,6 +17,7 @@ import 'profesionales_screen.dart';
 import 'feed_amigos_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'profile_avatar.dart';
+import 'profile_photo_viewer.dart';
 import '../../servicios/daily_streak_display.dart';
 import 'profile_monthly_summary.dart';
 import 'profile_habit_insights.dart';
@@ -390,11 +391,20 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Semantics(
                   button: true,
-                  label: 'Editar foto de perfil',
+                  label: 'Opciones de foto de perfil',
                   child: InkWell(
                     key: const Key('profile-edit-photo'),
                     customBorder: const CircleBorder(),
-                    onTap: () => _open(context, const EditarPerfilScreen()),
+                    onTap: () => showProfilePhotoActions(
+                      context,
+                      photoUrl: data.containsKey('photoUrl')
+                          ? data['photoUrl']?.toString() ?? ''
+                          : FirebaseAuth.instance.currentUser?.photoURL,
+                      preset: _string(
+                        data['profileAvatarStyle'], fallback: 'foto',
+                      ),
+                      onEdit: () => _open(context, const EditarPerfilScreen()),
+                    ),
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
