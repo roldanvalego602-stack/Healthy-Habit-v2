@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
-import '../../tema/healthy_asset_catalog.dart';
 import 'social_action_button.dart';
 import 'profile_avatar.dart';
 import 'profile_banner.dart';
