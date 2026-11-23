@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../tema/healthy_asset_catalog.dart';
+import '../../tema/healthy_cosmetics.dart';
 
 /// Cabecera común del perfil propio y de los perfiles públicos.
 ///
@@ -24,7 +25,8 @@ class ProfileBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = HealthyAssetCatalog.banners[bannerStyle];
+    final asset = HealthyCosmetics.assetFor(bannerStyle) ??
+        HealthyAssetCatalog.banners[bannerStyle];
     final fallback = DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: fallbackColors),
