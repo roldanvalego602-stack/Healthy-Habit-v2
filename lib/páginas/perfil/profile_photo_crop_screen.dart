@@ -6,6 +6,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
 import '../../servicios/profile_photo_service.dart';
+import 'profile_photo_crop_geometry.dart';
 
 /// Recorte cuadrado con vista circular, sin plugins nativos adicionales.
 /// El JPEG resultante es el recorte real que se almacena en Firebase.
@@ -24,7 +25,6 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
   double _zoom = 1;
   double _gestureStartZoom = 1;
   Offset _offset = Offset.zero;
-  Offset _gestureStartOffset = Offset.zero;
   bool _saving = false;
   double _viewport = 300;
 
@@ -53,22 +53,20 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
     }
   }
 
-  Size _baseSize(img.Image image) {
-    final ratio = image.width / image.height;
-    return ratio >= 1
-        ? Size(_viewport * ratio, _viewport)
-        : Size(_viewport, _viewport / ratio);
-  }
+  Size _baseSize(img.Image image) =>
+      ProfilePhotoCropGeometry.baseSize(
+        imageWidth: image.width,
+        imageHeight: image.height,
+        viewport: _viewport,
+      );
 
-  Offset _clampedOffset(Offset proposed, double zoom, img.Image image) {
-    final base = _baseSize(image);
-    final maxX = math.max(0.0, (base.width * zoom - _viewport) / 2);
-    final maxY = math.max(0.0, (base.height * zoom - _viewport) / 2);
-    return Offset(
-      proposed.dx.clamp(-maxX, maxX).toDouble(),
-      proposed.dy.clamp(-maxY, maxY).toDouble(),
-    );
-  }
+  Offset _clampedOffset(Offset proposed, double zoom, img.Image image) =>
+      ProfilePhotoCropGeometry.clampOffset(
+        offset: proposed,
+        base: _baseSize(image),
+        zoom: zoom,
+        viewport: _viewport,
+      );
 
   void _reset() {
     setState(() {
@@ -82,19 +80,16 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
     setState(() => _saving = true);
     try {
       final image = _image!;
-      final base = _baseSize(image);
-      final displayedWidth = base.width * _zoom;
-      final displayedHeight = base.height * _zoom;
-      final side = (_viewport / displayedWidth * image.width)
-          .round().clamp(1, math.min(image.width, image.height)).toInt();
-      final x = ((displayedWidth - _viewport) / 2 - _offset.dx) *
-          image.width / displayedWidth;
-      final y = ((displayedHeight - _viewport) / 2 - _offset.dy) *
-          image.height / displayedHeight;
-      final left = x.round().clamp(0, image.width - side).toInt();
-      final top = y.round().clamp(0, image.height - side).toInt();
+      final rect = ProfilePhotoCropGeometry.sourceRect(
+        imageWidth: image.width,
+        imageHeight: image.height,
+        viewport: _viewport,
+        zoom: _zoom,
+        offset: _offset,
+      );
       final cropped = img.copyCrop(
-        image, x: left, y: top, width: side, height: side,
+        image, x: rect.left.toInt(), y: rect.top.toInt(),
+        width: rect.width.toInt(), height: rect.height.toInt(),
       );
       final sized = img.copyResize(cropped, width: 768, height: 768);
       final result = Uint8List.fromList(img.encodeJpg(sized, quality: 85));
@@ -122,9 +117,9 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
   Widget build(BuildContext context) {
     final image = _image;
     final bytes = _bytes;
-    final dimension = math.min(
+    final dimension = math.max(100.0, math.min(
       MediaQuery.sizeOf(context).width - 40, 340.0,
-    );
+    ));
     if (_viewport != dimension) {
       _viewport = dimension;
       if (image != null) _offset = _clampedOffset(_offset, _zoom, image);
@@ -149,18 +144,16 @@ class _ProfilePhotoCropScreenState extends State<ProfilePhotoCropScreen> {
                       child: GestureDetector(
                         onScaleStart: (_) {
                           _gestureStartZoom = _zoom;
-                          _gestureStartOffset = _offset;
                         },
                         onScaleUpdate: (details) {
                           setState(() {
                             _zoom = (_gestureStartZoom * details.scale)
                                 .clamp(1.0, 4.0);
                             _offset = _clampedOffset(
-                              _gestureStartOffset + details.focalPointDelta,
+                              _offset + details.focalPointDelta,
                               _zoom, image,
                             );
                           });
-                          // Traslación acumulada usando el movimiento incremental.
                           _gestureStartOffset = _offset;
                         },
                         child: ClipOval(
