@@ -92,7 +92,9 @@ class _HomeScreen2State extends State<HomeScreen2> {
       if (!mounted || FirebaseAuth.instance.currentUser?.uid != uid) return;
       final newReactions = snapshot.docChanges.where((change) {
         if (change.type != DocumentChangeType.added ||
-            change.doc.metadata.hasPendingWrites) return false;
+            change.doc.metadata.hasPendingWrites) {
+          return false;
+        }
         final item = change.doc.data();
         final timestamp = item?['createdAt'];
         return item != null && item['tipo'] == 'reaccion' &&
