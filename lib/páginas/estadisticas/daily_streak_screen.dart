@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../../servicios/official_habit_emulator_service.dart';
 import 'package:flutter/material.dart';
 
 /// Racha diaria y recompensas verificadas por el servidor.
@@ -43,23 +43,14 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
     if (_claiming != null) return;
     setState(() => _claiming = day);
     try {
-      final callable = FirebaseFunctions.instanceFor(
-        app: Firebase.app(), region: 'us-central1',
-      ).httpsCallable('claimDailyStreakReward');
-      final result = await callable.call<Map<String, dynamic>>({'day': day});
+      const service = OfficialHabitEmulatorService();
+      final result = await service.claimDailyStreakReward(day: day);
       if (!mounted) return;
-      final amount = _number(result.data['coinsAwarded']);
+      final amount = _number(result['coinsAwarded']);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.data['alreadyClaimed'] == true
+        content: Text(result['alreadyClaimed'] == true
             ? 'Este premio ya había sido reclamado.'
             : '¡Premio recogido! +$amount Habit Coins'),
-      ));
-    } on FirebaseFunctionsException catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(error.code == 'not-found'
-            ? 'Las recompensas diarias aún no están desplegadas.'
-            : 'No se pudo reclamar el premio: ${error.message ?? error.code}'),
       ));
     } catch (_) {
       if (mounted) {
