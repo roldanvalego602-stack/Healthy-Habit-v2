@@ -991,6 +991,9 @@ class ProfileScreen extends StatelessWidget {
           );
           final total = LogrosService.catalogo.length;
           final fraction = total == 0 ? 0.0 : obtained / total;
+          final equipment = profile['shopEquipped'];
+          final hasDisplay = equipment is Map &&
+              equipment['perfil_expositor'] == 'achievement_display';
           return Material(
             color: HealthyAdaptive.surface,
             borderRadius: BorderRadius.circular(24),
@@ -1004,7 +1007,9 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Row(children: [
                       Expanded(child: Text(
-                        'ESTANTE · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}',
+                        hasDisplay
+                            ? 'EXPOSITOR DE LOGROS · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}'
+                            : 'ESTANTE · ${_string(profile['profileShelf'], fallback: 'Mis favoritos').toUpperCase()}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: muted,
