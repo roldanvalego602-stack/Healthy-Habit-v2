@@ -108,6 +108,21 @@ void main() {
     expect(projection.containsKey('habitCoins'), isFalse);
   });
 
+  test('el expositor se publica solo como decoración de logros', () {
+    final projection = HealthyPublicProfileService.project({
+      'name': 'Sol',
+      'shopInventory': ['achievement_display'],
+      'habitCoins': 120,
+      'shopEquipped': {
+        'perfil_expositor': 'achievement_display',
+      },
+    });
+    expect((projection['healthyEquipped'] as Map)['perfil_expositor'],
+        'achievement_display');
+    expect(projection.containsKey('shopInventory'), isFalse);
+    expect(projection.containsKey('habitCoins'), isFalse);
+  });
+
   test('public profile without purchases shows default mascot', () {
     final profile = HealthyPublicProfileService.project({
       'name': 'Alex',
