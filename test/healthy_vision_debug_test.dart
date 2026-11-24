@@ -28,6 +28,7 @@ void main() {
         body: HealthyVisionPreviewPanel(
           image: Uint8List.fromList([1, 2, 3]),
           category: 'Hidratación',
+          habitTitle: 'Tomar agua',
         ),
       ),
     ));
