@@ -34,6 +34,28 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   DemoVisualPreview? _preview;
   int _revision = 0;
 
+  static const _labelSpanish = <String, String>{
+    'text': 'Texto', 'font': 'Tipografía', 'screenshot': 'Captura de pantalla',
+    'number': 'Número', 'electronic device': 'Dispositivo electrónico',
+    'technology': 'Tecnología', 'display device': 'Pantalla',
+    'software': 'Software', 'multimedia': 'Multimedia', 'symbol': 'Símbolo',
+    'food': 'Alimento', 'ingredient': 'Ingrediente',
+    'staple food': 'Alimento básico', 'cereal': 'Cereal',
+    'breakfast cereal': 'Cereal de desayuno', 'meal': 'Comida',
+    'breakfast': 'Desayuno', 'lunch': 'Almuerzo', 'dinner': 'Cena',
+    'fruit': 'Fruta', 'vegetable': 'Verdura', 'apple': 'Manzana',
+    'banana': 'Plátano', 'orange': 'Naranja', 'carrot': 'Zanahoria',
+    'salad': 'Ensalada', 'rice': 'Arroz', 'bread': 'Pan',
+    'water': 'Agua', 'drinking water': 'Agua potable',
+    'bottled water': 'Agua embotellada', 'water bottle': 'Botella de agua',
+    'glass': 'Vaso', 'bottle': 'Botella', 'beverage': 'Bebida',
+    'drink': 'Bebida', 'sandwich': 'Sándwich', 'soup': 'Sopa',
+    'pasta': 'Pasta', 'tomato': 'Tomate',
+  };
+
+  static String _displayLabel(String value) =>
+      _labelSpanish[value.trim().toLowerCase()] ?? value;
+
   static String suggestedProfile(String category) {
     final c = category.toLowerCase();
     if (c.contains('hidrat') || c.contains('agua')) return 'hydration';
@@ -177,21 +199,87 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
             label: Text(_busy ? 'Analizando…' : 'Analizar con IA (sin XP)'),
           ),
           if (_preview != null) ...[
-            const SizedBox(height: 10),
-            Text(_preview!.status == 'visual_match_only'
-                ? 'Contenido compatible detectado'
-                : 'Resultado no concluyente',
-              style: TextStyle(
-                color: HealthyAdaptive.text, fontWeight: FontWeight.w700,
-              ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  _preview!.status == 'visual_match_only'
+                      ? Icons.info_outline_rounded
+                      : Icons.help_outline_rounded,
+                  color: HealthyAdaptive.accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _preview!.status == 'visual_match_only'
+                        ? 'Elementos relacionados detectados'
+                        : 'Sin coincidencia clara',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: HealthyAdaptive.text,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            for (final label in _preview!.labels)
-              Text('${label.name}: ${(label.confidence * 100).toStringAsFixed(0)} %',
-                style: TextStyle(fontSize: 12, color: HealthyAdaptive.text)),
-            const SizedBox(height: 4),
-            Text('La imagen no prueba que realizaste el hábito.',
-              style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted)),
+            const SizedBox(height: 6),
+            Text(
+              _preview!.message,
+              style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
+            ),
+            if (_preview!.labels.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Principales elementos detectados',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: HealthyAdaptive.text,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final label in _preview!.labels.take(6))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _displayLabel(label.name),
+                          style: TextStyle(
+                            color: HealthyAdaptive.text,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${(label.confidence * 100).toStringAsFixed(0)} %',
+                        style: TextStyle(
+                          color: HealthyAdaptive.text,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Text(
+                'Estos porcentajes reflejan la confianza de detección, '
+                'no la probabilidad de que hayas cumplido el hábito.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: HealthyAdaptive.muted,
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              'Sin verificación de hábitos ni XP adicional.',
+              style: TextStyle(fontSize: 11, color: HealthyAdaptive.muted),
+            ),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
