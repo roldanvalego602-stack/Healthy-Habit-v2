@@ -14,11 +14,8 @@ const allowedUid = defineString("HEALTHY_VISION_TEST_UID");
 let client;
 
 const MAX_BYTES = 250 * 1024;
-const profiles = {
-  hydration: ["water", "bottle", "glass", "drink", "beverage"],
-  fruit_vegetable: ["fruit", "vegetable", "apple", "banana", "carrot", "salad"],
-  meal: ["food", "meal", "dish", "breakfast", "lunch", "dinner", "ingredient"],
-};
+const {present} = require("./classifier");
+const allowedProfiles = new Set(["hydration", "fruit_vegetable", "meal"]);
 
 function decodeImage(value) {
   if (typeof value !== "string" || value.length < 8 ||
@@ -41,35 +38,6 @@ function decodeImage(value) {
     throw new HttpsError("invalid-argument", "Imagen no compatible.");
   }
   return bytes;
-}
-
-function present(profileId, responses) {
-  const items = new Map();
-  for (const item of [
-    ...(responses[0]?.labelAnnotations || []),
-    ...(responses[1]?.localizedObjectAnnotations || []),
-  ]) {
-    const name = typeof item.description === "string" ?
-      item.description : item.name;
-    const score = Number(item.score);
-    if (typeof name !== "string" || !Number.isFinite(score) ||
-        score < 0 || score > 1) continue;
-    const key = name.toLowerCase().trim();
-    items.set(key, Math.max(items.get(key) || 0, score));
-  }
-  const labels = [...items.entries()]
-      .sort((a, b) => b[1] - a[1]).slice(0, 12)
-      .map(([name, score]) => ({name: name.slice(0, 80), score}));
-  const compatible = labels.some(({name, score}) =>
-    score >= 0.65 && profiles[profileId].some((word) => name.includes(word)));
-  return {
-    status: compatible ? "visual_match_only" : "inconclusive",
-    profileId, labels,
-    imageVerified: false, xpAwarded: 0, coinsAwarded: 0,
-    message: compatible ?
-      "Contenido compatible detectado, sin comprobar realización del hábito." :
-      "Análisis visual no concluyente; el registro normal sigue disponible.",
-  };
 }
 
 exports.analyzeEvidencePreviewLive = onCall({
@@ -97,7 +65,7 @@ exports.analyzeEvidencePreviewLive = onCall({
     throw new HttpsError("invalid-argument", "Solicitud inválida.");
   }
   const {imageBase64, profileId} = request.data;
-  if (!Object.hasOwn(profiles, profileId)) {
+  if (typeof profileId !== "string" || !allowedProfiles.has(profileId)) {
     throw new HttpsError("invalid-argument", "Categoría visual inválida.");
   }
   const bytes = decodeImage(imageBase64);
