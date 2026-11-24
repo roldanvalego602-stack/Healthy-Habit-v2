@@ -53,7 +53,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: SizedBox(width: 320,
         child: HealthyChatStoreCard(
-          initialItemId: 'crown',
+          initialItemId: 'leaf_crown',
           stateStream: Stream.value(const ShopState(
             coins: 220,
             owned: <String>{},
@@ -64,7 +64,7 @@ void main() {
         ))),
     ));
     await tester.pumpAndSettle();
-    expect(find.text('Corona de bronce'), findsOneWidget);
+    expect(find.text('Corona de hojas'), findsOneWidget);
     expect(operations, 0);
     await tester.tap(find.byKey(const Key('chat-shop-purchase')));
     await tester.pumpAndSettle();
@@ -88,7 +88,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: SizedBox(width: 320,
         child: HealthyChatStoreCard(
-          initialItemId: 'crown',
+          initialItemId: 'leaf_crown',
           stateStream: Stream.value(const ShopState(
             coins: 220,
             owned: <String>{},
@@ -117,10 +117,10 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: SizedBox(width: 320,
         child: HealthyChatStoreCard(
-          initialItemId: 'crown',
+          initialItemId: 'leaf_crown',
           stateStream: Stream.value(const ShopState(
             coins: 15,
-            owned: <String>{'crown'},
+            owned: <String>{'leaf_crown'},
             equipped: <String, String>{},
           )),
           equipAction: (_, {required bool remove}) async {
