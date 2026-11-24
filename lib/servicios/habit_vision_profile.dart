@@ -44,7 +44,7 @@ class HabitVisionProfile {
     // Otras actividades como ejercicio, sueño, lectura o caminar no
     // son evaluables mediante estos perfiles, aunque la categoría
     // asociada sea amplia o esté desactualizada.
-    if (RegExp(r'\b(caminar|correr|ejercicio|entrenar|dormir|sueño|'
+    if (RegExp(r'\b(caminar|correr|ejercicio|entrenar|dormir|sueno|'
         r'leer|meditar|estudiar|pasos|respirar|estirar)\b')
         .hasMatch(t)) {
       return null;
