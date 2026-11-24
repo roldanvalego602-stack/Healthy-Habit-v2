@@ -31,8 +31,12 @@ Future<void> main() async {
     region: 'us-central1',
   );
 
-  await auth.useAuthEmulator(host, 9099);
-  functions.useFunctionsEmulator(host, 5001);
+  // Android emulado: pasa EMULATOR_HOST=10.0.2.2.
+  // Teléfono USB: adb reverse y EMULATOR_HOST=127.0.0.1.
+  // Desactivar el remapeo automático evita que un teléfono físico intente
+  // conectarse a 10.0.2.2, una IP reservada para el emulador Android.
+  await auth.useAuthEmulator(host, 9099, automaticHostMapping: false);
+  functions.useFunctionsEmulator(host, 5001, automaticHostMapping: false);
 
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
