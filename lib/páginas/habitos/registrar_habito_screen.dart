@@ -11,6 +11,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
+import 'healthy_vision_preview_panel.dart';
+import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import 'habit_interaction_card.dart';
 
@@ -1158,6 +1160,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             ],
           ),
+          if (tieneImagen && HealthyVisionDebugService.enabled) ...[
+            HealthyVisionPreviewPanel(
+              image: _bytesImagen!,
+              category: _categoria,
+              saving: _guardando,
+            ),
+            const SizedBox(height: 12),
+          ],
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
