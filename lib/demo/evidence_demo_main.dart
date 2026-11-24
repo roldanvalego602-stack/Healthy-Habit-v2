@@ -14,7 +14,9 @@ Future<void> main() async {
     defaultValue: '127.0.0.1',
   );
   const options = FirebaseOptions(
-    apiKey: 'demo-key',
+    // Formato válido para el SDK nativo Android, pero clave ficticia.
+    // SOLO se utiliza con Firebase Auth Emulator; nunca con producción.
+    apiKey: 'AIzaSy000000000000000000000000000000000',
     appId: '1:1234567890:android:mrhealthy-emulator-demo',
     messagingSenderId: '1234567890',
     projectId: projectId,
