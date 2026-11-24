@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../servicios/evidence_demo_service.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
+import '../../servicios/habit_vision_profile.dart';
 import '../../tema/healthy_theme.dart';
 
 /// El panel solo aparece en debug + HH_VISION_DEBUG=true.
@@ -15,11 +16,13 @@ class HealthyVisionPreviewPanel extends StatefulWidget {
     super.key,
     required this.image,
     required this.category,
+    required this.habitTitle,
     this.saving = false,
   });
 
   final Uint8List image;
   final String category;
+  final String habitTitle;
   final bool saving;
 
   @override
@@ -29,7 +32,8 @@ class HealthyVisionPreviewPanel extends StatefulWidget {
 
 class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   bool _busy = false;
-  String _profile = 'hydration';
+  String? _profile;
+  bool _manualSelection = false;
   String? _error;
   DemoVisualPreview? _preview;
   int _revision = 0;
@@ -56,34 +60,35 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   static String _displayLabel(String value) =>
       _labelSpanish[value.trim().toLowerCase()] ?? value;
 
-  static String suggestedProfile(String category) {
-    final c = category.toLowerCase();
-    if (c.contains('hidrat') || c.contains('agua')) return 'hydration';
-    if (c.contains('fruta') || c.contains('verdura')) return 'fruit_vegetable';
-    return 'meal';
-  }
 
   @override
   void initState() {
     super.initState();
-    _profile = suggestedProfile(widget.category);
+    _profile = HabitVisionProfile.suggest(
+      title: widget.habitTitle, category: widget.category,
+    );
   }
 
   @override
   void didUpdateWidget(covariant HealthyVisionPreviewPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.image, widget.image) ||
-        oldWidget.category != widget.category) {
+        oldWidget.category != widget.category ||
+        oldWidget.habitTitle != widget.habitTitle) {
       _revision++;
       _preview = null;
       _error = null;
       _busy = false;
-      _profile = suggestedProfile(widget.category);
+      _manualSelection = false;
+      _profile = HabitVisionProfile.suggest(
+        title: widget.habitTitle, category: widget.category,
+      );
     }
   }
 
   Future<void> _analyze() async {
-    if (_busy || widget.saving || !HealthyVisionDebugService.enabled) return;
+    if (_busy || widget.saving || !HealthyVisionDebugService.enabled ||
+        _profile == null) return;
     final request = ++_revision;
     setState(() {
       _busy = true;
@@ -92,7 +97,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
     });
     try {
       final result = await HealthyVisionDebugService
-          .analyze(widget.image, _profile)
+          .analyze(widget.image, _profile!)
           .timeout(const Duration(seconds: 35));
       if (!mounted || _revision != request) return;
       setState(() => _preview = result);
@@ -166,13 +171,34 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
             style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
           ),
           const SizedBox(height: 12),
+          Text(
+            'Hábito actual: ${widget.habitTitle}',
+            style: TextStyle(
+              color: HealthyAdaptive.text,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _manualSelection
+                ? 'Perfil elegido manualmente para esta prueba.'
+                : _profile == null
+                    ? 'Este hábito no tiene un perfil visual automático. '
+                      'El análisis está desactivado hasta elegir uno compatible.'
+                    : 'Perfil sugerido automáticamente: '
+                      '${HabitVisionProfile.label(_profile)}.',
+            style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
+          ),
+          const SizedBox(height: 10),
           DropdownButtonFormField<String>(
             value: _profile,
             decoration: const InputDecoration(
-              labelText: 'Qué tipo de imagen analizar',
+              labelText: 'Perfil visual (opcional)',
               isDense: true,
               border: OutlineInputBorder(),
             ),
+            hint: const Text('Selecciona perfil de prueba'),
             items: const [
               DropdownMenuItem(value: 'hydration', child: Text('Hidratación')),
               DropdownMenuItem(
@@ -182,6 +208,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
             onChanged: _busy || widget.saving ? null : (value) {
               if (value != null) setState(() {
                 _revision++;
+                _manualSelection = true;
                 _profile = value;
                 _preview = null;
                 _error = null;
@@ -191,7 +218,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
           const SizedBox(height: 10),
           OutlinedButton.icon(
             key: const ValueKey('healthy-vision-analyze'),
-            onPressed: _busy || widget.saving ? null : _analyze,
+            onPressed: _busy || widget.saving || _profile == null ? null : _analyze,
             icon: _busy
                 ? const SizedBox(width: 18, height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))
