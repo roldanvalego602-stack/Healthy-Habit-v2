@@ -83,10 +83,10 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
     } on FirebaseFunctionsException catch (error) {
       if (!mounted || _revision != request) return;
       setState(() => _error =
-          'No se pudo analizar (${error.code}). '
-          HealthyVisionDebugService.useLiveBackend
+          'No se pudo analizar (${error.code}). ' +
+          (HealthyVisionDebugService.useLiveBackend
               ? 'Verifica el despliegue y los permisos del piloto.'
-              : 'Comprueba que Vision esté habilitado en el emulador.');
+              : 'Comprueba que Vision esté habilitado en el emulador.'));
     } catch (_) {
       if (!mounted || _revision != request) return;
       setState(() => _error =
