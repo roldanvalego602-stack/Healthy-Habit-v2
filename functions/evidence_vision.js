@@ -17,8 +17,19 @@ async function detectLabels(imageBytes, {visionClient} = {}) {
     throw new TypeError("La imagen debe tener entre 1 y 256000 bytes.");
   }
 
+  // Firebase Emulator ejecuta Functions con GCLOUD_PROJECT=demo-healthy-habit.
+  // El proveedor REAL de Vision debe recibir explicitamente el proyecto
+  // independiente habilitado para su API y facturacion. No cambiar
+  // GCLOUD_PROJECT: el guard de Functions depende del proyecto ficticio.
+  const visionProject = process.env.HEALTHY_VISION_GCP_PROJECT;
+  if (!visionClient &&
+      (!visionProject || visionProject.startsWith("demo-"))) {
+    throw new Error("Configure HEALTHY_VISION_GCP_PROJECT con un proyecto GCP real de pruebas.");
+  }
   const client = visionClient ||
-    new (require("@google-cloud/vision").ImageAnnotatorClient)();
+    new (require("@google-cloud/vision").ImageAnnotatorClient)({
+      projectId: visionProject,
+    });
 
   const image = {content: imageBytes};
   const [[labelResponse], [objectResponse]] = await Promise.all([
