@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cloud_functions/cloud_functions.dart';
 
 /// Transporte intercambiable para probar el cliente sin una conexión de red.
@@ -114,6 +117,23 @@ class EvidenceDemoService {
     return DemoChallenge.fromMap(data);
   }
 
+  /// Análisis visual de laboratorio. No registra el hábito ni entrega XP.
+  Future<DemoVisualPreview> previewPhoto(
+    Uint8List imageBytes, String profileId,
+  ) async {
+    if (imageBytes.isEmpty || imageBytes.lengthInBytes > 250 * 1024) {
+      throw const FormatException('La fotografía debe ocupar como máximo 250 KB.');
+    }
+    if (!const ['hydration', 'fruit_vegetable', 'meal'].contains(profileId)) {
+      throw ArgumentError.value(profileId, 'profileId', 'Categoría inválida');
+    }
+    final data = await _call('analyzeEvidencePreview', {
+      'profileId': profileId,
+      'imageBase64': base64Encode(imageBytes),
+    });
+    return DemoVisualPreview.fromMap(data);
+  }
+
   /// Prueba aislada del código escrito, NO verifica una fotografía.
   Future<DemoChallengeCheck> checkTypedCode(DemoChallenge challenge) async {
     final data = await _call('checkEvidenceChallengeCode', {
@@ -123,5 +143,53 @@ class EvidenceDemoService {
       'code': challenge.code,
     });
     return DemoChallengeCheck.fromMap(data);
+  }
+}
+
+class DemoVisualLabel {
+  const DemoVisualLabel(this.name, this.confidence);
+  final String name;
+  final double confidence;
+}
+
+class DemoVisualPreview {
+  const DemoVisualPreview({
+    required this.status,
+    required this.message,
+    required this.labels,
+  });
+  final String status;
+  final String message;
+  final List<DemoVisualLabel> labels;
+
+  factory DemoVisualPreview.fromMap(Map<String, dynamic> data) {
+    final raw = data['labels'];
+    if (!const ['visual_match_only', 'inconclusive'].contains(data['status']) ||
+        data['imageVerified'] != false ||
+        data['xpAwarded'] != 0 ||
+        data['coinsAwarded'] != 0 ||
+        data['message'] is! String ||
+        raw is! List) {
+      throw const FormatException('Respuesta visual insegura o inválida.');
+    }
+    final labels = <DemoVisualLabel>[];
+    for (final item in raw) {
+      if (item is! Map ||
+          item['name'] is! String ||
+          item['score'] is! num ||
+          (item['score'] as num) < 0 ||
+          (item['score'] as num) > 1) {
+        throw const FormatException('Etiqueta visual inválida.');
+      }
+      labels.add(DemoVisualLabel(
+        item['name'] as String,
+        (item['score'] as num).toDouble(),
+      ));
+    }
+    return DemoVisualPreview(
+      status: data['status'] as String,
+      message: data['message'] as String,
+      labels: labels,
+    );
   }
 }
