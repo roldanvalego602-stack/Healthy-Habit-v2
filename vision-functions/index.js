@@ -3,15 +3,32 @@
 // Desplegar únicamente este codebase. No importar functions/index.js.
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {defineString} = require("firebase-functions/params");
-const {initializeApp} = require("firebase-admin/app");
-const {getFirestore, FieldValue} = require("firebase-admin/firestore");
-const {ImageAnnotatorClient} = require("@google-cloud/vision");
-
-initializeApp();
-// Healthy Habit usa la base de datos nombrada "default", NO "(default)".
-const db = getFirestore("default");
+// Mantener liviana la carga durante discovery de Firebase CLI.
+// Admin, Firestore y Vision se inicializan únicamente al recibir una solicitud.
 const allowedUid = defineString("HEALTHY_VISION_TEST_UID");
+let db;
+let fieldValue;
 let client;
+
+function getPilotDb() {
+  if (!db) {
+    const {initializeApp, getApps} = require("firebase-admin/app");
+    const {getFirestore, FieldValue} = require("firebase-admin/firestore");
+    if (!getApps().length) initializeApp();
+    // Healthy Habit usa la base de datos llamada "default", NO "(default)".
+    db = getFirestore("default");
+    fieldValue = FieldValue;
+  }
+  return db;
+}
+
+function getVisionClient() {
+  if (!client) {
+    const {ImageAnnotatorClient} = require("@google-cloud/vision");
+    client = new ImageAnnotatorClient();
+  }
+  return client;
+}
 
 const MAX_BYTES = 250 * 1024;
 const {present} = require("./classifier");
@@ -72,8 +89,9 @@ exports.analyzeEvidencePreviewLive = onCall({
   // Cuota persistente: se registra solamente el contador, NO la foto.
   // 1 minuto de pausa y 15 intentos por día para el UID permitido.
   const today = new Date().toISOString().slice(0, 10);
-  const quotaRef = db.collection("_vision_preview_pilot_limits").doc(uid);
-  await db.runTransaction(async (tx) => {
+  const database = getPilotDb();
+  const quotaRef = database.collection("_vision_preview_pilot_limits").doc(uid);
+  await database.runTransaction(async (tx) => {
     const doc = await tx.get(quotaRef);
     const prior = doc.data() || {};
     const count = prior.day === today ? (prior.count || 0) : 0;
@@ -85,15 +103,15 @@ exports.analyzeEvidencePreviewLive = onCall({
     }
     tx.set(quotaRef, {
       day: today, count: count + 1, lastAtMillis: now,
-      updatedAt: FieldValue.serverTimestamp(),
+      updatedAt: fieldValue.serverTimestamp(),
     });
   });
   try {
-    client ||= new ImageAnnotatorClient();
+    const visionClient = getVisionClient();
     const image = {content: bytes};
     const [[labels], [objects]] = await Promise.all([
-      client.labelDetection({image}),
-      client.objectLocalization({image}),
+      visionClient.labelDetection({image}),
+      visionClient.objectLocalization({image}),
     ]);
     return present(profileId, [labels, objects]);
   } catch (error) {
