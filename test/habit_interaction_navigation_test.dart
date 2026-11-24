@@ -20,6 +20,8 @@ class _StepHarnessState extends State<_StepHarness> {
   int value = 0;
   bool complete = false;
 
+  void simulateAccumulatedValue(int next) => setState(() => value = next);
+
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SingleChildScrollView(child: Column(
@@ -99,7 +101,7 @@ void main() {
     // Se simula un avance previo estable sin depender de reloj real.
     final state = tester.state<_StepHarnessState>(
         find.byType(_StepHarness));
-    state.setState(() => state.value = 15);
+    state.simulateAccumulatedValue(15);
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Volver'));
