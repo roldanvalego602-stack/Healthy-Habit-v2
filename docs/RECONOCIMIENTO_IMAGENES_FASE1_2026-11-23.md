@@ -73,3 +73,47 @@ error informativo y no afecta progreso ni XP.
 - No desplegar la callable sin rediseñar la seguridad y facturación.
 - Las fotos de registros normales siguen el mecanismo temporal existente
   (Base64 en Firestore); NO se ha cambiado su almacenamiento ni retención.
+
+## Activación real de Vision en Linux Mint (solo pruebas)
+
+La callable de prueba requiere `HEALTHY_VISION_LIVE_DEMO=enabled`
+además del proyecto y emulador demo. **No colocar este valor en
+producción.** La variable está deshabilitada por defecto para evitar
+consumo involuntario de una API facturable.
+
+1. Crear un proyecto de **Google Cloud separado**, exclusivamente
+   para Vision, y vincular una cuenta de facturación con alertas de
+   presupuesto. No se debe reutilizar el proyecto Firebase productivo.
+2. Activar Cloud Vision API en ese proyecto. Instalar Google Cloud CLI
+   si aún no está disponible, e iniciar sesión:
+   `gcloud auth application-default login`.
+   Asociar cuotas al proyecto real de Cloud Vision:
+   `gcloud auth application-default set-quota-project PROJECT_ID_VISION`.
+   No seleccionar `demo-healthy-habit` como proyecto de cuotas:
+   es un nombre ficticio reservado para emuladores.
+3. Desde `functions`, instalar el SDK con
+   `npm install @google-cloud/vision`. Esto actualiza
+   `package.json` y `package-lock.json`; subir **ambos**
+   después de revisar cambios. Jamás subir credenciales.
+4. Desde la raíz, configurar una vez Auth, Firestore y Functions
+   Emulator con `firebase init emulators`, sin reemplazar
+   el bloque Flutter ni el proyecto vinculado que ya existen en
+   `firebase.json`. Usar puertos 9099, 8080 y 5001.
+5. Antes de iniciar el emulador:
+   `export HEALTHY_VISION_LIVE_DEMO=enabled`.
+   Iniciar la suite en proyecto demo:
+   `firebase emulators:start --only auth,functions,firestore --project demo-healthy-habit`.
+6. Cuando finalice la prueba cerrar el emulador y ejecutar:
+   `unset HEALTHY_VISION_LIVE_DEMO`.
+
+Cada fotografía puede consumir dos operaciones facturables
+(Label Detection y Object Localization); comprobar precios,
+cuotas y alertas. El SDK de Google funciona con ADC local;
+no se precisa una clave JSON de cuenta de servicio para esta prueba.
+Los emuladores de Firebase no emulan Google Cloud Vision, por
+lo que al pulsar Analizar se efectúa una solicitud **real**
+a Google Cloud desde el proceso local.
+
+El análisis de fotos de esta fase es voluntario y separado del
+flujo de registro y recompensas. No enviar rostros ni datos sensibles.
+No se ha habilitado ningún servicio cloud desde este repositorio.
