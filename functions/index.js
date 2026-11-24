@@ -627,3 +627,44 @@ exports.claimDailyStreakReward = onCall(
     }
   }
 );
+
+
+// LABORATORIO: análisis visual sin escrituras ni recompensas.
+// Se permite exclusivamente en el proyecto demo y Functions Emulator.
+// La llamada usa Vision API solo cuando está configurada en el emulador.
+const {
+  EvidencePreviewError,
+  analyzeEvidencePreview,
+} = require("./evidence_preview");
+
+exports.analyzeEvidencePreview = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 2,
+    memory: "512MiB", timeoutSeconds: 30},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true" ||
+        process.env.GCLOUD_PROJECT !== "demo-healthy-habit") {
+      throw new HttpsError("failed-precondition",
+          "Análisis disponible exclusivamente en el emulador demo.");
+    }
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
+    }
+    try {
+      return await analyzeEvidencePreview(request.data || {});
+    } catch (error) {
+      if (error instanceof EvidencePreviewError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      if (error?.code === "MODULE_NOT_FOUND" ||
+          String(error?.message).includes("Could not load the default credentials")) {
+        throw new HttpsError("failed-precondition",
+            "Configura Cloud Vision y credenciales de prueba en el emulador.");
+      }
+      // No mostrar detalles del proveedor ni datos de imagen en errores.
+      console.error("Evidence preview provider failure", error?.code || "unknown");
+      throw new HttpsError("unavailable",
+          "No se pudo analizar la imagen. El registro normal sigue disponible.");
+    }
+  },
+);
+
