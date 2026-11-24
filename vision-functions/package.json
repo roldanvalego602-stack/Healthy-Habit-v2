@@ -1,0 +1,13 @@
+{
+  "name": "healthy-habit-vision",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "24"
+  },
+  "dependencies": {
+    "@google-cloud/vision": "^6.2.0",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.0"
+  }
+}
