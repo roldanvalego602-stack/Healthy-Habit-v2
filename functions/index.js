@@ -649,6 +649,12 @@ exports.analyzeEvidencePreview = onCall(
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Inicia sesión de prueba.");
     }
+    // Evita llamadas involuntarias a una API facturable:
+    // la sesión local debe habilitar el proveedor explícitamente.
+    if (process.env.HEALTHY_VISION_LIVE_DEMO !== "enabled") {
+      throw new HttpsError("failed-precondition",
+          "Activa HEALTHY_VISION_LIVE_DEMO=enabled solo para probar Vision.");
+    }
     try {
       return await analyzeEvidencePreview(request.data || {});
     } catch (error) {
