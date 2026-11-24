@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -16,6 +17,12 @@ class HealthyVisionDebugService {
     'HH_VISION_DEBUG', defaultValue: false,
   );
   static bool get enabled => kDebugMode && enabledByFlag;
+
+  // Modo real de piloto: reutiliza exclusivamente la sesión Firebase actual.
+  // Permanece apagado por defecto y no se habilita en release.
+  static const useLiveBackend = bool.fromEnvironment(
+    'HH_VISION_LIVE_BACKEND', defaultValue: false,
+  );
 
   static const host = String.fromEnvironment(
     'HH_VISION_EMULATOR_HOST', defaultValue: '127.0.0.1',
@@ -80,8 +87,34 @@ class HealthyVisionDebugService {
   static Future<DemoVisualPreview> analyze(
     Uint8List bytes, String profileId,
   ) async {
+    if (!enabled) throw StateError('Piloto deshabilitado.');
+    if (useLiveBackend) {
+      final app = Firebase.app();
+      if (app.options.projectId != 'cloud-firestore-d8c61') {
+        throw StateError('El piloto real exige el proyecto Healthy Habit.');
+      }
+      if (FirebaseAuth.instanceFor(app: app).currentUser == null) {
+        throw StateError('Inicia sesión antes de analizar imágenes.');
+      }
+      final functions = FirebaseFunctions.instanceFor(
+        app: app, region: 'us-central1',
+      );
+      // No se invocan emuladores ni se crea un usuario anónimo.
+      final response = await functions.httpsCallable(
+        'analyzeEvidencePreviewLive',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      ).call({
+        'imageBase64': base64Encode(bytes),
+        'profileId': profileId,
+      });
+      if (response.data is! Map) {
+        throw const FormatException('Respuesta inválida del backend.');
+      }
+      return DemoVisualPreview.fromMap(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    }
     final service = await connect();
-    // previewPhoto valida tamaño y la respuesta NO puede contener premios.
     return service.previewPhoto(bytes, profileId);
   }
 }
