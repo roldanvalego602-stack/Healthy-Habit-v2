@@ -8,7 +8,8 @@ const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const {ImageAnnotatorClient} = require("@google-cloud/vision");
 
 initializeApp();
-const db = getFirestore();
+// Healthy Habit usa la base de datos nombrada "default", NO "(default)".
+const db = getFirestore("default");
 const allowedUid = defineString("HEALTHY_VISION_TEST_UID");
 let client;
 
