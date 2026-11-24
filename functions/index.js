@@ -666,10 +666,18 @@ exports.analyzeEvidencePreview = onCall(
         throw new HttpsError("failed-precondition",
             "Configura Cloud Vision y credenciales de prueba en el emulador.");
       }
-      // No mostrar detalles del proveedor ni datos de imagen en errores.
-      console.error("Evidence preview provider failure", error?.code || "unknown");
+      if (String(error?.message || "").includes("HEALTHY_VISION_GCP_PROJECT")) {
+        throw new HttpsError("failed-precondition",
+            "Configura HEALTHY_VISION_GCP_PROJECT para el proveedor de pruebas.");
+      }
+      // Diagnostico exclusivamente en el servidor local, sin incluir
+      // imagenes, tokens, solicitudes o datos personales en la salida.
+      const safeCode = typeof error?.code === "number" ? error.code : "unknown";
+      const safeMessage = String(error?.message || "Sin detalle")
+          .replace(/[\r\n]+/g, " ").slice(0, 220);
+      console.error("Evidence preview provider failure", safeCode, safeMessage);
       throw new HttpsError("unavailable",
-          "No se pudo analizar la imagen. El registro normal sigue disponible.");
+          "No se pudo analizar la imagen. Revisa los logs del emulador.");
     }
   },
 );
