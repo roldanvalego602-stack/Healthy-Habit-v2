@@ -147,14 +147,14 @@ void main() {
     expect(result.action, 'edit_profile');
   });
 
-  test('encuentra artículo único del catálogo por nombre parcial', () {
+  test('encuentra artículo disponible por su nombre exacto', () {
     final result = engine.resolve(
-      'Quiero comprar corona',
+      'Quiero comprar corona de hojas',
       profile: profile,
       habits: habits,
     );
     expect(result.action, 'shop');
-    expect(result.actionArgument, 'crown');
+    expect(result.actionArgument, 'leaf_crown');
     expect(result.card, 'shop_item');
   });
 
@@ -164,10 +164,20 @@ void main() {
       profile: profile,
       habits: habits,
       lastTopic: 'shop_item',
-      lastShopItemId: 'crown',
+      lastShopItemId: 'leaf_crown',
     );
     expect(result.card, 'shop_item');
-    expect(result.actionArgument, 'crown');
+    expect(result.actionArgument, 'leaf_crown');
+  });
+
+  test('no ofrece artículos retirados al pedir su nombre', () {
+    final result = engine.resolve(
+      'Quiero comprar corona de bronce',
+      profile: profile,
+      habits: habits,
+    );
+    expect(result.actionArgument, isNot('crown'));
+    expect(result.card, isNot('shop_item'));
   });
 
   test('una solicitud genérica abre selector de artículos reales', () {
