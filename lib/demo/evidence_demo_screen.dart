@@ -26,6 +26,8 @@ class EvidenceDemoScreen extends StatefulWidget {
 class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
   final _picker = ImagePicker();
   String _objectId = 'spoon';
+  String _profileId = 'hydration';
+  DemoVisualPreview? _visualResult;
   bool _busy = false;
   bool _ready = false;
   String? _error;
@@ -101,6 +103,7 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
     setState(() {
       _challenge = challenge;
       _photo = null;
+      _visualResult = null;
       _feedback = 'Desafío emitido por Firebase Emulator.';
     });
   });
@@ -117,8 +120,23 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
     if (!mounted) return;
     setState(() {
       _photo = bytes;
-      _feedback = 'Fotografía tomada. Solo se muestra en el dispositivo: '
-          'todavía NO se envía ni se verifica.';
+      _visualResult = null;
+      _feedback = 'Fotografía lista. Al pulsar Analizar se enviará '
+          'temporalmente a Google Cloud Vision desde el emulador local. '
+          'No se guarda en Firestore.';
+    });
+  });
+
+  Future<void> _analyzePhoto() => _execute(() async {
+    final photo = _photo;
+    if (photo == null) return;
+    _updateStep('Analizando fotografía en el laboratorio...');
+    final result = await _service.previewPhoto(photo, _profileId);
+    if (!mounted) return;
+    setState(() {
+      _visualResult = result;
+      _feedback = result.message;
+      _step = 'Análisis visual completado (sin recompensas)';
     });
   });
 
@@ -161,6 +179,61 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
             icon: const Icon(Icons.link),
             label: Text(_ready ? 'Sesión de prueba preparada' : 'Conectar a Firebase local'),
           ),
+          const SizedBox(height: 20),
+          const Text('Reconocimiento de imágenes (laboratorio)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          const Text('Requiere Firebase Emulator y Google Cloud Vision '
+              'configurado con credenciales de prueba. '
+              'La fotografía solo se envía si pulsas Analizar. '
+              'No se almacena ni se conceden XP o monedas.'),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: _profileId,
+            decoration: const InputDecoration(
+              labelText: 'Categoría visual',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'hydration', child: Text('Hidratación')),
+              DropdownMenuItem(value: 'fruit_vegetable',
+                  child: Text('Frutas y verduras')),
+              DropdownMenuItem(value: 'meal', child: Text('Comida')),
+            ],
+            onChanged: _busy ? null : (value) {
+              if (value != null) setState(() {
+                _profileId = value;
+                _visualResult = null;
+              });
+            },
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: !_ready || _busy ? null : _takePhoto,
+            icon: const Icon(Icons.camera_alt_outlined),
+            label: const Text('Tomar foto para análisis'),
+          ),
+          if (_photo != null) ...[
+            const SizedBox(height: 8),
+            Image.memory(_photo!, height: 165, fit: BoxFit.contain),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: !_ready || _busy ? null : _analyzePhoto,
+              icon: const Icon(Icons.visibility_outlined),
+              label: const Text('Analizar imagen (sin XP)'),
+            ),
+          ],
+          if (_visualResult != null) ...[
+            const SizedBox(height: 10),
+            Text(_visualResult!.status == 'visual_match_only'
+                ? 'Coincidencia visual orientativa'
+                : 'Imagen no concluyente',
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+            for (final label in _visualResult!.labels)
+              Text('${label.name}: ${(label.confidence * 100).toStringAsFixed(0)} %'),
+            const Text('Esto NO comprueba que hayas realizado el hábito. '
+                'No se modifica tu progreso ni se registra evidencia.'),
+          ],
           const SizedBox(height: 20),
           const Text('Hábito ficticio: beber agua',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -247,8 +320,9 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
           const SizedBox(height: 12),
           const Text(
             'Aviso: una foto tomada no equivale a un hábito verificado. '
-            'El reconocimiento de objetos y OCR se incorporarán después. '
-            'No se envían fotografías desde esta demo.',
+            'La clasificación visual es orientativa y no verifica hábitos. '
+            'Solo se envía la foto cuando se solicita expresamente '
+            'el análisis desde el laboratorio.',
             style: TextStyle(fontSize: 12),
           ),
         ],
