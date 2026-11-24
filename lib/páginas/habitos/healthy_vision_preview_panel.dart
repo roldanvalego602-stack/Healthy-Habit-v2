@@ -77,12 +77,16 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
     } on TimeoutException {
       if (!mounted || _revision != request) return;
       setState(() => _error =
-          'Tiempo agotado. Comprueba adb reverse y Firebase Emulator.');
+          HealthyVisionDebugService.useLiveBackend
+              ? 'Tiempo agotado al conectar con Cloud Functions.'
+              : 'Tiempo agotado. Comprueba adb reverse y Firebase Emulator.');
     } on FirebaseFunctionsException catch (error) {
       if (!mounted || _revision != request) return;
       setState(() => _error =
           'No se pudo analizar (${error.code}). '
-          'Comprueba que Vision esté habilitado en el emulador.');
+          HealthyVisionDebugService.useLiveBackend
+              ? 'Verifica el despliegue y los permisos del piloto.'
+              : 'Comprueba que Vision esté habilitado en el emulador.');
     } catch (_) {
       if (!mounted || _revision != request) return;
       setState(() => _error =
@@ -129,10 +133,14 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Opcional. Al pulsar Analizar, esta fotografía se envía '
-            'a Google Cloud Vision a través de Firebase Emulator. '
-            'Puede generar cargos de API. No se guarda como resultado '
-            'ni modifica XP, monedas o registros.',
+            HealthyVisionDebugService.useLiveBackend
+                ? 'Prueba controlada en Cloud Functions reales. Al pulsar Analizar '
+                  'se enviará esta imagen a Google Cloud Vision, con posibles '
+                  'cargos. El análisis no otorga XP ni monedas y no guarda la foto.'
+                : 'Opcional. Al pulsar Analizar, esta fotografía se envía '
+                  'a Google Cloud Vision a través de Firebase Emulator. '
+                  'Puede generar cargos de API. No se guarda como resultado '
+                  'ni modifica XP, monedas o registros.',
             style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
           ),
           const SizedBox(height: 12),
