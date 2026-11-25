@@ -26,6 +26,7 @@ import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
 import 'estadisticas/daily_streak_screen.dart';
 import '../servicios/daily_streak_display.dart';
+import '../tema/healthy_streak_art.dart';
 
 // Firebase se inicializa realmente en lib/main.dart.
 void main() => runApp(const HabitTrackerApp());
@@ -329,6 +330,7 @@ class _HomeContent extends StatelessWidget {
     required this.xp,
     required this.level,
     required this.streak,
+    required this.streakArtState,
     required this.habits,
     required this.onHabits,
     required this.userRef,
@@ -344,6 +346,7 @@ class _HomeContent extends StatelessWidget {
   final int xp;
   final int level;
   final int streak;
+  final HealthyStreakArtState streakArtState;
   final int coins;
 
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> habits;
@@ -758,8 +761,8 @@ class _HomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          icon == Icons.local_fire_department
-              ? HealthyGlowIcon(icon: icon, color: const Color(0xFFE5A34B))
+          caption == 'Racha actual'
+              ? HealthyStreakMascot(state: streakArtState, size: 49)
               : Icon(icon, color: AppColors.primaryGreen),
           const SizedBox(height: 6),
           caption == 'Racha actual'
