@@ -28,7 +28,21 @@ class OfficialHabitEmulatorService {
   Future<Map<String, dynamic>> _call(
     String callable, Map<String, dynamic> payload,
   ) async {
-    final response = await _functions.httpsCallable(callable).call(payload);
+    late final HttpsCallableResult<dynamic> response;
+    try {
+      response = await _functions.httpsCallable(callable).call(payload);
+    } on FirebaseFunctionsException catch (error) {
+      // Solo el modo demo puede llamar este servicio. No revelar datos
+      // de usuario ni payloads, pero sí conservar el código útil.
+      final hint = error.code == 'internal'
+          ? 'Revisa la terminal de Functions Emulator y busca '
+              '[official-demo-callable].'
+          : error.code == 'unavailable'
+              ? 'Comprueba que Functions Emulator esté activo en el puerto 5001.'
+              : error.message ?? 'Consulta los registros del emulador.';
+      throw StateError('Error de servidor de pruebas '
+          '(${error.code}) al ejecutar $callable. $hint');
+    }
     final raw = response.data;
     if (raw is! Map) {
       throw StateError('Respuesta inválida de Functions Emulator.');
