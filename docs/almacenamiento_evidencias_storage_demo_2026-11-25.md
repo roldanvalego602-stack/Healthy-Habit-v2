@@ -343,3 +343,39 @@ npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
 Resultado esperado: **10 pruebas integrales y 1 prueba de reglas
 de Storage aprobadas**, además de las pruebas unitarias de Functions.
 No se han ejecutado localmente en esta versión.
+
+
+## Sexta etapa: recuperación conservadora de subida interrumpida
+
+Se agregó recuperación para una reserva que permanezca en `uploading`
+más de cinco minutos, siempre que no haya vencido su reserva:
+
+- Una transacción adquiere exclusivamente el estado `recovering`.
+  Las demás solicitudes quedan bloqueadas durante la inspección.
+- Si el objeto ya existe con **los mismos bytes, tamaño y MIME**,
+  se marca `uploaded` sin escribir ni sustituir el archivo.
+- Si el objeto no existe, se libera como `pending`; el cliente
+  podrá reintentar la subida completa con el mismo ID.
+- Si el objeto tiene otros bytes, se rechaza y permanece bloqueado
+  para revisión administrativa. No se sustituye.
+- Una subida con menos de cinco minutos de antigüedad se deja intacta.
+
+Esta recuperación no usa un token de verificación de hábito, no
+incrementa XP, no genera monedas y no conecta todavía la pantalla
+oficial. Requiere mantener el Storage Emulator y Firestore Emulator
+activos en `demo-healthy-habit`.
+
+Pruebas nuevas: `functions/tests/habit_evidence_recovery.test.js`.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+node --test functions/tests/habit_evidence_recovery.test.js
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+```
+
+**Falta validar en el equipo local.** Las diez pruebas integrales
+anteriores fueron confirmadas por el usuario; las de esta etapa
+todavía no. El proceso de limpieza sigue sin estar programado como
+servicio persistente o producción.
