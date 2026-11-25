@@ -969,22 +969,33 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
       uid, "alim_001", "official_streak_claim_001"
     ));
     const day = recorded.dailyStreakDay;
+    const beforeClaim = (await ref.get()).data().habitCoins;
+    const verifiedBefore = (await ref.collection("daily_streak_days")
+      .doc(day).get()).data();
+    assert.equal(verifiedBefore.claimed, false);
+    assert.equal(verifiedBefore.rewardCoins, recorded.dailyStreakReward);
+    assert.equal(verifiedBefore.rewardCoins, 10);
     const claims = await Promise.all([
       claim({db, uid, day}), claim({db, uid, day}),
     ]);
-    assert.deepEqual(claims.map((r) => r.coinsAwarded).sort((a, b) => a - b), [0, 10]);
+    assert.deepEqual(
+      claims.map((r) => r.coinsAwarded).sort((a, b) => a - b),
+      [0, verifiedBefore.rewardCoins]
+    );
     const reward = (await ref.collection("daily_streak_days").doc(day).get())
       .data();
     assert.equal(reward.claimed, true);
     assert.ok(reward.claimedAt);
-    assert.equal((await ref.get()).data().habitCoins, 102);
+    assert.equal((await ref.get()).data().habitCoins,
+      beforeClaim + verifiedBefore.rewardCoins);
     const retry = await claim({db, uid, day});
     assert.equal(retry.alreadyClaimed, true);
     assert.equal(retry.coinsAwarded, 0);
     await assert.rejects(claim({
       db, uid, day: "2026-11-30",
     }), /verificado/);
-    assert.equal((await ref.get()).data().habitCoins, 102);
+    assert.equal((await ref.get()).data().habitCoins,
+      beforeClaim + verifiedBefore.rewardCoins);
   });
 
 
