@@ -574,7 +574,20 @@ function officialDemoCallable(operation) {
         if (error instanceof RegistrationPolicyError) {
           throw new HttpsError(error.code, error.message);
         }
-        throw error;
+        // Errores inesperados (Admin SDK, consultas, índices, etc.)
+        // normalmente se muestran al cliente solo como "internal".
+        // El log se emite exclusivamente en el emulador demo.
+        console.error("[official-demo-callable] Error inesperado:", {
+          operation: operation.name || "anonymous",
+          code: error?.code ?? null,
+          message: error?.message ?? String(error),
+          stack: error?.stack ?? null,
+        });
+        throw new HttpsError(
+          "internal",
+          "Error interno del servidor de pruebas. Revisa el registro de "
+            + "Functions Emulator: [official-demo-callable]."
+        );
       }
     }
   );
