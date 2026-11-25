@@ -33,11 +33,7 @@ Desde la raíz del repositorio, sin emuladores previamente abiertos:
 ```bash
 git fetch origin main
 git merge --ff-only origin/main
-firebase emulators:exec \
-  --config firebase.emulator.json \
-  --only auth,firestore,functions \
-  --project demo-healthy-habit \
-  "npm --prefix tools/firestore-tests run test:cliente-integral"
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
 ```
 
 **Todavía no se ha ejecutado esta prueba nueva en el equipo del usuario**.
@@ -76,3 +72,29 @@ que las reglas restrictivas bloquean escrituras del cliente en la base
 nombrada `default`, no solo en `(default)`. Si no se rechazan, detener
 la migración y corregir el alcance de las reglas del emulador. No
 desplegar ni usar credenciales de producción.
+
+## Segunda ejecución: ausencia de reglas en la base nombrada
+
+El 25/11 la prueba avanzó al perfil de la base `default`, pero
+`assert.rejects(updateDoc(userRef, {xp: 5000}))` falló porque la
+escritura **fue aceptada**. La causa fue que `initializeTestEnvironment`
+cargaba las reglas en `(default)`; el cliente y Functions operan en
+la base nombrada `default`. Según la documentación oficial de Firebase,
+las bases nombradas creadas implícitamente por el emulador tienen
+**reglas abiertas** si no se declaran expresamente.
+
+Para impedir que vuelva a pasar, se incorporó:
+
+- `firebase.lockdown.emulator.json`: configuración alternativa de
+  emuladores donde `default` tiene su propio archivo de reglas restrictivas.
+- `generar_reglas_integrales.mjs`: genera ese archivo temporal usando
+  exactamente la proyección del laboratorio; está excluido de Git.
+- `test:cliente-integral:emulador`: genera primero el archivo, después
+  inicia todos los emuladores con la configuración alternativa y por
+  último ejecuta el test. **No usar `firebase.emulator.json` para esta
+  prueba integral**: deja la base nombrada sin reglas de laboratorio.
+
+La prueba debe rechazar la manipulación de XP antes de invocar la
+primera Function. No quitar esa aserción aunque fallen otras partes.
+La nueva configuración y su recorrido completo aún deben validarse
+localmente; hasta entonces, no informar que la prueba integral pasó.
