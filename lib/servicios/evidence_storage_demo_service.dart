@@ -108,13 +108,20 @@ class EvidenceStorageDemoService {
     if (expiresAt == null || !expiresAt.isAfter(DateTime.now().toUtc())) {
       throw StateError('La reserva de evidencia ya expiró.');
     }
-    final storage = await _storage();
     if (_uid() != uid) {
       throw StateError('La sesión cambió antes de subir la imagen.');
     }
-    final reference = storage.ref(path);
-    // La regla del emulador prohíbe sobrescrituras y archivos ajenos.
-    await reference.putData(bytes, SettableMetadata(contentType: type));
+    final response = await const OfficialHabitEmulatorService()
+        .uploadReservedEvidence(
+          habitId: habitId,
+          attemptId: attemptId,
+          operationId: evidenceId,
+          bytes: bytes,
+          contentType: type,
+        );
+    if (response['storagePath'] != path) {
+      throw StateError('El archivo no coincide con la reserva autorizada.');
+    }
     if (_uid() != uid) {
       throw StateError('La sesión cambió durante la subida.');
     }
@@ -131,6 +138,9 @@ class EvidenceStorageDemoService {
     if (_uid() != uid) {
       throw StateError('La sesión cambió antes de borrar la imagen.');
     }
-    await storage.ref(path).delete();
+    throw UnsupportedError(
+      'El borrado del cliente está deshabilitado. '
+      'La limpieza de evidencias corresponde al servidor.');
+
   }
 }
