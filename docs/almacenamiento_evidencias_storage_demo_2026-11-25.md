@@ -79,3 +79,68 @@ tamaño excesivo y ruta no autorizada.
 
 No usar `firebase deploy`. No conectar la nueva interfaz
 a un bucket real ni iniciar Storage sin su emulador.
+
+
+## Segunda etapa: reserva autenticada por operación
+
+Ahora existe `reserveHabitEvidenceDemo` (Functions Emulator, proyecto
+`demo-healthy-habit` exclusivamente). El backend exige
+`{habitId, attemptId, operationId}`, obtiene el UID de Auth y
+comprueba que el perfil, el hábito y su intento **existan y estén activos**.
+Crea en una transacción un documento interno:
+
+`users/{uid}/habit_evidence_reservations/{operationId}`
+
+que contiene la ruta `habit-evidence/{uid}/{attemptId}/{operationId}`,
+su dueño, hábito, intento, estado `pending` y vencimiento a **una hora**.
+El cliente no tiene permisos directos de lectura ni de escritura
+sobre esa colección con las reglas restrictivas del laboratorio.
+
+La operación es idempotente: un segundo intento con los mismos IDs
+recibe la misma ruta y fecha; identificadores cruzados se rechazan.
+La reserva tampoco cambia monedas, XP, rachas ni progreso.
+
+`EvidenceStorageDemoService.upload` ahora exige `habitId`,
+solicita la reserva al callable, comprueba la ruta y expiración,
+y solo después llama a Storage Emulator. El servicio sigue
+**sin conectarse** a la pantalla de registro oficial.
+
+### Restricciones que siguen pendientes
+
+- **Las reglas de Storage todavía no exigen la reserva** para admitir
+  una subida del dueño. Un cliente modificado podría omitir el callable.
+  Es necesario imponer el vínculo en el servidor/reglas antes de habilitar
+  fotos en la pantalla.
+- **Reservar no confirma la evidencia**: aún faltan inspección de bytes,
+  vínculo al log oficial y limpieza de archivos o reservas huérfanas.
+- La fecha de expiración de Firestore **no borra el archivo de Storage**.
+  No hay todavía proceso automático de purga; la retención efectiva
+  no está garantizada.
+- La aplicación no debe generar ni publicar URL de descarga. La ruta
+  privada y las reglas son una protección de acceso, no una garantía de
+  anonimato si se filtran contenidos o tokens.
+- No se asignan recompensas por reservar o cargar fotografías.
+
+### Pruebas del contrato de reserva
+
+El archivo `tools/firestore-tests/habitos_cliente_integral.test.mjs`
+incluye ahora un **octavo escenario** para comprobar activación previa,
+pertenencia al intento, idempotencia, rechazo de campos monetarios,
+bloqueo de Firestore directo y ausencia de cambios económicos.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+
+flutter analyze \
+  lib/servicios/evidence_storage_demo_service.dart \
+  lib/servicios/official_habit_emulator_service.dart
+
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
+```
+
+Resultado esperado: 8 pruebas integrales del cliente aprobadas,
+más 1 prueba aislada de reglas de Storage. **Pendiente de ejecución
+local en esta versión.** No iniciar `firebase deploy`.
