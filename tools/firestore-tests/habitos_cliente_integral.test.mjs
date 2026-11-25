@@ -613,6 +613,16 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
   await assert.rejects(attach(payload),
     (error) => error.code === 'functions/failed-precondition');
 
+  const upload = httpsCallable(functions, 'uploadReservedEvidenceDemo');
+  const expectedBytes = Uint8Array.from(Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=',
+    'base64',
+  ));
+  await assert.rejects(upload({
+    ...payload,
+    imageBase64: Buffer.from(expectedBytes).toString('base64'),
+    contentType: 'image/png',
+  }), (error) => error.code === 'functions/failed-precondition');
   const reservation = (await reserve(payload)).data;
   const file = ref(storage, reservation.storagePath);
   // Un PNG de 1x1 píxel, sin datos personales.
@@ -620,7 +630,6 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=',
     'base64',
   ));
-  const upload = httpsCallable(functions, 'uploadReservedEvidenceDemo');
   await assert.rejects(upload({
     ...payload, imageBase64: Buffer.from(bytes).toString('base64'),
     contentType: 'text/plain',
