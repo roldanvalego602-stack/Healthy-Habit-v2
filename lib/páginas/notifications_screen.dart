@@ -162,12 +162,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     SegmentedButton<int>(
                       key: const ValueKey('notifications-filters'),
                       segments: const [
-                        ButtonSegment(value: 0, label: Text('Todas'),
-                            icon: Icon(Icons.inbox_outlined)),
-                        ButtonSegment(value: 1, label: Text('Actividad'),
-                            icon: Icon(Icons.check_circle_outline)),
-                        ButtonSegment(value: 2, label: Text('Social'),
-                            icon: Icon(Icons.people_outline)),
+                        ButtonSegment(value: 0, label: Text('Todas')),
+                        ButtonSegment(value: 1, label: Text('Actividad')),
+                        ButtonSegment(value: 2, label: Text('Social')),
                       ],
                       selected: {_filter},
                       showSelectedIcon: false,
@@ -175,6 +172,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           setState(() => _filter = values.first),
                     ),
                     const SizedBox(height: 14),
+                    if (_filter != 2)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text('Avisos de actividad',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800)),
+                      ),
                     if (_filter != 2) Card(
                       child: Padding(
                         padding: const EdgeInsets.all(20),
@@ -331,10 +335,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     )),
                     const SizedBox(height: 14),
+                    if (_filter != 1)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text('Actividad social',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800)),
+                      ),
                     if (_filter != 1) const SolicitudesAmigosPanel(),
-                    const SizedBox(height: 14),
+                    if (_filter != 1) const SizedBox(height: 14),
                     if (_filter != 1) const HabitosParejaNotificaciones(),
-                    const SizedBox(height: 14),
+                    if (_filter != 1) const SizedBox(height: 14),
                     if (_filter != 1) const ReaccionesRecibidasPanel(),
                     const SizedBox(height: 14),
                     Card(child: Padding(
@@ -346,10 +357,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: theme.colorScheme.primary),
                           const SizedBox(width: 12),
                           Expanded(child: Text(
-                            'Aquí se muestran los recordatorios del '
-                            'dispositivo y las reacciones recibidas realmente. '
-                            'El progreso colaborativo y las '
-                            'recompensas sociales aún no están conectadas.',
+                            'Los recordatorios de actividad muestran la agenda '
+                            'local de Android, no un historial de entregas. '
+                            'En Social aparecen solicitudes, invitaciones y '
+                            'reacciones reales de tu cuenta. Las solicitudes '
+                            'se resuelven aceptándolas o rechazándolas.',
                             style: theme.textTheme.bodySmall)),
                         ],
                       ),
