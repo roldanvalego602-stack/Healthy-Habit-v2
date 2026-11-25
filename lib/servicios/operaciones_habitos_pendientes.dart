@@ -44,13 +44,15 @@ class PendingOfficialHabitOperations {
     final actual = value['value'];
     final target = value['target'];
     final unit = value['unit'];
-    return (type == 'counter' || type == 'hydration') &&
+    return (const {'counter', 'hydration', 'timer', 'stopwatch'}.contains(type)) &&
         actual is int && target is int &&
-        target >= 1 && target <= 10000 &&
-        actual >= target && actual <= 10000 &&
+        target >= 1 && target <= 86400 &&
+        actual >= target && actual <= 86400 &&
         unit is String && unit.isNotEmpty && unit.length <= 40 &&
         RegExp(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ .%_-]+$').hasMatch(unit) &&
-        (type != 'hydration' || unit == 'ml');
+        (type != 'hydration' || unit == 'ml') &&
+        (!const {'timer', 'stopwatch'}.contains(type) ||
+            unit == 'segundos');
   }
 
   static bool _sameInteraction(Object? a, Object? b) {
