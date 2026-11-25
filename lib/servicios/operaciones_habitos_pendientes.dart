@@ -44,16 +44,20 @@ class PendingOfficialHabitOperations {
     final actual = value['value'];
     final target = value['target'];
     final unit = value['unit'];
-    return (const {'counter', 'hydration', 'timer', 'stopwatch'}.contains(type)) &&
+    return (const {'counter', 'hydration', 'timer', 'stopwatch',
+            'breathing', 'pomodoro'}.contains(type)) &&
         actual is int && target is int &&
         target >= 1 &&
-        target <= (const {'timer', 'stopwatch'}.contains(type) ? 86400 : 10000) &&
+        target <= (const {'timer', 'stopwatch', 'breathing', 'pomodoro'}
+            .contains(type) ? 86400 : 10000) &&
         actual >= target &&
-        actual <= (const {'timer', 'stopwatch'}.contains(type) ? 86400 : 10000) &&
+        actual <= (const {'timer', 'stopwatch', 'breathing', 'pomodoro'}
+            .contains(type) ? 86400 : 10000) &&
         unit is String && unit.isNotEmpty && unit.length <= 40 &&
         RegExp(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ .%_-]+$').hasMatch(unit) &&
         (type != 'hydration' || unit == 'ml') &&
-        (!const {'timer', 'stopwatch'}.contains(type) ||
+        (!const {'timer', 'stopwatch', 'breathing', 'pomodoro'}
+            .contains(type) ||
             unit == 'segundos');
   }
 
