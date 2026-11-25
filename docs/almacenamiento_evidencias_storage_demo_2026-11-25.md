@@ -379,3 +379,43 @@ npm --prefix tools/firestore-tests run test:cliente-integral:emulador
 anteriores fueron confirmadas por el usuario; las de esta etapa
 todavía no. El proceso de limpieza sigue sin estar programado como
 servicio persistente o producción.
+
+
+## Séptima etapa: comprobación de caducidad con emuladores reales
+
+El escenario `functions/tests-emulator/habit_evidence_cleanup.integration.js`
+prueba la eliminación mediante Firebase Admin, Firestore Emulator
+(base nombrada `default`) y Storage Emulator. No utiliza dobles
+de prueba para el acceso a Firestore ni para los objetos de Storage.
+
+Casos cubiertos:
+
+1. Reserva `attached` vencida: borrar el objeto y quitar del log
+   `hasEvidence` y la ruta, preservando `xpEarned`, XP y monedas.
+2. Reserva `pending` vencida sin archivo: finalizar sin error.
+3. Estado `uploading` vencido con bloqueo de menos de cinco minutos:
+   conservar archivo y reserva temporalmente; tras envejecer el
+   bloqueo, eliminarlos en otra ejecución.
+4. Reserva `uploaded` vigente: conservar el objeto.
+5. Nueva ejecución tras limpiar: cero registros eliminados.
+
+Para ejecutar el escenario aislado:
+
+```bash
+npm --prefix tools/firestore-tests run test:evidencias-limpieza:emulador
+```
+
+El comando prepara reglas restrictivas e inicia solo Auth,
+Firestore y Storage Emulator con `--project demo-healthy-habit`.
+**Esperado: 1 prueba integral de limpieza aprobada**.
+La prueba conserva las referencias ajenas y elimina únicamente los
+objetos de prueba generados por su usuario temporal.
+
+Las 10 pruebas integrales del cliente anteriores fueron aprobadas;
+esta nueva validación sigue pendiente de ejecutarse en el equipo local.
+
+**Límites aún abiertos:** el vigilante local no sobrevive al apagado,
+una operación en estado `recovering` requiere diagnóstico si
+se interrumpe, la limpieza no recorre archivos históricamente
+huérfanos sin reserva, y aún falta autorizar el botón de fotografías
+en la pantalla oficial. Nada se despliega en producción.
