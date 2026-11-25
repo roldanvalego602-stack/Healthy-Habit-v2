@@ -674,68 +674,36 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          Card(
-                            key: const ValueKey('personal-routines-entry'),
-                            color: HealthyAdaptive.surface,
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.tune_rounded, color: green, size: 28),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Mis rutinas personales',
-                                          style: TextStyle(
-                                            color: navy,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Crea rutinas con varios ejercicios, ordénalos y ejecútalos paso a paso. Se guardan en este dispositivo y no conceden XP.',
-                                          style: TextStyle(
-                                            color: muted,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                          Row(
+                            children: [
+                              Expanded(child: OutlinedButton.icon(
+                                key: const ValueKey('personal-routines-entry'),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const PersonalRoutinesScreen(),
                                   ),
-                                  IconButton(
-                                    tooltip: 'Abrir rutinas personales',
-                                    onPressed: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const PersonalRoutinesScreen(),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.arrow_forward_ios_rounded),
+                                ),
+                                icon: const Icon(Icons.tune_rounded, size: 18),
+                                label: const Text('Mis rutinas',
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              )),
+                              const SizedBox(width: 10),
+                              Expanded(child: OutlinedButton.icon(
+                                key: const ValueKey('shared-habits-entry'),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const HabitosEnParejaScreen(),
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                                icon: const Icon(Icons.people_alt_outlined, size: 18),
+                                label: const Text('En pareja',
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              )),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          Card(
-                            color: HealthyAdaptive.surface,
-                            child: ListTile(
-                              key: const ValueKey('shared-habits-entry'),
-                              leading: Icon(Icons.people_alt_outlined,
-                                color: green),
-                              title: const Text('Hábitos en pareja',
-                                style: TextStyle(fontWeight: FontWeight.w800)),
-                              subtitle: const Text(
-                                'Invita a un amigo y realicen el mismo hábito.'),
-                              trailing: const Icon(Icons.chevron_right_rounded),
-                              onTap: () => Navigator.push(context,
-                                MaterialPageRoute(builder: (_) =>
-                                  const HabitosEnParejaScreen())),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 18),
                           _categoryGrid(),
                           const SizedBox(height: 18),
                           _difficultyFilter(),
