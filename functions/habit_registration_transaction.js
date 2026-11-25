@@ -151,7 +151,7 @@ async function registerHabitTransaction(
       const existing = operationSnap.data();
       if (existing.habitId !== ids.habitId ||
           existing.attemptId !== ids.attemptId ||
-          (mode === "official" && existing.note !== (ids.note ?? ""))) {
+          (mode === "official" && (existing.note ?? "") !== (ids.note ?? ""))) {
         throw new RegistrationPolicyError(
           "already-exists", "La operación ya pertenece a otro intento."
         );
