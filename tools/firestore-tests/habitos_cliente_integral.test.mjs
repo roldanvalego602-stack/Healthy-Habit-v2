@@ -272,3 +272,64 @@ test('notas oficiales: almacenar texto sin cambiar recompensas ni aceptar altera
   }), (error) => error.code === 'functions/invalid-argument');
   assert.equal((await getDoc(userRef)).data().xp, xpBeforeRetry);
 });
+
+
+test('contadores autodeclarados: formato seguro, misma recompensa y reintentos', async () => {
+  await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid, name: 'Prueba de contadores',
+    username: 'contador_' + uid, email: '',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const habitId = 'hidr_001';
+  const attemptId = nextId();
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  await activate({habitId, attemptId, operationId: nextId()});
+  const operationId = nextId();
+  const interaction = {
+    type: 'hydration', value: 250, target: 250, unit: 'ml',
+  };
+  const payload = {
+    habitId, attemptId, operationId,
+    note: 'Un vaso de agua.',
+    interaction,
+  };
+  const first = (await register(payload)).data;
+  assert.equal(first.alreadyProcessed, false);
+  assert.equal(first.xpAwarded, 10);
+  const logRef = doc(db, 'users', uid, 'user_habits', habitId,
+    'attempts', attemptId, 'logs', operationId);
+  const log = (await getDoc(logRef)).data();
+  assert.deepEqual(log.interaction, {...interaction, verified: false});
+  assert.equal((await getDoc(userRef)).data().xp, 10);
+
+  const repeated = (await register(payload)).data;
+  assert.equal(repeated.alreadyProcessed, true);
+  assert.equal((await getDoc(userRef)).data().xp, 10);
+  await assert.rejects(register({...payload,
+    interaction: {...interaction, value: 500}}),
+  (error) => error.code === 'functions/already-exists');
+  await assert.rejects(register({...payload,
+    interaction: {...interaction, verified: true}}),
+  (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({...payload,
+    operationId: nextId(),
+    interaction: {...interaction, target: 12000}}),
+  (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({...payload,
+    operationId: nextId(),
+    interaction: {...interaction, unit: 'litros'}}),
+  (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({...payload,
+    operationId: nextId(),
+    interaction: {...interaction, value: 100}}),
+  (error) => error.code === 'functions/invalid-argument');
+  assert.equal((await getDoc(userRef)).data().xp, 10);
+  assert.deepEqual((await getDoc(logRef)).data().interaction,
+    {...interaction, verified: false});
+});
