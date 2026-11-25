@@ -24,7 +24,7 @@ function parseOfficialRegistration(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new RegistrationPolicyError("invalid-argument", "Solicitud inválida.");
   }
-  const allowed = ["habitId", "attemptId", "operationId"];
+  const allowed = ["habitId", "attemptId", "operationId", "note"];
   if (Object.keys(data).some((field) => !allowed.includes(field)) ||
       typeof data.habitId !== "string" ||
       !Object.hasOwn(SERVER_CATALOG, data.habitId) ||
@@ -35,10 +35,20 @@ function parseOfficialRegistration(data) {
       "invalid-argument", "Hábito, IDs o campos no permitidos."
     );
   }
+  // Texto opcional no económico: sin HTML, imágenes ni recompensas.
+  // Los valores se conservan tal como fueron confirmados por el usuario.
+  if (data.note !== undefined &&
+      (typeof data.note !== "string" || data.note.length > 500 ||
+       /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(data.note))) {
+    throw new RegistrationPolicyError(
+      "invalid-argument", "La nota debe ser texto de hasta 500 caracteres."
+    );
+  }
   return Object.freeze({
     habitId: data.habitId,
     attemptId: data.attemptId,
     operationId: data.operationId,
+    note: data.note ?? "",
   });
 }
 
