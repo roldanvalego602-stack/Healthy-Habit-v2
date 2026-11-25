@@ -12,6 +12,20 @@ import 'shop_demo_bootstrap.dart';
 /// El identificador se guarda ANTES de contactar con Functions. Si se pierde
 /// la respuesta, el siguiente intento reutiliza exactamente la solicitud
 /// anterior; el backend determina si ya se había procesado.
+/// Una solicitud ya confirmada por el usuario y guardada localmente.
+class OperacionHabitoPendiente {
+  const OperacionHabitoPendiente({
+    required this.accion,
+    required this.habitoId,
+    required this.intentoId,
+    this.penalizacionMaxima,
+  });
+  final String accion;
+  final String habitoId;
+  final String intentoId;
+  final int? penalizacionMaxima;
+}
+
 class PendingOfficialHabitOperations {
   const PendingOfficialHabitOperations();
 
@@ -48,6 +62,7 @@ class PendingOfficialHabitOperations {
     required String habitId,
     String? attemptId,
     int? maxPenalty,
+    bool recoveryOnly = false,
     required Future<Map<String, dynamic>> Function(
       OfficialHabitEmulatorService, Map<String, dynamic>) send,
   }) async {
@@ -77,6 +92,9 @@ class PendingOfficialHabitOperations {
         }
         pending = decoded;
       } else {
+        if (recoveryOnly) {
+          throw StateError('No existe la operación pendiente a recuperar.');
+        }
         final service = const OfficialHabitEmulatorService();
         pending = {
           'uid': uid,
@@ -102,6 +120,86 @@ class PendingOfficialHabitOperations {
       _ongoing.remove(key);
     }
   }
+
+  /// Solo enumera solicitudes de la sesión actual. No crea ni envía nada.
+  Future<List<OperacionHabitoPendiente>> listarPendientes() async {
+    final uid = _userId();
+    final preferences = SharedPreferencesAsync();
+    final keys = await preferences.getKeys();
+    final prefix = 'hh_demo_pending_v1_${uid}_';
+    final items = <OperacionHabitoPendiente>[];
+    for (final key in keys.where((key) => key.startsWith(prefix))) {
+      final raw = await preferences.getString(key);
+      if (raw == null) continue;
+      final Object? decoded;
+      try {
+        decoded = jsonDecode(raw);
+      } on FormatException {
+        throw StateError('Hay una operación local dañada; '
+            'no se enviará ninguna solicitud nueva.');
+      }
+      if (decoded is! Map<String, dynamic>) {
+        throw StateError('Formato de operación local inválido.');
+      }
+      final action = decoded['action'];
+      final habitId = decoded['habitId'];
+      final attemptId = decoded['attemptId'];
+      final operationId = decoded['operationId'];
+      final maxPenalty = decoded['maxPenalty'];
+      if (decoded['uid'] != uid || action is! String ||
+          !const ['activar', 'registrar', 'cancelar'].contains(action) ||
+          habitId is! String || attemptId is! String ||
+          operationId is! String ||
+          !RegExp(_habitPattern).hasMatch(habitId) ||
+          !RegExp(_idPattern).hasMatch(attemptId) ||
+          !RegExp(_idPattern).hasMatch(operationId) ||
+          (action == 'cancelar' && (maxPenalty is! int ||
+              maxPenalty < 0 || maxPenalty > 25)) ||
+          _key(uid, action, habitId,
+              action == 'activar' ? null : attemptId) != key) {
+        throw StateError('Una operación pendiente tiene campos inválidos. '
+            'No se reenviará automáticamente.');
+      }
+      items.add(OperacionHabitoPendiente(
+        accion: action, habitoId: habitId, intentoId: attemptId,
+        penalizacionMaxima: maxPenalty is int ? maxPenalty : null,
+      ));
+    }
+    if (_userId() != uid) {
+      throw StateError('Cambió la sesión al listar operaciones pendientes.');
+    }
+    return items;
+  }
+
+  /// Reenvía EXCLUSIVAMENTE una solicitud existente con su operationId.
+  Future<Map<String, dynamic>> recuperar(
+    OperacionHabitoPendiente item,
+  ) => _run(
+    action: item.accion,
+    habitId: item.habitoId,
+    attemptId: item.accion == 'activar' ? null : item.intentoId,
+    maxPenalty: item.penalizacionMaxima,
+    recoveryOnly: true,
+    send: (service, saved) {
+      final habitId = saved['habitId'] as String;
+      final attemptId = saved['attemptId'] as String;
+      final operationId = saved['operationId'] as String;
+      switch (item.accion) {
+        case 'activar':
+          return service.activate(
+            habitId: habitId, attemptId: attemptId, operationId: operationId);
+        case 'registrar':
+          return service.register(
+            habitId: habitId, attemptId: attemptId, operationId: operationId);
+        case 'cancelar':
+          return service.cancel(
+            habitId: habitId, attemptId: attemptId, operationId: operationId,
+            maxPenalty: saved['maxPenalty'] as int);
+        default:
+          throw StateError('Acción pendiente no reconocida.');
+      }
+    },
+  );
 
   Future<Map<String, dynamic>> activate(String habitId) => _run(
     action: 'activar', habitId: habitId,
