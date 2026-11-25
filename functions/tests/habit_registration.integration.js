@@ -917,7 +917,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     assert.equal((await ref.get()).data().serverStreakDays, 1);
     const days = await ref.collection("daily_streak_days").get();
     assert.equal(days.size, 1);
-    assert.equal(days.docs[0].data().rewardCoins, 2);
+    assert.equal(days.docs[0].data().rewardCoins, 10);
     assert.equal(days.docs[0].data().claimed, false);
   });
 
@@ -933,7 +933,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
       )));
     }
     assert.deepEqual(results.map((r) => r.dailyStreakCount), [1, 2, 1]);
-    assert.deepEqual(results.map((r) => r.dailyStreakReward), [2, 3, 2]);
+    assert.deepEqual(results.map((r) => r.dailyStreakReward), [10, 15, 10]);
     assert.equal((await ref.get()).data().serverStreakDays, 1);
     assert.equal((await ref.get()).data().serverLongestStreak, 2);
     assert.equal((await ref.collection("daily_streak_days").get()).size, 3);
@@ -972,7 +972,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST ||
     const claims = await Promise.all([
       claim({db, uid, day}), claim({db, uid, day}),
     ]);
-    assert.deepEqual(claims.map((r) => r.coinsAwarded).sort(), [0, 2]);
+    assert.deepEqual(claims.map((r) => r.coinsAwarded).sort((a, b) => a - b), [0, 10]);
     const reward = (await ref.collection("daily_streak_days").doc(day).get())
       .data();
     assert.equal(reward.claimed, true);
