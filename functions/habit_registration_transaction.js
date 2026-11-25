@@ -100,6 +100,18 @@ function calculateRegistrationReward({user, attempt, catalog}) {
   });
 }
 
+function sameDeclaredInteraction(left, right) {
+  if (left == null || right == null) {
+    return left == null && right == null;
+  }
+  return left.type === right.type &&
+    left.value === right.value &&
+    left.target === right.target &&
+    left.unit === right.unit &&
+    left.verified === false &&
+    right.verified === false;
+}
+
 function utcDay(date) {
   if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
     throw new TypeError("Fecha inválida.");
@@ -153,8 +165,7 @@ async function registerHabitTransaction(
           existing.attemptId !== ids.attemptId ||
           (mode === "official" && (existing.note ?? "") !== (ids.note ?? "")) ||
           (mode === "official" &&
-            JSON.stringify(existing.interaction ?? null) !==
-              JSON.stringify(ids.interaction ?? null))) {
+            !sameDeclaredInteraction(existing.interaction, ids.interaction))) {
         throw new RegistrationPolicyError(
           "already-exists", "La operación ya pertenece a otro intento."
         );
