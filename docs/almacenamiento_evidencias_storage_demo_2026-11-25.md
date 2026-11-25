@@ -465,3 +465,53 @@ tampoco se modificó: el usuario tiene cambios locales en
 
 No desplegar a producción. El resultado de las pruebas nuevas aún
 debe confirmarse localmente.
+
+
+## Novena etapa: paginación y preparación aislada de imágenes Flutter
+
+La auditoría no destructiva dispone de `pageToken` y devuelve
+`nextPageToken`, además de `hasMore`. El comando local
+`node functions/scripts/auditar_evidencias_demo.js` recorre hasta
+100 páginas de 100 archivos. Si llega a ese límite o encuentra
+tokens repetidos, **no anuncia una revisión completa**: finaliza
+con error. No borra objetos ni cambia Firestore.
+
+`lib/servicios/habit_evidence_image_preparer.dart` aporta una
+pieza Flutter independiente que:
+- Acepta `Uint8List` de una fotografía de hasta 12 MB.
+- Decodifica con el paquete `image` existente y limita la resolución
+  a 20 megapíxeles antes del procesamiento.
+- Corrige orientación y vuelve a codificar como JPEG sin reutilizar
+  los metadatos EXIF originales.
+- Reduce resolución y calidad hasta alcanzar **250 KB** o devuelve
+  un error explicativo.
+- No hace solicitudes de red, ni confirma hábitos ni concede XP.
+
+**Importante:** no se modificó
+`lib/páginas/habitos/registrar_habito_screen.dart` porque el usuario
+tiene modificaciones locales de ese archivo. La integración deberá
+preservar explícitamente su código local y coordinar:
+1. conservar el mismo `operationId` durante reintentos;
+2. preparar bytes con `HabitEvidenceImagePreparer.prepare`;
+3. reservar y subir con `EvidenceStorageDemoService.upload`;
+4. registrar oficialmente el hábito con `registerOfficialHabitDemo`;
+5. asociar al log con `OfficialHabitEmulatorService.attachEvidence`;
+6. representar errores recuperables sin duplicar recompensas.
+
+El botón de fotografía continúa deshabilitado para el flujo oficial
+de emuladores y no se ha hecho ningún despliegue en producción.
+
+Pruebas nuevas:
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+node --test functions/tests/habit_evidence_audit.test.js
+flutter test test/habit_evidence_image_preparer_test.dart
+flutter analyze lib/servicios/habit_evidence_image_preparer.dart
+npm --prefix functions test
+```
+
+El comando de auditoría puede ejecutarse con Firestore y Storage Emulator
+activos mediante las variables de entorno ya documentadas. Los
+resultados de esta etapa **todavía requieren validación local**.
