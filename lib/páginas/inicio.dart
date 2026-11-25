@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import '../tema/healthy_theme.dart';
 import '../tema/healthy_coin.dart';
 import '../tema/healthy_motion.dart';
-import '../tema/healthy_float.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
@@ -291,6 +290,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
               xp: xp,
               level: level,
               streak: streak,
+              streakArtState: HealthyStreakArt.fromProfile(data),
               habits: habits.data!.docs,
               userRef: userRef,
               coins: _number(data['habitCoins']),
