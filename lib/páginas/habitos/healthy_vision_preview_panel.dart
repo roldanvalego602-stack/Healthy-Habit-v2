@@ -39,7 +39,6 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   int _revision = 0;
   Timer? _quotaTicker;
   DateTime? _retryAt;
-  DateTime? _dailyResetAt;
   int? _remaining;
   int? _dailyLimit;
 
@@ -132,7 +131,9 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
 
   Future<void> _analyze() async {
     if (_busy || widget.saving || _blockedByQuota ||
-        !HealthyVisionDebugService.enabled || _profile == null) return;
+        !HealthyVisionDebugService.enabled || _profile == null) {
+      return;
+    }
     final request = ++_revision;
     setState(() {
       _busy = true;
@@ -151,7 +152,6 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
           final quota = result.quota!;
           _remaining = quota.remaining;
           _dailyLimit = quota.dailyLimit;
-          _dailyResetAt = quota.resetAt;
           _setQuotaWait(quota.remaining == 0
               ? quota.resetAt : quota.nextAllowedAt);
         }
@@ -180,7 +180,6 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
               retryMillis, isUtc: true,
             );
             _setQuotaWait(retryAt);
-            if (reason == 'daily-limit') _dailyResetAt = retryAt;
           }
           _error = reason == 'daily-limit'
               ? 'Alcanzaste el máximo diario de análisis. '
@@ -297,13 +296,15 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
               DropdownMenuItem(value: 'meal', child: Text('Comida')),
             ],
             onChanged: _busy || widget.saving ? null : (value) {
-              if (value != null) setState(() {
-                _revision++;
-                _manualSelection = true;
-                _profile = value;
-                _preview = null;
-                _error = null;
-              });
+              if (value != null) {
+                setState(() {
+                  _revision++;
+                  _manualSelection = true;
+                  _profile = value;
+                  _preview = null;
+                  _error = null;
+                });
+              }
             },
           ),
           if (HealthyVisionDebugService.useLiveBackend) ...[
