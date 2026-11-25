@@ -196,7 +196,9 @@ class HealthyRemindersService {
         // ya se registró hoy. Con estados inciertos no se programa.
         final offset = state == StreakNoticeStatus.completedToday
             ? 1
-            : state == StreakNoticeStatus.pendingToday ? 0 : null;
+            : state == StreakNoticeStatus.pendingToday ||
+                    state == StreakNoticeStatus.inactive
+                ? 0 : null;
         if (offset != null) {
           final day = tz.TZDateTime(
             tz.local, now.year, now.month, now.day + offset,
@@ -212,19 +214,34 @@ class HealthyRemindersService {
             );
             final warning = warningInstant == null ? null
                 : tz.TZDateTime.from(warningInstant, tz.local);
-            if (warning != null &&
-                first.isAfter(now) && first.isBefore(warning)) {
-              if (revision != _revision) return false;
-              await _plugin.zonedSchedule(
-                _streakReminderId,
-                '¡Mantén tu racha encendida!',
-                'Si aún no registraste actividad hoy, puedes hacerlo '
-                    'para mantener tu constancia.',
-                first, details,
-                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            final isNew = state == StreakNoticeStatus.inactive;
+            var reminder = first;
+            if (isNew && !reminder.isAfter(now)) {
+              // El primer recordatorio de activación puede esperar al
+              // próximo día permitido; no se envían alertas nocturnas.
+              reminder = tz.TZDateTime(
+                tz.local, day.year, day.month, day.day + 1,
+                first.hour, first.minute,
               );
             }
-            if (warning != null && warning.isAfter(now)) {
+            if (isNew || warning != null &&
+                reminder.isAfter(now) && reminder.isBefore(warning)) {
+              if (revision != _revision) return false;
+              if (reminder.isAfter(now) &&
+                  (!restSunday || reminder.weekday != DateTime.sunday)) {
+              await _plugin.zonedSchedule(
+                _streakReminderId,
+                isNew ? '¡Enciende tu primera racha!' : '¡Mantén tu racha encendida!',
+                isNew
+                    ? 'Registra una actividad válida para comenzar tu constancia.'
+                    : 'Si aún no registraste actividad hoy, puedes hacerlo '
+                        'para mantener tu constancia.',
+                reminder, details,
+                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              );
+              }
+            }
+            if (!isNew && warning != null && warning.isAfter(now)) {
               if (revision != _revision) return false;
               await _plugin.zonedSchedule(
                 _streakWarningId,
