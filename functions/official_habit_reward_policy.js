@@ -24,7 +24,7 @@ function parseOfficialRegistration(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new RegistrationPolicyError("invalid-argument", "Solicitud inválida.");
   }
-  const allowed = ["habitId", "attemptId", "operationId", "note"];
+  const allowed = ["habitId", "attemptId", "operationId", "note", "interaction"];
   if (Object.keys(data).some((field) => !allowed.includes(field)) ||
       typeof data.habitId !== "string" ||
       !Object.hasOwn(SERVER_CATALOG, data.habitId) ||
@@ -44,11 +44,39 @@ function parseOfficialRegistration(data) {
       "invalid-argument", "La nota debe ser texto de hasta 500 caracteres."
     );
   }
+  // Los contadores son declaraciones del usuario, NO evidencia verificada.
+  // Nunca se usan para calcular XP, monedas, metas del hábito o rachas.
+  let interaction = null;
+  if (data.interaction !== undefined) {
+    const value = data.interaction;
+    if (!value || typeof value !== "object" || Array.isArray(value) ||
+        Object.keys(value).some((field) =>
+          !["type", "value", "target", "unit"].includes(field)) ||
+        !["counter", "hydration"].includes(value.type) ||
+        !Number.isSafeInteger(value.value) ||
+        !Number.isSafeInteger(value.target) ||
+        value.target < 1 || value.target > 10000 ||
+        value.value < value.target || value.value > 10000 ||
+        typeof value.unit !== "string" ||
+        value.unit.length < 1 || value.unit.length > 40 ||
+        !/^[\\p{L}\\p{N} .%_-]+$/u.test(value.unit) ||
+        (value.type === "hydration" && value.unit !== "ml")) {
+      throw new RegistrationPolicyError(
+        "invalid-argument", "Contador autodeclarado inválido."
+      );
+    }
+    interaction = Object.freeze({
+      type: value.type, value: value.value,
+      target: value.target, unit: value.unit,
+      verified: false,
+    });
+  }
   return Object.freeze({
     habitId: data.habitId,
     attemptId: data.attemptId,
     operationId: data.operationId,
     note: data.note ?? "",
+    interaction,
   });
 }
 
