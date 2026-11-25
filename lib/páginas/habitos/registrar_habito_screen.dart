@@ -278,17 +278,30 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       // Notas, actividades interactivas y fotos requieren un contrato de
       // backend distinto; no se acreditan ni se pierden silenciosamente.
       if (OfficialHabitEmulatorService.enabled) {
-        if (_bytesImagen != null || _interactionType != 'manual') {
+        if (_bytesImagen != null ||
+            !const {'manual', 'counter', 'hydration'}
+                .contains(_interactionType)) {
           throw StateError(
-            'El registro experimental solo admite actividades sin foto '
-            'ni interacción especial. Estos datos se habilitarán '
-            'al integrar su almacenamiento seguro en el servidor.');
+            'El registro experimental admite notas, contadores e hidratación '
+            'autodeclarados, pero todavía no permite fotografías, '
+            'cronómetros ni sensores.');
         }
+        // La medición manual es una declaración del usuario; el backend
+        // valida el formato y los periodos, nunca concede XP extra por
+        // la cantidad informada.
+        final Map<String, dynamic>? interaction =
+            _interactionType == 'manual' ? null : {
+              'type': _interactionType,
+              'value': _interactionValue,
+              'target': _interactionTarget,
+              'unit': _interactionUnit,
+            };
         const service = OfficialHabitEmulatorService();
         final response = await const PendingOfficialHabitOperations()
             .register(
               habitoRef.id, attemptRef.id,
               note: _notaController.text.trim(),
+              interaction: interaction,
             );
         if (!mounted) return;
         final xp = _leerEntero(response['xpAwarded'], 0);
