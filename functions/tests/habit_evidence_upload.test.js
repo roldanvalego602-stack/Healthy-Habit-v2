@@ -42,10 +42,11 @@ test("subida: rechaza fotografías no reservadas antes de acceder al bucket", as
     db: {
       collection: () => ({
         doc: () => ({
-          collection: () => ({
-            doc: () => ({get: async () => ({exists: false})}),
-          }),
+          collection: () => ({doc: () => ({})}),
         }),
+      }),
+      runTransaction: async (callback) => callback({
+        get: async () => ({exists: false}),
       }),
     },
   }), (error) => error.code === "failed-precondition");
