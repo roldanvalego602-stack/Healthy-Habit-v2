@@ -5,20 +5,23 @@
 const ID = /^[A-Za-z0-9_-]{16,128}$/;
 const PREFIX = "habit-evidence/";
 
-async function auditOrphanEvidence({db, bucket, now = new Date(), limit = 100}) {
+async function auditOrphanEvidence({db, bucket, now = new Date(), limit = 100, pageToken}) {
   if (process.env.GCLOUD_PROJECT !== "demo-healthy-habit" ||
       !process.env.FIRESTORE_EMULATOR_HOST ||
       !process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
     throw new Error("Auditoría permitida únicamente en emuladores demo.");
   }
   if (!(now instanceof Date) || !Number.isFinite(now.getTime()) ||
-      !Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      !Number.isSafeInteger(limit) || limit < 1 || limit > 500 ||
+      (pageToken !== undefined &&
+        (typeof pageToken !== "string" || pageToken.length > 2048))) {
     throw new TypeError("Fecha o límite inválido.");
   }
 
   // autoPaginate:false garantiza que un lote tiene un límite explícito.
   const [files, nextQuery] = await bucket.getFiles({
     prefix: PREFIX, maxResults: limit, autoPaginate: false,
+    ...(pageToken ? {pageToken} : {}),
   });
   const findings = [];
   const counts = {
@@ -72,7 +75,8 @@ async function auditOrphanEvidence({db, bucket, now = new Date(), limit = 100}) 
   // Nunca reportar revisión completa cuando existe otra página.
   return {
     scanned: files.length, counts, findings,
-    hasMore: Boolean(nextQuery),
+    hasMore: Boolean(nextQuery?.pageToken),
+    nextPageToken: nextQuery?.pageToken ?? null,
   };
 }
 
