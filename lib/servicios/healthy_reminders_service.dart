@@ -207,10 +207,13 @@ class HealthyRemindersService {
               (hour * 60 + minute + 20).clamp(0, 1439).toInt() ~/ 60,
               (hour * 60 + minute + 20).clamp(0, 1439).toInt() % 60,
             );
-            final warning = tz.TZDateTime(
-              tz.local, day.year, day.month, day.day, 21, 0,
+            final warningInstant = StreakNoticePolicy.warningInstant(
+              latest, daysAhead: offset,
             );
-            if (first.isAfter(now) && first.isBefore(warning)) {
+            final warning = warningInstant == null ? null
+                : tz.TZDateTime.from(warningInstant, tz.local);
+            if (warning != null &&
+                first.isAfter(now) && first.isBefore(warning)) {
               if (revision != _revision) return false;
               await _plugin.zonedSchedule(
                 _streakReminderId,
@@ -221,7 +224,7 @@ class HealthyRemindersService {
                 androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
               );
             }
-            if (warning.isAfter(now)) {
+            if (warning != null && warning.isAfter(now)) {
               if (revision != _revision) return false;
               await _plugin.zonedSchedule(
                 _streakWarningId,
