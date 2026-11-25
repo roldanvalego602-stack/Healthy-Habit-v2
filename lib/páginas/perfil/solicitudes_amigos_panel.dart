@@ -62,6 +62,9 @@ class SolicitudesAmigosPanel extends StatelessWidget {
                           ListTile(
                             dense: true,
                             contentPadding: EdgeInsets.zero,
+                            onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) =>
+                                const AmigosScreen(initialTab: 1))),
                             leading: const Icon(Icons.account_circle_outlined),
                             title: Text(
                               (perfiles.data![id]?['name'] ?? 'Usuario').toString()),
