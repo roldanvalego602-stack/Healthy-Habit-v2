@@ -79,10 +79,10 @@ flutter_launcher_icons:
   min_sdk_android: 21
   android: true
   ios: false
-  # Icono oficial actualizado, aprobado por el equipo.
-  image_path: "assets/icon/Ícono de espiral frutal brillante.png"
-  # Android 8+: usar la misma ilustración en el icono adaptable.
-  adaptive_icon_foreground: "assets/icon/Ícono de espiral frutal brillante.png"
+  # Edición navideña: composición completa con fondo integrado.
+  image_path: "assets/icon/icono navidad.png"
+  # Android 8+: el fondo de la propia imagen cubre toda la máscara.
+  adaptive_icon_foreground: "assets/icon/icono navidad.png"
   adaptive_icon_background: "#087F5B"
-  # Margen de seguridad para que el símbolo no llene toda la máscara Android.
-  adaptive_icon_foreground_inset: 20
+  # Sin margen adicional: no generar franjas artificiales alrededor.
+  adaptive_icon_foreground_inset: 0
