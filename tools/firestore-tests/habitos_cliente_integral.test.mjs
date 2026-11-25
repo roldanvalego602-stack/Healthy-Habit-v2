@@ -515,3 +515,63 @@ test('podómetro: pasos no verificados, permisos económicos e idempotencia', as
   (error) => error.code === 'functions/invalid-argument');
   assert.equal((await getDoc(userRef)).data().xp, beforeRetry.xp);
 });
+
+
+test('reserva de evidencia: vinculada al intento, idempotente y sin alterar XP', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid, name: 'Prueba de reserva privada',
+    username: 'reserva_' + uid, email: '',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  const operationId = nextId();
+  const reserve = httpsCallable(functions, 'reserveHabitEvidenceDemo');
+  const activation = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const cancellation = httpsCallable(functions, 'cancelOfficialHabitDemo');
+  const payload = {habitId, attemptId, operationId};
+
+  await assert.rejects(reserve(payload),
+    (error) => error.code === 'functions/not-found');
+  await activation({habitId, attemptId, operationId: nextId()});
+
+  const before = (await getDoc(userRef)).data();
+  const first = (await reserve(payload)).data;
+  assert.equal(first.alreadyReserved, false);
+  assert.equal(first.storagePath,
+    'habit-evidence/' + uid + '/' + attemptId + '/' + operationId);
+  assert.ok(Date.parse(first.expiresAt) > Date.now());
+
+  const repeat = (await reserve(payload)).data;
+  assert.equal(repeat.alreadyReserved, true);
+  assert.equal(repeat.storagePath, first.storagePath);
+  assert.equal(repeat.expiresAt, first.expiresAt);
+
+  const reservationRef = doc(db, 'users', uid,
+    'habit_evidence_reservations', operationId);
+  const reservation = (await getDoc(reservationRef)).data();
+  assert.equal(reservation.uid, uid);
+  assert.equal(reservation.habitId, habitId);
+  assert.equal(reservation.status, 'pending');
+  await assert.rejects(setDoc(reservationRef, {status: 'verified'}),
+    (error) => error.code === 'permission-denied');
+
+  await assert.rejects(reserve({...payload, habitId: 'hidr_001'}),
+    (error) => error.code === 'functions/already-exists');
+
+  const after = (await getDoc(userRef)).data();
+  assert.equal(after.xp, before.xp);
+  assert.equal(after.habitCoins, before.habitCoins);
+  assert.equal(after.habitMutationVersion, before.habitMutationVersion);
+
+  await cancellation({
+    habitId, attemptId, operationId: nextId(), maxPenalty: 0,
+  });
+  await assert.rejects(reserve({...payload, operationId: nextId()}),
+    (error) => error.code === 'functions/failed-precondition');
+});
