@@ -603,6 +603,12 @@ exports.registerOfficialHabitDemo = officialDemoCallable(
   registerOfficialHabitTransaction
 );
 
+// Reservar una ruta de fotografía SOLO para el intento oficial en curso.
+// No adjunta imágenes al log y jamás acredita XP.
+const {reserveHabitEvidence} = require("./habit_evidence_reservation");
+exports.reserveHabitEvidenceDemo = officialDemoCallable(reserveHabitEvidence);
+
+
 
 // Reclamo de premios habilitado únicamente en el emulador aislado.
 // No exponerlo en producción hasta finalizar la migración de hábitos
