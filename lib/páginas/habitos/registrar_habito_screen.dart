@@ -280,12 +280,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       if (OfficialHabitEmulatorService.enabled) {
         if (_bytesImagen != null ||
             !const {'manual', 'counter', 'hydration', 'timer', 'stopwatch',
-              'breathing', 'pomodoro'}
+              'breathing', 'pomodoro', 'steps'}
                 .contains(_interactionType)) {
           throw StateError(
             'El registro experimental admite notas, contadores, hidratación '
             'y sesiones de tiempo autodeclaradas, pero todavía no permite '
-            'fotografías ni sensores de pasos.');
+            'fotografías. Los pasos del dispositivo no se verifican.');
         }
         // La sesión guiada o cronometrada es una declaración del cliente;
         // no acredita tiempo físicamente verificado. El backend
@@ -296,7 +296,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               'type': _interactionType,
               'value': _interactionValue,
               'target': _interactionTarget,
-              'unit': _interactionUnit,
+              'unit': _interactionType == 'steps'
+                  ? 'pasos' : _interactionUnit,
             };
         const service = OfficialHabitEmulatorService();
         final response = await const PendingOfficialHabitOperations()
