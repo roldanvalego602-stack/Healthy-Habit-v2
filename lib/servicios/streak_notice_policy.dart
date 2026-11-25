@@ -35,6 +35,35 @@ class StreakNoticePolicy {
     }
   }
 
+  /// Instante tres horas antes de que termine el día civil de la racha.
+  /// Respeta la zona fijada por el backend, que puede diferir de Android.
+  static DateTime? warningInstant(
+    Map<String, dynamic> profile, {
+    DateTime? now,
+    int daysAhead = 0,
+  }) {
+    if (daysAhead < 0) return null;
+    final instant = now ?? DateTime.now();
+    final zone = profile['serverLastStreakDay'] is String
+        ? (profile['serverStreakTimeZone'] ??
+            profile['calendarTimeZone'] ?? 'UTC').toString()
+        : '';
+    try {
+      if (!_ready) {
+        timezone_data.initializeTimeZones();
+        _ready = true;
+      }
+      final loc = zone.isEmpty ? tz.local : tz.getLocation(zone);
+      final today = tz.TZDateTime.from(instant, loc);
+      final midnight = tz.TZDateTime(
+        loc, today.year, today.month, today.day + daysAhead + 1,
+      );
+      return midnight.subtract(const Duration(hours: 3));
+    } catch (_) {
+      return null;
+    }
+  }
+
   static int? daysSinceLast(Map<String, dynamic> profile, {DateTime? now}) {
     final raw = profile['serverLastStreakDay'] ??
         profile['lastStreakDate'];
