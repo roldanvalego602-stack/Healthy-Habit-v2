@@ -77,11 +77,13 @@ class OfficialHabitEmulatorService {
     required String attemptId,
     required String operationId,
     String note = '',
+    Map<String, dynamic>? interaction,
   }) => _call('registerOfficialHabitDemo', {
     'habitId': habitId,
     'attemptId': attemptId,
     'operationId': operationId,
     if (note.isNotEmpty) 'note': note,
+    if (interaction != null) 'interaction': interaction,
   });
 
   /// Reclamo seguro: el backend determina el usuario y las monedas.
