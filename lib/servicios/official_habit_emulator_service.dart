@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -96,6 +98,21 @@ class OfficialHabitEmulatorService {
     'habitId': habitId,
     'attemptId': attemptId,
     'operationId': operationId,
+  });
+
+  /// Sube bytes por Functions Emulator; Storage rechaza escrituras del cliente.
+  Future<Map<String, dynamic>> uploadReservedEvidence({
+    required String habitId,
+    required String attemptId,
+    required String operationId,
+    required Uint8List bytes,
+    required String contentType,
+  }) => _call('uploadReservedEvidenceDemo', {
+    'habitId': habitId,
+    'attemptId': attemptId,
+    'operationId': operationId,
+    'imageBase64': base64Encode(bytes),
+    'contentType': contentType,
   });
 
   /// Asocia una foto ya subida a un registro confirmado, sin XP adicional.
