@@ -76,10 +76,12 @@ class OfficialHabitEmulatorService {
     required String habitId,
     required String attemptId,
     required String operationId,
+    String note = '',
   }) => _call('registerOfficialHabitDemo', {
     'habitId': habitId,
     'attemptId': attemptId,
     'operationId': operationId,
+    if (note.isNotEmpty) 'note': note,
   });
 
   /// Reclamo seguro: el backend determina el usuario y las monedas.
