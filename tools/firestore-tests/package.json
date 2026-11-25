@@ -10,7 +10,8 @@
     "test:cliente-integral": "node --test --test-concurrency=1 habitos_cliente_integral.test.mjs",
     "test:cliente-integral:emulador": "cd ../.. && node tools/firestore-tests/generar_reglas_integrales.mjs && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,firestore,functions,storage --project demo-healthy-habit \"npm --prefix tools/firestore-tests run test:cliente-integral\"",
     "test:evidencias-storage": "node --test --test-concurrency=1 evidencia_storage_cliente.test.mjs",
-    "test:evidencias-storage:emulador": "cd ../.. && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,storage --project demo-healthy-habit \"npm --prefix tools/firestore-tests run test:evidencias-storage\""
+    "test:evidencias-storage:emulador": "cd ../.. && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,storage --project demo-healthy-habit \"npm --prefix tools/firestore-tests run test:evidencias-storage\"",
+    "test:evidencias-limpieza:emulador": "cd ../.. && node tools/firestore-tests/generar_reglas_integrales.mjs && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,firestore,storage --project demo-healthy-habit \"node --test functions/tests-emulator/habit_evidence_cleanup.integration.js\""
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "6.0.0",
