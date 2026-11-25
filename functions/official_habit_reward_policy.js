@@ -39,7 +39,7 @@ function parseOfficialRegistration(data) {
   // Los valores se conservan tal como fueron confirmados por el usuario.
   if (data.note !== undefined &&
       (typeof data.note !== "string" || data.note.length > 500 ||
-       /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(data.note))) {
+       /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(data.note))) {
     throw new RegistrationPolicyError(
       "invalid-argument", "La nota debe ser texto de hasta 500 caracteres."
     );
