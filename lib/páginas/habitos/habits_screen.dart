@@ -429,6 +429,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (mounted) _showMessage('No se pudo abandonar: $error');
     } finally {
       if (mounted) setState(() => saving = false);
+      await _cargarPendientes();
     }
   }
 
@@ -450,6 +451,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       if (mounted) _showMessage('No se pudo agregar el hábito: $error');
     } finally {
       if (mounted) setState(() => saving = false);
+      await _cargarPendientes();
     }
   }
 
@@ -485,6 +487,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     );
     if (mounted) {
       await _load();
+      await _cargarPendientes();
     }
   }
 
