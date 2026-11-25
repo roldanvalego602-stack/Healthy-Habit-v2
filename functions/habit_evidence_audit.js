@@ -58,7 +58,8 @@ async function auditOrphanEvidence({db, bucket, now = new Date(), limit = 100}) 
         record.operationId !== operationId || record.storagePath !== path ||
         typeof record.habitId !== "string" ||
         !["pending", "uploading", "recovering", "uploaded", "attached"]
-          .includes(record.status)) {
+          .includes(record.status) ||
+        typeof record.expiresAt?.toMillis !== "function") {
       counts.inconsistent++;
       findings.push({path, status: "inconsistent"});
     } else if (record.expiresAt?.toMillis?.() <= now.getTime()) {
