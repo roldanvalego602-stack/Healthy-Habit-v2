@@ -55,8 +55,10 @@ function parseOfficialRegistration(data) {
         !["counter", "hydration", "timer", "stopwatch"].includes(value.type) ||
         !Number.isSafeInteger(value.value) ||
         !Number.isSafeInteger(value.target) ||
-        value.target < 1 || value.target > 86400 ||
-        value.value < value.target || value.value > 86400 ||
+        value.target < 1 || value.target >
+          (["timer", "stopwatch"].includes(value.type) ? 86400 : 10000) ||
+        value.value < value.target || value.value >
+          (["timer", "stopwatch"].includes(value.type) ? 86400 : 10000) ||
         typeof value.unit !== "string" ||
         value.unit.length < 1 || value.unit.length > 40 ||
         !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
