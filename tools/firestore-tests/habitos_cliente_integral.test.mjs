@@ -644,6 +644,15 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
     ...payload, imageBase64: encoded, contentType: 'image/png',
   })).data;
   assert.equal(repeatedUpload.alreadyUploaded, true);
+  // Una segunda petición con el mismo ID y otros bytes no puede sustituir
+  // el objeto almacenado; la respuesta debe indicar conflicto.
+  const changedBytes = Uint8Array.from(bytes);
+  changedBytes[changedBytes.length - 9] ^= 1;
+  await assert.rejects(upload({
+    ...payload,
+    imageBase64: Buffer.from(changedBytes).toString('base64'),
+    contentType: 'image/png',
+  }), (error) => error.code === 'functions/already-exists');
   await assert.rejects(upload({
     ...payload, imageBase64: encoded, contentType: 'image/jpeg',
   }), (error) => error.code === 'functions/invalid-argument');
