@@ -150,7 +150,8 @@ async function registerHabitTransaction(
     if (operationSnap.exists) {
       const existing = operationSnap.data();
       if (existing.habitId !== ids.habitId ||
-          existing.attemptId !== ids.attemptId) {
+          existing.attemptId !== ids.attemptId ||
+          (mode === "official" && existing.note !== (ids.note ?? ""))) {
         throw new RegistrationPolicyError(
           "already-exists", "La operación ya pertenece a otro intento."
         );
@@ -340,7 +341,9 @@ async function registerHabitTransaction(
       habitTitle: catalog.title, category: catalog.category,
       xpEarned: reward.xpAwarded, progressAfter: progress,
       goal: catalog.target, completed, hasEvidence: false,
-      userId: uid, createdAt: FieldValue.serverTimestamp(),
+      userId: uid,
+      ...(mode === "official" && ids.note ? {note: ids.note} : {}),
+      createdAt: FieldValue.serverTimestamp(),
     });
     tx.update(attemptRef, {
       progress, xpEarned: reward.attemptXp,
@@ -370,6 +373,7 @@ async function registerHabitTransaction(
     });
     tx.create(operationRef, {
       habitId: ids.habitId, attemptId: ids.attemptId,
+      ...(mode === "official" ? {note: ids.note} : {}),
       result, createdAt: FieldValue.serverTimestamp(),
     });
     return {...result, alreadyProcessed: false};
