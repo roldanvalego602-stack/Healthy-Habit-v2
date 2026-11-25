@@ -61,3 +61,44 @@ cuando la pantalla lo permita. Verificar que el backend no duplique XP,
 monedas o intentos.
 
 **No ejecutar `firebase deploy`.**
+
+## Segunda etapa: recuperación guiada en la pantalla de Hábitos
+
+La pantalla `HabitsScreen` consulta las operaciones guardadas por el UID
+actual al abrirse y después de intentar activar, cancelar o registrar.
+Si existen, presenta la tarjeta **Operaciones pendientes de confirmar**.
+
+Al pulsar **Recuperar**:
+1. Solicita confirmación explícita (la petición original ya fue autorizada
+   previamente, pero podría haberse aplicado en el servidor).
+2. Reutiliza el `operationId`, `attemptId` y la penalización registrada
+   anteriormente. El modo de recuperación tiene `recoveryOnly`: si no
+   hay una solicitud previa, **no crea una nueva**.
+3. El backend decide si la transacción se había confirmado; devuelve
+   `alreadyProcessed` y las recompensas previamente calculadas.
+4. Al recibir respuesta correcta, elimina el diario de esa operación y
+   actualiza la lista visible y los hábitos. Ante errores, conserva la
+   solicitud pendiente para otro intento.
+
+El código valida UID, acción, identificadores y correspondencia entre
+la clave del almacenamiento y su contenido antes de mostrar una operación.
+No se almacena material de evidencia ni datos personales adicionales.
+
+**Pruebas por ejecutar localmente:**
+
+```bash
+flutter analyze \
+  lib/servicios/operaciones_habitos_pendientes.dart \
+  lib/páginas/habitos/habits_screen.dart \
+  lib/páginas/habitos/habit_action_service.dart \
+  lib/páginas/habitos/registrar_habito_screen.dart
+```
+
+No se ha simulado todavía una desconexión con fallo de respuesta. El
+objetivo será confirmar que la tarjeta reaparece al volver a Hábitos y
+que **el XP y las monedas no cambian al recuperar una operación ya
+procesada**. El entorno de producción permanece intacto.
+
+**Limitación:** si un registro se confirmó pero se perdió su respuesta,
+recuperarlo desde Hábitos no reproduce los diálogos de celebración del
+registro; recupera el estado persistido sin acreditar nada de nuevo.
