@@ -342,13 +342,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
           );
         }
-        // El registro oficial terminó: cancelar avisos obsoletos.
+        // Registro oficial confirmado: cancelar avisos obsoletos.
         await HealthyRemindersService.instance.refreshForCurrentUser();
         if (!mounted) return;
-        // Confirmado en Firestore: actualizar recordatorios de racha.
-      await HealthyRemindersService.instance.refreshForCurrentUser();
-      if (!mounted) return;
-      Navigator.pop(context, true);
+        Navigator.pop(context, true);
         return;
       }
       final usuarioRef = _userDoc;
@@ -595,6 +592,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           icon: Icons.check_circle_rounded,
         );
       }
+      // Registro habitual confirmado en Firestore: reconstruir la agenda.
+      await HealthyRemindersService.instance.refreshForCurrentUser();
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
