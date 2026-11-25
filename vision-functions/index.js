@@ -12,11 +12,20 @@ let client;
 
 function getPilotDb() {
   if (!db) {
-    const {initializeApp, getApps} = require("firebase-admin/app");
+    const {initializeApp, getApp} = require("firebase-admin/app");
     const {getFirestore, FieldValue} = require("firebase-admin/firestore");
-    if (!getApps().length) initializeApp();
+    // Firebase Functions puede registrar apps con nombre y dejar sin crear
+    // [DEFAULT]. Por eso getApps().length no garantiza una app predeterminada.
+    let app;
+    try {
+      app = getApp();
+    } catch (error) {
+      if (error?.code !== "app/no-app") throw error;
+      app = initializeApp();
+    }
     // Healthy Habit usa la base de datos llamada "default", NO "(default)".
-    db = getFirestore("default");
+    // Pasar la app explicitamente evita depender de una seleccion implicita.
+    db = getFirestore(app, "default");
     fieldValue = FieldValue;
   }
   return db;
