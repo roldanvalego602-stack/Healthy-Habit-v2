@@ -44,7 +44,7 @@ function parseOfficialRegistration(data) {
       "invalid-argument", "La nota debe ser texto de hasta 500 caracteres."
     );
   }
-  // Contadores y tiempos declarados por el cliente: NO evidencia verificada.
+  // Contadores, respiración guiada y tiempos del cliente: NO evidencia verificada.
   // Nunca se usan para calcular XP, monedas, metas del hábito o rachas.
   let interaction = null;
   if (data.interaction !== undefined) {
@@ -52,21 +52,22 @@ function parseOfficialRegistration(data) {
     if (!value || typeof value !== "object" || Array.isArray(value) ||
         Object.keys(value).some((field) =>
           !["type", "value", "target", "unit"].includes(field)) ||
-        !["counter", "hydration", "timer", "stopwatch"].includes(value.type) ||
+        !["counter", "hydration", "timer", "stopwatch",
+          "breathing", "pomodoro"].includes(value.type) ||
         !Number.isSafeInteger(value.value) ||
         !Number.isSafeInteger(value.target) ||
         value.target < 1 || value.target >
-          (["timer", "stopwatch"].includes(value.type) ? 86400 : 10000) ||
+          (["timer", "stopwatch", "breathing", "pomodoro"].includes(value.type) ? 86400 : 10000) ||
         value.value < value.target || value.value >
-          (["timer", "stopwatch"].includes(value.type) ? 86400 : 10000) ||
+          (["timer", "stopwatch", "breathing", "pomodoro"].includes(value.type) ? 86400 : 10000) ||
         typeof value.unit !== "string" ||
         value.unit.length < 1 || value.unit.length > 40 ||
         !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
         (value.type === "hydration" && value.unit !== "ml") ||
-        (["timer", "stopwatch"].includes(value.type) &&
+        (["timer", "stopwatch", "breathing", "pomodoro"].includes(value.type) &&
          value.unit !== "segundos")) {
       throw new RegistrationPolicyError(
-        "invalid-argument", "Contador autodeclarado inválido."
+        "invalid-argument", "Actividad autodeclarada inválida."
       );
     }
     interaction = Object.freeze({
