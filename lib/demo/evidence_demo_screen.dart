@@ -201,10 +201,12 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
               DropdownMenuItem(value: 'meal', child: Text('Comida')),
             ],
             onChanged: _busy ? null : (value) {
-              if (value != null) setState(() {
-                _profileId = value;
-                _visualResult = null;
-              });
+              if (value != null) {
+                setState(() {
+                  _profileId = value;
+                  _visualResult = null;
+                });
+              }
             },
           ),
           const SizedBox(height: 10),
