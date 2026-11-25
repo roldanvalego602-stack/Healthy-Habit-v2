@@ -99,6 +99,7 @@ Future<void> main() async {
         final raw = doc.data()?['settings'];
         await HealthyRemindersService.instance.synchronize(
           raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{},
+          profile: doc.data(),
         );
       } catch (error) {
         debugPrint('Recordatorios: no se pudo restaurar la agenda: $error');
