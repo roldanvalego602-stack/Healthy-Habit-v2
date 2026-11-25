@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'official_habit_emulator_service.dart';
@@ -20,8 +21,10 @@ class PendingOfficialHabitOperations {
 
   String _userId() {
     ShopDemoBootstrap.validateOfficialHabitsMode();
-    if (!OfficialHabitEmulatorService.enabled) {
-      throw StateError('El diario de operaciones solo está disponible en demo.');
+    if (!OfficialHabitEmulatorService.enabled ||
+        Firebase.app().options.projectId != ShopDemoBootstrap.demoProjectId) {
+      throw StateError('El diario de operaciones solo está disponible '
+          'en demo-healthy-habit.');
     }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || uid.isEmpty) {
