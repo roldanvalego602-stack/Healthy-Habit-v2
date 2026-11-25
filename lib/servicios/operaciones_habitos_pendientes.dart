@@ -62,6 +62,7 @@ class PendingOfficialHabitOperations {
     required String habitId,
     String? attemptId,
     int? maxPenalty,
+    String note = '',
     bool recoveryOnly = false,
     required Future<Map<String, dynamic>> Function(
       OfficialHabitEmulatorService, Map<String, dynamic>) send,
@@ -86,7 +87,12 @@ class PendingOfficialHabitOperations {
             decoded['operationId'] is! String ||
             !RegExp(_idPattern).hasMatch(decoded['operationId']) ||
             (action != 'activar' && decoded['attemptId'] != attemptId) ||
-            (action == 'cancelar' && decoded['maxPenalty'] is! int)) {
+            (action == 'cancelar' && decoded['maxPenalty'] is! int) ||
+            (action == 'registrar' &&
+                (decoded['note'] is! String ||
+                 (decoded['note'] as String).length > 500)) ||
+            (!recoveryOnly && action == 'registrar' &&
+                decoded['note'] != note)) {
           throw StateError('La operación pendiente local está dañada. '
               'No se enviará una operación nueva para evitar duplicados.');
         }
@@ -103,6 +109,7 @@ class PendingOfficialHabitOperations {
           'attemptId': attemptId ?? service.newOperationId(),
           'operationId': service.newOperationId(),
           if (maxPenalty != null) 'maxPenalty': maxPenalty,
+          if (action == 'registrar') 'note': note,
         };
         // Si falla el almacenamiento, NO llamar al servidor.
         await preferences.setString(key, jsonEncode(pending));
@@ -155,6 +162,9 @@ class PendingOfficialHabitOperations {
           !RegExp(_idPattern).hasMatch(operationId) ||
           (action == 'cancelar' && (maxPenalty is! int ||
               maxPenalty < 0 || maxPenalty > 25)) ||
+          (action == 'registrar' &&
+              (decoded['note'] is! String ||
+                  (decoded['note'] as String).length > 500)) ||
           _key(uid, action, habitId,
               action == 'activar' ? null : attemptId) != key) {
         throw StateError('Una operación pendiente tiene campos inválidos. '
@@ -190,7 +200,8 @@ class PendingOfficialHabitOperations {
             habitId: habitId, attemptId: attemptId, operationId: operationId);
         case 'registrar':
           return service.register(
-            habitId: habitId, attemptId: attemptId, operationId: operationId);
+            habitId: habitId, attemptId: attemptId, operationId: operationId,
+            note: saved['note'] as String);
         case 'cancelar':
           return service.cancel(
             habitId: habitId, attemptId: attemptId, operationId: operationId,
@@ -211,15 +222,23 @@ class PendingOfficialHabitOperations {
   );
 
   Future<Map<String, dynamic>> register(
-    String habitId, String attemptId,
-  ) => _run(
-    action: 'registrar', habitId: habitId, attemptId: attemptId,
-    send: (service, saved) => service.register(
-      habitId: habitId,
-      attemptId: saved['attemptId'] as String,
-      operationId: saved['operationId'] as String,
-    ),
-  );
+    String habitId, String attemptId, {String note = ''},
+  ) {
+    if (note.length > 500 ||
+        RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]').hasMatch(note)) {
+      throw ArgumentError('La nota supera el límite o contiene caracteres inválidos.');
+    }
+    return _run(
+      action: 'registrar', habitId: habitId, attemptId: attemptId,
+      note: note,
+      send: (service, saved) => service.register(
+        habitId: habitId,
+        attemptId: saved['attemptId'] as String,
+        operationId: saved['operationId'] as String,
+        note: saved['note'] as String,
+      ),
+    );
+  }
 
   Future<Map<String, dynamic>> cancel(
     String habitId, String attemptId, int maxPenalty,
