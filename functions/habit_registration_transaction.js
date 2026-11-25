@@ -291,7 +291,7 @@ async function registerHabitTransaction(
         user: userSnap.data(), attempt, catalog,
       })
       : require("./official_habit_reward_policy").planOfficialReward({
-        data: ids, user: userSnap.data(), attempt,
+        data, user: userSnap.data(), attempt,
         periodCount: currentCount,
       });
     const progress = periodResult.progressAfter;
