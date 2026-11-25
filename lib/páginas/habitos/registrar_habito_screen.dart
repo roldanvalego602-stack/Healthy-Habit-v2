@@ -14,6 +14,7 @@ import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/healthy_reminders_service.dart';
 import 'habit_interaction_card.dart';
 
 class RegistrarHabitoScreen extends StatefulWidget {
@@ -341,7 +342,13 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
           );
         }
-        Navigator.pop(context, true);
+        // El registro oficial terminó: cancelar avisos obsoletos.
+        await HealthyRemindersService.instance.refreshForCurrentUser();
+        if (!mounted) return;
+        // Confirmado en Firestore: actualizar recordatorios de racha.
+      await HealthyRemindersService.instance.refreshForCurrentUser();
+      if (!mounted) return;
+      Navigator.pop(context, true);
         return;
       }
       final usuarioRef = _userDoc;
