@@ -315,10 +315,14 @@ class HealthyRemindersService {
         final progress = (data['progress'] as num?)?.toInt() ?? 0;
         final target = (data['target'] as num?)?.toInt() ?? 0;
         if ((data['frequencyType'] ?? 'daily') != 'daily' ||
-            target < 1 || progress >= target) continue;
+            target < 1 || progress >= target) {
+          continue;
+        }
         final required = (data['registrationsPerPeriod'] as num?)
                 ?.toInt() ?? 1;
-        if (required < 1) continue;
+        if (required < 1) {
+          continue;
+        }
         final logs = await attempt.reference.collection('logs')
             .where('createdAt',
                 isGreaterThanOrEqualTo: Timestamp.fromDate(start))
@@ -331,7 +335,9 @@ class HealthyRemindersService {
           target: target,
           requiredToday: required,
           registeredToday: logs.docs.length,
-        )) count++;
+        )) {
+          count++;
+        }
       }
     }
     return count;
