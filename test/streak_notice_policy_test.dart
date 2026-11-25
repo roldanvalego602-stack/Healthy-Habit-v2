@@ -48,6 +48,27 @@ void main() {
     }, now: now), StreakNoticeStatus.unknown);
   });
 
+  test('alerta UTC tres horas antes del fin de su propio día', () {
+    final instant = DateTime.parse('2026-11-24T16:00:00Z');
+    expect(StreakNoticePolicy.warningInstant({
+      'serverLastStreakDay': '2026-11-23',
+      'serverStreakTimeZone': 'UTC',
+    }, now: instant), DateTime.parse('2026-11-24T21:00:00Z'));
+  });
+
+  test('alerta en Monterrey respeta la zona de la cuenta', () {
+    final instant = DateTime.parse('2026-11-24T16:00:00Z');
+    expect(StreakNoticePolicy.warningInstant({
+      'serverLastStreakDay': '2026-11-23',
+      'serverStreakTimeZone': 'America/Monterrey',
+    }, now: instant), DateTime.parse('2026-11-25T03:00:00Z'));
+    expect(StreakNoticePolicy.warningInstant({
+      'serverLastStreakDay': '2026-11-24',
+      'serverStreakTimeZone': 'America/Monterrey',
+    }, now: instant, daysAhead: 1),
+        DateTime.parse('2026-11-26T03:00:00Z'));
+  });
+
   test('fechas futuras, imposibles y formatos incorrectos no son pérdida', () {
     for (final last in ['2026-11-25', '2026-11-31', '23/11/2026']) {
       expect(StreakNoticePolicy.status({'lastStreakDate': last}, now: now),
