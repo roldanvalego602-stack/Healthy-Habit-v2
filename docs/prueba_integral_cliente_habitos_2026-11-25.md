@@ -56,3 +56,23 @@ Si falla, compartir la sección `failing tests` y el error de Functions Emulator
 - Todavía falta probar los recorridos de todas las pantallas, la recuperación
   tras cortes de red y la persistencia de los identificadores de operación.
 - Ninguna de estas verificaciones autoriza `firebase deploy`.
+
+## Corrección tras la primera ejecución del 25/11/2026
+
+La primera ejecución con Auth, Firestore y Functions Emulator devolvió
+`functions/not-found: Perfil inexistente` en la activación. El cliente
+estaba usando `getFirestore(app)`, que selecciona la base `(default)`,
+mientras que Flutter y Admin SDK usan explícitamente la base nombrada
+`default` (`databaseId: 'default'` y `getFirestore('default')`).
+Se corrigió la prueba integral para usar `getFirestore(app, 'default')`.
+
+El error de Git `cannot lock ref refs/remotes/origin/main` ocurrió junto
+con un merge `Fast-forward` satisfactorio; es una discrepancia local de
+referencias durante `git fetch`, no un fallo de la transacción. Confirmar
+`git status` y `git rev-parse HEAD` antes de repetir actualizaciones.
+
+**Pendiente:** repetir la prueba integral y comprobar específicamente
+que las reglas restrictivas bloquean escrituras del cliente en la base
+nombrada `default`, no solo en `(default)`. Si no se rechazan, detener
+la migración y corregir el alcance de las reglas del emulador. No
+desplegar ni usar credenciales de producción.
