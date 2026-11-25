@@ -1,7 +1,7 @@
 "use strict";
 
 const {FieldValue} = require("firebase-admin/firestore");
-const {rewardCoins} = require("./streak_day_policy");
+const {rewardCoins, legacyRewardCoins} = require("./streak_day_policy");
 
 class DailyStreakClaimError extends Error {
   constructor(code, message) {
@@ -46,7 +46,8 @@ async function claimDailyStreakRewardTransaction({db, uid, day}) {
         typeof reward.verifiedAt.toDate !== "function" ||
         !(reward.verifiedAt.toDate() instanceof Date) ||
         !Number.isSafeInteger(reward.streak) || reward.streak < 1 ||
-        reward.rewardCoins !== rewardCoins(reward.streak)) {
+        (reward.rewardCoins !== rewardCoins(reward.streak) &&
+          reward.rewardCoins !== legacyRewardCoins(reward.streak))) {
       throw new DailyStreakClaimError("failed-precondition",
         "Registro de recompensa inconsistente.");
     }
@@ -57,7 +58,9 @@ async function claimDailyStreakRewardTransaction({db, uid, day}) {
       throw new DailyStreakClaimError("failed-precondition",
         "Estado de reclamación inválido.");
     }
-    const amount = rewardCoins(reward.streak);
+    // Entregar exactamente el importe firmado al crear el día verificado.
+    // Los premios históricos (2-5) no se recalculan retroactivamente.
+    const amount = reward.rewardCoins;
     const balance = userSnap.data().habitCoins;
     if (!Number.isSafeInteger(balance) || balance < 0 ||
         balance > 1000000000 - amount) {
