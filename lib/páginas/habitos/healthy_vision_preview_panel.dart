@@ -37,6 +37,50 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   String? _error;
   DemoVisualPreview? _preview;
   int _revision = 0;
+  Timer? _quotaTicker;
+  DateTime? _retryAt;
+  DateTime? _dailyResetAt;
+  int? _remaining;
+  int? _dailyLimit;
+
+  int get _waitSeconds {
+    final until = _retryAt;
+    if (until == null) return 0;
+    final ms = until.difference(DateTime.now()).inMilliseconds;
+    return ms <= 0 ? 0 : (ms / 1000).ceil();
+  }
+
+  bool get _blockedByQuota =>
+      HealthyVisionDebugService.useLiveBackend && _waitSeconds > 0;
+
+  String get _waitLabel {
+    final secs = _waitSeconds;
+    if (secs >= 3600) return '${(secs / 3600).ceil()} h';
+    if (secs >= 60) return '${(secs / 60).ceil()} min';
+    return '${secs}s';
+  }
+
+  void _setQuotaWait(DateTime when) {
+    _retryAt = when;
+    _quotaTicker ??= Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        _quotaTicker = null;
+        return;
+      }
+      setState(() {});
+      if (_waitSeconds == 0) {
+        timer.cancel();
+        _quotaTicker = null;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _quotaTicker?.cancel();
+    super.dispose();
+  }
 
   static const _labelSpanish = <String, String>{
     'text': 'Texto', 'font': 'Tipografía', 'screenshot': 'Captura de pantalla',
@@ -87,8 +131,8 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
   }
 
   Future<void> _analyze() async {
-    if (_busy || widget.saving || !HealthyVisionDebugService.enabled ||
-        _profile == null) return;
+    if (_busy || widget.saving || _blockedByQuota ||
+        !HealthyVisionDebugService.enabled || _profile == null) return;
     final request = ++_revision;
     setState(() {
       _busy = true;
@@ -100,7 +144,18 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
           .analyze(widget.image, _profile!)
           .timeout(const Duration(seconds: 35));
       if (!mounted || _revision != request) return;
-      setState(() => _preview = result);
+      setState(() {
+        _preview = result;
+        if (HealthyVisionDebugService.useLiveBackend &&
+            result.quota != null) {
+          final quota = result.quota!;
+          _remaining = quota.remaining;
+          _dailyLimit = quota.dailyLimit;
+          _dailyResetAt = quota.resetAt;
+          _setQuotaWait(quota.remaining == 0
+              ? quota.resetAt : quota.nextAllowedAt);
+        }
+      });
     } on TimeoutException {
       if (!mounted || _revision != request) return;
       setState(() => _error =
@@ -109,11 +164,46 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
               : 'Tiempo agotado. Comprueba adb reverse y Firebase Emulator.');
     } on FirebaseFunctionsException catch (error) {
       if (!mounted || _revision != request) return;
-      setState(() => _error =
-          'No se pudo analizar (${error.code}). ' +
-          (HealthyVisionDebugService.useLiveBackend
-              ? 'Verifica el despliegue y los permisos del piloto.'
-              : 'Comprueba que Vision esté habilitado en el emulador.'));
+      final details = error.details;
+      if (error.code == 'resource-exhausted' &&
+          HealthyVisionDebugService.useLiveBackend) {
+        final meta = details is Map ? details : <String, dynamic>{};
+        final retryMillis = meta['retryAtMillis'];
+        final remaining = meta['remaining'];
+        final limit = meta['dailyLimit'];
+        final reason = meta['reason'];
+        setState(() {
+          if (remaining is int && remaining >= 0) _remaining = remaining;
+          if (limit is int && limit > 0) _dailyLimit = limit;
+          if (retryMillis is int && retryMillis > 0) {
+            final retryAt = DateTime.fromMillisecondsSinceEpoch(
+              retryMillis, isUtc: true,
+            );
+            _setQuotaWait(retryAt);
+            if (reason == 'daily-limit') _dailyResetAt = retryAt;
+          }
+          _error = reason == 'daily-limit'
+              ? 'Alcanzaste el máximo diario de análisis. '
+                'El contador se reinicia a las 00:00 UTC.'
+              : reason == 'cooldown'
+                  ? 'Para controlar el consumo, espera 60 segundos '
+                    'entre análisis.'
+                  : 'Límite temporal de análisis alcanzado. '
+                    'Inténtalo más tarde.';
+        });
+      } else {
+        const messages = <String, String>{
+          'permission-denied':
+              'Esta cuenta no está autorizada para el piloto de Vision.',
+          'unauthenticated': 'Inicia sesión para analizar fotografías.',
+          'invalid-argument': 'La fotografía o el perfil no son válidos.',
+          'unavailable': 'Vision no está disponible. Intenta más tarde.',
+          'internal': 'Error interno del servidor. Revisa Cloud Functions.',
+          'deadline-exceeded': 'El servidor tardó demasiado en responder.',
+        };
+        setState(() => _error = messages[error.code] ??
+            'No se pudo analizar (${error.code}). Inténtalo más tarde.');
+      }
     } catch (_) {
       if (!mounted || _revision != request) return;
       setState(() => _error =
@@ -216,15 +306,36 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
               });
             },
           ),
+          if (HealthyVisionDebugService.useLiveBackend) ...[
+            const SizedBox(height: 10),
+            Text(
+              _remaining == null || _dailyLimit == null
+                  ? 'Piloto: máximo 15 solicitudes al día y una cada 60 segundos.'
+                  : 'Análisis restantes hoy: $_remaining de $_dailyLimit',
+              key: const ValueKey('healthy-vision-quota-text'),
+              style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
+            ),
+            if (_blockedByQuota) ...[
+              const SizedBox(height: 5),
+              Text(
+                'Podrás volver a analizar en $_waitLabel.',
+                key: const ValueKey('healthy-vision-wait-text'),
+                style: TextStyle(fontSize: 12,
+                  fontWeight: FontWeight.w600, color: HealthyAdaptive.text),
+              ),
+            ],
+          ],
           const SizedBox(height: 10),
           OutlinedButton.icon(
             key: const ValueKey('healthy-vision-analyze'),
-            onPressed: _busy || widget.saving || _profile == null ? null : _analyze,
+            onPressed: _busy || widget.saving || _profile == null ||
+                _blockedByQuota ? null : _analyze,
             icon: _busy
                 ? const SizedBox(width: 18, height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.document_scanner_outlined),
-            label: Text(_busy ? 'Analizando…' : 'Analizar con IA (sin XP)'),
+            label: Text(_busy ? 'Analizando…' :
+              _blockedByQuota ? 'Espera $_waitLabel' : 'Analizar con IA (sin XP)'),
           ),
           if (_preview != null) ...[
             const SizedBox(height: 12),
