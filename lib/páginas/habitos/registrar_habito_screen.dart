@@ -14,6 +14,7 @@ import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/healthy_reminders_service.dart';
 import 'habit_interaction_card.dart';
 
@@ -285,11 +286,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             'al integrar su almacenamiento seguro en el servidor.');
         }
         const service = OfficialHabitEmulatorService();
-        final response = await service.register(
-          habitId: habitoRef.id,
-          attemptId: attemptRef.id,
-          operationId: service.newOperationId(),
-        );
+        final response = await const PendingOfficialHabitOperations()
+            .register(habitoRef.id, attemptRef.id);
         if (!mounted) return;
         final xp = _leerEntero(response['xpAwarded'], 0);
         final coins = _leerEntero(response['coinsAwarded'], 0);
