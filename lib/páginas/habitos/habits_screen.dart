@@ -1277,131 +1277,70 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Widget _recommendationCard(Habit habit) {
-    final color = categoryInk(habit.category);
     final unlocked = _isUnlocked(habit);
     final hasSlot = active.length < habitSlots;
     final canAdd = unlocked && hasSlot && !saving;
-    final buttonText =
-        !unlocked
-            ? 'Bloqueado'
-            : !hasSlot
-            ? 'Sin espacio'
-            : saving
-            ? 'Guardando'
-            : 'Agregar';
+    final color = categoryInk(habit.category);
+    final buttonText = !unlocked ? 'Bloqueado'
+        : !hasSlot ? 'Sin espacio'
+        : saving ? 'Guardando' : 'Agregar';
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
-        borderRadius: BorderRadius.circular(21),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(
-            color: navy.withValues(alpha: 0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 49,
-            height: 49,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: categoryBg(habit.category),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(categoryIcon(habit.category), color: color, size: 24),
+            child: Icon(categoryIcon(habit.category), color: color, size: 23),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  habit.title,
-                  style: TextStyle(
-                    color: navy,
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text(habit.title, maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: navy, fontSize: 14,
+                      fontWeight: FontWeight.w800)),
                 const SizedBox(height: 5),
-                Text(
-                  habit.category,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${habit.subtitle} · ${habit.difficulty}',
-                  style: TextStyle(color: muted, fontSize: 11),
-                ),
+                Text('${habit.category} · ${habit.difficulty}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: muted, fontSize: 11)),
                 const SizedBox(height: 5),
-                Text(
-                  '${habit.target} sesiones para completar',
-                  style: TextStyle(
-                    color: navy,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.stars_rounded,
-                      color: Color(0xFFD6A52B),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '+${habit.xp} XP',
-                      style: TextStyle(
-                        color: navy,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                if (!unlocked || !hasSlot) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    !unlocked
-                        ? 'Requisitos aún no cumplidos'
-                        : 'Libera un espacio para agregarlo',
-                    style: TextStyle(color: muted, fontSize: 10),
-                  ),
+                Text('${habit.target} sesiones',
+                  style: TextStyle(color: navy, fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+                if (!canAdd && !saving) ...[
+                  const SizedBox(height: 4),
+                  Text(!unlocked
+                      ? 'Consulta los requisitos de desbloqueo'
+                      : 'Libera un espacio para agregarlo',
+                      style: TextStyle(color: muted, fontSize: 10)),
                 ],
               ],
             ),
           ),
           const SizedBox(width: 8),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              onPressed: canAdd ? () => _confirmAddHabit(habit) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: green,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: HealthyAdaptive.border,
-                disabledForegroundColor: muted,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: const StadiumBorder(),
-                textStyle: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              child: Text(buttonText),
+          FilledButton(
+            key: ValueKey('add-habit-${habit.id}'),
+            onPressed: canAdd ? () => _confirmAddHabit(habit) : null,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 38),
+              textStyle: const TextStyle(fontSize: 11,
+                  fontWeight: FontWeight.w800),
             ),
+            child: Text(buttonText),
           ),
         ],
       ),
