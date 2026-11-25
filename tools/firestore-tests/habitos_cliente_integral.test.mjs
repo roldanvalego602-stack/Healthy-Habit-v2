@@ -390,3 +390,75 @@ test('tiempos autodeclarados: aceptar segundos, rechazar falsificaciones y no du
   }), (error) => error.code === 'functions/invalid-argument');
   assert.equal((await getDoc(userRef)).data().xp, xp);
 });
+
+
+test('sesiones guiadas: respiración y Pomodoro sin recompensas adicionales', async () => {
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  for (const type of ['breathing', 'pomodoro']) {
+    if (auth.currentUser) await signOut(auth);
+    const {user} = await signInAnonymously(auth);
+    const uid = user.uid;
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, {
+      uid, name: 'Prueba de sesiones guiadas',
+      username: 'sesion_' + uid, email: '',
+      level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+      createdAt: serverTimestamp(),
+    });
+
+    const habitId = 'alim_001';
+    const attemptId = nextId();
+    await activate({habitId, attemptId, operationId: nextId()});
+
+    const operationId = nextId();
+    const interaction = {
+      type, value: type === 'breathing' ? 60 : 1500,
+      target: type === 'breathing' ? 60 : 1500,
+      unit: 'segundos',
+    };
+    const input = {habitId, attemptId, operationId, interaction};
+    const first = (await register(input)).data;
+    assert.equal(first.alreadyProcessed, false);
+    assert.equal(first.xpAwarded, 10);
+
+    const logRef = doc(db, 'users', uid, 'user_habits', habitId,
+      'attempts', attemptId, 'logs', operationId);
+    assert.deepEqual((await getDoc(logRef)).data().interaction,
+      {...interaction, verified: false});
+    const userBeforeRetry = (await getDoc(userRef)).data();
+    assert.equal(userBeforeRetry.xp, 10);
+
+    const replay = (await register(input)).data;
+    assert.equal(replay.alreadyProcessed, true);
+    assert.equal((await getDoc(userRef)).data().xp, userBeforeRetry.xp);
+    assert.equal((await getDoc(userRef)).data().habitCoins,
+      userBeforeRetry.habitCoins);
+
+    await assert.rejects(register({
+      ...input, interaction: {...interaction, target: interaction.target + 1,
+        value: interaction.value + 1},
+    }), (error) => error.code === 'functions/already-exists');
+
+    await assert.rejects(register({
+      ...input, operationId: nextId(),
+      interaction: {...interaction, verified: true},
+    }), (error) => error.code === 'functions/invalid-argument');
+
+    await assert.rejects(register({
+      ...input, operationId: nextId(),
+      interaction: {...interaction, unit: 'minutos'},
+    }), (error) => error.code === 'functions/invalid-argument');
+
+    await assert.rejects(register({
+      ...input, operationId: nextId(),
+      interaction: {...interaction, value: 1},
+    }), (error) => error.code === 'functions/invalid-argument');
+
+    await assert.rejects(register({
+      ...input, operationId: nextId(), xp: 5000,
+    }), (error) => error.code === 'functions/invalid-argument');
+
+    assert.equal((await getDoc(userRef)).data().xp, userBeforeRetry.xp);
+  }
+});
