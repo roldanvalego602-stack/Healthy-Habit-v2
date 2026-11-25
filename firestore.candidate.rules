@@ -39,6 +39,29 @@ service cloud.firestore {
         || get(path).data.get('settings', {}).get('permitirReacciones', true) == true;
     }
 
+    // Los seis stickers de reacciones solo pueden enviarse si el
+    // emisor los posee. Se cotejan ID y emoji sin confiar en Flutter.
+    function validPurchasedSticker(sender, id, emoji) {
+      let inventory = get(
+        /databases/$(database)/documents/users/$(sender)
+      ).data.get('shopInventory', []);
+      return inventory is list
+        && (
+          (id == 'sticker:reaction_compas' && emoji == '💪'
+            && inventory.hasAny(['reaction_compas']))
+          || (id == 'sticker:reaction_celebrate' && emoji == '🎉'
+            && inventory.hasAny(['reaction_celebrate']))
+          || (id == 'sticker:reaction_love' && emoji == '❤️'
+            && inventory.hasAny(['reaction_love']))
+          || (id == 'sticker:reaction_goal' && emoji == '⭐'
+            && inventory.hasAny(['reaction_goal']))
+          || (id == 'sticker:reaction_support' && emoji == '👏'
+            && inventory.hasAny(['reaction_support']))
+          || (id == 'sticker:reaction_like' && emoji == '🔥'
+            && inventory.hasAny(['reaction_like']))
+        );
+    }
+
     function validFriendAcceptance(uid, otherUid) {
       let recipient = request.auth.uid;
       let sender = recipient == uid ? otherUid : uid;
@@ -530,7 +553,13 @@ service cloud.firestore {
         // Los stickers de pago requieren posesión; las reacciones
         // convencionales conservan challengeId vacío o de desafíos.
         && (
-          !request.resource.data.challengeId.matches('^sticker:.*
+          !request.resource.data.challengeId.matches('^sticker:.*')
+          || validPurchasedSticker(
+            request.auth.uid,
+            request.resource.data.challengeId,
+            request.resource.data.emoji
+          )
+        )
         && request.resource.data.estado == 'enviado'
         && request.resource.data.leido == false
         && request.resource.data.respondedAt == null
