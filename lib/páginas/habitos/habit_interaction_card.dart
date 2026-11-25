@@ -15,6 +15,16 @@ class HabitToolGuide {
   }
 
   static String instructionsFor(String type, String unit) {
+    if (type == 'breathing') {
+      return 'Pulsa Iniciar para seguir el ciclo de respiración guiada: '
+          'inhala 4 segundos, mantén 2 y exhala 6. '
+          'Puedes pausar y reanudar. La duración es autodeclarada.';
+    }
+    if (type == 'pomodoro') {
+      return 'Pulsa Iniciar para comenzar un bloque de concentración. '
+          'Puedes pausar y reanudar. Al terminar, registra la sesión '
+          'y considera hacer una pausa de descanso.';
+    }
     if (type == 'timer') {
       return 'Pulsa Iniciar para comenzar la cuenta regresiva. '
           'Puedes pausar y reanudar. Al llegar a cero, continúa con el siguiente paso.';
