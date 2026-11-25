@@ -82,6 +82,27 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
   // Escritura de una sola vez. Un reintento tras respuesta perdida puede
   // detectar que el objeto existe y reutilizarlo SOLO si sus bytes coinciden.
   const file = bucket.file(path);
+  // Storage Emulator puede no aplicar ifGenerationMatch como Cloud Storage.
+  // Comprobar primero si existe evita sobrescribir durante un reintento
+  // secuencial, pero la precondición del guardado sigue siendo necesaria
+  // para proteger operaciones concurrentes en un proveedor compatible.
+  const [alreadyExists] = await file.exists();
+  if (alreadyExists) {
+    const [metadata] = await file.getMetadata();
+    if (Number(metadata.size) !== bytes.length ||
+        metadata.contentType !== data.contentType) {
+      throw new RegistrationPolicyError(
+        "already-exists", "El archivo ya existe con datos diferentes."
+      );
+    }
+    const [existing] = await file.download();
+    if (!existing.equals(bytes)) {
+      throw new RegistrationPolicyError(
+        "already-exists", "El archivo ya existe con datos diferentes."
+      );
+    }
+    return {storagePath: path, alreadyUploaded: true, verified: false};
+  }
   try {
     await file.save(bytes, {
       resumable: false,
