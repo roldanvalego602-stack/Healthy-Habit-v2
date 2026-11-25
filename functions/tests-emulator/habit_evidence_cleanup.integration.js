@@ -110,10 +110,12 @@ test("emuladores: purga objetos vencidos, referencias y respeta subidas reciente
   } finally {
     // No eliminar referencias de una ejecución anterior ni usuarios ajenos.
     await db.recursiveDelete(userRef);
-    const [files] = await bucket.getFiles({
-      prefix: `habit-evidence/${uid}/`,
-    });
-    await Promise.all(files.map((file) => file.delete({ignoreNotFound: true})));
+    await Promise.all([
+      "cleanup_attached_123456", "cleanup_pending_1234567",
+      "cleanup_uploading_12345", "cleanup_future_123456789",
+    ].map((operationId) => bucket.file(
+      `habit-evidence/${uid}/${attemptId}/${operationId}`
+    ).delete({ignoreNotFound: true})));
     await deleteApp(app);
   }
 });
