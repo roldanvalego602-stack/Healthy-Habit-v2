@@ -84,9 +84,19 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
       }
     }
     if (saved.status === "uploading") {
-      throw new RegistrationPolicyError(
-        "aborted", "Otra subida sigue en curso; vuelve a intentarlo."
-      );
+      const started = saved.uploadStartedAt?.toMillis?.();
+      if (typeof started !== "number" ||
+          started > now.getTime() - 300000) {
+        throw new RegistrationPolicyError(
+          "aborted", "Otra subida sigue en curso; vuelve a intentarlo."
+        );
+      }
+      // Reclamar exclusivamente la inspección del archivo abandonado.
+      // Nunca volver a escribir a ciegas sobre el mismo objeto.
+      tx.update(reservationRef, {
+        status: "recovering", recoveryStartedAt: FieldValue.serverTimestamp(),
+      });
+      return "recover";
     }
     if (saved.status === "uploaded") return false;
     tx.update(reservationRef, {
@@ -119,6 +129,34 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
   }
   if (!lease) {
     await compareStored();
+    return {storagePath: path, alreadyUploaded: true, verified: false};
+  }
+  if (lease === "recover") {
+    // Una sola llamada obtiene el derecho de recuperación mediante tx.
+    // Si existe un archivo diferente, mantener el bloqueo para revisión
+    // y evitar que pueda ser sustituido por otro cliente.
+    const [exists] = await file.exists();
+    if (exists) await compareStored();
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(reservationRef);
+      if (!snap.exists || snap.data().status !== "recovering" ||
+          snap.data().storagePath !== path ||
+          snap.data().expiresAt?.toMillis?.() <= now.getTime()) {
+        throw new RegistrationPolicyError(
+          "aborted", "La reserva cambió durante la recuperación."
+        );
+      }
+      tx.update(reservationRef, exists ? {
+        status: "uploaded", uploadedAt: FieldValue.serverTimestamp(),
+      } : {
+        status: "pending", uploadStartedAt: FieldValue.delete(),
+      });
+    });
+    if (!exists) {
+      throw new RegistrationPolicyError(
+        "aborted", "No se encontró el archivo; repite la subida."
+      );
+    }
     return {storagePath: path, alreadyUploaded: true, verified: false};
   }
 
