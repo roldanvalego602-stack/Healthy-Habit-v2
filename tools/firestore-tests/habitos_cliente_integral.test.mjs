@@ -26,8 +26,11 @@ function nextId() {
 function assertDemoOnly() {
   assert.equal(process.env.GCLOUD_PROJECT, PROJECT,
     'La prueba integral requiere el proyecto demo-healthy-habit');
+  // Firebase CLI no garantiza exportar una variable de entorno
+  // uniforme para Functions Emulator; el callable la comprobará por
+  // conexión a 127.0.0.1:5001.
   for (const name of ['FIRESTORE_EMULATOR_HOST',
-    'FIREBASE_AUTH_EMULATOR_HOST', 'FIREBASE_FUNCTIONS_EMULATOR_HOST']) {
+    'FIREBASE_AUTH_EMULATOR_HOST']) {
     assert.ok(process.env[name], `Falta el emulador: ${name}`);
   }
 }
