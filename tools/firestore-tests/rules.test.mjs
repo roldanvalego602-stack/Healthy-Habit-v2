@@ -140,6 +140,32 @@ test('aceptar solicitud crea dos amistades y consume los dos espejos', async () 
   if (!snapshot.exists()) throw new Error('No se creó la amistad recíproca');
 });
 
+test('aceptar amistad exige crear ambas copias en el mismo lote', async () => {
+  await sendRequest();
+  const db = as('bob');
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'users/bob/friends/alice'),
+    { createdAt: serverTimestamp() });
+  batch.delete(doc(db, 'users/bob/solicitudes/alice'));
+  batch.delete(doc(db, 'users/alice/solicitudes_enviadas/bob'));
+  await assertFails(batch.commit());
+});
+
+test('no se acepta una solicitud con un espejo de amistad preexistente', async () => {
+  await sendRequest();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/friends/bob'),
+      { createdAt: new Date() });
+  });
+  const db = as('bob');
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'users/bob/friends/alice'),
+    { createdAt: serverTimestamp() });
+  batch.delete(doc(db, 'users/bob/solicitudes/alice'));
+  batch.delete(doc(db, 'users/alice/solicitudes_enviadas/bob'));
+  await assertFails(batch.commit());
+});
+
 test('rechaza aceptación que no borre la solicitud', async () => {
   await sendRequest();
   const db = as('bob');
