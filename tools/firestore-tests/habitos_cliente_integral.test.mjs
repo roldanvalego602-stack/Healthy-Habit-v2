@@ -218,3 +218,57 @@ test('respuesta perdida: recuperar activación, registro y cancelación sin dupl
     beforeCancellationRetry.habitMutationVersion);
   assert.equal((await getDoc(attemptRef)).data().status, 'cancelled');
 });
+
+
+test('notas oficiales: almacenar texto sin cambiar recompensas ni aceptar alteraciones', async () => {
+  await signOut(auth);
+  const credential = await signInAnonymously(auth);
+  const uid = credential.user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    name: 'Prueba de notas',
+    username: 'notas_' + uid,
+    email: '',
+    level: 1,
+    xp: 0,
+    habitCoins: 100,
+    currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  await httpsCallable(functions, 'activateOfficialHabitDemo')({
+    habitId, attemptId, operationId: nextId(),
+  });
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  const operationId = nextId();
+  const input = {
+    habitId, attemptId, operationId,
+    note: 'Comí una manzana en el desayuno.',
+  };
+  const first = (await register(input)).data;
+  assert.equal(first.alreadyProcessed, false);
+  assert.equal(first.xpAwarded, 10);
+  const logRef = doc(db, 'users', uid, 'user_habits', habitId,
+    'attempts', attemptId, 'logs', operationId);
+  assert.equal((await getDoc(logRef)).data().note, input.note);
+  const xpBeforeRetry = (await getDoc(userRef)).data().xp;
+  const repeated = (await register(input)).data;
+  assert.equal(repeated.alreadyProcessed, true);
+  assert.equal((await getDoc(userRef)).data().xp, xpBeforeRetry);
+
+  await assert.rejects(register({...input, note: 'Una nota distinta'}),
+    (error) => error.code === 'functions/already-exists');
+  assert.equal((await getDoc(logRef)).data().note, input.note);
+  assert.equal((await getDoc(userRef)).data().xp, xpBeforeRetry);
+
+  await assert.rejects(register({
+    habitId, attemptId, operationId: nextId(),
+    note: 'a'.repeat(501),
+  }), (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({
+    habitId, attemptId, operationId: nextId(), note: 'Correcto', xp: 100000,
+  }), (error) => error.code === 'functions/invalid-argument');
+  assert.equal((await getDoc(userRef)).data().xp, xpBeforeRetry);
+});
