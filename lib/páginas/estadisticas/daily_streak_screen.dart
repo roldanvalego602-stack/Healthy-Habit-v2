@@ -5,6 +5,7 @@ import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/daily_streak_display.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_streak_art.dart';
+import '../../tema/healthy_streak_items.dart';
 
 /// Racha diaria y recompensas verificadas por el servidor.
 /// Los registros heredados de Flutter se muestran, pero no otorgan monedas.
@@ -218,6 +219,38 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                     ]);
                   },
                 ),
+              const SizedBox(height: 18),
+              Text('Objetos de racha',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'Diseños próximos. Todavía no se pueden adquirir ni utilizar '
+                'para proteger, congelar o recuperar una racha.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final item in HealthyStreakItem.values)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Column(
+                          children: [
+                            HealthyStreakItemIcon(item: item, size: 76),
+                            const SizedBox(height: 6),
+                            Text(
+                              HealthyStreakItems.label(item),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 18),
               Text(
                 'La racha se calcula por día calendario. Si pasa más de '
