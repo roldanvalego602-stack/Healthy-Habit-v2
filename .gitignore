@@ -47,3 +47,6 @@ app.*.map.json
 # Artefactos locales del entrenamiento de intenciones de Mr. Healthy
 /outputs/mr_healthy_intent_model_*.json
 /outputs/mr_healthy_intent_report_*.json
+
+# Reglas estrictas generadas exclusivamente para el emulador demo
+/.firebase-lockdown-preview.rules
