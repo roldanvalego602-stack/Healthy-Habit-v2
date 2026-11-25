@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test rules.test.mjs",
-    "test:release": "node --test rules.test.mjs security_release_gate.test.mjs",
+    "test:release": "node --test --test-concurrency=1 rules.test.mjs security_release_gate.test.mjs",
     "test:friends": "node --test --test-name-pattern='amistad|solicitud|amigos' rules.test.mjs"
   },
   "dependencies": {
