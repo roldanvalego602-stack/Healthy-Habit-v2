@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/daily_streak_display.dart';
+import '../../servicios/daily_streak_reward_tiers.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_streak_art.dart';
 import '../../tema/healthy_streak_items.dart';
@@ -21,15 +22,8 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
 
   int _number(dynamic value) => value is num ? value.toInt() : 0;
 
-  int _reward(int streak) {
-    if (streak >= 7) return 5;
-    if (streak >= 4) return 4;
-    if (streak >= 2) return 3;
-    return 2;
-  }
-
   Future<void> _claim(String day) async {
-    if (_claiming != null) return;
+    if (_claiming != null || !OfficialHabitEmulatorService.enabled) return;
     setState(() => _claiming = day);
     try {
       const service = OfficialHabitEmulatorService();
@@ -80,6 +74,8 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
           final streak = DailyStreakDisplay.current(profile);
           final best = DailyStreakDisplay.longest(profile);
           final mascotState = HealthyStreakArt.fromProfile(profile);
+          final canClaim = OfficialHabitEmulatorService.enabled &&
+              Firebase.app().options.projectId == 'demo-healthy-habit';
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -135,6 +131,15 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                 'Las monedas solo se otorgan mediante registros '
                 'verificados por el servidor.',
               ),
+              if (!canClaim)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Los premios en Habit Coins están disponibles solo en '
+                    'el entorno oficial de pruebas. En esta versión no se '
+                    'pueden reclamar ni se acreditan monedas.',
+                  ),
+                ),
               const SizedBox(height: 12),
               SizedBox(
                 height: 92,
@@ -159,7 +164,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                           Text('Día $day', style: const TextStyle(
                               fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
-                          Text('🪙 +${_reward(day)}'),
+                          Text('🪙 +${DailyStreakRewardTiers.preview(day)}'),
                         ],
                       ),
                     );
@@ -203,12 +208,14 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.card_giftcard_rounded),
                             title: Text('Día ${doc.id} · '
-                                '${_reward(_number(doc.data()['streak']))} monedas'),
+                                '${_number(doc.data()['rewardCoins'])} monedas'),
                             subtitle: Text(doc.data()['claimed'] == true
                                 ? 'Recogido' : 'Listo para recoger'),
                             trailing: doc.data()['claimed'] == true
                                 ? const Icon(Icons.check_circle_outline)
-                                : FilledButton(
+                                : !canClaim
+                                    ? const Icon(Icons.lock_outline)
+                                    : FilledButton(
                                     onPressed: _claiming == null
                                         ? () => _claim(doc.id) : null,
                                     child: Text(_claiming == doc.id
