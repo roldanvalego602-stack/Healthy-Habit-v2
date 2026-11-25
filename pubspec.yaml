@@ -54,6 +54,7 @@ flutter:
     - assets/logo/logo.png
     - assets/logo/MrHealty.png
     - assets/mascot/healthy.png
+    - assets/gamificacion/protectores_racha/
     - "assets/monedas/h coin.png"
     - "assets/monedas/h coin premium.png"
     - assets/images/catalogo/
