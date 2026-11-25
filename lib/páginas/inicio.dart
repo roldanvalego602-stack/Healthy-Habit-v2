@@ -104,7 +104,9 @@ class _HomeScreen2State extends State<HomeScreen2>
     try {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool(key) == true || !mounted ||
-          FirebaseAuth.instance.currentUser?.uid != uid) return;
+          FirebaseAuth.instance.currentUser?.uid != uid) {
+        return;
+      }
       // Se marca una sola vez antes de emitir el mensaje.
       await prefs.setBool(key, true);
       if (!mounted || FirebaseAuth.instance.currentUser?.uid != uid) return;
