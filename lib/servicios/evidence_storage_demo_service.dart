@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import 'shop_demo_bootstrap.dart';
+import 'official_habit_emulator_service.dart';
 
 /// Subida privada de evidencias SOLO en el Storage Emulator del proyecto demo.
 ///
@@ -82,6 +83,7 @@ class EvidenceStorageDemoService {
   /// Devuelve una ruta privada, nunca un token ni una URL de descarga.
   /// Si falla la subida se puede borrar el archivo por su ruta privada.
   Future<String> upload({
+    required String habitId,
     required String attemptId,
     required String evidenceId,
     required Uint8List bytes,
@@ -89,6 +91,23 @@ class EvidenceStorageDemoService {
     final uid = _uid();
     final type = _contentType(bytes);
     final path = _path(uid, attemptId, evidenceId);
+    // La reserva del servidor no sustituye las reglas de Storage; ambas
+    // comprobaciones son necesarias y no conceden recompensas.
+    final reservation = await const OfficialHabitEmulatorService()
+        .reserveEvidence(
+          habitId: habitId,
+          attemptId: attemptId,
+          operationId: evidenceId,
+        );
+    if (reservation['storagePath'] != path) {
+      throw StateError('La ruta reservada no coincide con el archivo.');
+    }
+    final expiresAt = DateTime.tryParse(
+      reservation['expiresAt']?.toString() ?? '',
+    );
+    if (expiresAt == null || !expiresAt.isAfter(DateTime.now().toUtc())) {
+      throw StateError('La reserva de evidencia ya expiró.');
+    }
     final storage = await _storage();
     if (_uid() != uid) {
       throw StateError('La sesión cambió antes de subir la imagen.');
