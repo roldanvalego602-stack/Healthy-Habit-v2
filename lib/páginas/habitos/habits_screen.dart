@@ -259,11 +259,6 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
   }
 
-  bool _isDifficult(Habit habit) {
-    final difficulty = habit.difficulty.trim().toLowerCase();
-    return difficulty == 'difícil' || difficulty == 'dificil';
-  }
-
   Future<void> _confirmCancelHabit(_ActiveHabitEntry entry) async {
     if (saving) return;
     late final HabitActionPreview preview;
