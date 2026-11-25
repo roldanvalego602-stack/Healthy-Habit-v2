@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Laboratorio aislado: NUNCA desplegar en el proyecto Firebase real.
+// El cliente no puede validar que la fotografía pruebe un hábito.
+// Estos archivos NO acreditan XP, monedas ni progreso.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /habit-evidence/{uid}/{attemptId}/{evidenceId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function validId(id) {
+        return id.matches('^[A-Za-z0-9_-]{16,128}$');
+      }
+      allow get: if isOwner();
+      allow list: if false;
+      allow create: if isOwner()
+        && validId(attemptId)
+        && validId(evidenceId)
+        && resource == null
+        && request.resource.size > 0
+        && request.resource.size <= 256000
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+    // Denegar toda otra ruta, incluso para usuarios autenticados.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
