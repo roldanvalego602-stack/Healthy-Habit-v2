@@ -93,10 +93,10 @@ class _HomeScreen2State extends State<HomeScreen2>
     if (status == StreakNoticeStatus.unknown) return;
     final today = StreakNoticePolicy.todayKey(profile);
     if (today == null) return;
+    final lastDay = (profile['serverLastStreakDay'] ??
+        profile['lastStreakDate'] ?? '').toString();
     final key = status == StreakNoticeStatus.lost
-        ? 'hh_streak_lost_${uid}_${StreakNoticePolicy.todayKey(
-            {'lastStreakDate': StreakNoticePolicy.todayKey(profile)},
-          )}_${StreakNoticePolicy.daysSinceLast(profile)}'
+        ? 'hh_streak_lost_${uid}_$lastDay'
         : status == StreakNoticeStatus.inactive
             ? 'hh_streak_new_user_$uid'
             : 'hh_streak_welcome_${uid}_$today';
