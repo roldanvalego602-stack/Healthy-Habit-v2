@@ -578,4 +578,10 @@ test('reserva de evidencia: vinculada al intento, idempotente y sin alterar XP',
   });
   await assert.rejects(reserve({...payload, operationId: nextId()}),
     (error) => error.code === 'functions/failed-precondition');
+
+  // Un segundo UID no puede reservar una ruta vinculada al intento ajeno.
+  await signOut(auth);
+  await signInAnonymously(auth);
+  await assert.rejects(reserve({...payload, operationId: nextId()}),
+    (error) => error.code === 'functions/not-found');
 });
