@@ -44,7 +44,7 @@ function parseOfficialRegistration(data) {
       "invalid-argument", "La nota debe ser texto de hasta 500 caracteres."
     );
   }
-  // Contadores, respiración guiada y tiempos del cliente: NO evidencia verificada.
+  // Pasos, contadores y tiempos del cliente: NO son evidencia verificada.
   // Nunca se usan para calcular XP, monedas, metas del hábito o rachas.
   let interaction = null;
   if (data.interaction !== undefined) {
@@ -53,7 +53,7 @@ function parseOfficialRegistration(data) {
         Object.keys(value).some((field) =>
           !["type", "value", "target", "unit"].includes(field)) ||
         !["counter", "hydration", "timer", "stopwatch",
-          "breathing", "pomodoro"].includes(value.type) ||
+          "breathing", "pomodoro", "steps"].includes(value.type) ||
         !Number.isSafeInteger(value.value) ||
         !Number.isSafeInteger(value.target) ||
         value.target < 1 || value.target >
@@ -64,6 +64,7 @@ function parseOfficialRegistration(data) {
         value.unit.length < 1 || value.unit.length > 40 ||
         !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
         (value.type === "hydration" && value.unit !== "ml") ||
+        (value.type === "steps" && value.unit !== "pasos") ||
         (["timer", "stopwatch", "breathing", "pomodoro"].includes(value.type) &&
          value.unit !== "segundos")) {
       throw new RegistrationPolicyError(
