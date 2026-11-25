@@ -79,3 +79,47 @@ Las pruebas negativas aún no deben considerarse aprobadas.
 
 La suite Flutter aprobada por el usuario (364/364) verifica
 funcionalidad Dart, no demuestra autorización segura en Firestore.
+
+## Corte de pruebas del 25 de noviembre de 2026
+
+El usuario ejecutó el emulador correctamente y obtuvo **72 aprobadas,
+17 fallidas de 89**. Ya no hay errores de sintaxis de reglas.
+
+- 1 prueba positiva falló al aceptar una solicitud de amistad de forma
+  recíproca; el emulador indicó `PERMISSION_DENIED` en las cuatro
+  operaciones del lote.
+- 16 pruebas de integridad fallaron porque una operación fraudulenta que
+  debía rechazarse **sí fue aceptada**: XP, monedas, niveles, rachas,
+  completados de intentos, logs, logros y estadísticas.
+- Las comprobaciones de stickers comprados y rechazo de stickers no
+  adquiridos pasaron.
+
+### Intervención posterior (solo candidata)
+
+`validFriendAcceptance` ahora exige que el otro documento `friends`
+no exista antes de la transacción y exista al finalizarla; conserva
+la solicitud entrante preexistente, la eliminación simultánea de ambos
+documentos de solicitud y `socialPayload()` en las dos amistades. Se
+añadieron pruebas que rechazan una sola copia y un espejo preexistente.
+Esta modificación **aún no ha pasado por el emulador**.
+
+Para comprobar primero amistades:
+
+```bash
+firebase emulators:exec --config firebase.emulator.json \
+  --only auth,firestore --project demo-healthy-habit \
+  "npm --prefix tools/firestore-tests run test:friends"
+```
+
+Luego repetir `test:release`. La expectativa es que el número de
+pruebas funcionales aprobadas mejore; las 16 de integridad seguirán
+fallando hasta completar la migración a autoridad del servidor.
+
+**Actualización de inventario:** los archivos
+`functions/official_habit_catalog.js`,
+`functions/official_habit_reward_policy.js` y los motores de
+activación, cancelación y registro ya contienen infraestructura para
+los hábitos oficiales en el **emulador**. La migración pendiente no es
+escribir de cero el catálogo, sino asegurar compatibilidad, cubrir
+todos los recorridos de Flutter y coordinar el corte de reglas.
+No habilitar directamente `registerOfficialHabitDemo` en producción.
