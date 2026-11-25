@@ -24,7 +24,14 @@ class SolicitudesAmigosPanel extends StatelessWidget {
             title: Text('Consultando solicitudes de amistad...'),
           ));
         }
-        final ids = snap.data!.docs.map((e) => e.id).toList();
+        final requests = snap.data!.docs;
+        final ids = requests.map((e) => e.id).toList();
+        final created = {
+          for (final doc in requests)
+            doc.id: doc.data()['createdAt'] is Timestamp
+                ? (doc.data()['createdAt'] as Timestamp).toDate()
+                : null,
+        };
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -58,7 +65,16 @@ class SolicitudesAmigosPanel extends StatelessWidget {
                             leading: const Icon(Icons.account_circle_outlined),
                             title: Text(
                               (perfiles.data![id]?['name'] ?? 'Usuario').toString()),
-                            subtitle: const Text('Quiere agregarte como amigo'),
+                            subtitle: Text(created[id] == null
+                                ? 'Quiere agregarte como amigo'
+                                : 'Solicitud recibida el '
+                                    '${created[id]!.day}/'
+                                    '${created[id]!.month}/'
+                                    '${created[id]!.year}'),
+                            trailing: const Icon(
+                              Icons.mark_email_unread_outlined,
+                              size: 20,
+                            ),
                           ),
                       ]);
                     },
