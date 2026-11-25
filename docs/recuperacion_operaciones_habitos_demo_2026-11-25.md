@@ -146,3 +146,43 @@ ni un corte de red real entre el commit y la recepción. Esas situaciones
 se validan mediante pruebas Flutter / integración de navegador aparte.
 
 No desplegar las reglas experimentales ni las Cloud Functions demo.
+
+
+## Cuarta etapa: notas de texto en el registro oficial
+
+La ruta experimental `registerOfficialHabitDemo` admite ahora un campo
+opcional `note`:
+
+- Hasta 500 unidades UTF-16 (longitud JS/Dart), sin caracteres de control.
+- El servidor rechaza cualquier campo económico suministrado por el
+  cliente, como `xp`, `habitCoins` o `progress`.
+- La nota se guarda en `users/{uid}/user_habits/{habitId}/attempts/{attemptId}/logs/{operationId}`
+  en la misma transacción que acredita el registro.
+- El identificador de operación también registra la nota original para
+  impedir que se reaproveche con otro texto.
+- Repetir un `operationId` con la misma nota devuelve
+  `alreadyProcessed: true` y no concede premios nuevos.
+- Las operaciones antiguas sin nota siguen siendo recuperables.
+- El diario local de reintentos conserva temporalmente la nota en
+  SharedPreferences (almacenamiento local **no cifrado** del dispositivo).
+  Tras confirmación exitosa se elimina junto con la solicitud.
+  Evitar información sensible en notas mientras no haya una política
+  definitiva de privacidad/almacenamiento.
+- Fotografías y herramientas interactivas **siguen sin habilitarse**.
+
+### Validación pendiente
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze lib/servicios/official_habit_emulator_service.dart \
+  lib/servicios/operaciones_habitos_pendientes.dart \
+  lib/páginas/habitos/registrar_habito_screen.dart
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+```
+
+La última prueba ahora incluye un **tercer escenario** para notas:
+lee el registro, recupera el mismo identificador, rechaza una nota
+alterada y limita el texto a 500 caracteres. Son pruebas todavía
+pendientes de ejecución local, no resultados garantizados.
