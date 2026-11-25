@@ -98,3 +98,20 @@ La prueba debe rechazar la manipulación de XP antes de invocar la
 primera Function. No quitar esa aserción aunque fallen otras partes.
 La nueva configuración y su recorrido completo aún deben validarse
 localmente; hasta entonces, no informar que la prueba integral pasó.
+
+## Tercera ejecución: advertencia de configuración multibase
+
+La CLI del equipo rechazó la configuración Firestore en forma de arreglo
+y mostró explícitamente **"The emulator will default to allowing all reads
+and writes"**. La prueba falló correctamente al intentar adulterar XP,
+antes de llamar a cualquier Function.
+
+Se sustituyó el arreglo `firestore` por un único objeto con
+`database: "default"` y `rules: ".firebase-lockdown-preview.rules"`.
+Esta variante todavía requiere verificación local con la versión de
+Firebase CLI instalada. **Si vuelve a aparecer la advertencia de reglas
+abiertas, detener las pruebas y no considerar segura la configuración.**
+La aserción negativa de XP debe seguir siendo obligatoria.
+
+La configuración experimental no reemplaza `firebase.emulator.json`
+ni modifica `firebase.json` o las reglas de producción.
