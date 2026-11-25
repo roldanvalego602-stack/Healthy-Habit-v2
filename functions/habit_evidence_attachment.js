@@ -82,7 +82,7 @@ async function attachHabitEvidence({db, bucket, uid, data, now = new Date()}) {
       logSnap.data().evidencePath === path) {
     return {attached: true, alreadyAttached: true, verified: false};
   }
-  if (reservation.status !== "pending" ||
+  if (reservation.status !== "uploaded" ||
       !reservation.expiresAt?.toMillis ||
       reservation.expiresAt.toMillis() <= now.getTime()) {
     throw new RegistrationPolicyError(
@@ -139,7 +139,7 @@ async function attachHabitEvidence({db, bucket, uid, data, now = new Date()}) {
     if (stored.status === "attached" && log.evidencePath === path) {
       return {attached: true, alreadyAttached: true, verified: false};
     }
-    if (stored.status !== "pending" || log.hasEvidence === true ||
+    if (stored.status !== "uploaded" || log.hasEvidence === true ||
         !stored.expiresAt?.toMillis ||
         stored.expiresAt.toMillis() <= now.getTime()) {
       throw new RegistrationPolicyError(
