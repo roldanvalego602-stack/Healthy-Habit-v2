@@ -294,3 +294,52 @@ y verifican que solo la Function con reserva puede crear el objeto.
 **Aún deben ejecutarse localmente y no se declara su éxito.**
 
 No ejecutar `firebase deploy` ni cambiar el proyecto de pruebas.
+
+
+## Quinta etapa: control transaccional de concurrencia
+
+Tras confirmar los 9 escenarios anteriores, se ha añadido una
+serialización de subidas por estado de reserva:
+
+`pending -> uploading -> uploaded -> attached`
+
+La Function `uploadReservedEvidenceDemo` adquiere el estado
+`uploading` mediante una transacción de Firestore antes de tocar
+Storage. Una solicitud paralela que encuentra ese estado recibe
+`aborted` para reintentar; una solicitud que encuentra `uploaded`
+solo tiene éxito si los bytes y el MIME son idénticos. La asociación
+`attachHabitEvidenceDemo` exige `uploaded`.
+
+Se conserva la precondición de Storage `ifGenerationMatch: 0`,
+pero la exclusión de solicitudes concurrentes del mismo registro
+depende de Firestore y no de las diferencias de implementación del
+Storage Emulator. Los campos económicos no se modifican.
+
+La limpieza administrativa evita eliminar una reserva en estado
+`uploading` durante los cinco minutos posteriores al inicio de
+la subida. Una reserva bloqueada o un fallo de ACK necesita todavía
+un procedimiento de recuperación/inspección independiente antes
+de habilitar fotografías en la pantalla. La limpieza permanece
+local y no es una programación gestionada de Firebase.
+
+Se añadió una **décima prueba integral** con dos fotografías
+distintas enviadas simultáneamente para la misma reserva. Una debe
+ganar, la otra debe recibir conflicto o reintento y un tercer
+envío idéntico debe reconocerse como repetido. También se añadió
+una prueba unitaria de purga de reserva vencida y desvinculación
+sin modificar XP.
+
+Validación requerida:
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
+```
+
+Resultado esperado: **10 pruebas integrales y 1 prueba de reglas
+de Storage aprobadas**, además de las pruebas unitarias de Functions.
+No se han ejecutado localmente en esta versión.
