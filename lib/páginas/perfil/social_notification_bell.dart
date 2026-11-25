@@ -38,18 +38,28 @@ class SocialNotificationBell extends StatelessWidget {
           stream: db.collection('users').doc(uid)
               .collection('solicitudes').snapshots(),
           builder: (context, requests) {
-            final count = unread + (requests.data?.docs.length ?? 0);
-            return IconButton.filledTonal(
-              tooltip: count > 0
-                  ? 'Notificaciones: $count pendientes'
-                  : 'Notificaciones',
-              onPressed: onPressed,
-              icon: count == 0
-                  ? const Icon(Icons.notifications_none_rounded)
-                  : Badge.count(
-                      count: count,
-                      child: const Icon(Icons.notifications_active_rounded),
-                    ),
+            final friendCount = requests.data?.docs.length ?? 0;
+            return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: db.collection('shared_habit_invites')
+                  .where('recipientUid', isEqualTo: uid).snapshots(),
+              builder: (context, invitations) {
+                final inviteCount = invitations.data?.docs
+                    .where((doc) => doc.data()['status'] == 'pendiente')
+                    .length ?? 0;
+                final count = unread + friendCount + inviteCount;
+                return IconButton.filledTonal(
+                  tooltip: count > 0
+                      ? 'Notificaciones: $count pendientes'
+                      : 'Notificaciones',
+                  onPressed: onPressed,
+                  icon: count == 0
+                      ? const Icon(Icons.notifications_none_rounded)
+                      : Badge.count(
+                          count: count,
+                          child: const Icon(Icons.notifications_active_rounded),
+                        ),
+                );
+              },
             );
           },
         );
