@@ -8,6 +8,7 @@ import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
 import 'habit_action_service.dart';
+import '../../servicios/healthy_reminders_service.dart';
 import 'habit_add_sheet.dart';
 import 'habit_popularity_service.dart';
 import 'habit_recommendation_service.dart';
@@ -330,6 +331,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
         throw StateError('El intento cambió; actualiza tus hábitos.');
       }
       final result = await _habitActions.execute(checked);
+      await HealthyRemindersService.instance.refreshForCurrentUser();
       if (!mounted) return;
       _showMessage(result.chargedCoins == 0
           ? 'Hábito abandonado. Tu historial se conserva.'
@@ -352,6 +354,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
       final checked = preview ??
           await _habitActions.preview(habit.id, remove: false);
       await _habitActions.execute(checked, interaction: interaction);
+      await HealthyRemindersService.instance.refreshForCurrentUser();
       if (!mounted) return;
       _showMessage('“${habit.title}” se añadió a tus hábitos.');
       await _load();
