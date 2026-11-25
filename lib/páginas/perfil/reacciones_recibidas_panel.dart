@@ -18,6 +18,32 @@ class ReaccionesRecibidasPanel extends StatefulWidget {
 class _ReaccionesRecibidasPanelState
     extends State<ReaccionesRecibidasPanel> {
   final Set<String> _ocupadas = <String>{};
+  bool _marcandoTodas = false;
+
+  Future<void> _marcarTodas(List<InteractionModel> items) async {
+    if (_marcandoTodas) return;
+    final pendientes = items.where((item) =>
+        !item.leido && item.id != null).toList();
+    if (pendientes.isEmpty) return;
+    setState(() => _marcandoTodas = true);
+    var completadas = 0;
+    try {
+      for (final item in pendientes) {
+        await InteractionService().marcarComoLeida(item.id!);
+        completadas++;
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Se marcaron $completadas reacciones. '
+              'Las restantes no pudieron actualizarse: $error'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _marcandoTodas = false);
+    }
+  }
+
 
   Future<void> _marcarLeida(InteractionModel item) async {
     if (item.id == null || item.leido || !_ocupadas.add(item.id!)) return;
@@ -79,6 +105,18 @@ class _ReaccionesRecibidasPanelState
                       fontSize: 16))),
                   Text('${items.where((e) => !e.leido).length} nuevos'),
                 ]),
+                if (items.any((item) => !item.leido))
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      key: const ValueKey('notifications-mark-all-reactions'),
+                      onPressed: _marcandoTodas
+                          ? null : () => _marcarTodas(items),
+                      icon: const Icon(Icons.done_all_rounded),
+                      label: Text(_marcandoTodas
+                          ? 'Marcando...' : 'Marcar todas como leídas'),
+                    ),
+                  ),
                 const SizedBox(height: 9),
                 if (visibles.isEmpty)
                   const Text('Aún no has recibido reacciones de otros usuarios.'),
