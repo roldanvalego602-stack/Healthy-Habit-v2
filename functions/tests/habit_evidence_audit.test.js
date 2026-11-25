@@ -85,20 +85,14 @@ test("auditoría: clasifica archivos y no escribe ni elimina", async () => {
 });
 
 test("auditoría: bloqueada fuera del laboratorio demo", async () => {
-  await assert.rejects(auditOrphanEvidence({
-    db: {}, bucket: {}, now,
-  }), /emuladores demo/).catch(async () => {
-    // Si el entorno de pruebas tiene variables demo activas,
-    // forzar un proyecto distinto para verificar esta barrera.
-    const old = process.env.GCLOUD_PROJECT;
-    try {
-      process.env.GCLOUD_PROJECT = "proyecto-real";
-      await assert.rejects(auditOrphanEvidence({
-        db: {}, bucket: {}, now,
-      }), /emuladores demo/);
-    } finally {
-      if (old === undefined) delete process.env.GCLOUD_PROJECT;
-      else process.env.GCLOUD_PROJECT = old;
-    }
-  });
+  const old = process.env.GCLOUD_PROJECT;
+  try {
+    process.env.GCLOUD_PROJECT = "proyecto-real";
+    await assert.rejects(auditOrphanEvidence({
+      db: {}, bucket: {}, now,
+    }), /emuladores demo/);
+  } finally {
+    if (old === undefined) delete process.env.GCLOUD_PROJECT;
+    else process.env.GCLOUD_PROJECT = old;
+  }
 });
