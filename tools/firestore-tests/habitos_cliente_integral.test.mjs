@@ -554,10 +554,10 @@ test('reserva de evidencia: vinculada al intento, idempotente y sin alterar XP',
 
   const reservationRef = doc(db, 'users', uid,
     'habit_evidence_reservations', operationId);
-  const reservation = (await getDoc(reservationRef)).data();
-  assert.equal(reservation.uid, uid);
-  assert.equal(reservation.habitId, habitId);
-  assert.equal(reservation.status, 'pending');
+  // El cliente no puede leer ni escribir el documento interno de reserva.
+  // Su único comprobante es la respuesta autenticada del Callable.
+  await assert.rejects(getDoc(reservationRef),
+    (error) => error.code === 'permission-denied');
   await assert.rejects(setDoc(reservationRef, {status: 'verified'}),
     (error) => error.code === 'permission-denied');
 
