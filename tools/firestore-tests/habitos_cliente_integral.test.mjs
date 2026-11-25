@@ -563,6 +563,10 @@ test('reserva de evidencia: vinculada al intento, idempotente y sin alterar XP',
 
   await assert.rejects(reserve({...payload, habitId: 'hidr_001'}),
     (error) => error.code === 'functions/already-exists');
+  await assert.rejects(reserve({...payload, xp: 9999}),
+    (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(reserve({...payload, operationId: 'wrong'}),
+    (error) => error.code === 'functions/invalid-argument');
 
   const after = (await getDoc(userRef)).data();
   assert.equal(after.xp, before.xp);
