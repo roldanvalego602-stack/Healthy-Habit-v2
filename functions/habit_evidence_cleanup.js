@@ -31,6 +31,13 @@ async function purgeExpiredEvidence({db, bucket, now = new Date(), limit = 50}) 
     }
     const expectedPath = `habit-evidence/${userRef.id}/${reservation.attemptId}/${snapshot.id}`;
     if (reservation.storagePath !== expectedPath) continue;
+    // Una carga que adquirió el bloqueo aún puede estar escribiendo.
+    // Esperar cinco minutos antes de purgar un bloqueo abandonado;
+    // nunca borrar una subida reciente.
+    if (reservation.status === "uploading" &&
+        reservation.uploadStartedAt?.toMillis?.() > now.getTime() - 300000) {
+      continue;
+    }
     const file = bucket.file(expectedPath);
     try {
       await file.delete({ignoreNotFound: true});
@@ -47,7 +54,10 @@ async function purgeExpiredEvidence({db, bucket, now = new Date(), limit = 50}) 
       if (!current.exists) return;
       const currentReservation = current.data();
       if (currentReservation.storagePath !== expectedPath ||
-          currentReservation.expiresAt?.toMillis?.() > now.getTime()) return;
+          currentReservation.expiresAt?.toMillis?.() > now.getTime() ||
+          (currentReservation.status === "uploading" &&
+           currentReservation.uploadStartedAt?.toMillis?.() >
+             now.getTime() - 300000)) return;
       if (log.exists && log.data().evidencePath === expectedPath) {
         tx.update(logRef, {
           hasEvidence: false,
