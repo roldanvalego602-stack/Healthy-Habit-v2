@@ -98,3 +98,47 @@ firebase emulators:exec --config firebase.emulator.json --project demo-healthy-h
 ```
 
 **Atención:** no se fusionó el PR #20 ni se hizo despliegue. Los tests recién añadidos requieren validación local. La racha y el premio siguen aislados hasta migrar el registro normal al backend autorizado.
+
+
+## Rebalanceo de premios (24 nov 2026)
+
+A partir de los días nuevos verificados en el **emulador oficial**, el premio
+por día consecutivo queda entre **10 y 200 Habit Coins**:
+
+| Días de racha | Monedas por día |
+|---|---:|
+| 1 | 10 |
+| 2–3 | 15 |
+| 4–6 | 20 |
+| 7–13 | 30 |
+| 14–20 | 45 |
+| 21–29 | 60 |
+| 30–44 | 80 |
+| 45–59 | 100 |
+| 60–89 | 125 |
+| 90–119 | 150 |
+| 120–179 | 175 |
+| 180+ | 200 |
+
+Una sola recompensa por fecha de racha verificada, sin XP adicional.
+`functions/streak_day_policy.js` es la fuente autoritativa y
+`lib/servicios/daily_streak_reward_tiers.dart` solo muestra la vista previa.
+El historial de días ya emitidos con la política anterior (2–5 monedas)
+**mantiene el importe guardado en el registro del servidor**, para no
+recalcular premios históricos ni rechazar reclamos previamente generados.
+
+**Estado de activación:** NO habilitado en Firebase de producción.
+`claimDailyStreakReward` y el registro oficial solo operan en
+`demo-healthy-habit` con Functions Emulator. La pantalla ahora indica
+explícitamente esta restricción y bloquea el botón de reclamo fuera de demo.
+La activación real requiere migrar los registros normales al backend
+autoritativo, asegurar las reglas de Firestore, probar idempotencia y
+desplegar Functions de forma coordinada. Los iconos de protección/congelación/
+recuperación siguen siendo exclusivamente visuales, sin consumo efectivo.
+
+Verificar:
+```bash
+node --test functions/tests/streak_day_policy.test.js functions/tests/streak_claim_transaction.test.js
+flutter test test/daily_streak_reward_tiers_test.dart
+flutter analyze --no-fatal-infos lib/páginas/estadisticas/daily_streak_screen.dart lib/servicios/daily_streak_reward_tiers.dart
+```
