@@ -754,7 +754,7 @@ test('stickers: un artículo no comprado no puede enviarse como reacción', asyn
 test('stickers: un artículo comprado admite el emoji oficial', async () => {
   await seedFriendship();
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await updateDoc(doc(ctx.firestore(), 'users/alice'), {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
       shopInventory: ['reaction_like'],
     });
   });
@@ -768,7 +768,7 @@ test('stickers: un artículo comprado admite el emoji oficial', async () => {
 test('stickers: no se puede usar emoji distinto al artículo comprado', async () => {
   await seedFriendship();
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await updateDoc(doc(ctx.firestore(), 'users/alice'), {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
       shopInventory: ['reaction_like'],
     });
   });
