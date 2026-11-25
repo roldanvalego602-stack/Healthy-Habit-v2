@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/daily_streak_display.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_streak_art.dart';
 
 /// Racha diaria y recompensas verificadas por el servidor.
 /// Los registros heredados de Flutter se muestran, pero no otorgan monedas.
@@ -77,6 +78,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
           final server = DailyStreakDisplay.verified(profile);
           final streak = DailyStreakDisplay.current(profile);
           final best = DailyStreakDisplay.longest(profile);
+          final mascotState = HealthyStreakArt.fromProfile(profile);
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -86,8 +88,16 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                   padding: const EdgeInsets.all(22),
                   child: Column(
                     children: [
-                      const Icon(Icons.local_fire_department_rounded,
-                          color: Color(0xFFED9230), size: 52),
+                      HealthyStreakMascot(
+                        state: mascotState,
+                        size: 148,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        HealthyStreakArt.label(mascotState),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
                       const SizedBox(height: 8),
                       Text('$streak días',
                           style: Theme.of(context).textTheme.headlineLarge
