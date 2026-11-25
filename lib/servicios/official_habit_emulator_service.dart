@@ -98,6 +98,18 @@ class OfficialHabitEmulatorService {
     'operationId': operationId,
   });
 
+  /// Asocia una foto ya subida a un registro confirmado, sin XP adicional.
+  /// Requiere reserva y objeto válidos en los emuladores.
+  Future<Map<String, dynamic>> attachEvidence({
+    required String habitId,
+    required String attemptId,
+    required String operationId,
+  }) => _call('attachHabitEvidenceDemo', {
+    'habitId': habitId,
+    'attemptId': attemptId,
+    'operationId': operationId,
+  });
+
   /// Reclamo seguro: el backend determina el usuario y las monedas.
   /// Únicamente en el Firebase Emulator del proyecto demo.
   Future<Map<String, dynamic>> claimDailyStreakReward({
