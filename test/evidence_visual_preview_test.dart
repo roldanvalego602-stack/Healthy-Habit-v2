@@ -19,6 +19,43 @@ void main() {
     expect(result.labels.single.confidence, 0.91);
   });
 
+  test('acepta cuota informativa real sin conceder recompensas', () {
+    final result = DemoVisualPreview.fromMap({
+      'status': 'inconclusive',
+      'message': 'Prueba',
+      'labels': <Map<String, Object>>[],
+      'imageVerified': false,
+      'xpAwarded': 0,
+      'coinsAwarded': 0,
+      'quota': {
+        'remaining': 13,
+        'dailyLimit': 15,
+        'nextAllowedAtMillis': 1795580000000,
+        'resetAtMillis': 1795600000000,
+      },
+    });
+    expect(result.quota?.remaining, 13);
+    expect(result.quota?.dailyLimit, 15);
+    expect(result.quota?.nextAllowedAt.isUtc, isTrue);
+  });
+
+  test('rechaza metadatos de cuota inconsistentes', () {
+    expect(() => DemoVisualPreview.fromMap({
+      'status': 'inconclusive',
+      'message': 'Prueba',
+      'labels': [],
+      'imageVerified': false,
+      'xpAwarded': 0,
+      'coinsAwarded': 0,
+      'quota': {
+        'remaining': 200,
+        'dailyLimit': 15,
+        'nextAllowedAtMillis': 1795580000000,
+        'resetAtMillis': 1795600000000,
+      },
+    }), throwsFormatException);
+  });
+
   test('rechaza cualquier respuesta que pretenda conceder XP', () {
     for (final xp in [1, 15, 20]) {
       expect(() => DemoVisualPreview.fromMap({
