@@ -144,3 +144,79 @@ npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
 Resultado esperado: 8 pruebas integrales del cliente aprobadas,
 más 1 prueba aislada de reglas de Storage. **Pendiente de ejecución
 local en esta versión.** No iniciar `firebase deploy`.
+
+
+## Tercera etapa: asociación comprobada y limpieza administrativa
+
+Se añadió `attachHabitEvidenceDemo`, disponible solo dentro del proyecto
+`demo-healthy-habit` con **Functions y Storage Emulator** activos.
+La asociación se efectúa **después** de confirmar el registro económico:
+
+1. Comprueba reserva, operación de registro y log oficial del UID
+   autenticado, con el mismo hábito, intento e identificador.
+2. Lee el archivo real mediante Admin SDK, comprueba su existencia,
+   el tipo declarado, el tamaño y las firmas básicas de JPEG/PNG/WebP.
+   Esta validación de cabecera **no garantiza que una foto sea auténtica**
+   ni evita contenido engañoso.
+3. Actualiza atómicamente solo el log y el estado de la reserva:
+   `hasEvidence: true`, `evidencePath`,
+   `evidenceVerified: false`, tamaño, tipo y vencimiento.
+   El saldo, el XP y los límites de registro **no cambian**.
+4. Repetir una asociación terminada devuelve `alreadyAttached: true`
+   sin volver a acreditar recompensas. El cliente no puede inventar
+   `evidenceVerified`.
+
+`lib/servicios/official_habit_emulator_service.dart` expone ahora
+`attachEvidence(...)`, pero sigue **sin invocarse desde la pantalla
+de registro**. No hay todavía subida desde el formulario oficial.
+
+Existe `functions/habit_evidence_cleanup.js`, utilizado por
+`functions/scripts/limpiar_evidencias_demo.js`.
+Es una limpieza **administrativa y por lotes**, independiente de que
+el usuario abra Flutter. Solo funciona con Firestore y Storage Emulator.
+Para reservas vencidas, elimina los objetos privados, retira la
+referencia a la imagen de los logs vinculados y finalmente borra
+las reservas. Los fallos dejan información para reintentar la limpieza.
+
+Esta limpieza **no está programada automáticamente**. La vida útil
+de una hora es un vencimiento lógico, no eliminación garantizada.
+Tampoco se limita la creación de archivos no reservados desde un
+cliente modificado: las reglas actuales de Storage protegen dueño,
+tamaño y MIME, pero aún no consultan la reserva. Se requiere
+endurecer este punto y establecer una programación administrativa
+revisada antes de habilitar fotografías en el formulario o producción.
+
+### Pruebas de esta etapa
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+
+flutter analyze \
+  lib/servicios/official_habit_emulator_service.dart \
+  lib/servicios/evidence_storage_demo_service.dart
+
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
+```
+
+El escenario integral ahora incluye asociación de un PNG real con
+reserva y registro previo, recuperación idempotente y bloqueo de
+campos económicos. **Resultado esperado: 9 escenarios integrales
+aprobados y 1 de Storage; aún no se ha ejecutado localmente.**
+
+Para practicar la limpieza administrativa con los emuladores
+aislados (no ejecutar contra datos reales), en una terminal iniciar
+Auth, Firestore y Storage desde la configuración `firebase.lockdown.emulator.json`
+con las reglas generadas, y en otra:
+
+```bash
+GCLOUD_PROJECT=demo-healthy-habit \
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
+FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 \
+npm --prefix functions run limpiar:evidencias:demo
+```
+
+No ejecutar `firebase deploy`. En ausencia de registros vencidos,
+el comando debe informar cero archivos eliminados.
