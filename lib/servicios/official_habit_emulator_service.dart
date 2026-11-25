@@ -86,6 +86,18 @@ class OfficialHabitEmulatorService {
     if (interaction != null) 'interaction': interaction,
   });
 
+  /// Reserva privada de imagen para un registro pendiente.
+  /// No acredita XP, no crea el registro ni verifica la fotografía.
+  Future<Map<String, dynamic>> reserveEvidence({
+    required String habitId,
+    required String attemptId,
+    required String operationId,
+  }) => _call('reserveHabitEvidenceDemo', {
+    'habitId': habitId,
+    'attemptId': attemptId,
+    'operationId': operationId,
+  });
+
   /// Reclamo seguro: el backend determina el usuario y las monedas.
   /// Únicamente en el Firebase Emulator del proyecto demo.
   Future<Map<String, dynamic>> claimDailyStreakReward({
