@@ -220,3 +220,77 @@ npm --prefix functions run limpiar:evidencias:demo
 
 No ejecutar `firebase deploy`. En ausencia de registros vencidos,
 el comando debe informar cero archivos eliminados.
+
+
+## Cuarta etapa: escritura exclusiva del servidor y vigilancia local
+
+Para cerrar la brecha que permitía omitir la reserva desde un cliente
+modificado, `storage.evidence.demo.rules` **deniega ahora todas las
+creaciones, modificaciones y eliminaciones directas** para clientes,
+incluidos los propietarios. Solo se conserva la lectura privada por
+ruta exacta. El Admin SDK del emulador es responsable de las escrituras.
+
+Se incorporó `uploadReservedEvidenceDemo` al Functions Emulator:
+
+- Recibe exactamente `habitId`, `attemptId`, `operationId`,
+  `imageBase64` y `contentType`; el UID proviene de Auth.
+- Valida la reserva del servidor, su titular, ruta, estado `pending`
+  y vencimiento. No permite subida sin reserva.
+- Valida los bytes, firma básica y tamaño máximo de 250 KB.
+  El servidor guarda el objeto con precondición de creación única.
+- Ante un reintento con el mismo archivo comprueba que coincidan
+  tamaño, MIME y bytes; nunca sustituye un objeto existente.
+- **No concede XP, monedas ni verificación**, y la asociación al
+  registro sigue siendo una operación separada.
+- El servicio de Flutter deja de escribir o borrar directamente en
+  Storage y envía la imagen al callable exclusivo de pruebas.
+
+La pantalla oficial todavía **no llama** este servicio. No se ha
+activado el registro fotográfico de usuarios.
+
+### Vigilante de limpieza local
+
+La utilidad `functions/scripts/vigilar_evidencias_demo.js` invoca
+la limpieza administrativa al iniciar y cada minuto **mientras ese
+proceso esté encendido**. Utiliza únicamente Firestore y Storage
+Emulator, y rechaza otros proyectos. Se detiene mediante Ctrl+C.
+No es una tarea en la nube, no sobrevive al apagado del laboratorio
+ni supone garantía de eliminación automática en producción.
+
+Para probarlo, iniciar primero los emuladores de Firestore, Storage,
+Functions y Auth con `firebase.lockdown.emulator.json` y la
+vista previa de reglas restrictivas, y en otra terminal ejecutar:
+
+```bash
+GCLOUD_PROJECT=demo-healthy-habit \
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
+FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 \
+npm --prefix functions run vigilar:evidencias:demo
+```
+
+No iniciar dos vigilantes simultáneamente. Esta implementación
+limpia las reservas vencidas conocidas; todavía debe realizarse
+una auditoría de archivos huérfanos históricos que no tengan
+reservas, y diseñarse una programación gestionada para despliegue
+futuro, sin comprometer cuotas ni política de privacidad.
+
+### Nuevas pruebas
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze \
+  lib/servicios/evidence_storage_demo_service.dart \
+  lib/servicios/official_habit_emulator_service.dart
+npm --prefix functions test
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+npm --prefix tools/firestore-tests run test:evidencias-storage:emulador
+```
+
+El total esperado sigue siendo 9 escenarios integrales y 1 escenario
+de Storage, además de los tests de funciones. Las pruebas ahora
+exigen que incluso el propietario no pueda subir directamente,
+y verifican que solo la Function con reserva puede crear el objeto.
+**Aún deben ejecutarse localmente y no se declara su éxito.**
+
+No ejecutar `firebase deploy` ni cambiar el proyecto de pruebas.
