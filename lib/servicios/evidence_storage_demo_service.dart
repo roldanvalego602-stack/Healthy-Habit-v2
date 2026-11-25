@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'shop_demo_bootstrap.dart';
 import 'official_habit_emulator_service.dart';
@@ -16,9 +15,7 @@ class EvidenceStorageDemoService {
   const EvidenceStorageDemoService();
 
   static const maxBytes = 250 * 1024;
-  static const _bucket = 'demo-healthy-habit.firebasestorage.app';
   static const _idPattern = r'^[A-Za-z0-9_-]{16,128}$';
-  static Future<FirebaseStorage>? _storageFuture;
 
   String _uid() {
     ShopDemoBootstrap.validateOfficialHabitsMode();
@@ -32,21 +29,6 @@ class EvidenceStorageDemoService {
       throw StateError('Inicia sesión en Auth Emulator antes de subir.');
     }
     return uid;
-  }
-
-  Future<FirebaseStorage> _storage() async {
-    _uid();
-    return _storageFuture ??= _connectEmulator();
-  }
-
-  Future<FirebaseStorage> _connectEmulator() async {
-    final storage = FirebaseStorage.instanceFor(
-      app: Firebase.app(),
-      bucket: _bucket,
-    );
-    // Nunca ejecutar operaciones de Storage antes de conectar al emulador.
-    await storage.useStorageEmulator(ShopDemoBootstrap.host, 9199);
-    return storage;
   }
 
   String _contentType(Uint8List bytes) {
@@ -81,7 +63,7 @@ class EvidenceStorageDemoService {
   }
 
   /// Devuelve una ruta privada, nunca un token ni una URL de descarga.
-  /// Si falla la subida se puede borrar el archivo por su ruta privada.
+  /// El servidor administra el borrado; los clientes no eliminan objetos.
   Future<String> upload({
     required String habitId,
     required String attemptId,
@@ -132,15 +114,10 @@ class EvidenceStorageDemoService {
     required String attemptId,
     required String evidenceId,
   }) async {
-    final uid = _uid();
-    final path = _path(uid, attemptId, evidenceId);
-    final storage = await _storage();
-    if (_uid() != uid) {
-      throw StateError('La sesión cambió antes de borrar la imagen.');
-    }
+    _uid();
+    _path(_uid(), attemptId, evidenceId);
     throw UnsupportedError(
       'El borrado del cliente está deshabilitado. '
       'La limpieza de evidencias corresponde al servidor.');
-
   }
 }
