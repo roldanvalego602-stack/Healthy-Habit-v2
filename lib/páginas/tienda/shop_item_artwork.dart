@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_cosmetics.dart';
+import '../../tema/healthy_streak_items.dart';
 import 'shop_service.dart';
 import 'healthy_leaf_aura.dart';
 import 'healthy_special_auras.dart';
@@ -15,6 +16,14 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // El artículo histórico sigue retirado de la venta, pero su imagen
+    // oficial se muestra si aparece en inventarios antiguos.
+    if (item.id == 'streak_guard') {
+      return HealthyStreakItemIcon(
+        item: HealthyStreakItem.shield,
+        size: size,
+      );
+    }
     if (item.id == 'leaf_aura') {
       return SizedBox.square(
         dimension: size,
