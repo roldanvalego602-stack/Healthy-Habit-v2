@@ -59,7 +59,7 @@ function parseOfficialRegistration(data) {
         value.value < value.target || value.value > 10000 ||
         typeof value.unit !== "string" ||
         value.unit.length < 1 || value.unit.length > 40 ||
-        !/^[\\p{L}\\p{N} .%_-]+$/u.test(value.unit) ||
+        !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
         (value.type === "hydration" && value.unit !== "ml")) {
       throw new RegistrationPolicyError(
         "invalid-argument", "Contador autodeclarado inválido."
