@@ -24,6 +24,7 @@ class HabitEvidenceImagePreparer {
   static const int maxBytes = 250 * 1024;
   static const int maxInputBytes = 12 * 1024 * 1024;
   static const int maxDimension = 1600;
+  static const int maxDecodedPixels = 20 * 1000 * 1000;
 
   PreparedHabitEvidence prepare(Uint8List source) {
     if (source.isEmpty || source.lengthInBytes > maxInputBytes) {
@@ -34,6 +35,9 @@ class HabitEvidenceImagePreparer {
     final decoded = img.decodeImage(source);
     if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
       throw const FormatException('No se pudo interpretar la fotografía.');
+    }
+    if (decoded.width * decoded.height > maxDecodedPixels) {
+      throw const FormatException('La resolución de la imagen es excesiva.');
     }
     var image = img.bakeOrientation(decoded);
     // Reducir dimensiones antes de variar la calidad de compresión.
