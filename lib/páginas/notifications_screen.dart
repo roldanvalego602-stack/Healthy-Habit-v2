@@ -180,7 +180,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             const SizedBox(height: 6),
                             Text(android
                               ? 'Los avisos se programan localmente en '
-                                'este teléfono. Requieren permiso de Android.'
+                                'este teléfono. Los de racha se actualizan '
+                                'al registrar actividades o volver a la app; '
+                                'requieren permiso de Android.'
                               : 'Los recordatorios locales están disponibles '
                                 'en la aplicación Android, no en web.',
                               style: theme.textTheme.bodySmall),
