@@ -115,7 +115,7 @@ test('cliente autenticado: flujo completo sin escrituras económicas directas', 
   assert.equal((await getDoc(userRef)).data().xp, 10);
 
   const streakDay = firstRegistration.dailyStreakDay;
-  assert.match(streakDay, /^\\d{4}-\\d{2}-\\d{2}$/);
+  assert.match(streakDay, /^\d{4}-\d{2}-\d{2}$/);
   const firstClaim = (await claim({day: streakDay})).data;
   const repeatedClaim = (await claim({day: streakDay})).data;
   assert.equal(firstClaim.coinsAwarded, 10);
