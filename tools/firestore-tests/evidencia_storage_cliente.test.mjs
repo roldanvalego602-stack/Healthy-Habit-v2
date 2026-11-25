@@ -52,7 +52,7 @@ after(async () => {
   }
 });
 
-test('Storage: dueño puede crear y borrar; terceros, sobreescritura y archivo inválido se bloquean', async () => {
+test('Storage: lectura privada y escritura directa denegada incluso al dueño', async () => {
   const owner = await login('evidence-owner');
   const outsider = await login('evidence-outsider');
   const attemptId = id();
@@ -60,37 +60,26 @@ test('Storage: dueño puede crear y borrar; terceros, sobreescritura y archivo i
   const path = 'habit-evidence/' + owner.uid + '/' +
     attemptId + '/' + evidenceId;
   const file = ref(owner.storage, path);
-  // Firma de ejemplo para el laboratorio: las reglas solo verifican
-  // metadatos. Una validación real del formato requiere inspección servidor.
-  const smallImage = new Uint8Array([255, 216, 255, 217]);
+  const bytes = new Uint8Array([255, 216, 255, 217]);
 
-  await uploadBytes(file, smallImage, {contentType: 'image/jpeg'});
-  const metadata = await getMetadata(file);
-  assert.equal(metadata.contentType, 'image/jpeg');
-  assert.equal(metadata.size, smallImage.length);
-
-  await assert.rejects(uploadBytes(file, smallImage,
+  // Las subidas solo se aceptan vía Functions Emulator y reserva válida.
+  await assert.rejects(uploadBytes(file, bytes,
     {contentType: 'image/jpeg'}));
+  await assert.rejects(deleteObject(file));
+  await assert.rejects(getMetadata(file));
   await assert.rejects(getMetadata(ref(outsider.storage, path)));
-  await assert.rejects(deleteObject(ref(outsider.storage, path)));
 
   const foreignPath = 'habit-evidence/' + outsider.uid +
     '/' + attemptId + '/' + id();
   await assert.rejects(uploadBytes(ref(owner.storage, foreignPath),
-    smallImage, {contentType: 'image/jpeg'}));
-
+    bytes, {contentType: 'image/jpeg'}));
   await assert.rejects(uploadBytes(ref(owner.storage,
     'habit-evidence/' + owner.uid + '/' + attemptId + '/' + id()),
-  smallImage, {contentType: 'text/plain'}));
-
+  bytes, {contentType: 'text/plain'}));
   await assert.rejects(uploadBytes(ref(owner.storage,
     'habit-evidence/' + owner.uid + '/' + attemptId + '/' + id()),
   new Uint8Array(256001), {contentType: 'image/png'}));
-
   await assert.rejects(uploadBytes(ref(owner.storage,
     'other-path/' + owner.uid + '/' + id()),
-  smallImage, {contentType: 'image/jpeg'}));
-
-  await deleteObject(file);
-  await assert.rejects(getMetadata(file));
+  bytes, {contentType: 'image/jpeg'}));
 });
