@@ -147,7 +147,7 @@ class PendingOfficialHabitOperations {
       final operationId = decoded['operationId'];
       final maxPenalty = decoded['maxPenalty'];
       if (decoded['uid'] != uid || action is! String ||
-          !const ['activar', 'registrar', 'cancelar'].contains(action) ||
+          !<String>['activar', 'registrar', 'cancelar'].contains(action) ||
           habitId is! String || attemptId is! String ||
           operationId is! String ||
           !RegExp(_habitPattern).hasMatch(habitId) ||
