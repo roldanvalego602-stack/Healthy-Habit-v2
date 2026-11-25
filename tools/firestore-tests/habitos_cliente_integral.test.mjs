@@ -620,7 +620,25 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=',
     'base64',
   ));
-  await uploadBytes(file, bytes, {contentType: 'image/png'});
+  const upload = httpsCallable(functions, 'uploadReservedEvidenceDemo');
+  await assert.rejects(upload({
+    ...payload, imageBase64: Buffer.from(bytes).toString('base64'),
+    contentType: 'text/plain',
+  }), (error) => error.code === 'functions/invalid-argument');
+  const encoded = Buffer.from(bytes).toString('base64');
+  const firstUpload = (await upload({
+    ...payload, imageBase64: encoded, contentType: 'image/png',
+  })).data;
+  assert.equal(firstUpload.storagePath, reservation.storagePath);
+  assert.equal(firstUpload.alreadyUploaded, false);
+  const repeatedUpload = (await upload({
+    ...payload, imageBase64: encoded, contentType: 'image/png',
+  })).data;
+  assert.equal(repeatedUpload.alreadyUploaded, true);
+  await assert.rejects(upload({
+    ...payload, imageBase64: encoded, contentType: 'image/jpeg',
+  }), (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(uploadBytes(file, bytes, {contentType: 'image/png'}));
   await assert.rejects(attach(payload),
     (error) => error.code === 'functions/failed-precondition');
 
@@ -650,5 +668,5 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
   await assert.rejects(attach({...payload, xp: 999}),
     (error) => error.code === 'functions/invalid-argument');
 
-  await deleteObject(file);
+  await assert.rejects(deleteObject(file));
 });
