@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../tema/healthy_theme.dart';
 import '../tema/healthy_coin.dart';
 import '../tema/healthy_motion.dart';
@@ -25,6 +26,8 @@ import 'logros/logros_service.dart';
 import 'estadisticas/progreso_screen.dart';
 import 'estadisticas/daily_streak_screen.dart';
 import '../servicios/daily_streak_display.dart';
+import '../servicios/streak_notice_policy.dart';
+import '../servicios/healthy_reminders_service.dart';
 import '../tema/healthy_streak_art.dart';
 
 // Firebase se inicializa realmente en lib/main.dart.
@@ -70,13 +73,80 @@ class HomeScreen2 extends StatefulWidget {
   State<HomeScreen2> createState() => _HomeScreen2State();
 }
 
-class _HomeScreen2State extends State<HomeScreen2> {
+class _HomeScreen2State extends State<HomeScreen2>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final FirebaseFirestore _db;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _reactionSubscription;
   bool _reactionStreamInitialized = false;
+  bool _showingDailyStreak = false;
   late final DateTime _reactionListenerStartedAt = DateTime.now();
+
+  /// Mensaje informativo al abrir por primera vez en el día. No concede
+  /// recompensas ni depende de notificaciones push.
+  Future<void> _showDailyStreakMessage(
+    String uid, Map<String, dynamic> profile,
+  ) async {
+    if (_showingDailyStreak || !mounted) return;
+    final status = StreakNoticePolicy.status(profile);
+    if (status == StreakNoticeStatus.unknown) return;
+    final today = StreakNoticePolicy.todayKey(profile);
+    if (today == null) return;
+    final key = status == StreakNoticeStatus.lost
+        ? 'hh_streak_lost_${uid}_${StreakNoticePolicy.todayKey(
+            {'lastStreakDate': StreakNoticePolicy.todayKey(profile)},
+          )}_${StreakNoticePolicy.daysSinceLast(profile)}'
+        : status == StreakNoticeStatus.inactive
+            ? 'hh_streak_new_user_$uid'
+            : 'hh_streak_welcome_${uid}_$today';
+    _showingDailyStreak = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(key) == true || !mounted ||
+          FirebaseAuth.instance.currentUser?.uid != uid) return;
+      // Se marca una sola vez antes de emitir el mensaje.
+      await prefs.setBool(key, true);
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final art = HealthyStreakArt.fromProfile(profile);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 6),
+        content: Row(children: [
+          HealthyStreakMascot(state: art, size: 58),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(StreakNoticePolicy.title(status),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(StreakNoticePolicy.message(status)),
+            ],
+          )),
+        ]),
+        action: SnackBarAction(
+          label: 'Ver',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const DailyStreakScreen(),
+            ),
+          ),
+        ),
+      ));
+    } catch (error) {
+      debugPrint('Mensaje de racha: $error');
+    } finally {
+      _showingDailyStreak = false;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(HealthyRemindersService.instance.refreshForCurrentUser());
+    }
+  }
 
   // Sólo avisa por documentos NUEVOS después de establecer el listener.
   // Las reacciones antiguas siguen disponibles en Notificaciones.
@@ -127,6 +197,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _reactionSubscription?.cancel();
     super.dispose();
   }
@@ -134,6 +205,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _db = FirebaseFirestore.instanceFor(
       app: Firebase.app(),
@@ -250,6 +322,11 @@ class _HomeScreen2State extends State<HomeScreen2> {
         }
 
         final data = profile.data?.data() ?? <String, dynamic>{};
+        if (!profile.data!.metadata.isFromCache) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) unawaited(_showDailyStreakMessage(user.uid, data));
+          });
+        }
 
         final name = (data['name'] ?? user.displayName ?? 'Usuario').toString();
 
