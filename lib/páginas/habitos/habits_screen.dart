@@ -9,6 +9,8 @@ import '../../tema/healthy_visual_mode.dart';
 import 'catalogo.dart';
 import 'habit_action_service.dart';
 import '../../servicios/healthy_reminders_service.dart';
+import '../../servicios/operaciones_habitos_pendientes.dart';
+import '../../servicios/official_habit_emulator_service.dart';
 import 'habit_add_sheet.dart';
 import 'habit_popularity_service.dart';
 import 'habit_recommendation_service.dart';
@@ -53,6 +55,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool loading = true;
   bool saving = false;
   bool loadingPopularity = false;
+  bool _recuperando = false;
+  List<OperacionHabitoPendiente> _pendientes = [];
   List<HabitPopularity> popularMetrics = [];
   List<HabitUsageSignal> usageHistory = [];
   final HabitRecommendationService _recommendationService =
@@ -97,6 +101,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
     _load();
     _loadPopularity();
+    _cargarPendientes();
   }
 
   @override
@@ -205,6 +210,89 @@ class _HabitsScreenState extends State<HabitsScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _cargarPendientes() async {
+    if (!OfficialHabitEmulatorService.enabled) return;
+    try {
+      final items = await const PendingOfficialHabitOperations()
+          .listarPendientes();
+      if (mounted) setState(() => _pendientes = items);
+    } catch (error) {
+      if (mounted) _showMessage('No se pudieron leer operaciones '
+          'pendientes: $error');
+    }
+  }
+
+  Future<void> _recuperarPendiente(OperacionHabitoPendiente item) async {
+    if (_recuperando || saving) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recuperar operación'),
+        content: Text(
+          'Se volverá a consultar la operación ${item.accion} '
+          'del hábito ${item.habitoId}, usando el mismo identificador. '
+          'No se generará una operación nueva.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Recuperar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _recuperando = true);
+    try {
+      final response = await const PendingOfficialHabitOperations()
+          .recuperar(item);
+      if (!mounted) return;
+      _showMessage(response['alreadyProcessed'] == true
+          ? 'Operación recuperada: el servidor ya la había confirmado.'
+          : 'Operación confirmada correctamente por el servidor.');
+      await _load();
+      await _cargarPendientes();
+    } catch (error) {
+      if (mounted) _showMessage('No se pudo recuperar la operación: $error');
+    } finally {
+      if (mounted) setState(() => _recuperando = false);
+    }
+  }
+
+  Widget _avisoPendientes() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Operaciones pendientes de confirmar',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('El servidor podría haberlas procesado. '
+              'Recupéralas con su identificador original.'),
+            for (final item in _pendientes)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text('${item.accion}: ${item.habitoId}'),
+                subtitle: Text('Intento: ${item.intentoId}'),
+                trailing: TextButton(
+                  onPressed: _recuperando || saving
+                      ? null : () => _recuperarPendiente(item),
+                  child: const Text('Recuperar'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadPopularity() async {
@@ -676,6 +764,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               height: 1.45,
                             ),
                           ),
+                          if (_pendientes.isNotEmpty) ...[
+                            _avisoPendientes(),
+                            const SizedBox(height: 14),
+                          ],
                           const SizedBox(height: 20),
                           Row(
                             children: [
