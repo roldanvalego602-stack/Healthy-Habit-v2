@@ -79,9 +79,9 @@ flutter_launcher_icons:
   min_sdk_android: 21
   android: true
   ios: false
-  # Imagen oficial seleccionada por el equipo; no redibujar ni sustituir.
-  image_path: "assets/icon/icono de app.png"
-  # Android 8+: conservar el diseño completo del archivo subido.
-  adaptive_icon_foreground: "assets/icon/icono de app.png"
+  # Icono oficial actualizado, aprobado por el equipo.
+  image_path: "assets/icon/Ícono de espiral frutal brillante.png"
+  # Android 8+: usar la misma ilustración en el icono adaptable.
+  adaptive_icon_foreground: "assets/icon/Ícono de espiral frutal brillante.png"
   adaptive_icon_background: "#087F5B"
   adaptive_icon_foreground_inset: 0
