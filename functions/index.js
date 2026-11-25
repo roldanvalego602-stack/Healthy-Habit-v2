@@ -611,6 +611,21 @@ exports.reserveHabitEvidenceDemo = officialDemoCallable(reserveHabitEvidence);
 // Inspecciona bytes desde Storage Emulator y vincula la imagen únicamente
 // a un registro económico YA confirmado; no cambia XP ni Habit Coins.
 const {attachHabitEvidence} = require("./habit_evidence_attachment");
+// Subida exclusiva de Admin SDK: Storage Rules prohíben escritura directa.
+const {uploadReservedEvidence} = require("./habit_evidence_upload");
+exports.uploadReservedEvidenceDemo = officialDemoCallable(async (args) => {
+  if (!process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+    throw new RegistrationPolicyError(
+      "failed-precondition", "Storage Emulator no está disponible."
+    );
+  }
+  const {getStorage} = require("firebase-admin/storage");
+  return uploadReservedEvidence({
+    ...args,
+    bucket: getStorage().bucket("demo-healthy-habit.firebasestorage.app"),
+  });
+});
+
 exports.attachHabitEvidenceDemo = officialDemoCallable(async (args) => {
   if (!process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
     throw new RegistrationPolicyError(
