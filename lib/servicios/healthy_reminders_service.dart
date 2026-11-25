@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'streak_notice_policy.dart';
+import 'habit_reminder_policy.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -323,7 +324,14 @@ class HealthyRemindersService {
                 isGreaterThanOrEqualTo: Timestamp.fromDate(start))
             .where('createdAt', isLessThan: Timestamp.fromDate(end))
             .get(const GetOptions(source: Source.server));
-        if (logs.docs.length < required) count++;
+        if (HabitReminderPolicy.pendingDaily(
+          status: (data['status'] ?? '').toString(),
+          frequency: (data['frequencyType'] ?? 'daily').toString(),
+          progress: progress,
+          target: target,
+          requiredToday: required,
+          registeredToday: logs.docs.length,
+        )) count++;
       }
     }
     return count;
