@@ -279,14 +279,15 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       // backend distinto; no se acreditan ni se pierden silenciosamente.
       if (OfficialHabitEmulatorService.enabled) {
         if (_bytesImagen != null ||
-            !const {'manual', 'counter', 'hydration'}
+            !const {'manual', 'counter', 'hydration', 'timer', 'stopwatch'}
                 .contains(_interactionType)) {
           throw StateError(
             'El registro experimental admite notas, contadores e hidratación '
-            'autodeclarados, pero todavía no permite fotografías, '
-            'cronómetros ni sensores.');
+            'y tiempos autodeclarados, pero todavía no permite fotografías, '
+            'sensores ni actividades guiadas.');
         }
-        // La medición manual es una declaración del usuario; el backend
+        // La medición manual o cronometrada es una declaración del cliente;
+        // no acredita tiempo físicamente verificado. El backend
         // valida el formato y los periodos, nunca concede XP extra por
         // la cantidad informada.
         final Map<String, dynamic>? interaction =
