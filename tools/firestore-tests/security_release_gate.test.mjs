@@ -4,6 +4,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { releasePreviewRules } from './release_preview_rules.mjs';
 import {
   initializeTestEnvironment, assertFails,
 } from '@firebase/rules-unit-testing';
@@ -17,7 +18,9 @@ before(async () => {
     projectId: 'demo-healthy-habit',
     firestore: {
       host: '127.0.0.1', port: 8080,
-      rules: readFileSync(resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname), 'utf8'),
+      rules: process.env.HH_RELEASE_PREVIEW === '1'
+        ? releasePreviewRules()
+        : readFileSync(resolve(new URL('../../firestore.candidate.rules', import.meta.url).pathname), 'utf8'),
     },
   });
 });
