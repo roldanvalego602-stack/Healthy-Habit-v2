@@ -20,6 +20,7 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  int _filter = 0; // 0 Todas, 1 Actividad, 2 Social.
   bool _probando = false;
   bool _sincronizando = false;
   bool _probandoProgramacion = false;
@@ -158,7 +159,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
                   children: [
-                    Card(
+                    SegmentedButton<int>(
+                      key: const ValueKey('notifications-filters'),
+                      segments: const [
+                        ButtonSegment(value: 0, label: Text('Todas'),
+                            icon: Icon(Icons.inbox_outlined)),
+                        ButtonSegment(value: 1, label: Text('Actividad'),
+                            icon: Icon(Icons.check_circle_outline)),
+                        ButtonSegment(value: 2, label: Text('Social'),
+                            icon: Icon(Icons.people_outline)),
+                      ],
+                      selected: {_filter},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (values) =>
+                          setState(() => _filter = values.first),
+                    ),
+                    const SizedBox(height: 14),
+                    if (_filter != 2) Card(
                       child: Padding(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -248,8 +265,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Card(child: Padding(
+                    if (_filter != 2) const SizedBox(height: 14),
+                    if (_filter != 2) Card(child: Padding(
                       padding: const EdgeInsets.all(18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,11 +331,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     )),
                     const SizedBox(height: 14),
-                    const SolicitudesAmigosPanel(),
+                    if (_filter != 1) const SolicitudesAmigosPanel(),
                     const SizedBox(height: 14),
-                    const HabitosParejaNotificaciones(),
+                    if (_filter != 1) const HabitosParejaNotificaciones(),
                     const SizedBox(height: 14),
-                    const ReaccionesRecibidasPanel(),
+                    if (_filter != 1) const ReaccionesRecibidasPanel(),
                     const SizedBox(height: 14),
                     Card(child: Padding(
                       padding: const EdgeInsets.all(18),
