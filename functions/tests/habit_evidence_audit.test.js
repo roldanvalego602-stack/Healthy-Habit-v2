@@ -96,3 +96,27 @@ test("auditoría: bloqueada fuera del laboratorio demo", async () => {
     else process.env.GCLOUD_PROJECT = old;
   }
 });
+
+
+test("auditoría: recorre una página solicitada sin repetir la primera", async () => {
+  await withDemo(async () => {
+    const queries = [];
+    const db = {collection() {
+      throw Error("No deberían consultarse reservas en página vacía");
+    }};
+    const bucket = {async getFiles(query) {
+      queries.push(query);
+      return [[], null];
+    }};
+    const result = await auditOrphanEvidence({
+      db, bucket, now, limit: 25, pageToken: "token-pagina-2",
+    });
+    assert.deepEqual(queries, [{
+      prefix: "habit-evidence/", maxResults: 25,
+      autoPaginate: false, pageToken: "token-pagina-2",
+    }]);
+    assert.equal(result.scanned, 0);
+    assert.equal(result.hasMore, false);
+    assert.equal(result.nextPageToken, null);
+  });
+});
