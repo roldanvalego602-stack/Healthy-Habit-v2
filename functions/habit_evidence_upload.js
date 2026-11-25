@@ -2,7 +2,7 @@
 
 const {RegistrationPolicyError} = require("./habit_registration_policy");
 const {validImage} = require("./habit_evidence_attachment");
-const {Timestamp} = require("firebase-admin/firestore");
+const {FieldValue} = require("firebase-admin/firestore");
 
 const ID = /^[A-Za-z0-9_-]{16,128}$/;
 const HABIT = /^(?:alim|hidr|ener|bien)_00[1-9]$/;
@@ -46,48 +46,63 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
   const operationRef = userRef.collection("registration_operations")
     .doc(data.operationId);
   const path = `habit-evidence/${uid}/${data.attemptId}/${data.operationId}`;
-  const [reservationSnap, operationSnap] = await Promise.all([
-    reservationRef.get(), operationRef.get(),
-  ]);
-  if (!reservationSnap.exists) {
-    throw new RegistrationPolicyError(
-      "failed-precondition", "Primero reserva una ruta para este registro."
-    );
-  }
-  const saved = reservationSnap.data();
-  if (saved.uid !== uid || saved.habitId !== data.habitId ||
-      saved.attemptId !== data.attemptId ||
-      saved.operationId !== data.operationId ||
-      saved.storagePath !== path) {
-    throw new RegistrationPolicyError(
-      "permission-denied", "La reserva no pertenece al registro."
-    );
-  }
-  if (saved.status !== "pending" ||
-      !saved.expiresAt?.toMillis ||
-      saved.expiresAt.toMillis() <= now.getTime()) {
-    throw new RegistrationPolicyError(
-      "failed-precondition", "La reserva venció o ya fue cerrada."
-    );
-  }
-  if (operationSnap.exists) {
-    const op = operationSnap.data();
-    if (op.habitId !== data.habitId || op.attemptId !== data.attemptId) {
+
+  // Firestore es el árbitro de concurrencia: una sola petición adquiere
+  // el derecho temporal de escribir el archivo. Nunca confiamos en que
+  // Storage Emulator implemente precondiciones de generación.
+  const lease = await db.runTransaction(async (tx) => {
+    const [reservationSnap, operationSnap] = await Promise.all([
+      tx.get(reservationRef), tx.get(operationRef),
+    ]);
+    if (!reservationSnap.exists) {
       throw new RegistrationPolicyError(
-        "already-exists", "La operación pertenece a otro registro."
+        "failed-precondition", "Primero reserva una ruta para este registro."
       );
     }
-  }
+    const saved = reservationSnap.data();
+    if (saved.uid !== uid || saved.habitId !== data.habitId ||
+        saved.attemptId !== data.attemptId ||
+        saved.operationId !== data.operationId ||
+        saved.storagePath !== path) {
+      throw new RegistrationPolicyError(
+        "permission-denied", "La reserva no pertenece al registro."
+      );
+    }
+    if (!saved.expiresAt?.toMillis ||
+        saved.expiresAt.toMillis() <= now.getTime() ||
+        !["pending", "uploading", "uploaded"].includes(saved.status)) {
+      throw new RegistrationPolicyError(
+        "failed-precondition", "La reserva venció o ya fue cerrada."
+      );
+    }
+    if (operationSnap.exists) {
+      const op = operationSnap.data();
+      if (op.habitId !== data.habitId || op.attemptId !== data.attemptId) {
+        throw new RegistrationPolicyError(
+          "already-exists", "La operación pertenece a otro registro."
+        );
+      }
+    }
+    if (saved.status === "uploading") {
+      throw new RegistrationPolicyError(
+        "aborted", "Otra subida sigue en curso; vuelve a intentarlo."
+      );
+    }
+    if (saved.status === "uploaded") return false;
+    tx.update(reservationRef, {
+      status: "uploading", uploadStartedAt: FieldValue.serverTimestamp(),
+    });
+    return true;
+  });
 
-  // Escritura de una sola vez. Un reintento tras respuesta perdida puede
-  // detectar que el objeto existe y reutilizarlo SOLO si sus bytes coinciden.
   const file = bucket.file(path);
-  // Storage Emulator puede no aplicar ifGenerationMatch como Cloud Storage.
-  // Comprobar primero si existe evita sobrescribir durante un reintento
-  // secuencial, pero la precondición del guardado sigue siendo necesaria
-  // para proteger operaciones concurrentes en un proveedor compatible.
-  const [alreadyExists] = await file.exists();
-  if (alreadyExists) {
+  async function compareStored() {
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new RegistrationPolicyError(
+        "failed-precondition", "El archivo reservado no está disponible."
+      );
+    }
     const [metadata] = await file.getMetadata();
     if (Number(metadata.size) !== bytes.length ||
         metadata.contentType !== data.contentType) {
@@ -101,33 +116,58 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
         "already-exists", "El archivo ya existe con datos diferentes."
       );
     }
+  }
+  if (!lease) {
+    await compareStored();
     return {storagePath: path, alreadyUploaded: true, verified: false};
   }
+
   try {
-    await file.save(bytes, {
-      resumable: false,
-      contentType: data.contentType,
-      preconditionOpts: {ifGenerationMatch: 0},
-      metadata: {cacheControl: "private, no-store"},
+    const [alreadyExists] = await file.exists();
+    if (alreadyExists) {
+      // Recuperación de una escritura previa cuyo ACK no llegó a Firestore.
+      await compareStored();
+    } else {
+      try {
+        await file.save(bytes, {
+          resumable: false,
+          contentType: data.contentType,
+          preconditionOpts: {ifGenerationMatch: 0},
+          metadata: {cacheControl: "private, no-store"},
+        });
+      } catch (error) {
+        if (![409, 412].includes(Number(error.code))) throw error;
+        await compareStored();
+      }
+    }
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(reservationRef);
+      if (!snap.exists || snap.data().status !== "uploading" ||
+          snap.data().storagePath !== path) {
+        throw new RegistrationPolicyError(
+          "aborted", "La reserva cambió durante la subida."
+        );
+      }
+      tx.update(reservationRef, {
+        status: "uploaded", uploadedAt: FieldValue.serverTimestamp(),
+      });
     });
-    return {storagePath: path, alreadyUploaded: false, verified: false};
+    return {storagePath: path, alreadyUploaded: alreadyExists, verified: false};
   } catch (error) {
-    const code = Number(error.code);
-    if (code !== 412 && code !== 409) throw error;
-    const [storedMetadata] = await file.getMetadata();
-    if (Number(storedMetadata.size) !== bytes.length ||
-        storedMetadata.contentType !== data.contentType) {
-      throw new RegistrationPolicyError(
-        "already-exists", "El archivo ya existe con datos diferentes."
-      );
+    // Solo liberar si el archivo todavía no existe. Si la subida pudo
+    // completarse, conservar uploading para revisión administrativa;
+    // nunca autorizar una posible sobrescritura en un reintento.
+    const [exists] = await file.exists().catch(() => [true]);
+    if (!exists) {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(reservationRef);
+        if (snap.exists && snap.data().status === "uploading" &&
+            snap.data().storagePath === path) {
+          tx.update(reservationRef, {status: "pending"});
+        }
+      });
     }
-    const [existingBytes] = await file.download();
-    if (!existingBytes.equals(bytes)) {
-      throw new RegistrationPolicyError(
-        "already-exists", "El archivo ya existe con datos diferentes."
-      );
-    }
-    return {storagePath: path, alreadyUploaded: true, verified: false};
+    throw error;
   }
 }
 
