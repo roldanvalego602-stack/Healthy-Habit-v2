@@ -54,6 +54,8 @@ void main() {
     await tester.tap(find.text('Abrir ficha'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('habit-rewards-envelope')), findsOneWidget);
+    await tester.ensureVisible(find.text('Entendido'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Entendido'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('habit-rewards-envelope')), findsNothing);
