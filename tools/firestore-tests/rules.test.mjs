@@ -741,3 +741,40 @@ test('integridad: no se pueden publicar estadísticas manipuladas', async () => 
     currentStreak: 99999,
   }));
 });
+
+test('stickers: un artículo no comprado no puede enviarse como reacción', async () => {
+  await seedFriendship();
+  await assertFails(setDoc(doc(as('alice'), 'interactions', 'sticker-unowned'), {
+    challengeId: 'sticker:reaction_like', createdAt: new Date(),
+    emoji: '🔥', estado: 'enviado', fromUid: 'alice',
+    leido: false, respondedAt: null, tipo: 'reaccion', toUid: 'bob',
+  }));
+});
+
+test('stickers: un artículo comprado admite el emoji oficial', async () => {
+  await seedFriendship();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'users/alice'), {
+      shopInventory: ['reaction_like'],
+    });
+  });
+  await assertSucceeds(setDoc(doc(as('alice'), 'interactions', 'sticker-owned'), {
+    challengeId: 'sticker:reaction_like', createdAt: new Date(),
+    emoji: '🔥', estado: 'enviado', fromUid: 'alice',
+    leido: false, respondedAt: null, tipo: 'reaccion', toUid: 'bob',
+  }));
+});
+
+test('stickers: no se puede usar emoji distinto al artículo comprado', async () => {
+  await seedFriendship();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'users/alice'), {
+      shopInventory: ['reaction_like'],
+    });
+  });
+  await assertFails(setDoc(doc(as('alice'), 'interactions', 'sticker-mismatch'), {
+    challengeId: 'sticker:reaction_like', createdAt: new Date(),
+    emoji: '🎉', estado: 'enviado', fromUid: 'alice',
+    leido: false, respondedAt: null, tipo: 'reaccion', toUid: 'bob',
+  }));
+});
