@@ -222,7 +222,7 @@ class PendingOfficialHabitOperations {
   );
 
   Future<Map<String, dynamic>> register(
-    String habitId, String attemptId, {String note = ''},
+    String habitId, String attemptId, {String note = ''}
   ) {
     if (note.length > 500 ||
         RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]').hasMatch(note)) {
