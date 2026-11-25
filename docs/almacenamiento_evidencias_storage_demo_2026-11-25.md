@@ -419,3 +419,49 @@ una operación en estado `recovering` requiere diagnóstico si
 se interrumpe, la limpieza no recorre archivos históricamente
 huérfanos sin reserva, y aún falta autorizar el botón de fotografías
 en la pantalla oficial. Nada se despliega en producción.
+
+
+## Octava etapa: auditoría NO destructiva de archivos huérfanos
+
+Se añadió `functions/habit_evidence_audit.js` y el ejecutable
+`functions/scripts/auditar_evidencias_demo.js`. Se limitan a
+`demo-healthy-habit` con Firestore y Storage Emulator activos.
+
+La auditoría inspecciona **hasta 100 archivos de la primera página**
+bajo `habit-evidence/`; clasifica:
+
+- `valid`: existe reserva vinculada y no vencida.
+- `orphan`: no existe reserva y el archivo tiene más de cinco minutos.
+- `recentUnreserved`: no hay reserva pero el archivo puede ser reciente.
+- `expired`: la reserva existe y ya venció.
+- `inconsistent`: la reserva no coincide o carece de datos esenciales.
+- `invalidPath`: ruta fuera del formato esperado.
+
+Los hallazgos no se borran ni se modifican. `hasMore=true` indica que
+el resultado es **parcial**; todavía no hay paginación entre todos los
+objetos ni purga automática de huérfanos. La revisión manual debe
+preceder cualquier eliminación.
+
+Para analizar la lógica sin emuladores:
+
+```bash
+node --test functions/tests/habit_evidence_audit.test.js
+```
+
+Para ejecutar la auditoría no destructiva con emuladores **ya
+iniciados**, en la carpeta raíz del repositorio:
+
+```bash
+GCLOUD_PROJECT=demo-healthy-habit \
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
+FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 \
+node functions/scripts/auditar_evidencias_demo.js
+```
+
+No se cambió `functions/package.json`, porque la instalación local
+de Google Cloud Vision lo modifica. El formulario oficial de Flutter
+tampoco se modificó: el usuario tiene cambios locales en
+`registrar_habito_screen.dart` que deben conservarse.
+
+No desplegar a producción. El resultado de las pruebas nuevas aún
+debe confirmarse localmente.
