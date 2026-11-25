@@ -102,3 +102,47 @@ procesada**. El entorno de producción permanece intacto.
 **Limitación:** si un registro se confirmó pero se perdió su respuesta,
 recuperarlo desde Hábitos no reproduce los diálogos de celebración del
 registro; recupera el estado persistido sin acreditar nada de nuevo.
+
+
+## Tercera etapa: prueba automatizada de respuesta perdida
+
+Se incorporó un segundo caso en
+`tools/firestore-tests/habitos_cliente_integral.test.mjs`:
+
+- Crea un usuario separado en Auth Emulator y un perfil en la base Firestore
+  **nombrada** `default`, con reglas restrictivas.
+- Invoca una activación real mediante Callable y **descarta la respuesta**
+  a propósito. Comprueba en Firestore que se creó un intento y que la
+  versión económica aumentó una sola vez.
+- Reenvía el mismo `operationId`/`attemptId`: exige
+  `alreadyProcessed: true` y que no aumente la versión.
+- Repite la misma simulación para un registro con XP y compara
+  `xp`, `habitCoins`, `progress` y `xpEarned` antes y después
+  de recuperar la respuesta.
+- Repite el procedimiento para cancelar: comprueba que no se vuelve
+  a cobrar ninguna penalización ni cambia el estado por duplicado.
+
+**Comando (desde la raíz):**
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+```
+
+La prueba integral ahora contiene **dos escenarios** y debe terminar
+con 2 aprobados y 0 fallidos. La prueba nueva aún requiere ejecución local.
+
+### Qué verifica y qué no
+
+La prueba simula una respuesta perdida **descartando el resultado** del
+primer Callable exitoso; no corta realmente una conexión HTTP a mitad
+del envío. Comprueba que el backend puede responder idempotentemente al
+reintento con idénticos identificadores, independientemente de la interfaz.
+
+No verifica que `SharedPreferencesAsync` persista correctamente entre
+cierres del navegador, ni que el usuario vea la tarjeta de recuperación,
+ni un corte de red real entre el commit y la recepción. Esas situaciones
+se validan mediante pruebas Flutter / integración de navegador aparte.
+
+No desplegar las reglas experimentales ni las Cloud Functions demo.
