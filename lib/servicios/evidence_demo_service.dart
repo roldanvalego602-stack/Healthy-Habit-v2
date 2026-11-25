@@ -152,12 +152,47 @@ class DemoVisualLabel {
   final double confidence;
 }
 
+/// Cuota informativa del piloto real. El servidor sigue siendo la autoridad.
+class VisionPreviewQuota {
+  const VisionPreviewQuota({
+    required this.remaining,
+    required this.dailyLimit,
+    required this.nextAllowedAt,
+    required this.resetAt,
+  });
+  final int remaining;
+  final int dailyLimit;
+  final DateTime nextAllowedAt;
+  final DateTime resetAt;
+
+  factory VisionPreviewQuota.fromMap(Map<dynamic, dynamic> data) {
+    final remaining = data['remaining'];
+    final dailyLimit = data['dailyLimit'];
+    final next = data['nextAllowedAtMillis'];
+    final reset = data['resetAtMillis'];
+    if (remaining is! int || dailyLimit is! int ||
+        next is! int || reset is! int || dailyLimit <= 0 ||
+        remaining < 0 || remaining >= dailyLimit ||
+        next <= 0 || reset <= 0) {
+      throw const FormatException('Información de cuota inválida.');
+    }
+    return VisionPreviewQuota(
+      remaining: remaining,
+      dailyLimit: dailyLimit,
+      nextAllowedAt: DateTime.fromMillisecondsSinceEpoch(next, isUtc: true),
+      resetAt: DateTime.fromMillisecondsSinceEpoch(reset, isUtc: true),
+    );
+  }
+}
+
 class DemoVisualPreview {
   const DemoVisualPreview({
     required this.status,
     required this.message,
     required this.labels,
+    this.quota,
   });
+  final VisionPreviewQuota? quota;
   final String status;
   final String message;
   final List<DemoVisualLabel> labels;
@@ -190,6 +225,11 @@ class DemoVisualPreview {
       status: data['status'] as String,
       message: data['message'] as String,
       labels: labels,
+      quota: data['quota'] == null
+          ? null
+          : data['quota'] is Map
+              ? VisionPreviewQuota.fromMap(data['quota'] as Map)
+              : throw const FormatException('Cuota inválida.'),
     );
   }
 }
