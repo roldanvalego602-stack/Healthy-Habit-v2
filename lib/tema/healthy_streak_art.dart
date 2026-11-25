@@ -22,26 +22,26 @@ class HealthyStreakArt {
 
   static const Map<HealthyStreakArtState, String> paths = {
     HealthyStreakArtState.inactive:
-        '${_base}Mascota Saludable Sin Racha.png',
+        '$_baseMascota Saludable Sin Racha.png',
     HealthyStreakArtState.active:
-        '${_base}¡Mr. Healthy en llamas!.png',
+        '$_base¡Mr. Healthy en llamas!.png',
     HealthyStreakArtState.atRisk:
-        '${_base}Mr. Healthy en riesgo.png',
+        '$_baseMr. Healthy en riesgo.png',
     HealthyStreakArtState.protected:
-        '${_base}Frutita Saludable Bajo Protección.png',
+        '$_baseFrutita Saludable Bajo Protección.png',
     HealthyStreakArtState.lost:
-        '${_base}Mr. Healthy en Racha Perdida.png',
+        '$_baseMr. Healthy en Racha Perdida.png',
     HealthyStreakArtState.legendary:
-        '${_base}Mr. Healthy_ Racha legendaria.png',
+        '$_baseMr. Healthy_ Racha legendaria.png',
     HealthyStreakArtState.recovered:
-        '${_base}healthy recuperado.png',
+        '$_basehealthy recuperado.png',
     HealthyStreakArtState.protectionConsumed:
-        '${_base}healthy escudo roto.png',
+        '$_basehealthy escudo roto.png',
   };
 
   /// El calendario alternativo queda como recurso para material educativo.
   static const String inactiveCalendar =
-      '${_base}Frutita Sin Racha con Calendario.png';
+      '$_baseFrutita Sin Racha con Calendario.png';
 
   /// Clasificación visual conservadora: sin inventar protectores o riesgos.
   /// La racha numérica permanece bajo DailyStreakDisplay.
