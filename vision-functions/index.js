@@ -95,25 +95,42 @@ exports.analyzeEvidencePreviewLive = onCall({
     throw new HttpsError("invalid-argument", "Categoría visual inválida.");
   }
   const bytes = decodeImage(imageBase64);
-  // Cuota persistente: se registra solamente el contador, NO la foto.
-  // 1 minuto de pausa y 15 intentos por día para el UID permitido.
+  // Cuota persistente, aplicable a TODOS los intentos aceptados.
+  // Incluye rechazos diferenciados para informar el tiempo exacto al cliente.
   const today = new Date().toISOString().slice(0, 10);
+  const resetAtMillis = Date.parse(today + "T00:00:00.000Z") + 86400000;
   const database = getPilotDb();
   const quotaRef = database.collection("_vision_preview_pilot_limits").doc(uid);
-  await database.runTransaction(async (tx) => {
+  const quota = await database.runTransaction(async (tx) => {
     const doc = await tx.get(quotaRef);
     const prior = doc.data() || {};
     const count = prior.day === today ? (prior.count || 0) : 0;
     const now = Date.now();
-    const lastAt = prior.lastAtMillis || 0;
-    if (now - lastAt < 60 * 1000 || count >= 15) {
+    const nextAllowedAtMillis = (prior.lastAtMillis || 0) + 60000;
+    if (count >= 15) {
       throw new HttpsError("resource-exhausted",
-          "Límite de análisis alcanzado. Espera o prueba mañana.");
+          "Alcanzaste las 15 solicitudes de hoy. Intenta mañana (UTC).", {
+            reason: "daily-limit", remaining: 0, dailyLimit: 15,
+            retryAtMillis: resetAtMillis,
+          });
+    }
+    if (now < nextAllowedAtMillis) {
+      throw new HttpsError("resource-exhausted",
+          "Espera un minuto entre análisis.", {
+            reason: "cooldown", remaining: 15 - count, dailyLimit: 15,
+            retryAtMillis: nextAllowedAtMillis,
+          });
     }
     tx.set(quotaRef, {
       day: today, count: count + 1, lastAtMillis: now,
       updatedAt: fieldValue.serverTimestamp(),
     });
+    return {
+      remaining: 14 - count,
+      dailyLimit: 15,
+      nextAllowedAtMillis: now + 60000,
+      resetAtMillis,
+    };
   });
   try {
     const visionClient = getVisionClient();
@@ -122,7 +139,7 @@ exports.analyzeEvidencePreviewLive = onCall({
       visionClient.labelDetection({image}),
       visionClient.objectLocalization({image}),
     ]);
-    return present(profileId, [labels, objects]);
+    return {...present(profileId, [labels, objects]), quota};
   } catch (error) {
     // No se registran fotos, credenciales ni respuestas del proveedor.
     console.error("Vision pilot request failed", Number(error?.code) || "unknown");
