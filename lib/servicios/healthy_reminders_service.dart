@@ -1,4 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'streak_notice_policy.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -18,6 +22,8 @@ class HealthyRemindersService {
 
   static const int _firstId = 8100;
   static const int _diagnosticId = 8198;
+  static const int _streakReminderId = 8130;
+  static const int _streakWarningId = 8131;
   static const List<String> _titles = [
     'Un paso para tus hábitos',
     'Cuida tu constancia',
@@ -52,6 +58,8 @@ class HealthyRemindersService {
   }
 
   Future<void> _cancelManaged() async {
+    await _plugin.cancel(_streakReminderId);
+    await _plugin.cancel(_streakWarningId);
     for (var kind = 0; kind < 3; kind++) {
       for (var day = 0; day < 8; day++) {
         await _plugin.cancel(_firstId + kind * 10 + day);
@@ -64,6 +72,7 @@ class HealthyRemindersService {
   Future<bool> synchronize(
     Map<String, dynamic> settings, {
     bool askPermission = false,
+    Map<String, dynamic>? profile,
   }) async {
     if (!supported) return false;
     await initialize();
@@ -91,7 +100,7 @@ class HealthyRemindersService {
     final restSunday = settings['descansoSemanal'] == true;
     final flags = [
       settings['recordatorioHabito'] != false,
-      settings['recordatorioRacha'] != false,
+      false, // La racha se agenda por fecha, nunca de forma recurrente.
       settings['recordatorioDesafios'] == true,
     ];
     final playSound = settings['sonidosApp'] != false;
@@ -160,7 +169,95 @@ class HealthyRemindersService {
         );
       }
     }
+    // Las alarmas de racha son de una sola ocasión y se cancelan al
+    // registrar una actividad; un aviso recurrente podría mentir al usuario.
+    if (settings['recordatorioRacha'] != false) {
+      var latest = profile;
+      if (latest == null) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            final doc = await FirebaseFirestore.instanceFor(
+              app: Firebase.app(), databaseId: 'default',
+            ).collection('users').doc(user.uid).get();
+            if (FirebaseAuth.instance.currentUser?.uid == user.uid) {
+              latest = doc.data();
+            }
+          } catch (error) {
+            debugPrint('No se pudo verificar la racha para avisar: $error');
+          }
+        }
+      }
+      if (revision != _revision) return false;
+      if (latest != null) {
+        final state = StreakNoticePolicy.status(latest);
+        final now = tz.TZDateTime.now(tz.local);
+        // Únicamente se agenda hoy si falta registrar, o mañana si
+        // ya se registró hoy. Con estados inciertos no se programa.
+        final offset = state == StreakNoticeStatus.completedToday
+            ? 1
+            : state == StreakNoticeStatus.pendingToday ? 0 : null;
+        if (offset != null) {
+          final day = tz.TZDateTime(
+            tz.local, now.year, now.month, now.day + offset,
+          );
+          if (!restSunday || day.weekday != DateTime.sunday) {
+            final first = tz.TZDateTime(
+              tz.local, day.year, day.month, day.day,
+              (hour * 60 + minute + 20).clamp(0, 1439).toInt() ~/ 60,
+              (hour * 60 + minute + 20).clamp(0, 1439).toInt() % 60,
+            );
+            final warning = tz.TZDateTime(
+              tz.local, day.year, day.month, day.day, 21, 0,
+            );
+            if (first.isAfter(now) && first.isBefore(warning)) {
+              if (revision != _revision) return false;
+              await _plugin.zonedSchedule(
+                _streakReminderId,
+                '¡Mantén tu racha encendida!',
+                'Si aún no registraste actividad hoy, puedes hacerlo '
+                    'para mantener tu constancia.',
+                first, details,
+                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              );
+            }
+            if (warning.isAfter(now)) {
+              if (revision != _revision) return false;
+              await _plugin.zonedSchedule(
+                _streakWarningId,
+                'Revisa tu racha antes de terminar el día',
+                'Si todavía no registraste una actividad válida, '
+                    'tu racha podría interrumpirse.',
+                warning, details,
+                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              );
+            }
+          }
+        }
+      }
+    }
     return true;
+  }
+
+  /// Recarga la agenda después de confirmar un registro en Firestore.
+  /// Los avisos antiguos se cancelan antes de reconstruir los próximos.
+  Future<void> refreshForCurrentUser() async {
+    if (!supported) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(), databaseId: 'default',
+      ).collection('users').doc(user.uid).get();
+      if (FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      final data = doc.data() ?? <String, dynamic>{};
+      final raw = data['settings'];
+      await synchronize(raw is Map
+          ? Map<String, dynamic>.from(raw) : <String, dynamic>{},
+          profile: data);
+    } catch (error) {
+      debugPrint('No se pudo actualizar la agenda de rachas: $error');
+    }
   }
 
   /// Cantidad de recordatorios de Healthy Habit pendientes en Android.
