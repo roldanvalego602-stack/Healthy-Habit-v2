@@ -137,3 +137,84 @@ test('cliente autenticado: flujo completo sin escrituras económicas directas', 
     habitId, attemptId, operationId: nextId(),
   }), (error) => error.code === 'functions/failed-precondition');
 });
+
+
+test('respuesta perdida: recuperar activación, registro y cancelación sin duplicados', async () => {
+  // Usuario aislado del primer escenario. El SDK cliente se autentica
+  // contra Auth Emulator y solo puede leer lo que permiten las reglas.
+  await signOut(auth);
+  const credential = await signInAnonymously(auth);
+  const uid = credential.user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid,
+    name: 'Prueba de respuesta perdida',
+    username: 'recuperacion_' + uid,
+    email: '',
+    level: 1,
+    xp: 0,
+    habitCoins: 100,
+    currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  const cancel = httpsCallable(functions, 'cancelOfficialHabitDemo');
+  const attemptRef = doc(db, 'users', uid, 'user_habits', habitId,
+    'attempts', attemptId);
+
+  // Simula que el servidor confirmó y Firestore persistió, pero Flutter
+  // perdió la respuesta: se descarta intencionalmente el primer resultado.
+  // La simulación NO corta TCP y no valida SharedPreferences.
+  const activationPayload = {habitId, attemptId, operationId: nextId()};
+  await activate(activationPayload); // Respuesta descartada.
+  const beforeActivationRetry = (await getDoc(userRef)).data();
+  const attemptBeforeActivationRetry = (await getDoc(attemptRef)).data();
+  assert.equal(beforeActivationRetry.habitMutationVersion, 1);
+  assert.equal(attemptBeforeActivationRetry.status, 'inProgress');
+  const activationRecovered = (await activate(activationPayload)).data;
+  assert.equal(activationRecovered.alreadyProcessed, true);
+  assert.equal((await getDoc(userRef)).data().habitMutationVersion,
+    beforeActivationRetry.habitMutationVersion);
+  assert.equal((await getDoc(attemptRef)).data().status, 'inProgress');
+
+  const registrationPayload = {habitId, attemptId, operationId: nextId()};
+  await register(registrationPayload); // Respuesta descartada.
+  const beforeRegistrationRetry = (await getDoc(userRef)).data();
+  const attemptBeforeRegistrationRetry = (await getDoc(attemptRef)).data();
+  assert.equal(beforeRegistrationRetry.xp, 10);
+  assert.equal(attemptBeforeRegistrationRetry.progress, 1);
+  const registrationRecovered = (await register(registrationPayload)).data;
+  assert.equal(registrationRecovered.alreadyProcessed, true);
+  assert.equal(registrationRecovered.xpAwarded, 10);
+  assert.equal(registrationRecovered.progress, 1);
+  const afterRegistrationRetry = (await getDoc(userRef)).data();
+  const attemptAfterRegistrationRetry = (await getDoc(attemptRef)).data();
+  assert.equal(afterRegistrationRetry.xp, beforeRegistrationRetry.xp);
+  assert.equal(afterRegistrationRetry.habitCoins,
+    beforeRegistrationRetry.habitCoins);
+  assert.equal(attemptAfterRegistrationRetry.progress,
+    attemptBeforeRegistrationRetry.progress);
+  assert.equal(attemptAfterRegistrationRetry.xpEarned,
+    attemptBeforeRegistrationRetry.xpEarned);
+
+  const cancellationPayload = {
+    habitId, attemptId, operationId: nextId(), maxPenalty: 0,
+  };
+  await cancel(cancellationPayload); // Respuesta descartada.
+  const beforeCancellationRetry = (await getDoc(userRef)).data();
+  assert.equal((await getDoc(attemptRef)).data().status, 'cancelled');
+  const cancellationRecovered = (await cancel(cancellationPayload)).data;
+  assert.equal(cancellationRecovered.alreadyProcessed, true);
+  assert.equal(cancellationRecovered.chargedCoins, 0);
+  const afterCancellationRetry = (await getDoc(userRef)).data();
+  assert.equal(afterCancellationRetry.habitCoins,
+    beforeCancellationRetry.habitCoins);
+  assert.equal(afterCancellationRetry.xp, beforeCancellationRetry.xp);
+  assert.equal(afterCancellationRetry.habitMutationVersion,
+    beforeCancellationRetry.habitMutationVersion);
+  assert.equal((await getDoc(attemptRef)).data().status, 'cancelled');
+});
