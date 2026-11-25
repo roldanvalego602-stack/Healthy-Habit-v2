@@ -72,8 +72,11 @@ service cloud.firestore {
         && exists(incomingRef(recipient, sender))
         && !existsAfter(incomingRef(recipient, sender))
         && !existsAfter(sentRef(sender, recipient))
-        && existsAfter(friendsRef(otherUid, uid))
-        && getAfter(friendsRef(otherUid, uid)).data == request.resource.data;
+        // El espejo debe crearse en ESTE lote: no basta que ya exista.
+        // Ambos documentos son validados por esta misma regla y cada
+        // createdAt debe ser request.time (socialPayload).
+        && !exists(friendsRef(otherUid, uid))
+        && existsAfter(friendsRef(otherUid, uid));
     }
 
     // Cualquier participante puede eliminar la amistad si las dos
