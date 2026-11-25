@@ -14,7 +14,7 @@ class HabitVisionProfile {
   }
 
   static bool _hasTerm(String text, String term) =>
-      RegExp('(^|[^a-z])' + RegExp.escape(term) + r'([^a-z]|$)')
+      RegExp('(^|[^a-z])${RegExp.escape(term)}' r'([^a-z]|$)')
           .hasMatch(text);
 
   /// Devuelve null si el hábito no tiene un perfil visual adecuado.
