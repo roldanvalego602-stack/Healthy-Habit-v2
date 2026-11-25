@@ -8,6 +8,7 @@ import {getAuth, connectAuthEmulator, signInAnonymously, signOut} from 'firebase
 import {getFirestore, connectFirestoreEmulator, doc, collection,
   setDoc, getDoc, updateDoc, serverTimestamp} from 'firebase/firestore';
 import {getFunctions, connectFunctionsEmulator, httpsCallable} from 'firebase/functions';
+import {getStorage, connectStorageEmulator, ref, uploadBytes, deleteObject} from 'firebase/storage';
 
 const PROJECT = 'demo-healthy-habit';
 const EMULATOR_HOST = '127.0.0.1';
@@ -15,6 +16,7 @@ let app;
 let auth;
 let db;
 let functions;
+let storage;
 
 function nextId() {
   return doc(collection(db, '_operation_ids')).id;
@@ -54,6 +56,8 @@ before(async () => {
   connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
   functions = getFunctions(app, 'us-central1');
   connectFunctionsEmulator(functions, EMULATOR_HOST, 5001);
+  storage = getStorage(app, PROJECT + '.firebasestorage.app');
+  connectStorageEmulator(storage, EMULATOR_HOST, 9199);
 });
 
 after(async () => {
@@ -584,4 +588,67 @@ test('reserva de evidencia: vinculada al intento, idempotente y sin alterar XP',
   await signInAnonymously(auth);
   await assert.rejects(reserve({...payload, operationId: nextId()}),
     (error) => error.code === 'functions/not-found');
+});
+
+
+test('asociar fotografía: reserva, registro confirmado, bytes reales e idempotencia', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid, name: 'Prueba de adjuntos', username: 'foto_' + uid,
+    email: '', level: 1, xp: 0, habitCoins: 100,
+    currentStreak: 0, createdAt: serverTimestamp(),
+  });
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  const operationId = nextId();
+  const payload = {habitId, attemptId, operationId};
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const reserve = httpsCallable(functions, 'reserveHabitEvidenceDemo');
+  const attach = httpsCallable(functions, 'attachHabitEvidenceDemo');
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  await activate({...payload, operationId: nextId()});
+  await assert.rejects(attach(payload),
+    (error) => error.code === 'functions/failed-precondition');
+
+  const reservation = (await reserve(payload)).data;
+  const file = ref(storage, reservation.storagePath);
+  // Un PNG de 1x1 píxel, sin datos personales.
+  const bytes = Uint8Array.from(Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=',
+    'base64',
+  ));
+  await uploadBytes(file, bytes, {contentType: 'image/png'});
+  await assert.rejects(attach(payload),
+    (error) => error.code === 'functions/failed-precondition');
+
+  const registered = (await register(payload)).data;
+  assert.equal(registered.xpAwarded, 10);
+  const before = (await getDoc(userRef)).data();
+  const first = (await attach(payload)).data;
+  assert.equal(first.attached, true);
+  assert.equal(first.alreadyAttached, false);
+  assert.equal(first.verified, false);
+  const logRef = doc(db, 'users', uid, 'user_habits', habitId,
+    'attempts', attemptId, 'logs', operationId);
+  const saved = (await getDoc(logRef)).data();
+  assert.equal(saved.hasEvidence, true);
+  assert.equal(saved.evidenceVerified, false);
+  assert.equal(saved.evidencePath, reservation.storagePath);
+  assert.equal(saved.evidenceSize, bytes.length);
+  assert.ok(saved.evidenceExpiresAt);
+
+  const repeated = (await attach(payload)).data;
+  assert.equal(repeated.alreadyAttached, true);
+  assert.equal((await getDoc(userRef)).data().xp, before.xp);
+  assert.equal((await getDoc(userRef)).data().habitCoins,
+    before.habitCoins);
+  await assert.rejects(attach({...payload, habitId: 'hidr_001'}),
+    (error) => error.code === 'functions/failed-precondition');
+  await assert.rejects(attach({...payload, xp: 999}),
+    (error) => error.code === 'functions/invalid-argument');
+
+  await deleteObject(file);
 });
