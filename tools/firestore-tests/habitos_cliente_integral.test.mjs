@@ -333,3 +333,60 @@ test('contadores autodeclarados: formato seguro, misma recompensa y reintentos',
   assert.deepEqual((await getDoc(logRef)).data().interaction,
     {...interaction, verified: false});
 });
+
+
+test('tiempos autodeclarados: aceptar segundos, rechazar falsificaciones y no duplicar XP', async () => {
+  await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid, name: 'Prueba de temporizadores',
+    username: 'tiempo_' + uid, email: '',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  await httpsCallable(functions, 'activateOfficialHabitDemo')({
+    habitId, attemptId, operationId: nextId(),
+  });
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  const operationId = nextId();
+  const interaction = {
+    type: 'stopwatch', value: 90, target: 90, unit: 'segundos',
+  };
+  const data = {habitId, attemptId, operationId, interaction};
+  const result = (await register(data)).data;
+  assert.equal(result.alreadyProcessed, false);
+  assert.equal(result.xpAwarded, 10);
+  const logRef = doc(db, 'users', uid, 'user_habits', habitId,
+    'attempts', attemptId, 'logs', operationId);
+  assert.deepEqual((await getDoc(logRef)).data().interaction,
+    {...interaction, verified: false});
+  const xp = (await getDoc(userRef)).data().xp;
+  const replay = (await register(data)).data;
+  assert.equal(replay.alreadyProcessed, true);
+  assert.equal((await getDoc(userRef)).data().xp, xp);
+
+  await assert.rejects(register({
+    ...data, interaction: {...interaction, type: 'timer'},
+  }), (error) => error.code === 'functions/already-exists');
+  await assert.rejects(register({
+    ...data, operationId: nextId(),
+    interaction: {...interaction, unit: 'horas'},
+  }), (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({
+    ...data, operationId: nextId(),
+    interaction: {...interaction, target: 86401, value: 86401},
+  }), (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({
+    ...data, operationId: nextId(),
+    interaction: {...interaction, value: 10},
+  }), (error) => error.code === 'functions/invalid-argument');
+  await assert.rejects(register({
+    ...data, operationId: nextId(),
+    interaction: {...interaction, verified: true},
+  }), (error) => error.code === 'functions/invalid-argument');
+  assert.equal((await getDoc(userRef)).data().xp, xp);
+});
