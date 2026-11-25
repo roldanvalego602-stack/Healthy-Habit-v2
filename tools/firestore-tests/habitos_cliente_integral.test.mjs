@@ -56,7 +56,10 @@ before(async () => {
   auth = getAuth(app);
   connectAuthEmulator(auth, 'http://' + EMULATOR_HOST + ':9099',
     {disableWarnings: true});
-  db = getFirestore(app);
+  // Firestore distingue la base `(default)` de la base nombrada `default`.
+  // Flutter y Functions usan explícitamente `default`; el SDK de prueba
+  // debe usar la misma para que el perfil sea visible al backend.
+  db = getFirestore(app, 'default');
   connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
   functions = getFunctions(app, 'us-central1');
   connectFunctionsEmulator(functions, EMULATOR_HOST, 5001);
