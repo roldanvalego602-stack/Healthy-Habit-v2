@@ -50,3 +50,70 @@ test('BLOQUEANTE: no se pueden autootorgar medallas restringidas', async () => {
     earnedAt: new Date(), verified: true, awardedXp: 999999,
   }));
 });
+
+test('BLOQUEANTE: incrementar solo XP, aun en un valor pequeño, es indebido', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
+      uid: 'alice', name: 'Alice', xp: 0, currentXp: 0,
+      level: 1, habitCoins: 100, shopInventory: [],
+    });
+  });
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), {xp: 1}));
+});
+
+test('BLOQUEANTE: incrementar solo monedas no requiere combinar otros campos', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
+      uid: 'alice', name: 'Alice', xp: 0, currentXp: 0,
+      level: 1, habitCoins: 100, shopInventory: [],
+    });
+  });
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), {habitCoins: 101}));
+});
+
+test('BLOQUEANTE: el cliente no puede inventar una racha histórica', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
+      uid: 'alice', name: 'Alice', xp: 0, currentStreak: 0,
+      streakDays: 0, longestStreak: 0,
+      lastStreakDate: '2026-11-23', habitCoins: 100,
+    });
+  });
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), {
+    currentStreak: 1000,
+    streakDays: 1000,
+    longestStreak: 1000,
+    lastStreakDate: '2026-11-24',
+  }));
+});
+
+test('BLOQUEANTE: no se pueden fabricar logs aunque el intento ya exista', async () => {
+  const parent = 'users/alice/user_habits/hidr_001/attempts/one';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), parent), {
+      status: 'inProgress', progress: 0, target: 1,
+    });
+  });
+  await assertFails(setDoc(doc(alice(), parent + '/logs/forged'), {
+    userId: 'alice', xpEarned: 10000,
+    completed: true, progressAfter: 1,
+  }));
+});
+
+test('BLOQUEANTE: no se puede falsificar nivel sin cambiar XP', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice'), {
+      uid: 'alice', name: 'Alice', xp: 0,
+      level: 1, habitCoins: 100,
+    });
+  });
+  await assertFails(updateDoc(doc(alice(), 'users/alice'), {level: 20}));
+});
+
+test('BLOQUEANTE: ningún cliente puede insertar recompensa diaria', async () => {
+  await assertFails(setDoc(doc(alice(),
+    'users/alice/daily_streak_days/2026-11-24'), {
+    day: '2026-11-24', streak: 1,
+    rewardCoins: 200, claimed: false,
+  }));
+});
