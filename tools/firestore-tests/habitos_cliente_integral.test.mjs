@@ -688,3 +688,59 @@ test('asociar fotografía: reserva, registro confirmado, bytes reales e idempote
 
   await assert.rejects(deleteObject(file));
 });
+
+
+test('subidas concurrentes: solo una solicitud obtiene la reserva de escritura', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  await setDoc(doc(db, 'users', uid), {
+    uid, name: 'Prueba concurrencia de evidencia',
+    username: 'race_' + uid, email: '',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const habitId = 'alim_001';
+  const attemptId = nextId();
+  const operationId = nextId();
+  const payload = {habitId, attemptId, operationId};
+  await httpsCallable(functions, 'activateOfficialHabitDemo')({
+    ...payload, operationId: nextId(),
+  });
+  const reservation = (await httpsCallable(
+    functions, 'reserveHabitEvidenceDemo')(payload)).data;
+  const upload = httpsCallable(functions, 'uploadReservedEvidenceDemo');
+  const imageBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=',
+    'base64',
+  );
+  const original = imageBytes.toString('base64');
+  const changed = Buffer.from(imageBytes);
+  changed[changed.length - 9] ^= 1;
+  const concurrent = await Promise.allSettled([
+    upload({...payload, imageBase64: original, contentType: 'image/png'}),
+    upload({...payload, imageBase64: changed.toString('base64'),
+      contentType: 'image/png'}),
+  ]);
+  assert.equal(concurrent.filter((item) => item.status === 'fulfilled').length, 1);
+  assert.equal(concurrent.filter((item) => item.status === 'rejected').length, 1);
+  assert.ok(['functions/aborted', 'functions/already-exists'].includes(
+    concurrent.find((item) => item.status === 'rejected').reason.code,
+  ));
+
+  const winner = concurrent.find((item) => item.status === 'fulfilled').value.data;
+  assert.equal(winner.storagePath, reservation.storagePath);
+  const retry = await upload({
+    ...payload,
+    imageBase64: concurrent[0].status === 'fulfilled' ? original :
+      changed.toString('base64'),
+    contentType: 'image/png',
+  });
+  assert.equal(retry.data.alreadyUploaded, true);
+  await assert.rejects(upload({
+    ...payload,
+    imageBase64: concurrent[0].status === 'fulfilled' ?
+      changed.toString('base64') : original,
+    contentType: 'image/png',
+  }), (error) => error.code === 'functions/already-exists');
+});
