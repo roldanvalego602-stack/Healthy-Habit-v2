@@ -8,13 +8,10 @@ import {getAuth, connectAuthEmulator, signInAnonymously, signOut} from 'firebase
 import {getFirestore, connectFirestoreEmulator, doc, collection,
   setDoc, getDoc, updateDoc, serverTimestamp} from 'firebase/firestore';
 import {getFunctions, connectFunctionsEmulator, httpsCallable} from 'firebase/functions';
-import {initializeTestEnvironment} from '@firebase/rules-unit-testing';
-import {releasePreviewRules} from './release_preview_rules.mjs';
 
 const PROJECT = 'demo-healthy-habit';
 const EMULATOR_HOST = '127.0.0.1';
 let app;
-let env;
 let auth;
 let db;
 let functions;
@@ -37,16 +34,10 @@ function assertDemoOnly() {
 
 before(async () => {
   assertDemoOnly();
-  // Cargar reglas restrictivas exclusivamente en el emulador.
-  // El SDK del usuario nunca obtiene permisos administrativos.
-  env = await initializeTestEnvironment({
-    projectId: PROJECT,
-    firestore: {
-      host: EMULATOR_HOST,
-      port: 8080,
-      rules: releasePreviewRules(),
-    },
-  });
+  // Las reglas se cargan en la base nombrada "default" al iniciar
+  // Firestore Emulator con firebase.lockdown.emulator.json.
+  // No usar initializeTestEnvironment: carga reglas en "(default)"
+  // y dejaría la base de Flutter abierta por creación implícita.
   app = initializeApp({
     apiKey: 'demo-api-key',
     authDomain: PROJECT + '.firebaseapp.com',
@@ -68,7 +59,6 @@ before(async () => {
 after(async () => {
   if (auth?.currentUser) await signOut(auth);
   if (app) await deleteApp(app);
-  if (env) await env.cleanup();
 });
 
 test('cliente autenticado: flujo completo sin escrituras económicas directas', async () => {
@@ -87,6 +77,7 @@ test('cliente autenticado: flujo completo sin escrituras económicas directas', 
     createdAt: serverTimestamp(),
   });
   assert.equal((await getDoc(userRef)).data().habitCoins, 100);
+  assert.equal(db._databaseId?.database ?? 'default', 'default');
 
   // Las reglas restrictivas deben impedir la falsificación desde el SDK.
   await assert.rejects(updateDoc(userRef, {xp: 5000}),
