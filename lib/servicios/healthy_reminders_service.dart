@@ -22,6 +22,7 @@ class HealthyRemindersService {
 
   static const int _firstId = 8100;
   static const int _diagnosticId = 8198;
+  static const int _habitTodayId = 8129;
   static const int _streakReminderId = 8130;
   static const int _streakWarningId = 8131;
   static const List<String> _titles = [
@@ -58,6 +59,7 @@ class HealthyRemindersService {
   }
 
   Future<void> _cancelManaged() async {
+    await _plugin.cancel(_habitTodayId);
     await _plugin.cancel(_streakReminderId);
     await _plugin.cancel(_streakWarningId);
     for (var kind = 0; kind < 3; kind++) {
@@ -99,7 +101,7 @@ class HealthyRemindersService {
     }
     final restSunday = settings['descansoSemanal'] == true;
     final flags = [
-      settings['recordatorioHabito'] != false,
+      false, // Los avisos de hábitos se calculan por día y sin recurrencia.
       false, // La racha se agenda por fecha, nunca de forma recurrente.
       settings['recordatorioDesafios'] == true,
     ];
@@ -167,6 +169,35 @@ class HealthyRemindersService {
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,
         );
+      }
+    }
+    if (settings['recordatorioHabito'] != false) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          final count = await _pendingDailyHabits(user.uid);
+          if (revision != _revision ||
+              FirebaseAuth.instance.currentUser?.uid != user.uid) {
+            return false;
+          }
+          final now = tz.TZDateTime.now(tz.local);
+          final next = tz.TZDateTime(
+            tz.local, now.year, now.month, now.day, hour, minute,
+          );
+          if (count > 0 && next.isAfter(now) &&
+              (!restSunday || now.weekday != DateTime.sunday)) {
+            await _plugin.zonedSchedule(
+              _habitTodayId,
+              count == 1 ? 'Tienes un hábito pendiente' :
+                  'Tienes $count hábitos pendientes',
+              'Consulta tus actividades pendientes de hoy en Healthy Habit.',
+              next, details,
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            );
+          }
+        } catch (error) {
+          debugPrint('No se pudo verificar pendientes: $error');
+        }
       }
     }
     // Las alarmas de racha son de una sola ocasión y se cancelan al
@@ -257,6 +288,45 @@ class HealthyRemindersService {
       }
     }
     return true;
+  }
+
+  /// Nunca confía en datos del caché para anunciar actividades pendientes.
+  Future<int> _pendingDailyHabits(String uid) async {
+    final db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default',
+    );
+    final habits = await db.collection('users').doc(uid)
+        .collection('user_habits')
+        .get(const GetOptions(source: Source.server));
+    final now = DateTime.now().toLocal();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = DateTime(now.year, now.month, now.day + 1);
+    var count = 0;
+    for (final habit in habits.docs) {
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw StateError('Cambio de sesión');
+      }
+      final attempts = await habit.reference.collection('attempts')
+          .where('status', isEqualTo: 'inProgress')
+          .get(const GetOptions(source: Source.server));
+      for (final attempt in attempts.docs) {
+        final data = attempt.data();
+        final progress = (data['progress'] as num?)?.toInt() ?? 0;
+        final target = (data['target'] as num?)?.toInt() ?? 0;
+        if ((data['frequencyType'] ?? 'daily') != 'daily' ||
+            target < 1 || progress >= target) continue;
+        final required = (data['registrationsPerPeriod'] as num?)
+                ?.toInt() ?? 1;
+        if (required < 1) continue;
+        final logs = await attempt.reference.collection('logs')
+            .where('createdAt',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+            .where('createdAt', isLessThan: Timestamp.fromDate(end))
+            .get(const GetOptions(source: Source.server));
+        if (logs.docs.length < required) count++;
+      }
+    }
+    return count;
   }
 
   /// Recarga la agenda después de confirmar un registro en Firestore.
