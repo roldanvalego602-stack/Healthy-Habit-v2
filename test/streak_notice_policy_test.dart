@@ -53,7 +53,7 @@ void main() {
     expect(StreakNoticePolicy.warningInstant({
       'serverLastStreakDay': '2026-11-23',
       'serverStreakTimeZone': 'UTC',
-    }, now: instant), DateTime.parse('2026-11-24T21:00:00Z'));
+    }, now: instant)?.toUtc().toIso8601String(), '2026-11-24T21:00:00.000Z');
   });
 
   test('alerta en Monterrey respeta la zona de la cuenta', () {
@@ -61,12 +61,12 @@ void main() {
     expect(StreakNoticePolicy.warningInstant({
       'serverLastStreakDay': '2026-11-23',
       'serverStreakTimeZone': 'America/Monterrey',
-    }, now: instant), DateTime.parse('2026-11-25T03:00:00Z'));
+    }, now: instant)?.toUtc().toIso8601String(), '2026-11-25T03:00:00.000Z');
     expect(StreakNoticePolicy.warningInstant({
       'serverLastStreakDay': '2026-11-24',
       'serverStreakTimeZone': 'America/Monterrey',
-    }, now: instant, daysAhead: 1),
-        DateTime.parse('2026-11-26T03:00:00Z'));
+    }, now: instant, daysAhead: 1)?.toUtc().toIso8601String(),
+        '2026-11-26T03:00:00.000Z');
   });
 
   test('fechas futuras, imposibles y formatos incorrectos no son pérdida', () {
