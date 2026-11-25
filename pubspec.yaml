@@ -84,4 +84,5 @@ flutter_launcher_icons:
   # Android 8+: usar la misma ilustración en el icono adaptable.
   adaptive_icon_foreground: "assets/icon/Ícono de espiral frutal brillante.png"
   adaptive_icon_background: "#087F5B"
-  adaptive_icon_foreground_inset: 0
+  # Margen de seguridad para que el símbolo no llene toda la máscara Android.
+  adaptive_icon_foreground_inset: 20
