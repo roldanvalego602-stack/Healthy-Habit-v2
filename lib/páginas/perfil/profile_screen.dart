@@ -24,6 +24,7 @@ import 'profile_monthly_summary.dart';
 import 'profile_habit_insights.dart';
 import '../tienda/wardrobe_screen.dart';
 import '../tienda/healthy_mascot_live.dart';
+import '../tienda/healthy_achievement_display.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -1000,6 +1001,11 @@ class ProfileScreen extends StatelessWidget {
                         style: TextStyle(color: HealthyAdaptive.accent,
                           fontWeight: FontWeight.w900)),
                     ]),
+                    if (hasDisplay) ...[
+                      const SizedBox(height: 12),
+                      Center(child: HealthyAchievementDisplay(
+                        width: 260, height: 148, earned: obtained)),
+                    ],
                     const SizedBox(height: 16),
                     Row(children: [
                       Container(
