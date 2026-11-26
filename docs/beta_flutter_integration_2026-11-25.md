@@ -212,3 +212,27 @@ no puede considerarse autorizada mientras las reglas globales
 actuales hayan permitido que cualquier usuario autenticado la
 modifique. Antes de habilitar las operaciones, hay que cerrar las
 reglas y auditar o reconstruir inventarios e historial de compras.
+
+
+## Endurecimiento adicional de desafíos (corte siguiente)
+
+`claimVerifiedChallengeBeta` ya no concede recompensas únicamente
+porque un documento bajo `users/{uid}/challenges/{id}` tenga
+`progressVerified: true`. Exige además una constancia independiente
+bajo `system/challenge_attestations/users/{uid}/challenges/{id}`,
+coincidente en identidad, progreso, fuente y recompensas.
+
+Las reglas candidatas del laboratorio mantienen `/system/{path=**}`
+inaccesible para clientes. La prueba positiva de permisos verifica
+también que un cliente no puede crear, leer ni adulterar constancias.
+
+**No existe aún una Cloud Function que emita dichas constancias**
+basándose en registros autoritativos. Como resultado, incluso los
+desafíos heredados aparentemente completos no podrán cobrarse en
+beta sin certificación. Es un bloqueo seguro y deliberado, no una
+función terminada. No crear constancias manualmente para hacer que
+pasen las pruebas ni convertir datos históricos en verificaciones.
+
+Sigue pendiente auditar usuarios existentes, asegurar la procedencia
+real de los registros utilizados para progreso, sincronizar Flutter
+con las reglas finales y validar App Check en un dispositivo real.
