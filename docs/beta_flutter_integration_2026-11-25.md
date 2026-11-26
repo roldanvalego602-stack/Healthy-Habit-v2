@@ -19,8 +19,12 @@ Firestore nombrada `default`.
 
 1. `HH_BETA_HABITS_CLIENT` es `false` por defecto. **No activarlo**.
 2. Este gateway aún **no está conectado a las pantallas** de hábitos.
-3. Falta integrar y configurar `firebase_app_check` para Android.
-   Los endpoints de beta requieren `enforceAppCheck: true`.
+3. `firebase_app_check: ^0.3.2+10` está incorporado en
+   `pubspec.yaml` y se activa en `lib/main.dart` solo bajo
+   `HH_BETA_HABITS_CLIENT=true`. Falta registrar el proveedor en Firebase
+   Console y verificar un Android real con App Check antes de habilitar el modo.
+   El archivo `pubspec.lock` debe regenerarse con `flutter pub get`
+   y quedar versionado tras confirmar la resolución de dependencias.
 4. Falta una interfaz para listar y recuperar solicitudes pendientes
    después de reiniciar el teléfono; NO se deben descartar sin verificar
    el estado del servidor.
@@ -57,3 +61,38 @@ flutter test test/beta_habit_gateway_test.dart
 flutter test
 npm --prefix functions test
 ```
+
+## Configuración App Check (NO activar todavía)
+
+En Firebase Console > App Check, registra la aplicación Android y configura
+**Play Integrity** para el proyecto `cloud-firestore-d8c61`. Verifica
+el identificador `com.example.healthy_habit`, SHA-256 de la firma usada
+en beta y la asociación con Google Play si corresponde. El release de
+Android aún firma con clave de depuración: antes de distribuir debe
+configurarse una firma apropiada.
+
+Por defecto, el arranque **no inicializa App Check** porque
+`HH_BETA_HABITS_CLIENT=false`. Una vez endurecidas y comprobadas las
+reglas, el cliente se prepara en Android con:
+
+```bash
+flutter run --dart-define=HH_BETA_HABITS_CLIENT=true
+```
+
+Esto **no garantiza** que las peticiones funcionen: las Cloud Functions
+siguen bloqueadas hasta configurar sus variables del servidor y UIDs, además
+de App Check. Para un dispositivo de depuración, y **solo en modo debug**,
+se admite `--dart-define=HH_BETA_APP_CHECK_DEBUG=true` acompañado de
+`HH_BETA_HABITS_CLIENT=true`. Registra el token que genera el proveedor
+de depuración en Firebase Console; nunca publiques ese token ni compiles
+una beta release con esta bandera. En modo release se rechaza expresamente
+ese proveedor.
+
+No actives enforcement de otros productos de Firebase de manera general
+antes de verificar todos los flujos y versiones instaladas. App Check
+**no sustituye las reglas de Firestore ni Auth**; las reglas actualmente
+desplegadas en `default` siguen abiertas.
+
+Fuentes de implementación:
+- https://firebase.google.com/docs/app-check/flutter/default-providers
+- https://firebase.google.com/docs/app-check/flutter/debug-provider
