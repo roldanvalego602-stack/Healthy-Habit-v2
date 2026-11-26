@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
+import '../tienda/healthy_mascot_live.dart';
 import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
@@ -1572,13 +1573,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Image.asset(
-          'assets/mascot/healthy.png',
-          width: 40,
-          height: 40,
-          errorBuilder:
-              (context, error, stackTrace) => const Icon(Icons.eco, size: 40),
-        ),
+        const HealthyMascotLive(size: 40),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
