@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_coin.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 
 /// Selección del usuario al registrar su primera sesión válida del día.
 enum StreakRewardAction { claimed, alreadyClaimed, later, showHistory }
@@ -43,6 +44,8 @@ class _DailyStreakRewardDialogState extends State<DailyStreakRewardDialog> {
         return;
       }
       if (result['coinsAwarded'] == widget.coins) {
+        await HealthyRetroSoundService.play('reward');
+        if (!mounted) return;
         Navigator.of(context).pop(StreakRewardAction.claimed);
         return;
       }
