@@ -140,3 +140,25 @@ necesitan para reconocer un reintento.
 
 Sigue pendiente realizar pruebas de extremo a extremo con Firebase Emulator
 y migrar compras, logros y otras escrituras económicas.
+
+## Compras de tienda — preparación beta
+
+Se agregó `purchaseOfficialShopBeta`, protegida por
+`requireBetaHabitAccess` y `enforceAppCheck: true`, que usa el
+catálogo oficial y la transacción idempotente del servidor ya probada
+en el emulador. Ni el precio ni el saldo se aceptan del cliente.
+
+`ShopService.buy()` usa `BetaShopPurchaseGateway` cuando
+`HH_BETA_HABITS_CLIENT=true` y no vuelve a escrituras directas
+ante errores de Firebase. El diario de compras `hh_beta_shop_pending_v1_`
+guarda `operationId` antes del envío y lo reutiliza. La tienda
+muestra compras pendientes con confirmación manual para recuperarlas.
+
+La compra NO está habilitada para usuarios reales. Faltan validar
+las reglas activas de Firestore `default`, App Check, recuperación con
+pérdida de respuesta, concurrencia y casos de tienda con dos usuarios.
+También quedan las escrituras de equipamiento y otras operaciones
+económicas o de gamificación por auditar.
+
+No ejecutar `firebase deploy` ni habilitar las banderas de beta
+con las reglas globales abiertas compartidas anteriormente.
