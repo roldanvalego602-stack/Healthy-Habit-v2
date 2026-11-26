@@ -583,8 +583,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   Future<void> _enterAccessoryNumber(String itemId, {required bool rotation}) async {
     final item = shopItemById(itemId);
-    if (item?.slot == null) return;
-    final layout = _layouts[itemId] ?? _defaultLayout(item!.slot!);
+    if (item == null || item.slot == null) return;
+    final layout = _layouts[itemId] ?? _defaultLayout(item.slot!);
     final current = rotation ? layout.rotation : layout.size;
     final controller = TextEditingController(text: current.round().toString());
     String? error;
