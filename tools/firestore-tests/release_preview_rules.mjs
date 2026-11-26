@@ -32,12 +32,9 @@ export function releasePreviewRules() {
         'profileStatus', 'profileVisibility', 'tema',
         'estiloVisual', 'modoVisual'
       ];
-      return owner(uid) && (
-        changed.hasOnly(profileFields)
-        || (changed.hasOnly(['habitCoins', 'shopInventory'])
-          && validInventoryChange())
-        || (changed.hasOnly(['shopEquipped']) && validEquipped())
-      );
+      // La economía, la compra y el equipamiento de beta son exclusivos
+      // del Admin SDK en Functions: no confiar en ningún saldo del cliente.
+      return owner(uid) && changed.hasOnly(profileFields);
     }
 
 `;
