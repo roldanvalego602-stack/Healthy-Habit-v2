@@ -24,6 +24,32 @@ function validateChallengeClaim(data) {
   return data.challengeId;
 }
 
+// Prohibido confiar solo en los campos de progreso de /users/{uid}/challenges:
+// pudieron ser escritos con reglas antiguas. La autorización se conserva
+// separadamente en /system, que no admite escrituras del SDK cliente.
+// Este archivo NO crea constancias: un proceso de emisión y auditoría del
+// servidor deberá implementarse antes de habilitar pagos de desafíos.
+function validateServerChallengeAttestation(attestation, challenge, uid, challengeId) {
+  if (!attestation || typeof attestation !== "object" ||
+      attestation.uid !== uid || attestation.challengeId !== challengeId ||
+      attestation.source !== "official_habit_registration" ||
+      attestation.status !== "verified" ||
+      attestation.progressVerified !== true ||
+      !Number.isSafeInteger(attestation.currentProgress) ||
+      !Number.isSafeInteger(attestation.totalProgress) ||
+      attestation.totalProgress < 1 ||
+      attestation.currentProgress < attestation.totalProgress ||
+      attestation.currentProgress !== challenge.currentProgress ||
+      attestation.totalProgress !== challenge.totalProgress ||
+      attestation.xpReward !== challenge.xpReward ||
+      attestation.hcReward !== challenge.hcReward) {
+    throw new RegistrationPolicyError(
+      "failed-precondition",
+      "El desafío carece de acreditación independiente del servidor."
+    );
+  }
+}
+
 function calculateVerifiedClaim(challenge, user) {
   if (!challenge || challenge.demoSeed !== false ||
       challenge.progressVerified !== true ||
@@ -95,9 +121,12 @@ async function claimVerifiedChallenge({db, uid, data}) {
   const challengeId = validateChallengeClaim(data);
   const userRef = db.collection("users").doc(uid);
   const challengeRef = userRef.collection("challenges").doc(challengeId);
+  const attestationRef = db.collection("system")
+    .doc("challenge_attestations").collection("users").doc(uid)
+    .collection("challenges").doc(challengeId);
   return db.runTransaction(async (tx) => {
-    const [challengeSnap, userSnap] = await Promise.all([
-      tx.get(challengeRef), tx.get(userRef),
+    const [challengeSnap, userSnap, attestationSnap] = await Promise.all([
+      tx.get(challengeRef), tx.get(userRef), tx.get(attestationRef),
     ]);
     if (!challengeSnap.exists || !userSnap.exists) {
       throw new RegistrationPolicyError("not-found", "Desafío o usuario inexistente.");
@@ -108,6 +137,10 @@ async function claimVerifiedChallenge({db, uid, data}) {
         "already-exists", "Esta recompensa ya fue reclamada."
       );
     }
+    validateServerChallengeAttestation(
+      attestationSnap.exists ? attestationSnap.data() : null,
+      challenge, uid, challengeId,
+    );
     const reward = calculateVerifiedClaim(challenge, userSnap.data());
     tx.update(userRef, {
       xp: reward.xp, currentXp: reward.xp, level: reward.level,
@@ -126,5 +159,6 @@ async function claimVerifiedChallenge({db, uid, data}) {
 }
 
 module.exports = {
-  validateChallengeClaim, calculateVerifiedClaim, claimVerifiedChallenge,
+  validateChallengeClaim, validateServerChallengeAttestation,
+  calculateVerifiedClaim, claimVerifiedChallenge,
 };
