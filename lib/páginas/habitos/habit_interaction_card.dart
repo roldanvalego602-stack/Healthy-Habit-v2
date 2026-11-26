@@ -284,24 +284,29 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
           ]),
         ],
         const SizedBox(height: 12),
-        ExpansionTile(
-          key: const ValueKey('habit-tool-instructions'),
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.only(bottom: 8),
-          leading: Icon(Icons.help_outline_rounded, color: green),
-          title: Text(
-            'Cómo usar esta herramienta',
-            style: TextStyle(color: ink, fontWeight: FontWeight.w700),
-          ),
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                HabitToolGuide.instructionsFor(widget.type, widget.unit),
-                style: TextStyle(color: ink, height: 1.45),
-              ),
+        // ExpansionTile construye internamente un ListTile. Su Material
+        // inmediato evita que el fondo del Container oculte el ink splash.
+        Material(
+          color: HealthyAdaptive.mint,
+          child: ExpansionTile(
+            key: const ValueKey('habit-tool-instructions'),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            leading: Icon(Icons.help_outline_rounded, color: green),
+            title: Text(
+              'Cómo usar esta herramienta',
+              style: TextStyle(color: ink, fontWeight: FontWeight.w700),
             ),
-          ],
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  HabitToolGuide.instructionsFor(widget.type, widget.unit),
+                  style: TextStyle(color: ink, height: 1.45),
+                ),
+              ),
+            ],
+          ),
         ),
         Text(_done ? '¡Actividad lista! Guarda tu registro.' : 'Completa la actividad para guardar.',
           textAlign: TextAlign.center, style: TextStyle(color: ink)),
