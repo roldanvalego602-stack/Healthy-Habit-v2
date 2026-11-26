@@ -14,6 +14,7 @@ import '../tienda/healthy_mascot_live.dart';
 import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
+import 'healthy_local_vision_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/beta_habit_gateway.dart';
@@ -1381,6 +1382,13 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             ],
           ),
+          if (tieneImagen) ...[
+            HealthyLocalVisionPanel(
+              image: _bytesImagen!,
+              saving: _guardando,
+            ),
+            const SizedBox(height: 12),
+          ],
           if (tieneImagen && HealthyVisionDebugService.enabled) ...[
             HealthyVisionPreviewPanel(
               image: _bytesImagen!,
