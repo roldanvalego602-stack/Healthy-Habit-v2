@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'official_habit_emulator_service.dart';
+import 'evidence_storage_demo_service.dart';
 import 'shop_demo_bootstrap.dart';
 
 /// Diario local de operaciones pendientes, únicamente para el emulador demo.
@@ -104,6 +107,7 @@ class PendingOfficialHabitOperations {
     String note = '',
     Map<String, dynamic>? interaction,
     bool recoveryOnly = false,
+    bool withEvidence = false,
     required Future<Map<String, dynamic>> Function(
       OfficialHabitEmulatorService, Map<String, dynamic>) send,
   }) async {
@@ -127,6 +131,8 @@ class PendingOfficialHabitOperations {
             decoded['operationId'] is! String ||
             !RegExp(_idPattern).hasMatch(decoded['operationId']) ||
             (action != 'activar' && decoded['attemptId'] != attemptId) ||
+            (action == 'registrar' &&
+                (decoded['withEvidence'] == true) != withEvidence) ||
             (action == 'cancelar' && decoded['maxPenalty'] is! int) ||
             (action == 'registrar' &&
                 (decoded['note'] is! String ||
@@ -153,6 +159,7 @@ class PendingOfficialHabitOperations {
           'operationId': service.newOperationId(),
           if (maxPenalty != null) 'maxPenalty': maxPenalty,
           if (action == 'registrar') 'note': note,
+          if (action == 'registrar') 'withEvidence': withEvidence,
           if (action == 'registrar' && interaction != null)
             'interaction': interaction,
         };
@@ -294,6 +301,87 @@ class PendingOfficialHabitOperations {
         interaction: saved['interaction'] == null ? null :
             Map<String, dynamic>.from(saved['interaction'] as Map),
       ),
+    );
+  }
+
+  /// Registro oficial CON fotografía, solo en emuladores.
+  ///
+  /// El diario persiste un único operationId antes de reservar, subir,
+  /// registrar y asociar. Si falla después del registro, conserva ese ID.
+  /// Volver a invocar con los mismos datos no genera una segunda recompensa.
+  /// La imagen ya debe ser JPEG/PNG/WebP de máximo 250 KB.
+  Future<Map<String, dynamic>> registerWithEvidence(
+    String habitId, String attemptId, {
+    required Uint8List imageBytes,
+    String note = '',
+    Map<String, dynamic>? interaction,
+  }) {
+    if (imageBytes.isEmpty ||
+        imageBytes.lengthInBytes > EvidenceStorageDemoService.maxBytes) {
+      throw ArgumentError('La fotografía debe medir como máximo 250 KB.');
+    }
+    if (note.length > 500 ||
+        RegExp(r'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]').hasMatch(note) ||
+        !_validInteraction(interaction)) {
+      throw ArgumentError('Nota o actividad interactiva inválida.');
+    }
+    return _run(
+      action: 'registrar',
+      habitId: habitId,
+      attemptId: attemptId,
+      note: note,
+      interaction: interaction,
+      withEvidence: true,
+      send: (service, saved) async {
+        final savedHabit = saved['habitId'] as String;
+        final savedAttempt = saved['attemptId'] as String;
+        final savedOperation = saved['operationId'] as String;
+        final savedNote = saved['note'] as String;
+        final savedInteraction = saved['interaction'] == null
+            ? null
+            : Map<String, dynamic>.from(saved['interaction'] as Map);
+
+        // Si una respuesta se perdió después de asociar la fotografía,
+        // recuperamos primero el vínculo; nunca subimos dos veces a ciegas.
+        bool alreadyAttached = false;
+        try {
+          final link = await service.attachEvidence(
+            habitId: savedHabit,
+            attemptId: savedAttempt,
+            operationId: savedOperation,
+          );
+          alreadyAttached = link['attached'] == true;
+        } on Exception {
+          // Si aún no existe un registro, continuamos por el flujo normal.
+          // La reserva y la subida son idempotentes y el registro también.
+        }
+        if (!alreadyAttached) {
+          await const EvidenceStorageDemoService().upload(
+            habitId: savedHabit,
+            attemptId: savedAttempt,
+            evidenceId: savedOperation,
+            bytes: imageBytes,
+          );
+        }
+        final registration = await service.register(
+          habitId: savedHabit,
+          attemptId: savedAttempt,
+          operationId: savedOperation,
+          note: savedNote,
+          interaction: savedInteraction,
+        );
+        if (!alreadyAttached) {
+          final attached = await service.attachEvidence(
+            habitId: savedHabit,
+            attemptId: savedAttempt,
+            operationId: savedOperation,
+          );
+          if (attached['attached'] != true) {
+            throw StateError('La evidencia no pudo asociarse al registro.');
+          }
+        }
+        return {...registration, 'evidenceAttached': true};
+      },
     );
   }
 
