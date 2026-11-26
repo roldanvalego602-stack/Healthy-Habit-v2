@@ -168,7 +168,7 @@ class _SeasonPassPreviewScreenState extends State<SeasonPassPreviewScreen> {
               color: HealthyAdaptive.text)),
           const SizedBox(height: 9),
           SizedBox(
-            height: 190,
+            height: 235,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: rewards.length,
