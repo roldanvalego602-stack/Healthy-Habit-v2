@@ -23,6 +23,7 @@ import '../../servicios/daily_streak_display.dart';
 import 'profile_monthly_summary.dart';
 import 'profile_habit_insights.dart';
 import '../tienda/wardrobe_screen.dart';
+import '../tienda/healthy_mascot_live.dart';
 import '../splash_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -180,21 +181,21 @@ class ProfileScreen extends StatelessWidget {
                    ),
                   const SizedBox(height: 28),
                   _sectionTitle(
-                    'Hecho a tu manera',
-                    'Personalizar',
-                    () => _showCustomization(context, userRef, data),
+                    'Personalización',
+                    'Abrir armario',
+                    () => _open(context, const WardrobeScreen()),
                   ),
-                  const SizedBox(height: 14),
-                  _customizationCard(data),
-                   const SizedBox(height: 12),
-                   SizedBox(
-                     width: double.infinity,
-                     child: OutlinedButton.icon(
-                       onPressed: () => _open(context, const WardrobeScreen()),
-                       icon: const Icon(Icons.checkroom_rounded),
-                       label: const Text('Abrir mi armario y equipar cosméticos'),
-                     ),
-                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('profile-wardrobe-only'),
+                      onPressed: () => _open(context, const WardrobeScreen()),
+                      icon: const Icon(Icons.checkroom_rounded),
+                      label: const Text(
+                        'Cambiar banner, marco, avatar y estante en Armario'),
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   _mascotCard(streak: streak),
                   const SizedBox(height: 20),
@@ -1175,13 +1176,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(45),
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (_, __, ___) =>
-                      const Icon(Icons.eco_rounded, color: green, size: 55),
-            ),
+            child: const HealthyMascotLive(size: 92),
           ),
         ),
         const SizedBox(width: 14),
