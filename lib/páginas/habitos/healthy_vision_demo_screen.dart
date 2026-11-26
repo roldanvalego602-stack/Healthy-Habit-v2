@@ -143,8 +143,8 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
               // Al sustituir la foto se reconstruye el resultado anterior.
               key: ValueKey(_image),
               image: _image!,
-              category: '',
-              habitTitle: 'Demostración de análisis visual',
+              category: 'Frutas y verduras',
+              habitTitle: 'Comer frutas y verduras',
             ),
           const SizedBox(height: 12),
           const Text(
