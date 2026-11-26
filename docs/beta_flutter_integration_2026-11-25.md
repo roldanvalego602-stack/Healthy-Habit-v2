@@ -315,3 +315,27 @@ Se añadieron tests unitarios de validación, pruebas estáticas de transmisión
 y una nueva prueba integral de persistencia/idempotencia en Firestore Emulator.
 **Pendiente ejecutar pruebas y verificar CI**. No habilitar esta beta en
 producción ni desplegar reglas hasta completar el resto de la migración.
+
+## Integración funcional del catálogo de tienda (26 de noviembre)
+
+El backend ya dispone de transacciones autoritativas para compra,
+equipamiento y restauración de apariencia. Se añadió el caso aislado
+`functions/tests-emulator/shop_catalog.integration.js`, ejecutable con:
+
+```bash
+npm --prefix tools/firestore-tests run test:tienda:emulador
+```
+
+La prueba utiliza exclusivamente Admin SDK conectado a la base nombrada
+`default` en Firestore Emulator, con proyecto `demo-healthy-habit` y
+host `127.0.0.1:8080`; se niega a ejecutarse fuera de ese entorno.
+
+Comprueba 60 compras pagadas del catálogo de 62 artículos, precios de
+servidor, repeticiones sin doble cobro, inventario único, equipamiento,
+restauración parcial de apariencia, saldos sin cambios por equipamiento,
+artículos gratuitos, saldo insuficiente e inyecciones de campos.
+
+**Pendiente ejecución y resultado.** La cobertura es del backend
+transaccional, no del flujo de Flutter ni de los endpoints de beta
+que permanecen bloqueados por App Check y allowlist. Las reglas
+restrictivas siguen sin autorizarse para producción.
