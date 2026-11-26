@@ -57,6 +57,19 @@ test('lockdown: comprar sin descuento se rechaza', async () => {
   await assertFails(updateDoc(doc(as('alice'), 'users/alice'),
     {shopInventory: ['avatar_frame'], habitCoins: 250}));
 });
+test('lockdown: la configuración de primer nivel sigue visible, pero no sus subdocumentos', async () => {
+  await seed();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'system/catalog'), {version: 1});
+    await setDoc(doc(ctx.firestore(), 'system/catalog/privado/token'), {
+      secret: 'not-public',
+    });
+  });
+  await assertSucceeds(getDoc(doc(as('alice'), 'system/catalog')));
+  await assertFails(getDoc(doc(as('alice'), 'system/catalog/privado/token')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'system/catalog')));
+});
+
 test('lockdown: ni siquiera el propietario puede fabricar constancias de desafíos', async () => {
   await seed();
   const path = 'system/challenge_attestations/users/alice/challenges/bonus';
