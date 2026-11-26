@@ -1315,8 +1315,7 @@ class _HomeContent extends StatelessWidget {
                   icon: const Icon(Icons.auto_awesome),
                   label: const Text('Chatear'),
                 ),
-                if (HealthyVisionDebugService.enabled)
-                  TextButton.icon(
+                TextButton.icon(
                     key: const ValueKey('healthy-vision-demo-entry'),
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
