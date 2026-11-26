@@ -9,6 +9,7 @@ const paths = {
   registro: 'lib/páginas/habitos/registrar_habito_screen.dart',
   acciones: 'lib/páginas/habitos/habit_action_service.dart',
   tienda: 'lib/páginas/tienda/shop_service.dart',
+  desafios: 'lib/páginas/desafios/desafios_screen.dart',
   puente: 'lib/servicios/official_habit_emulator_service.dart',
   configuracion: 'lib/servicios/shop_demo_bootstrap.dart',
 };
@@ -37,6 +38,8 @@ block(source.acciones.includes('_db.runTransaction'),
   'Las acciones de hábitos conservan transacciones directas en Firestore');
 block(source.tienda.includes('_db.runTransaction'),
   'La tienda conserva transacciones directas en Firestore');
+block(source.desafios.includes('_db.runTransaction'),
+  'Los desafíos conservan cobros directos de XP y monedas en Firestore');
 block(source.puente.includes('demo-healthy-habit') && source.puente.includes('OfficialHabitEmulatorService'),
   'El servicio oficial de hábitos sigue restringido al emulador demo');
 block(source.configuracion.includes("defaultValue: false") &&
