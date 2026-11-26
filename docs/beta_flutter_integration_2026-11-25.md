@@ -253,3 +253,22 @@ compatibilidad de lectura de `system/catalog`.
 **No se ha desplegado este archivo.** Los documentos nuevos y secretos
 no deben guardarse en el primer nivel de `system`, que conserva lectura
 autenticada. Para registros privados, usar subcolecciones protegidas.
+
+## Laboratorio de 36 hábitos: activación y cancelación (26 de noviembre)
+
+Se añadió `tools/firestore-tests/habitos_36_funcional.test.mjs` y el comando
+`npm --prefix tools/firestore-tests run test:36-habitos:emulador`.
+
+La prueba crea un perfil efímero con XP y saldo elevados **exclusivamente en
+Firestore Emulator** mediante REST local y token de propietario del emulador
+(`Bearer owner`); la activación y cancelación posterior se realiza con
+Auth Emulator y Cloud Functions Emulator desde el SDK cliente. Se comprueban
+36 hábitos, reintentos idempotentes, correspondencia de objetivos y
+frecuencias, cupo de un único hábito activo, penalización máxima confirmada,
+ausencia de XP concedido por activar/cancelar y saldos/versiones finales.
+
+**Pendiente:** ejecutar el comando en el laboratorio. La prueba cubre
+activación/cancelación, **no 36 registros ni el recorrido gráfico de Flutter**.
+Si Firebase Emulator no reconoce el token especial de propietario en la base
+nombrada `default`, revisar el método de siembra antes de dar por probados
+los flujos. No trasladar el token ni el código de siembra a producción.
