@@ -42,6 +42,11 @@ Future<void> main() async {
   ShopDemoBootstrap.validateMode(
     ShopDemoBootstrap.enabled, ShopDemoBootstrap.purchaseEnabled);
   ShopDemoBootstrap.validateOfficialHabitsMode();
+  // Nunca mezclar los diarios ni el proyecto Firebase de demo y beta.
+  if (BetaHabitGateway.enabled && ShopDemoBootstrap.enabled) {
+    throw StateError(
+      'Los modos demo y beta de hábitos son mutuamente excluyentes.');
+  }
   if (ShopDemoBootstrap.enabled) {
     ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
     if (Firebase.apps.isNotEmpty) {
