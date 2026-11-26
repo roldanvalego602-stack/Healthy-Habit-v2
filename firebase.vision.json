@@ -1,0 +1,15 @@
+{
+  "functions": [
+    {
+      "source": "vision-functions",
+      "codebase": "vision",
+      "runtime": "nodejs24",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        ".env*"
+      ]
+    }
+  ]
+}
