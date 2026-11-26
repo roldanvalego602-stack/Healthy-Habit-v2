@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_coin.dart';
+import '../../tema/healthy_streak_art.dart';
 
 /// Selección del usuario al registrar su primera sesión válida del día.
 enum StreakRewardAction { claimed, alreadyClaimed, later, showHistory }
@@ -74,12 +76,20 @@ class _DailyStreakRewardDialogState extends State<DailyStreakRewardDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.card_giftcard_rounded,
-              size: 62, color: Color(0xFFE38B24)),
+          const Icon(Icons.local_fire_department_rounded,
+              size: 58, color: Color(0xFFE38B24)),
           const SizedBox(height: 12),
-          Text('+${widget.coins} Habit Coins',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w900)),
+          Text('¡${widget.streak} días de constancia!',
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 14),
+          HealthyCoinAmount(
+            amount: '+${widget.coins}',
+            size: 35,
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
+            suffix: ' Habit Coins',
+          ),
           const SizedBox(height: 8),
           Text(
             '¡Primera sesión del día registrada! '
