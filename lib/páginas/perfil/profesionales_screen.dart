@@ -1,11 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
 
-/// Recursos externos reales. No se muestran profesionales ficticios
-/// ni se ofrecen citas o afiliaciones que Healthy Habit no gestiona.
+/// Perfiles de muestra y recursos verificables para futuras consultas.
+/// No se realizan llamadas ni envíos a contactos ficticios.
 class ProfesionalesScreen extends StatelessWidget {
   const ProfesionalesScreen({super.key});
+
+  static const demoProfiles = <({
+    String name, String area, String phone, String email, String hours,
+    String description
+  })>[
+    (
+      name: 'Nicol Ramírez',
+      area: 'Alimentación e hidratación · Ejemplo',
+      phone: '+52 000 000 0001',
+      email: 'nicol.ramirez@example.com',
+      hours: 'Lun–vie · 9:00–14:00 (simulado)',
+      description: 'Perfil de ejemplo para orientación sobre organización de comidas, hidratación y metas alimentarias. No se han verificado credenciales ni disponibilidad.',
+    ),
+    (
+      name: 'Fernando López',
+      area: 'Hábitos y bienestar · Ejemplo',
+      phone: '+52 000 000 0002',
+      email: 'fernando.lopez@example.com',
+      hours: 'Lun–vie · 15:00–19:00 (simulado)',
+      description: 'Perfil de ejemplo para constancia y organización de rutinas saludables. No se han verificado credenciales ni disponibilidad.',
+    ),
+  ];
+
+  Future<void> _demoAction(
+    BuildContext context,
+    ({String name, String area, String phone, String email,
+      String hours, String description}) profile,
+    String action,
+  ) async {
+    final destination = action == 'Correo' ? profile.email : profile.phone;
+    final detail = action == 'WhatsApp'
+        ? 'Hola, ${profile.name}. Quiero información desde Healthy Habit.'
+        : action == 'Correo'
+            ? 'Asunto: Consulta desde Healthy Habit\nHola, ${profile.name}. Quisiera información sobre sus servicios.'
+            : action == 'Contactos'
+                ? 'Ficha de contacto de ejemplo, lista para copiar.'
+                : 'Vista previa de la llamada.';
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: HealthyAdaptive.surface,
+      isScrollControlled: true,
+      builder: (sheet) => SafeArea(top: false, child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$action · Demostración',
+              style: TextStyle(color: HealthyAdaptive.text,
+                fontWeight: FontWeight.w800, fontSize: 20)),
+            const SizedBox(height: 12),
+            Text(profile.name, style: TextStyle(
+              color: HealthyAdaptive.text, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SelectableText(destination, style: TextStyle(
+              color: HealthyAdaptive.text)),
+            const SizedBox(height: 10),
+            Text(detail, style: TextStyle(color: HealthyAdaptive.muted)),
+            const SizedBox(height: 12),
+            Text('Datos ficticios. No se enviará ningún mensaje, llamada o correo.',
+              style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12)),
+            const SizedBox(height: 16),
+            SizedBox(width: double.infinity, child: FilledButton.icon(
+              onPressed: () async {
+                final content = action == 'Contactos'
+                    ? 'BEGIN:VCARD\nVERSION:3.0\nFN:${profile.name}\nTEL:${profile.phone}\nEMAIL:${profile.email}\nEND:VCARD'
+                    : '$destination\n\n$detail';
+                await Clipboard.setData(ClipboardData(text: content));
+                if (sheet.mounted) Navigator.pop(sheet);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Datos de muestra copiados.')));
+              },
+              icon: const Icon(Icons.copy_outlined),
+              label: const Text('Copiar datos de muestra'),
+            )),
+          ],
+        ),
+      )),
+    );
+  }
+
+  Widget _demoProfileCard(
+    BuildContext context,
+    ({String name, String area, String phone, String email,
+      String hours, String description}) profile,
+  ) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: HealthyAdaptive.surface,
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: HealthyAdaptive.border),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(Icons.person_pin_circle_outlined,
+            color: HealthyAdaptive.accent, size: 30),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(profile.name, style: TextStyle(
+                color: HealthyAdaptive.text, fontWeight: FontWeight.w900,
+                fontSize: 17)),
+              Text(profile.area, style: TextStyle(
+                color: HealthyAdaptive.muted, fontSize: 12)),
+            ],
+          )),
+        ]),
+        const SizedBox(height: 12),
+        Text(profile.description, style: TextStyle(
+          color: HealthyAdaptive.muted, fontSize: 13)),
+        const SizedBox(height: 8),
+        Text(profile.hours, style: TextStyle(
+          color: HealthyAdaptive.text, fontSize: 12)),
+        const SizedBox(height: 6),
+        Text(profile.phone, style: TextStyle(
+          color: HealthyAdaptive.accent)),
+        Text(profile.email, style: TextStyle(
+          color: HealthyAdaptive.muted, fontSize: 12)),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 6, children: [
+          OutlinedButton.icon(
+            onPressed: () => _demoAction(context, profile, 'WhatsApp'),
+            icon: const Icon(Icons.chat_outlined, size: 17),
+            label: const Text('WhatsApp')),
+          OutlinedButton.icon(
+            onPressed: () => _demoAction(context, profile, 'Llamada'),
+            icon: const Icon(Icons.call_outlined, size: 17),
+            label: const Text('Llamar')),
+          OutlinedButton.icon(
+            onPressed: () => _demoAction(context, profile, 'Correo'),
+            icon: const Icon(Icons.email_outlined, size: 17),
+            label: const Text('Correo')),
+          OutlinedButton.icon(
+            onPressed: () => _demoAction(context, profile, 'Contactos'),
+            icon: const Icon(Icons.contacts_outlined, size: 17),
+            label: const Text('Contactos')),
+        ]),
+      ],
+    ),
+  );
+
 
   static final Uri _directorio = Uri.parse(
     'https://cmnutriologos.com/directorio/',
@@ -97,6 +244,23 @@ class ProfesionalesScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          Text('Profesionales · Demostración',
+            style: TextStyle(fontWeight: FontWeight.w900,
+              color: HealthyAdaptive.text, fontSize: 21)),
+          const SizedBox(height: 6),
+          Text('Nicol y Fernando son perfiles simulados. Los cuatro botones '
+              'permiten mostrar y copiar datos de prueba sin contactar a nadie.',
+            style: TextStyle(color: HealthyAdaptive.muted, fontSize: 13)),
+          const SizedBox(height: 16),
+          for (final profile in demoProfiles) ...[
+            _demoProfileCard(context, profile),
+            const SizedBox(height: 14),
+          ],
+          const SizedBox(height: 14),
+          Text('Recursos externos para localizar profesionales reales',
+            style: TextStyle(fontWeight: FontWeight.w900,
+              color: HealthyAdaptive.text, fontSize: 17)),
+          const SizedBox(height: 10),
           Text('Encuentra orientación especializada',
             style: TextStyle(color: HealthyAdaptive.text,
               fontWeight: FontWeight.w900, fontSize: 21)),
