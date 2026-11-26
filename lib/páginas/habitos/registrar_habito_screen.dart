@@ -188,9 +188,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               .toString();
       _interactionComplete = _interactionType == 'manual';
       // Preferencia no económica: cambia la herramienta de medición,
-      // nunca la meta oficial ni el XP. Se aísla por usuario e intento.
+      // nunca la meta oficial ni el XP. Se aísla por usuario y hábito.
       final prefKey = 'hh_habit_tool_v1_${FirebaseAuth.instance.currentUser!.uid}_'
-          '${widget.habitId}_${widget.attemptId}';
+          '${widget.habitId}';
       final saved = await SharedPreferencesAsync().getString(prefKey);
       if (saved != null) {
         try {
@@ -381,7 +381,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     final key = 'hh_habit_tool_v1_${uid}_'
-        '${widget.habitId}_${widget.attemptId}';
+        '${widget.habitId}';
     try {
       await SharedPreferencesAsync().setString(key, jsonEncode(result));
       if (!mounted) return;
