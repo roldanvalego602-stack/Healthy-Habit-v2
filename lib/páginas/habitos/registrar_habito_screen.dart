@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_celebration.dart';
 import 'temporary_evidence_service.dart';
+import 'healthy_vision_preview_panel.dart';
+import '../../servicios/healthy_vision_debug_service.dart';
 import 'habit_interaction_card.dart';
 
 class RegistrarHabitoScreen extends StatefulWidget {
@@ -593,6 +595,14 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             _buildTituloSeccion('Fotografía', 'Opcional'),
             const SizedBox(height: 12),
             _buildFotografia(),
+            if (_bytesImagen != null && HealthyVisionDebugService.enabled) ...[
+              HealthyVisionPreviewPanel(
+                image: _bytesImagen!,
+                category: _categoria,
+                habitTitle: _nombreHabito,
+                saving: _guardando,
+              ),
+            ],
             const SizedBox(height: 8),
             Text(
               'Puedes adjuntar una fotografía como evidencia. '
