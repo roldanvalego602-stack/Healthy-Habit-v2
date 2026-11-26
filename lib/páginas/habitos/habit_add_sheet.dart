@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import 'modelo/habit.dart';
 
@@ -149,8 +150,17 @@ class _HabitAddSheetState extends State<HabitAddSheet> {
                     ]),
                     if (widget.cost > 0) ...[
                       const SizedBox(height: 14),
-                      _noticeLine(Icons.paid_outlined,
-                          'Costo de activación: ${widget.cost} Habit Coins'),
+                      Row(children: [
+                          const HealthyCoinIcon(size: 20),
+                          const SizedBox(width: 7),
+                          Flexible(child: Text(
+                            'Costo de activación: ${widget.cost} Habit Coins',
+                            style: TextStyle(
+                              color: HealthyAdaptive.text,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )),
+                        ]),
                     ],
                     if (difficult) ...[
                       const SizedBox(height: 8),
