@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
+import '../tienda/healthy_mascot_live.dart';
 
 /// Pantalla de celebración de un logro para Healthy Habit.
 ///
@@ -229,23 +230,7 @@ class AchievementScreen extends StatelessWidget {
                     Positioned(
                       right: 16,
                       bottom: 2,
-                      child: Image.asset(
-                        'assets/mascot/healthy.png',
-                        width: 126,
-                        height: 142,
-                        fit: BoxFit.contain,
-                        errorBuilder:
-                            (context, error, stackTrace) => const SizedBox(
-                              width: 126,
-                              height: 142,
-                              child: Center(
-                                child: Text(
-                                  '😊',
-                                  style: TextStyle(fontSize: 78),
-                                ),
-                              ),
-                            ),
-                      ),
+                      child: const HealthyMascotLive(size: 126),
                     ),
                   ],
                 ),
