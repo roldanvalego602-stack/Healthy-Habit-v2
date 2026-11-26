@@ -604,8 +604,38 @@ exports.activateOfficialHabitDemo = officialHabitDemoAction("activate");
 exports.cancelOfficialHabitDemo = officialHabitDemoAction("cancel");
 exports.registerOfficialHabitDemo = officialHabitDemoAction("register");
 
-// Las operaciones oficiales de producción NO se exportan aquí.
-// Pendiente: cliente migrado, reglas restrictivas y pruebas adversariales.
+// Las funciones de beta se exportan con bloqueo de acceso permanente
+// mientras no se habiliten explícitamente tras verificar las reglas.
+
+// Beta cerrada: estas callables quedan totalmente bloqueadas hasta
+// coordinar reglas de Firestore, App Check y lista de UIDs de prueba.
+// Nunca activar HH_BETA_HABITS_ENABLED sobre las reglas abiertas actuales.
+const {createBetaHabitHandler} = require("./official_beta_access");
+function officialHabitBetaAction(action) {
+  const handler = createBetaHabitHandler({
+    dispatch: dispatchOfficialHabit, action,
+  });
+  return onCall(
+    {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
+    async (request) => {
+      try {
+        return await handler({request, db});
+      } catch (error) {
+        if (error instanceof RegistrationPolicyError) {
+          throw new HttpsError(error.code, error.message);
+        }
+        // No filtrar errores inesperados ni contenido de transacciones.
+        console.error("[official-beta-callable] Operación fallida:", {
+          action, code: error?.code ?? "internal",
+        });
+        throw new HttpsError("internal", "No se pudo completar la operación.");
+      }
+    }
+  );
+}
+exports.activateOfficialHabitBeta = officialHabitBetaAction("activate");
+exports.cancelOfficialHabitBeta = officialHabitBetaAction("cancel");
+exports.registerOfficialHabitBeta = officialHabitBetaAction("register");
 
 // Adaptador preservado para operaciones demo de evidencia (reserva,
 // subida y asociación): utilizan contrato y validaciones propias.
