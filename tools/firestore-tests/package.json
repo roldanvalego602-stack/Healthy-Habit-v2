@@ -8,6 +8,7 @@
     "test:friends": "node --test --test-name-pattern='amistad|solicitud|amigos' rules.test.mjs",
     "test:lockdown": "HH_RELEASE_PREVIEW=1 node --test --test-concurrency=1 security_release_gate.test.mjs release_preview_positive.test.mjs",
     "test:cliente-integral": "node --test --test-concurrency=1 habitos_cliente_integral.test.mjs",
+    "test:tienda:emulador": "cd ../.. && node tools/firestore-tests/generar_reglas_integrales.mjs && firebase emulators:exec --config firebase.lockdown.emulator.json --only firestore --project demo-healthy-habit \"node --test functions/tests-emulator/shop_catalog.integration.js\"",
     "test:36-habitos": "node --test --test-concurrency=1 habitos_36_funcional.test.mjs",
     "test:36-habitos:emulador": "cd ../.. && node tools/firestore-tests/generar_reglas_integrales.mjs && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,firestore,functions --project demo-healthy-habit \"npm --prefix tools/firestore-tests run test:36-habitos\"",
     "test:cliente-integral:emulador": "cd ../.. && node tools/firestore-tests/generar_reglas_integrales.mjs && firebase emulators:exec --config firebase.lockdown.emulator.json --only auth,firestore,functions,storage --project demo-healthy-habit \"npm --prefix tools/firestore-tests run test:cliente-integral\"",
