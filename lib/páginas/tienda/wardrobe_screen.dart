@@ -528,6 +528,76 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
   }
 
+  Future<void> _enterAccessoryNumber(String itemId, {required bool rotation}) async {
+    final item = shopItemById(itemId);
+    if (item?.slot == null) return;
+    final layout = _layouts[itemId] ?? _defaultLayout(item!.slot!);
+    final current = rotation ? layout.rotation : layout.size;
+    final controller = TextEditingController(text: current.round().toString());
+    String? error;
+    final value = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(rotation ? 'Giro del accesorio' : 'Tamaño del accesorio'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(rotation
+                ? 'Escribe un ángulo entre -180° y 180°.'
+                : 'Escribe un tamaño entre 30 y 250.'),
+            const SizedBox(height: 12),
+            TextField(
+              key: ValueKey(rotation
+                  ? 'wardrobe-rotation-number' : 'wardrobe-size-number'),
+              controller: controller,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(
+                signed: true, decimal: false),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                suffixText: rotation ? '°' : 'px',
+                errorText: error,
+              ),
+              onSubmitted: (_) {
+                final parsed = double.tryParse(controller.text.trim());
+                final valid = parsed != null && parsed.isFinite &&
+                    parsed >= (rotation ? -180 : 30) &&
+                    parsed <= (rotation ? 180 : 250);
+                if (valid) Navigator.pop(dialogContext, parsed);
+                else setDialogState(() => error = 'Valor fuera de rango');
+              },
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () {
+                final parsed = double.tryParse(controller.text.trim());
+                if (parsed == null || !parsed.isFinite ||
+                    parsed < (rotation ? -180 : 30) ||
+                    parsed > (rotation ? 180 : 250)) {
+                  setDialogState(() => error = 'Valor fuera de rango');
+                  return;
+                }
+                Navigator.pop(dialogContext, parsed);
+              },
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (!mounted || value == null) return;
+    final latest = _layouts[itemId] ?? _defaultLayout(item.slot!);
+    _updateLayout(item, _AccessoryLayout(
+      latest.x, latest.y,
+      rotation ? latest.size : value,
+      rotation ? value : latest.rotation,
+    ));
+    await _saveLayouts();
+  }
+
   Widget _layoutControls(String itemId) {
     final item = shopItemById(itemId);
     if (item?.slot == null) return const SizedBox.shrink();
@@ -547,7 +617,12 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             current.x, current.y, size, current.rotation)),
           onChangeEnd: (_) => _saveLayouts(),
         )),
-        const Icon(Icons.zoom_in_rounded, size: 17),
+        IconButton(
+          key: const ValueKey('wardrobe-edit-size-number'),
+          tooltip: 'Escribir tamaño exacto',
+          onPressed: () => _enterAccessoryNumber(itemId, rotation: false),
+          icon: const Icon(Icons.edit_note_rounded, size: 21),
+        ),
       ]),
       Row(children: [
         const Icon(Icons.rotate_right_rounded, size: 19),
@@ -564,6 +639,12 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         )),
         Text('${current.rotation.round()}°',
           style: const TextStyle(fontSize: 11)),
+        IconButton(
+          key: const ValueKey('wardrobe-edit-rotation-number'),
+          tooltip: 'Escribir grados exactos',
+          onPressed: () => _enterAccessoryNumber(itemId, rotation: true),
+          icon: const Icon(Icons.edit_note_rounded, size: 21),
+        ),
         IconButton(
           tooltip: 'Restablecer giro',
           onPressed: () {
