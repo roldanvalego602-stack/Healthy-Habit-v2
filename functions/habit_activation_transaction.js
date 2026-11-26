@@ -41,7 +41,7 @@ function parseActivationInteraction(value) {
       value.target > (timed ? 86400 : 10000) ||
       typeof value.unit !== "string" ||
       value.unit.length < 1 || value.unit.length > 40 ||
-      !/^[\\p{L}\\p{N} .%_-]+$/u.test(value.unit) ||
+      !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
       (timed && value.unit !== "segundos") ||
       (value.type === "hydration" && value.unit !== "ml") ||
       (value.type === "steps" && value.unit !== "pasos") ||
