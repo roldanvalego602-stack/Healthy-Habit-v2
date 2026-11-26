@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
@@ -28,6 +30,11 @@ Future<void> main() async {
   await HealthyVisualController.instance.load();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Activar App Check antes de las llamadas a Cloud Functions.
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+  );
   final firestore = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'default',
