@@ -166,6 +166,8 @@ test('36 hábitos: un registro oficial real por intento y cobro idempotente', as
   const register = httpsCallable(functions, 'registerOfficialHabitDemo');
   const cancel = httpsCallable(functions, 'cancelOfficialHabitDemo');
   let awardedXp = 0;
+  let awardedLevelCoins = 0;
+  let levelRewardCount = 0;
   let paidPenalty = 0;
   let processed = 0;
   for (const [habitId, catalog] of Object.entries(SERVER_CATALOG)) {
@@ -182,6 +184,11 @@ test('36 hábitos: un registro oficial real por intento y cobro idempotente', as
     assert.equal(repeated.alreadyProcessed, true, habitId);
     assert.equal(repeated.progress, 1, habitId);
     assert.equal(repeated.xpAwarded, first.xpAwarded, habitId);
+    assert.equal(repeated.coinsAwarded, first.coinsAwarded, habitId);
+    assert.ok(first.coinsAwarded === 0 || first.coinsAwarded === 300,
+      'Solo se espera el premio de nivel 20, sin ingresos arbitrarios');
+    awardedLevelCoins += first.coinsAwarded;
+    if (first.coinsAwarded > 0) levelRewardCount++;
     const attemptRef = doc(db, 'users', uid,
       'user_habits', habitId, 'attempts', attemptId);
     assert.equal((await getDoc(attemptRef)).data().progress, 1, habitId);
@@ -199,7 +206,15 @@ test('36 hábitos: un registro oficial real por intento y cobro idempotente', as
   assert.equal(profile.xp, 10000 + awardedXp,
     'El servidor entrega XP una sola vez por operación');
   assert.equal(profile.currentXp, profile.xp);
-  assert.equal(profile.habitCoins, 1000 - paidPenalty,
-    'Solo se deducen penalizaciones de cancelación en este escenario');
+  // El usuario inicia en 10 000 XP (nivel 19) y supera 10 500 XP.
+  // El nivel 20 acredita 300 HC UNA sola vez, incluso con reintentos.
+  assert.equal(awardedLevelCoins, 300,
+    'El premio del nivel 20 se acredita una sola vez');
+  assert.equal(levelRewardCount, 1,
+    'No debe repetirse el premio por alcanzar el nivel 20');
+  assert.ok(profile.claimedLevelRewards.includes(20),
+    'El nivel 20 debe quedar marcado como reclamado');
+  assert.equal(profile.habitCoins, 1000 + awardedLevelCoins - paidPenalty,
+    'El saldo incluye recompensas de nivel menos penalizaciones');
   assert.equal(profile.habitMutationVersion, 72);
 });
