@@ -35,6 +35,8 @@ jobs:
           node --check functions/index.js
       - name: Ejecutar pruebas unitarias
         run: npm --prefix functions test
+      - name: Comprobar auditoría preventiva de Firebase
+        run: node --test tools/tests/beta_security_gate.test.cjs
 
   flutter:
     name: Analisis y pruebas Flutter
