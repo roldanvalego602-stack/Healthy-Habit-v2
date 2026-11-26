@@ -448,16 +448,44 @@ class ProfileScreen extends StatelessWidget {
                       : const Color(0xFFFFF2D2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    '✦ ${HealthyProfileTitles.visibleTitle(_string(data['profileTitle']), _integer(data['level'], fallback: 1), const <String>{})}',
-                    style: TextStyle(
+                  child: Builder(builder: (context) {
+                    final chosen = _string(data['profileTitle']);
+                    final title = HealthyProfileTitles.byName(chosen);
+                    final level = _integer(data['level'], fallback: 1);
+                    final titleStyle = TextStyle(
                       color: HealthyAdaptive.isDark
                           ? const Color(0xFFFFD477)
                           : const Color(0xFF977020),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
-                    ),
-                  ),
+                    );
+                    if (title?.badgeId == null) {
+                      return Text('✦ ${HealthyProfileTitles.visibleTitle(
+                        chosen, level, const <String>{})}',
+                        style: titleStyle);
+                    }
+                    final userId = FirebaseAuth.instance.currentUser?.uid;
+                    if (userId == null) {
+                      return Text('✦ Semilla saludable', style: titleStyle);
+                    }
+                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: _db.collection('public_profiles').doc(userId)
+                        .collection('activity_events')
+                        .where('kind', isEqualTo: 'achievement_unlocked')
+                        .limit(100).snapshots(),
+                      builder: (context, snapshot) {
+                        final badges = snapshot.hasData
+                            ? snapshot.data!.docs
+                                .map((doc) =>
+                                    doc.data()['achievementId']?.toString())
+                                .whereType<String>().toSet()
+                            : <String>{};
+                        return Text('✦ ${HealthyProfileTitles.visibleTitle(
+                          chosen, level, badges)}',
+                          style: titleStyle);
+                      },
+                    );
+                  }),
                 ),
                 const SizedBox(height: 9),
                 Padding(
