@@ -218,3 +218,35 @@ test('36 hábitos: un registro oficial real por intento y cobro idempotente', as
     'El saldo incluye recompensas de nivel menos penalizaciones');
   assert.equal(profile.habitMutationVersion, 72);
 });
+
+
+test('activación interactiva oficial conserva configuración y rechaza reintento alterado', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  await seedEmulatorProfile(uid);
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const habitId = 'hidr_001';
+  const attemptId = nextId();
+  const operationId = nextId();
+  const interaction = {type: 'hydration', target: 2000, unit: 'ml'};
+  const payload = {habitId, attemptId, operationId, interaction};
+  assert.equal((await activate(payload)).data.alreadyProcessed, false);
+  const habitRef = doc(db, 'users', uid, 'user_habits', habitId);
+  assert.deepEqual((await getDoc(habitRef)).data().interaction, interaction,
+    'La herramienta se configura sin acreditar progreso');
+  assert.equal((await activate(payload)).data.alreadyProcessed, true);
+  await assert.rejects(activate({
+    ...payload, interaction: {type: 'hydration', target: 500, unit: 'ml'},
+  }), (error) => error.code === 'functions/already-exists',
+  'Mismo ID de operación no puede reutilizarse con otra configuración');
+  await assert.rejects(activate({
+    habitId: 'hidr_002', attemptId: nextId(), operationId: nextId(),
+    interaction: {type: 'steps', target: 100, unit: 'pasos', xp: 999999},
+  }), (error) => error.code === 'functions/invalid-argument');
+  const attempt = await getDoc(doc(db, 'users', uid,
+    'user_habits', habitId, 'attempts', attemptId));
+  assert.equal(attempt.data().progress, 0);
+  assert.equal(attempt.data().xpEarned, 0);
+  assert.equal((await getDoc(doc(db, 'users', uid))).data().xp, 10000);
+});
