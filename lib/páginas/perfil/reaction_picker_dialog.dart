@@ -8,12 +8,14 @@ class ReactionPickerDialog extends StatefulWidget {
   final String fromUid;
   final String toUid;
   final String friendName;
+  final String? eventId;
 
   const ReactionPickerDialog({
     super.key,
     required this.fromUid,
     required this.toUid,
     required this.friendName,
+    this.eventId,
   });
 
   @override
@@ -47,7 +49,8 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
         fromUid: widget.fromUid,
         toUid: widget.toUid,
         emoji: emoji,
-        challengeId: stickerId == null ? '' : 'sticker:$stickerId',
+        challengeId: stickerId != null ? 'sticker:$stickerId' :
+            widget.eventId == null ? '' : 'event:${widget.eventId}',
         estado: 'enviado',
       );
 
@@ -84,7 +87,8 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
       title: _enviado
           ? null
           : Text(
-              'Animar a ${widget.friendName}',
+              widget.eventId == null ? 'Animar a ${widget.friendName}' :
+                  'Reaccionar a esta actividad',
               textAlign: TextAlign.center,
               style: const TextStyle(color: _navy, fontWeight: FontWeight.w900),
             ),
