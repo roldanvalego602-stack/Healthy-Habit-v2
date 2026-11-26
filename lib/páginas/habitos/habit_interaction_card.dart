@@ -163,7 +163,11 @@ class _HabitInteractionCardState extends State<HabitInteractionCard> {
   void didUpdateWidget(covariant HabitInteractionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.type != widget.type || oldWidget.target != widget.target ||
-        oldWidget.initialValue != widget.initialValue || oldWidget.unit != widget.unit) {
+        // El padre refleja cada segundo en initialValue. No reiniciar
+        // Stopwatch cuando el valor externo es el mismo valor actual.
+        (oldWidget.initialValue != widget.initialValue &&
+         widget.initialValue != _value) ||
+        oldWidget.unit != widget.unit) {
       _ticker?.cancel();
       _watch.stop();
       _watch.reset();
