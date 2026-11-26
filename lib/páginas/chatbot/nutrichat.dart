@@ -874,26 +874,42 @@ class _NutriChatPageState extends State<NutriChatPage> {
               duration: HealthyVisualEffects.duration(
                 context, const Duration(milliseconds: 220)),
               curve: Curves.easeOutCubic,
-              child: _hasDraft && !isTyping
+              child: (_hasDraft || _replyPending)
                   ? Center(
-                      child: Container(
-                        key: const ValueKey('mr-healthy-draft-avatar'),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: HealthyAdaptive.mint,
-                          borderRadius: BorderRadius.circular(48),
-                          boxShadow: const [BoxShadow(
-                            color: Color(0x22000000),
-                            blurRadius: 15, offset: Offset(0, 4),
-                          )],
-                        ),
-                        child: ClipOval(
-                          child: SizedBox(
-                            width: 78, height: 78,
-                            child: const HealthyMascotLive(size: 78),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            key: const ValueKey('mr-healthy-draft-avatar'),
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: HealthyAdaptive.mint,
+                              borderRadius: BorderRadius.circular(48),
+                              boxShadow: const [BoxShadow(
+                                color: Color(0x22000000),
+                                blurRadius: 15, offset: Offset(0, 4),
+                              )],
+                            ),
+                            child: const ClipOval(
+                              child: HealthyMascotLive(size: 70),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 9),
+                          AnimatedSwitcher(
+                            duration: HealthyVisualEffects.duration(
+                              context, const Duration(milliseconds: 220)),
+                            child: Text(
+                              _replyPending
+                                  ? 'Mr. Healthy está pensando…'
+                                  : 'Mr. Healthy sigue tu mensaje 👀',
+                              key: ValueKey(_replyPending),
+                              style: TextStyle(
+                                color: HealthyAdaptive.muted,
+                                fontSize: 11, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : const SizedBox.shrink(),
