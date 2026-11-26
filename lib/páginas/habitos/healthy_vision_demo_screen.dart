@@ -7,6 +7,7 @@ import '../../servicios/habit_evidence_image_preparer.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../tema/healthy_theme.dart';
 import 'healthy_vision_preview_panel.dart';
+import 'healthy_local_vision_panel.dart';
 
 /// Demostración independiente. No abre ni modifica registros de hábitos,
 /// balances, XP, imágenes de Storage o documentos de Firestore.
@@ -58,15 +59,6 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!HealthyVisionDebugService.enabled) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Laboratorio de imágenes')),
-        body: const Center(child: Text(
-          'Esta demostración solo está disponible en modo debug.',
-          textAlign: TextAlign.center,
-        )),
-      );
-    }
     return Scaffold(
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(title: const Text('Reconocimiento de imágenes')),
@@ -86,9 +78,9 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
                       style: TextStyle(fontWeight: FontWeight.w900))),
                   ]),
                   const SizedBox(height: 9),
-                  const Text('Selecciona una fotografía de comida, frutas, '
-                    'verduras o agua. Google Cloud Vision mostrará objetos '
-                    'y etiquetas reconocidos.'),
+                  const Text('Selecciona una fotografía de comida, frutas, verduras o agua. '
+                    'Google ML Kit identificará elementos visibles directamente '
+                    'en tu dispositivo Android.'),
                   const SizedBox(height: 8),
                   const Text('No registra un hábito, no acredita consumo '
                     'y no concede XP ni Habit Coins.',
@@ -139,6 +131,11 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
             ),
           ),
           if (_image != null)
+            HealthyLocalVisionPanel(
+              key: ValueKey(_image),
+              image: _image!,
+            ),
+          if (_image != null && HealthyVisionDebugService.enabled)
             HealthyVisionPreviewPanel(
               // Al sustituir la foto se reconstruye el resultado anterior.
               key: ValueKey(_image),
@@ -148,10 +145,8 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
             ),
           const SizedBox(height: 12),
           const Text(
-            'Privacidad: la imagen se envía a Cloud Vision solamente al '
-            'presionar «Analizar con IA». La imagen no se guarda en '
-            'Firestore mediante este laboratorio. Puede generar costos '
-            'en el proyecto de Google Cloud autorizado.',
+            'El reconocimiento local no envía la fotografía a servidores. '
+            'Cloud Vision, si se habilita por separado, puede generar costos.',
             style: TextStyle(fontSize: 11),
           ),
         ],
