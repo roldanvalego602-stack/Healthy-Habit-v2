@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'interaction_service.dart';
 import '../tienda/shop_service.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 import '../../tema/healthy_cosmetics.dart';
 
 class ReactionPickerDialog extends StatefulWidget {
@@ -50,8 +51,8 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
         estado: 'enviado',
       );
 
-      debugPrint('✅ Reacción enviada correctamente');
-
+      // Reproducir solo tras confirmar la escritura en Firestore.
+      await HealthyRetroSoundService.play('friend');
       if (!mounted) return;
 
       setState(() {
