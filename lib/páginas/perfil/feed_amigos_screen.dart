@@ -40,13 +40,18 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
       for (final event in requests[i].docs) {
         final data = event.data();
         if (data['actorUid'] != id ||
-            !const {'level_up', 'habit_completed'}.contains(data['kind']) ||
+            !const {'level_up', 'habit_completed', 'achievement_unlocked'}
+                .contains(data['kind']) ||
             data['createdAt'] is! Timestamp) continue;
         final level = data['level'];
         if (data['kind'] == 'level_up' &&
             (level is! int || level < 2 || level > 1000)) continue;
         final habitId = data['habitId']?.toString() ?? '';
         if (data['kind'] == 'habit_completed' && habitId.isEmpty) continue;
+        if (data['kind'] == 'achievement_unlocked' &&
+            !const {'primera_meta', 'triple_victoria', 'cinco_logros',
+              'nivel_3', 'nivel_5', 'racha_3', 'racha_7', 'racha_30'}
+                .contains(data['achievementId'])) continue;
         events.add(_FriendEvent(
           eventId: event.id, uid: id, data: data,
           name: (profile['name'] ?? 'Tu amigo').toString(),
@@ -126,11 +131,26 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
     );
   }
 
+  static const _achievementTitles = <String, String>{
+    'primera_meta': 'Meta cumplida',
+    'triple_victoria': 'Triple victoria',
+    'cinco_logros': 'Cinco objetivos',
+    'nivel_3': 'En crecimiento',
+    'nivel_5': 'Cultivador experto',
+    'racha_3': 'Tres días de constancia',
+    'racha_7': 'Semana imparable',
+    'racha_30': 'Constancia legendaria',
+  };
+
   Widget _eventTile(String me, _FriendEvent event) {
     final level = event.data['kind'] == 'level_up';
+    final achievement = event.data['kind'] == 'achievement_unlocked';
     final title = level
         ? '${event.name} alcanzó el nivel ${event.data['level']}'
-        : '${event.name} completó un hábito';
+        : achievement
+            ? '${event.name} consiguió el logro '
+              '${_achievementTitles[event.data['achievementId']] ?? 'nuevo'}'
+            : '${event.name} compartió un hábito completado';
     final when = event.date.toLocal();
     final localDate = '${when.day.toString().padLeft(2, '0')}/'
         '${when.month.toString().padLeft(2, '0')}/${when.year} '
@@ -159,11 +179,12 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
                     fontSize: 11, color: HealthyAdaptive.muted)),
               ],
             )),
-            Icon(level ? Icons.trending_up_rounded
-                  : Icons.verified_rounded,
+            Icon(level ? Icons.trending_up_rounded :
+                  achievement ? Icons.emoji_events_rounded :
+                  Icons.verified_rounded,
               color: HealthyAdaptive.accent),
           ]),
-          if (!level) ...[
+          if (!level && !achievement) ...[
             const SizedBox(height: 9),
             const Text('Actividad finalizada y confirmada por el servidor.',
                 style: TextStyle(fontSize: 12)),
