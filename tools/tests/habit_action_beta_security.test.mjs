@@ -42,3 +42,10 @@ test('gateway beta valida proyecto, sesión y no permite volver al cliente direc
   assert.match(gateway, /'cancelar': 'cancelOfficialHabitBeta'/);
   assert.match(gateway, /'registrar': 'registerOfficialHabitBeta'/);
 });
+
+test('configuración interactiva viaja por beta y persiste para reintentos', () => {
+  assert.match(action, /interaction: preview\.remove \? null : interaction/);
+  assert.match(gateway, /if \(action != 'cancelar' && interaction != null\)/);
+  assert.match(gateway, /\(action == 'registrar' \|\| action == 'activar'\)/);
+  assert.match(gateway, /interaction: original\.interaction/);
+});
