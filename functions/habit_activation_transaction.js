@@ -38,7 +38,7 @@ function parseActivationInteraction(value) {
   if (!allowed.includes(value.type) ||
       !Number.isSafeInteger(value.target) ||
       value.target < 1 ||
-      value.target > (timed ? 86400 : 10000) ||
+      value.target > 86400 ||
       typeof value.unit !== "string" ||
       value.unit.length < 1 || value.unit.length > 40 ||
       !/^[\p{L}\p{N} .%_-]+$/u.test(value.unit) ||
