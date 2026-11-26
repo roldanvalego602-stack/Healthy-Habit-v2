@@ -657,9 +657,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    match /system/{path=**} {
+    // Solo documentos de configuración de primer nivel son consultables.
+    // La jerarquía anidada contiene constancias y datos de servidor:
+    // las reglas Firestore son aditivas, no se puede bloquear una subruta
+    // si existe un permiso read heredado de un wildcard recursivo.
+    match /system/{documentId} {
       allow read: if authenticated();
       allow write: if false;
+    }
+    match /system/{documentId}/{path=**} {
+      allow read, write: if false;
     }
 
     match /{path=**} {
