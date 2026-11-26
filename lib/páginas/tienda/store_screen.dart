@@ -14,6 +14,7 @@ import 'shop_item_artwork.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
 import 'secret_test_bonus_screen.dart';
+import 'season_pass_preview_screen.dart';
 
 /// Tienda con tarjetas horizontales grandes. Conserva el catálogo y las compras.
 class StoreScreen extends StatefulWidget {
@@ -333,6 +334,45 @@ class _StoreScreenState extends State<StoreScreen> {
                         .toList(),
                     shopState: state,
                     onSelected: (item) => _showFeaturedPreview(item, state),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                    child: Material(
+                      color: const Color(0xFF173F36),
+                      borderRadius: BorderRadius.circular(19),
+                      child: InkWell(
+                        key: const ValueKey('store-season-pass-entry'),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SeasonPassPreviewScreen())),
+                        borderRadius: BorderRadius.circular(19),
+                        child: const Padding(
+                          padding: EdgeInsets.all(15),
+                          child: Row(children: [
+                            Icon(Icons.workspace_premium_rounded,
+                              color: Color(0xFFFFD57A), size: 31),
+                            SizedBox(width: 12),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('PASE DE TEMPORADA',
+                                  style: TextStyle(color: Colors.white,
+                                    fontWeight: FontWeight.w900)),
+                                SizedBox(height: 4),
+                                Text('Recompensas exclusivas y paquetes de '
+                                  'monedas · simulación sin pagos',
+                                  style: TextStyle(color: Colors.white70,
+                                    fontSize: 11)),
+                              ],
+                            )),
+                            Icon(Icons.chevron_right_rounded,
+                              color: Colors.white),
+                          ]),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 SliverToBoxAdapter(child: _categoryFilters()),
