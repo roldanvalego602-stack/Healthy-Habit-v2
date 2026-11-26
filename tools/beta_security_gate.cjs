@@ -10,12 +10,10 @@ const path = require("node:path");
 function inspectRules(rules) {
   const findings = [];
   const compact = rules.replace(/\/\/[^\n]*/g, "").replace(/\s+/g, " ");
-  if (/match\s*\/\{document=\*\*\}/.test(compact) &&
-      /allow\s+(?:read\s*,\s*write|write\s*,\s*read)\s*:\s*if\s*request\.auth\s*!=\s*null\s*;/.test(compact)) {
+  if (/match\\s*\\/\\{document=\\*\\*\\}\\s*\\{\\s*allow\\s+(?:read\\s*,\\s*write|write\\s*,\\s*read)\\s*:\\s*if\\s*request\\.auth\\s*!=\\s*null\\s*;/.test(compact)) {
     findings.push("Regla global: cualquier usuario autenticado puede leer y escribir documentos ajenos.");
   }
-  if (/match\s*\/system\/\{document=\*\*\}/.test(compact) &&
-      /allow\s+(?:read\s*,\s*write|write\s*,\s*read)\s*:\s*if\s*request\.auth\s*!=\s*null\s*;/.test(compact)) {
+  if (/match\\s*\\/system\\/\\{document=\\*\\*\\}\\s*\\{\\s*allow\\s+(?:read\\s*,\\s*write|write\\s*,\\s*read)\\s*:\\s*if\\s*request\\.auth\\s*!=\\s*null\\s*;/.test(compact)) {
     findings.push("Configuración de sistema accesible para escritura a cualquier usuario autenticado.");
   }
   if (!/rules_version\s*=\s*['"]2['"]\s*;/.test(compact) ||
