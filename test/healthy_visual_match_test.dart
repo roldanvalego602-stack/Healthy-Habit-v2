@@ -41,6 +41,14 @@ void main() {
     expect(result.isMatch, isFalse);
   });
 
+  test('una botella sin agua visible no acredita hidratación', () {
+    final result = HealthyVisualMatch.evaluate(
+      labels: const [HealthyDetectedLabel('Bottle', .98)],
+      profile: 'hydration',
+    );
+    expect(result.isMatch, isFalse);
+  });
+
   test('evidencia de agua compatible con hidratación', () {
     final result = HealthyVisualMatch.evaluate(
       labels: const [HealthyDetectedLabel('Water', .85)],
