@@ -11,6 +11,7 @@ import 'habit_action_service.dart';
 import '../../servicios/healthy_reminders_service.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import 'habit_add_sheet.dart';
 import 'habit_popularity_service.dart';
 import 'habit_recommendation_service.dart';
@@ -57,6 +58,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
   bool loadingPopularity = false;
   bool _recuperando = false;
   List<OperacionHabitoPendiente> _pendientes = [];
+  List<BetaHabitPendingEntry> _betaPendientes = [];
   List<HabitPopularity> popularMetrics = [];
   List<HabitUsageSignal> usageHistory = [];
   final HabitRecommendationService _recommendationService =
@@ -213,6 +215,17 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Future<void> _cargarPendientes() async {
+    if (BetaHabitGateway.enabled) {
+      try {
+        final items = await const PendingBetaHabitOperations()
+            .listarPendientes();
+        if (mounted) setState(() => _betaPendientes = items);
+      } catch (error) {
+        if (mounted) _showMessage('No se pudieron leer solicitudes de '
+            'beta pendientes: $error');
+      }
+      return;
+    }
     if (!OfficialHabitEmulatorService.enabled) return;
     try {
       final items = await const PendingOfficialHabitOperations()
@@ -263,6 +276,81 @@ class _HabitsScreenState extends State<HabitsScreen> {
     } finally {
       if (mounted) setState(() => _recuperando = false);
     }
+  }
+
+  Future<void> _recuperarBetaPendiente(BetaHabitPendingEntry item) async {
+    if (_recuperando || saving) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recuperar solicitud de beta'),
+        content: Text(
+          'Se volverá a consultar ${item.action} para el hábito '
+          '${item.habitId} con el mismo identificador de operación. '
+          'El servidor podría haberla confirmado anteriormente. '
+          'No se generará una solicitud diferente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Recuperar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _recuperando = true);
+    try {
+      final response = await const PendingBetaHabitOperations()
+          .recuperar(item);
+      if (!mounted) return;
+      _showMessage(response['alreadyProcessed'] == true
+          ? 'El servidor ya había confirmado esta operación.'
+          : 'Operación recuperada y confirmada por el servidor.');
+      await _load();
+      await _cargarPendientes();
+    } catch (error) {
+      if (mounted) {
+        _showMessage('No se pudo recuperar la operación: $error');
+      }
+    } finally {
+      if (mounted) setState(() => _recuperando = false);
+    }
+  }
+
+  Widget _avisoBetaPendientes() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Solicitudes de beta sin confirmar',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('La respuesta puede haberse perdido. '
+                'Recupera la solicitud original; no se crearán '
+                'nuevas recompensas por reintento.'),
+            for (final item in _betaPendientes)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text('${item.action}: ${item.habitId}'),
+                subtitle: Text('Intento: ${item.attemptId}'),
+                trailing: TextButton(
+                  onPressed: _recuperando || saving
+                      ? null : () => _recuperarBetaPendiente(item),
+                  child: const Text('Recuperar'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _avisoPendientes() {
@@ -769,6 +857,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
                           ),
                           if (_pendientes.isNotEmpty) ...[
                             _avisoPendientes(),
+                            const SizedBox(height: 14),
+                          ],
+                          if (BetaHabitGateway.enabled &&
+                              _betaPendientes.isNotEmpty) ...[
+                            _avisoBetaPendientes(),
                             const SizedBox(height: 14),
                           ],
                           const SizedBox(height: 20),
