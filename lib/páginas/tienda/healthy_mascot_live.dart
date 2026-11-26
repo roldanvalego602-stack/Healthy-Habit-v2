@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -87,7 +88,13 @@ class HealthyMascotLive extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context) {
+    if (Firebase.apps.isEmpty ||
+        FirebaseAuth.instance.currentUser == null) {
+      return Image.asset('assets/mascot/healthy.png',
+        width: size, height: size, fit: BoxFit.contain);
+    }
+    return SizedBox(
     width: size,
     height: size,
     child: FittedBox(
@@ -105,4 +112,5 @@ class HealthyMascotLive extends StatelessWidget {
       ),
     ),
   );
+  }
 }
