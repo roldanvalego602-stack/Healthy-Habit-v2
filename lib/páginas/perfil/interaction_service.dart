@@ -35,8 +35,9 @@ class InteractionService {
     // esta autorización en servidor.
     // Reacciones a un evento concreto: no confiar en un ID inventado.
     // El servidor volverá a validar titular y amistad mediante reglas.
-    if (challengeId.startsWith('event:')) {
-      final id = challengeId.substring(6);
+    if (challengeId.startsWith('level_') ||
+        challengeId.startsWith('completed_')) {
+      final id = challengeId;
       if (id.isEmpty || id.length > 120 ||
           !RegExp(r'^[a-zA-Z0-9_-]+
       final sticker = challengeId.substring(8);
