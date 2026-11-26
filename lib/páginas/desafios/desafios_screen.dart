@@ -914,9 +914,14 @@ class _ChallengeCard extends StatelessWidget {
             )
           else if (isCompleted)
             _actionButton(
-              label: 'Reclamar recompensa',
-              icon: Icons.card_giftcard_rounded,
-              onPressed: processing ? null : onClaim,
+              label: BetaHabitGateway.enabled
+                  ? 'Reclamar recompensa'
+                  : 'Recompensa pendiente de verificación',
+              icon: BetaHabitGateway.enabled
+                  ? Icons.card_giftcard_rounded
+                  : Icons.verified_user_outlined,
+              onPressed: !BetaHabitGateway.enabled || processing
+                  ? null : onClaim,
               background: const Color(0xFF00A875),
             )
           else if (isClaimed)
