@@ -105,3 +105,49 @@ test("la activación oficial permite los 36 hábitos sin cambiar el piloto", () 
     }
   }
 });
+
+test("la activación oficial admite configuración interactiva no económica", () => {
+  const base = {
+    habitId: "hidr_003", attemptId: "official_attempt_0001",
+    operationId: "official_operation_0001",
+  };
+  const samples = [
+    {type: "manual", target: 1, unit: "vez"},
+    {type: "hydration", target: 2000, unit: "ml"},
+    {type: "counter", target: 7, unit: "vasos"},
+    {type: "steps", target: 10000, unit: "pasos"},
+    {type: "timer", target: 60, unit: "segundos"},
+    {type: "stopwatch", target: 180, unit: "segundos"},
+    {type: "breathing", target: 180, unit: "segundos"},
+    {type: "pomodoro", target: 1500, unit: "segundos"},
+  ];
+  for (const interaction of samples) {
+    const request = {...base, interaction};
+    assert.deepEqual(validateOfficialActivation(request), request);
+    assert.throws(() => validateActivation(request),
+      RegistrationPolicyError,
+      "El piloto limitado a tres no acepta herramientas nuevas");
+  }
+});
+
+test("herramientas manipuladas nunca pueden introducir economía ni metas libres", () => {
+  const base = {
+    habitId: "hidr_003", attemptId: "official_attempt_0001",
+    operationId: "official_operation_0001",
+  };
+  const invalid = [
+    {type: "counter", target: 1, unit: "vasos", xp: 999},
+    {type: "timer", target: 100, unit: "minutos"},
+    {type: "hydration", target: 100, unit: "pasos"},
+    {type: "steps", target: 10001, unit: "pasos"},
+    {type: "counter", target: 0, unit: "vasos"},
+    {type: "counter", target: 1.5, unit: "vasos"},
+    {type: "counter", target: 1, unit: "<script>"},
+    {type: "manual", target: 5, unit: "vez"},
+    {type: "counter", target: 1, unit: "vasos", value: 9999},
+  ];
+  for (const interaction of invalid) {
+    assert.throws(() => validateOfficialActivation({...base, interaction}),
+      RegistrationPolicyError);
+  }
+});
