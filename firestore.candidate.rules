@@ -526,6 +526,16 @@ service cloud.firestore {
           'permitirReacciones'
         ]);
       allow delete: if owner(uid);
+
+      // Cronología oficial: solo Admin SDK puede crear eventos. Las
+      // cuentas únicamente leen eventos de amistades recíprocas.
+      match /activity_events/{eventId} {
+        allow get, list: if authenticated()
+          && (owner(uid) ||
+              (exists(friendsRef(request.auth.uid, uid))
+                && exists(friendsRef(uid, request.auth.uid))));
+        allow create, update, delete: if false;
+      }
     }
 
     // Reacciones entre perfiles: el emisor crea, el destinatario consulta
