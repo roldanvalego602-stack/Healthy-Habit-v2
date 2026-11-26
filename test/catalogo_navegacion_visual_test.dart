@@ -12,7 +12,10 @@ void main() {
     expect(find.text('Explora por grupos del plato'), findsOneWidget);
     expect(find.text('Toca una sección del plato'), findsOneWidget);
 
-    await tester.tap(find.text('Cereales'));
+    final cereales = find.byKey(const ValueKey('plato-grupo-Cereales'));
+    await tester.ensureVisible(cereales);
+    await tester.pumpAndSettle();
+    await tester.tap(cereales);
     await tester.pumpAndSettle();
 
     expect(find.text('Explora por grupos del plato'), findsNothing);

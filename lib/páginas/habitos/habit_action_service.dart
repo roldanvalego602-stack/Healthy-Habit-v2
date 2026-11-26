@@ -176,7 +176,27 @@ class HabitActionService {
   /// El diálogo de confirmación debe ocurrir ANTES de invocar esta función.
   /// El contador de versión protege dos solicitudes simultáneas del asistente
   /// o la pantalla frente a cupos obsoletos.
-  Future<HabitActionResult> execute(HabitActionPreview preview) async {
+  Future<HabitActionResult> execute(
+    HabitActionPreview preview, {
+    Map<String, dynamic>? interaction,
+  }) async {
+    if (preview.remove && interaction != null) {
+      throw ArgumentError('No se configura una herramienta al abandonar un hábito.');
+    }
+    if (!preview.remove && interaction != null) {
+      const allowed = {
+        'manual', 'counter', 'timer', 'stopwatch',
+        'steps', 'hydration', 'breathing', 'pomodoro',
+      };
+      final type = interaction['type'];
+      final target = interaction['target'];
+      final unit = interaction['unit'];
+      if (type is! String || !allowed.contains(type) ||
+          target is! int || target < 1 || target > 86400 ||
+          unit is! String || unit.isEmpty || unit.length > 40) {
+        throw ArgumentError('Configuración de herramienta no válida.');
+      }
+    }
     final userRef = _userRef;
     if (userRef.id != preview.userId) {
       throw StateError('La sesión cambió. Vuelve a solicitar la acción.');
@@ -185,6 +205,13 @@ class HabitActionService {
     // Modo aislado: el servidor verifica límites y saldo a partir
     // de Firestore. La ruta de producción permanece sin cambios.
     if (OfficialHabitEmulatorService.enabled) {
+      if (!preview.remove && interaction != null &&
+          interaction['type'] != 'manual') {
+        throw StateError(
+          'Las herramientas interactivas aún no están disponibles en '
+          'el modo experimental del servidor.',
+        );
+      }
       const official = OfficialHabitEmulatorService();
       final operationId = official.newOperationId();
       if (preview.remove) {
@@ -331,6 +358,7 @@ class HabitActionService {
       }, SetOptions(merge: true));
       tx.set(habitRef, {
         ...habit.toMap(),
+        if (interaction != null) 'interaction': interaction,
         'acquiredAt': FieldValue.serverTimestamp(),
         'lastAttemptId': attemptRef.id,
         'lastStatus': 'inProgress',

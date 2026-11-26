@@ -168,7 +168,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               : 'manual';
       final type = configuredType.isEmpty ? fallbackType : configuredType;
       _interactionType =
-          ['counter', 'stopwatch', 'timer'].contains(type) ? type : 'manual';
+          const {'counter', 'stopwatch', 'timer', 'steps', 'hydration', 'breathing', 'pomodoro'}.contains(type) ? type : 'manual';
       _interactionTarget = _leerEntero(
         interaction['target'],
         _interactionType == 'counter' ? 1 : 60,
