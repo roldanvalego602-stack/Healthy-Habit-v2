@@ -50,7 +50,7 @@ class _ReactionPickerDialogState extends State<ReactionPickerDialog> {
         toUid: widget.toUid,
         emoji: emoji,
         challengeId: stickerId != null ? 'sticker:$stickerId' :
-            widget.eventId == null ? '' : 'event:${widget.eventId}',
+            widget.eventId == null ? '' : widget.eventId!,
         estado: 'enviado',
       );
 
