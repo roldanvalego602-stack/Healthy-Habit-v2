@@ -14,6 +14,7 @@ import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/habit_evidence_image_preparer.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/healthy_reminders_service.dart';
 import 'habit_interaction_card.dart';
@@ -214,7 +215,12 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       if (!mounted || imagen == null) return;
       final bytes = await imagen.readAsBytes();
       if (!mounted) return;
-      if (bytes.lengthInBytes > TemporaryEvidenceService.maxImageBytes) {
+      // En modo oficial, la evidencia se vuelve a codificar como JPEG
+      // de máximo 250 KB, sin metadatos EXIF del archivo original.
+      final prepared = OfficialHabitEmulatorService.enabled
+          ? const HabitEvidenceImagePreparer().prepare(bytes).bytes
+          : bytes;
+      if (prepared.lengthInBytes > TemporaryEvidenceService.maxImageBytes) {
         _mostrarMensaje(
           'La imagen supera 250 KB. Selecciona otra más pequeña.',
         );
@@ -222,7 +228,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       }
       setState(() {
         _imagenSeleccionada = imagen;
-        _bytesImagen = bytes;
+        _bytesImagen = prepared;
         _error = null;
       });
     } catch (e) {
@@ -274,18 +280,13 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       _error = null;
     });
     try {
-      // El piloto de 36 hábitos registra únicamente actividades declaradas.
-      // Notas, actividades interactivas y fotos requieren un contrato de
-      // backend distinto; no se acreditan ni se pierden silenciosamente.
+      // La foto opcional no concede XP adicional ni verifica el hábito.
+      // Solo funciona en el proyecto aislado demo-healthy-habit.
       if (OfficialHabitEmulatorService.enabled) {
-        if (_bytesImagen != null ||
-            !const {'manual', 'counter', 'hydration', 'timer', 'stopwatch',
+        if (!const {'manual', 'counter', 'hydration', 'timer', 'stopwatch',
               'breathing', 'pomodoro', 'steps'}
                 .contains(_interactionType)) {
-          throw StateError(
-            'El registro experimental admite notas, contadores, hidratación '
-            'y sesiones de tiempo autodeclaradas, pero todavía no permite '
-            'fotografías. Los pasos del dispositivo no se verifican.');
+          throw StateError('Tipo de interacción no admitido en el piloto.');
         }
         // La sesión guiada o cronometrada es una declaración del cliente;
         // no acredita tiempo físicamente verificado. El backend
@@ -300,12 +301,20 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   ? 'pasos' : _interactionUnit,
             };
         const service = OfficialHabitEmulatorService();
-        final response = await const PendingOfficialHabitOperations()
-            .register(
-              habitoRef.id, attemptRef.id,
-              note: _notaController.text.trim(),
-              interaction: interaction,
-            );
+        final pending = const PendingOfficialHabitOperations();
+        final photoBytes = _bytesImagen;
+        final response = photoBytes == null
+            ? await pending.register(
+                habitoRef.id, attemptRef.id,
+                note: _notaController.text.trim(),
+                interaction: interaction,
+              )
+            : await pending.registerWithEvidence(
+                habitoRef.id, attemptRef.id,
+                imageBytes: photoBytes,
+                note: _notaController.text.trim(),
+                interaction: interaction,
+              );
         if (!mounted) return;
         final xp = _leerEntero(response['xpAwarded'], 0);
         final coins = _leerEntero(response['coinsAwarded'], 0);
@@ -1201,7 +1210,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             ),
             subtitle: Text(
               tieneImagen
-                  ? 'La imagen se guardará temporalmente durante 24 horas.'
+                  ? OfficialHabitEmulatorService.enabled
+                      ? 'Imagen privada y no verificada; caduca en 60 minutos.'
+                      : 'La imagen se guardará temporalmente durante 24 horas.'
                   : 'Selecciona una imagen para activar la evidencia.',
               style: const TextStyle(fontSize: 11),
             ),
