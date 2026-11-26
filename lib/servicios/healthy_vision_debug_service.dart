@@ -15,12 +15,12 @@ class HealthyVisionDebugService {
   static const enabledByFlag = bool.fromEnvironment(
     'HH_VISION_DEBUG', defaultValue: false,
   );
-  static bool get enabled => kDebugMode && enabledByFlag;
+  // El backend real está disponible para todos los usuarios autenticados.
+  static bool get enabled => useLiveBackend || (kDebugMode && enabledByFlag);
 
-  // Modo real de piloto: reutiliza exclusivamente la sesión Firebase actual.
-  // Permanece apagado por defecto y no se habilita en release.
+  // Backend real activado por defecto: exige Auth + App Check en servidor.
   static const useLiveBackend = bool.fromEnvironment(
-    'HH_VISION_LIVE_BACKEND', defaultValue: false,
+    'HH_VISION_LIVE_BACKEND', defaultValue: true,
   );
 
   static const host = String.fromEnvironment(
@@ -86,7 +86,7 @@ class HealthyVisionDebugService {
   static Future<DemoVisualPreview> analyze(
     Uint8List bytes, String profileId,
   ) async {
-    if (!enabled) throw StateError('Piloto deshabilitado.');
+    if (!enabled) throw StateError('Análisis visual deshabilitado.');
     if (useLiveBackend) {
       final app = Firebase.app();
       if (app.options.projectId != 'cloud-firestore-d8c61') {
