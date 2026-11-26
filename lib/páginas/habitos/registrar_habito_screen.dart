@@ -1386,6 +1386,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             HealthyLocalVisionPanel(
               image: _bytesImagen!,
               saving: _guardando,
+              habitTitle: _nombreHabito,
+              category: _categoria,
             ),
             const SizedBox(height: 12),
           ],
