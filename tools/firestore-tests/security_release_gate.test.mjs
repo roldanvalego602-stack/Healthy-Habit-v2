@@ -120,3 +120,23 @@ test('BLOQUEANTE: ningún cliente puede insertar recompensa diaria', async () =>
     rewardCoins: 200, claimed: false,
   }));
 });
+
+test('BLOQUEANTE: usuario no puede marcar como cobrado un desafío verificado', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/alice/challenges/server_awarded'), {
+      status: 'completed',
+      demoSeed: false,
+      progressVerified: true,
+      progressSource: 'habit_records',
+      currentProgress: 7,
+      totalProgress: 7,
+      xpReward: 80,
+      hcReward: 25,
+    });
+  });
+  await assertFails(updateDoc(doc(alice(),
+    'users/alice/challenges/server_awarded'), {
+    status: 'claimed',
+    claimedAt: new Date(),
+  }));
+});
