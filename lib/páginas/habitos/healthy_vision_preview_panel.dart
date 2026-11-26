@@ -9,8 +9,7 @@ import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/habit_vision_profile.dart';
 import '../../tema/healthy_theme.dart';
 
-/// El panel solo aparece en debug + HH_VISION_DEBUG=true.
-/// No comparte credenciales, documentos ni transacciones con la cuenta real.
+/// Previsualización visual: no verifica el hábito ni otorga XP.
 class HealthyVisionPreviewPanel extends StatefulWidget {
   const HealthyVisionPreviewPanel({
     super.key,
@@ -181,7 +180,9 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
             );
             _setQuotaWait(retryAt);
           }
-          _error = reason == 'daily-limit'
+          _error = reason == 'global-limit'
+              ? 'Se alcanzó el límite global de análisis del día.'
+              : reason == 'daily-limit'
               ? 'Alcanzaste el máximo diario de análisis. '
                 'El contador se reinicia a las 00:00 UTC.'
               : reason == 'cooldown'
@@ -193,7 +194,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
       } else {
         const messages = <String, String>{
           'permission-denied':
-              'Esta cuenta no está autorizada para el piloto de Vision.',
+              'No se pudo verificar la aplicación. Comprueba App Check.',
           'unauthenticated': 'Inicia sesión para analizar fotografías.',
           'invalid-argument': 'La fotografía o el perfil no son válidos.',
           'unavailable': 'Vision no está disponible. Intenta más tarde.',
@@ -238,19 +239,19 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
               Icon(Icons.science_outlined, color: scheme.primary, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Análisis visual · laboratorio',
+                child: Text('Reconocimiento de imágenes · demostración',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: HealthyAdaptive.text,
                     )),
               ),
-              const Text('DEBUG', style: TextStyle(fontSize: 10)),
+              const Text('BETA', style: TextStyle(fontSize: 10)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             HealthyVisionDebugService.useLiveBackend
-                ? 'Prueba controlada en Cloud Functions reales. Al pulsar Analizar '
+                ? 'Al pulsar Analizar '
                   'se enviará esta imagen a Google Cloud Vision, con posibles '
                   'cargos. El análisis no otorga XP ni monedas y no guarda la foto.'
                 : 'Opcional. Al pulsar Analizar, esta fotografía se envía '
@@ -311,7 +312,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
             const SizedBox(height: 10),
             Text(
               _remaining == null || _dailyLimit == null
-                  ? 'Piloto: máximo 15 solicitudes al día y una cada 60 segundos.'
+                  ? 'Demostración: máximo 3 análisis diarios por cuenta, uno cada 60 segundos.'
                   : 'Análisis restantes hoy: $_remaining de $_dailyLimit',
               key: const ValueKey('healthy-vision-quota-text'),
               style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
