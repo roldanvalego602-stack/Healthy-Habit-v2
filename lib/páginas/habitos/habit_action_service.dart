@@ -238,18 +238,14 @@ class HabitActionService {
     // Ruta autoritativa de beta: el servidor valida cupos, monedas y
     // estado. Nunca continuar a las transacciones directas de abajo.
     if (BetaHabitGateway.enabled) {
-      if (!preview.remove && interaction != null &&
-          interaction['type'] != 'manual') {
-        throw StateError(
-          'Las herramientas configurables aún no están disponibles '
-          'en la activación de beta.',
-        );
-      }
+      // La configuración interactiva se almacena en Functions como dato
+      // declarado por el usuario, nunca como evidencia ni recompensa.
       final response = await const PendingBetaHabitOperations().execute(
         action: preview.remove ? 'cancelar' : 'activar',
         habitId: habit.id,
         attemptId: preview.attemptId,
         maxPenalty: preview.remove ? preview.estimatedCost : null,
+        interaction: preview.remove ? null : interaction,
       );
       return HabitActionResult(
         habit: habit,
