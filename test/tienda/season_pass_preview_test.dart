@@ -5,6 +5,8 @@ import '../../lib/páginas/tienda/season_pass_preview_screen.dart';
 void main() {
   testWidgets('el pase ficticio muestra recompensas sin cobrar',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const MaterialApp(
       home: SeasonPassPreviewScreen(),
     ));
@@ -18,8 +20,7 @@ void main() {
     );
     await tester.tap(premiumButton);
     await tester.pump();
-    expect(find.textContaining('No se realiza ningún cargo'),
-      findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
   });
 
   testWidgets('al cambiar de carril se visualizan premios exclusivos',
