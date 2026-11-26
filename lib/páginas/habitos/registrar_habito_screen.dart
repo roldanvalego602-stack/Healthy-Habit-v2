@@ -363,7 +363,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 final n = int.tryParse(controller.text.trim());
                 final maximum = timed.contains(type) ? 1440 : 10000;
                 if (type != 'manual' &&
-                    (n == null || n < 1 || n > maximum)) return;
+                    (n == null || n < 1 || n > maximum)) {
+                  return;
+                }
                 Navigator.pop(dialogContext, {
                   'type': type,
                   'target': type == 'manual' ? 1 :
