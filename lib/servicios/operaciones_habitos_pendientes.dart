@@ -345,7 +345,7 @@ class PendingOfficialHabitOperations {
       throw ArgumentError('La fotografía debe medir como máximo 250 KB.');
     }
     if (note.length > 500 ||
-        RegExp(r'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]').hasMatch(note) ||
+        RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]').hasMatch(note) ||
         !_validInteraction(interaction)) {
       throw ArgumentError('Nota o actividad interactiva inválida.');
     }
