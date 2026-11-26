@@ -682,6 +682,26 @@ exports.purchaseOfficialShopBeta = onCall(
 );
 
 
+// Equipamiento y restauración de apariencia, sin saldos del cliente.
+const {changeShopAppearance} = require("./shop_appearance_transaction");
+exports.changeShopAppearanceBeta = onCall(
+  {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
+  async (request) => {
+    try {
+      const uid = requireBetaHabitAccess(request);
+      return await changeShopAppearance({db, uid, data: request.data});
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      console.error("[appearance-beta] Error inesperado:", {
+        code: error?.code ?? "internal",
+      });
+      throw new HttpsError("internal", "No se pudo actualizar la apariencia.");
+    }
+  }
+);
+
 // Adaptador preservado para operaciones demo de evidencia (reserva,
 // subida y asociación): utilizan contrato y validaciones propias.
 function officialDemoCallable(operation) {
