@@ -78,8 +78,11 @@ class ProfesionalesScreen extends StatelessWidget {
                     : '$destination\n\n$detail';
                 await Clipboard.setData(ClipboardData(text: content));
                 if (sheet.mounted) Navigator.pop(sheet);
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Datos de muestra copiados.')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Datos de muestra copiados.')),
+                  );
+                }
               },
               icon: const Icon(Icons.copy_outlined),
               label: const Text('Copiar datos de muestra'),
