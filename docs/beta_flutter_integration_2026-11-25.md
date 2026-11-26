@@ -18,7 +18,13 @@ Firestore nombrada `default`.
 ## Límites deliberados
 
 1. `HH_BETA_HABITS_CLIENT` es `false` por defecto. **No activarlo**.
-2. Este gateway aún **no está conectado a las pantallas** de hábitos.
+2. El gateway está **conectado condicionalmente** a
+   `HabitActionService.execute` y `RegistrarHabitoScreen._guardarRegistro`.
+   Con `HH_BETA_HABITS_CLIENT=false` se mantiene el comportamiento
+   anterior; con la bandera activa se usan las tres callables de beta y
+   nunca las transacciones directas de esas rutas. Aún faltan pruebas
+   instrumentadas de extremo a extremo y la recuperación visible tras
+   reiniciar el dispositivo.
 3. `firebase_app_check: ^0.3.2+10` está incorporado en
    `pubspec.yaml` y se activa en `lib/main.dart` solo bajo
    `HH_BETA_HABITS_CLIENT=true`. Falta registrar el proveedor en Firebase
@@ -28,8 +34,10 @@ Firestore nombrada `default`.
 4. Falta una interfaz para listar y recuperar solicitudes pendientes
    después de reiniciar el teléfono; NO se deben descartar sin verificar
    el estado del servidor.
-5. No se admiten imágenes en este gateway. La ruta de evidencia sigue
-   aislada en `demo-healthy-habit`.
+5. En beta, la pantalla deshabilita la selección de imágenes y
+   rechaza toda fotografía antes de registrar. La ruta de evidencia sigue
+   aislada en `demo-healthy-habit`; no se rebaja silenciosamente un
+   registro con foto a uno sin ella.
 6. El reclamo de premios diarios sigue exclusivo del emulador demo.
 7. Quedan pendientes compras, logros, desafíos y cualquier otro flujo
    que escriba XP, Habit Coins o progreso desde Flutter.
@@ -96,3 +104,19 @@ desplegadas en `default` siguen abiertas.
 Fuentes de implementación:
 - https://firebase.google.com/docs/app-check/flutter/default-providers
 - https://firebase.google.com/docs/app-check/flutter/debug-provider
+
+## Estado de la conexión de pantallas
+
+- `HabitActionService.execute`: activar y cancelar usan
+  `PendingBetaHabitOperations.execute` con `chargedCoins` proveniente
+  del servidor, cuando el modo beta está activo.
+- `RegistrarHabitoScreen._guardarRegistro`: envía notas y actividad
+  autodeclarada a `registerOfficialHabitBeta`; usa `xpAwarded`,
+  `coinsAwarded`, `progress` y `completed` de la respuesta del servidor.
+- La recompensa diaria de racha en su diálogo sigue exclusiva del modo
+  demo; **no** se invoca `claimDailyStreakReward` desde beta.
+- `main.dart` impide activar demo y beta simultáneamente.
+
+Esta entrega no autoriza distribuir ni habilitar la beta real. Falta la
+interfaz de recuperación tras pérdida de respuesta, la migración de tienda
+y recompensas, y el bloqueo de las reglas de Firestore en `default`.
