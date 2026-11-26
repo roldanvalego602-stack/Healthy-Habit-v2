@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
 import 'tema/healthy_profile_presentation.dart';
@@ -15,6 +16,7 @@ import 'servicios/preferencias_app.dart';
 import 'servicios/healthy_reminders_service.dart';
 import 'servicios/healthy_public_profile_service.dart';
 import 'servicios/shop_demo_bootstrap.dart';
+import 'servicios/beta_habit_gateway.dart';
 
 // Importaciones de tus pantallas
 import 'páginas/habitos/habits_screen.dart';
@@ -55,6 +57,29 @@ Future<void> main() async {
         ? ShopDemoBootstrap.demoOptions
         : DefaultFirebaseOptions.currentPlatform,
   );
+
+  // App Check solamente para el cliente de beta cerrado. En ejecuciones
+  // normales y en demo no se cambia ningún proveedor ni proyecto.
+  // El backend permanece cerrado hasta endurecer la base llamada 'default'.
+  if (BetaHabitGateway.enabled) {
+    if (ShopDemoBootstrap.enabled ||
+        Firebase.app().options.projectId != BetaHabitGateway.projectId ||
+        kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      throw StateError(
+        'La beta de hábitos solo admite Android y el proyecto autorizado.');
+    }
+    const debugAttestation = bool.fromEnvironment(
+      'HH_BETA_APP_CHECK_DEBUG', defaultValue: false);
+    if (debugAttestation && !kDebugMode) {
+      throw StateError(
+        'App Check de depuración está prohibido en compilaciones release.');
+    }
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: debugAttestation
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+    );
+  }
 
   final firestore = FirebaseFirestore.instanceFor(
     app: Firebase.app(), databaseId: 'default');
