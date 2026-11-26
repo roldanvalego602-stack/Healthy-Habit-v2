@@ -6,6 +6,7 @@ import '../../servicios/daily_streak_display.dart';
 import '../../servicios/daily_streak_reward_tiers.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_streak_art.dart';
+import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_streak_items.dart';
 
 /// Racha diaria y recompensas verificadas por el servidor.
@@ -100,9 +101,11 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                           style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(fontWeight: FontWeight.w900)),
                       Text(streak == 0
-                          ? 'Registra una actividad válida para iniciar.'
+                          ? '¡Tu primera racha comienza aquí! '
+                            'Registra una actividad para encender tu progreso.'
                           : 'Llevas $streak días de constancia. '
-                              'Registra una sesión cada día para continuar.'),
+                              'Registra una sesión cada día para continuar.',
+                        textAlign: TextAlign.center),
                       const SizedBox(height: 12),
                       Text('Mejor racha: $best días'),
                     ],
