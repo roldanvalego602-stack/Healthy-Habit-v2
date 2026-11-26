@@ -20,7 +20,6 @@ class HealthyVisualMatch {
   static const _positive = <String, List<String>>{
     'hydration': [
       'water', 'drinking water', 'bottled water', 'water bottle',
-      'bottle', 'drinkware', 'drinking glass', 'glass', 'cup',
     ],
     'fruit_vegetable': [
       'fruit', 'vegetable', 'apple', 'banana', 'orange', 'pear',
@@ -32,7 +31,7 @@ class HealthyVisualMatch {
       'food', 'dish', 'meal', 'breakfast', 'lunch', 'dinner',
       'cuisine', 'sandwich', 'soup', 'pasta', 'rice',
       'salad', 'bread', 'vegetable', 'fruit', 'pizza',
-      'hamburger', 'plate',
+      'hamburger',
     ],
   };
 
