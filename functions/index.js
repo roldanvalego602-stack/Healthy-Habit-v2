@@ -637,9 +637,32 @@ exports.activateOfficialHabitBeta = officialHabitBetaAction("activate");
 exports.cancelOfficialHabitBeta = officialHabitBetaAction("cancel");
 exports.registerOfficialHabitBeta = officialHabitBetaAction("register");
 
+// Reclamación de desafíos únicamente cuando las reglas restrictivas
+// impidan crear progreso verificado desde cualquier cliente.
+const {claimVerifiedChallenge} = require("./challenge_claim_transaction");
+const {requireBetaHabitAccess} = require("./official_beta_access");
+exports.claimVerifiedChallengeBeta = onCall(
+  {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
+  async (request) => {
+    try {
+      const uid = requireBetaHabitAccess(request);
+      return await claimVerifiedChallenge({db, uid, data: request.data});
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      console.error("[challenge-beta] Error inesperado:", {
+        code: error?.code ?? "internal",
+      });
+      throw new HttpsError("internal", "No se pudo reclamar el desafío.");
+    }
+  }
+);
+
+
 // Compra autoritativa para beta cerrada: comparte catálogo y transacción
 // idempotente con el emulador, pero nunca el permiso de acceso.
-const {requireBetaHabitAccess} = require("./official_beta_access");
+// Reutilizar requireBetaHabitAccess del bloque de desafíos.
 exports.purchaseOfficialShopBeta = onCall(
   {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
   async (request) => {
