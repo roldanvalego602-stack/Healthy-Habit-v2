@@ -48,7 +48,8 @@ test("delegación no calcula XP y conserva identificador original", async () => 
   });
   const db = {runTransaction() {}};
   for (const action of ["activate", "cancel", "register"]) {
-    assert.deepEqual(await dispatch({action, uid: "alice", data: ids, db}), {ok: true});
+    const data = action === "cancel" ? {...ids, maxPenalty: 0} : ids;
+    assert.deepEqual(await dispatch({action, uid: "alice", data, db}), {ok: true});
   }
   assert.deepEqual(called.map(([action]) => action), ["activate", "cancel", "register"]);
   for (const [, payload] of called) {
@@ -67,4 +68,45 @@ test("rechaza un cliente que intente suministrar un Firestore inválido", async 
     dispatch({action: "register", uid: "alice", data: ids, db: {}}),
     /Firestore de servidor/
   );
+});
+
+test("valida el catálogo, los IDs y el cupo de penalización antes de despachar", () => {
+  assert.throws(() => assertOfficialRequest({
+    action: "activate", uid: "alice", data: {...ids, habitId: "falso_001"},
+  }), {code: "failed-precondition"});
+  assert.throws(() => assertOfficialRequest({
+    action: "register", uid: "alice",
+    data: {...ids, operationId: "corto"},
+  }), {code: "invalid-argument"});
+  assert.throws(() => assertOfficialRequest({
+    action: "cancel", uid: "alice", data: ids,
+  }), {code: "invalid-argument"});
+  assert.throws(() => assertOfficialRequest({
+    action: "cancel", uid: "alice",
+    data: {...ids, maxPenalty: 999},
+  }), {code: "invalid-argument"});
+});
+
+test("rechaza notas y actividades malformadas antes de ejecutar la transacción", () => {
+  assert.throws(() => assertOfficialRequest({
+    action: "register", uid: "alice",
+    data: {...ids, note: "a".repeat(501)},
+  }), {code: "invalid-argument"});
+  assert.throws(() => assertOfficialRequest({
+    action: "register", uid: "alice",
+    data: {...ids, interaction: {type: "steps", value: 10,
+      target: 10, unit: "horas"}},
+  }), {code: "invalid-argument"});
+  assert.throws(() => assertOfficialRequest({
+    action: "activate", uid: "alice", data: {...ids, note: "extra"},
+  }), {code: "invalid-argument"});
+});
+
+test("permite registros declarados sin que la herramienta se considere verificada", () => {
+  const data = {...ids, note: "Caminé hoy",
+    interaction: {type: "steps", value: 1500, target: 1000, unit: "pasos"}};
+  assert.deepEqual(assertOfficialRequest({
+    action: "register", uid: "alice", data,
+  }), {uid: "alice", data});
+  assert.equal(Object.hasOwn(data.interaction, "verified"), false);
 });
