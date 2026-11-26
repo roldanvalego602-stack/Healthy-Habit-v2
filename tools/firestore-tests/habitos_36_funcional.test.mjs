@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import {initializeApp, deleteApp} from 'firebase/app';
 import {getAuth, connectAuthEmulator, signInAnonymously, signOut} from 'firebase/auth';
 import {getFirestore, connectFirestoreEmulator, getDoc, doc, collection,
-  updateDoc} from 'firebase/firestore';
+  updateDoc, getDocs} from 'firebase/firestore';
 import {getFunctions, connectFunctionsEmulator, httpsCallable} from 'firebase/functions';
 
 const require = createRequire(import.meta.url);
@@ -217,6 +217,17 @@ test('36 hábitos: un registro oficial real por intento y cobro idempotente', as
   assert.equal(profile.habitCoins, 1000 + awardedLevelCoins - paidPenalty,
     'El saldo incluye recompensas de nivel menos penalizaciones');
   assert.equal(profile.habitMutationVersion, 72);
+  const timeline = await getDocs(collection(
+    db, 'public_profiles', uid, 'activity_events'));
+  const events = timeline.docs.map((d) => d.data());
+  assert.equal(events.length, 1,
+    'Solo el nivel nuevo genera un evento; los hábitos no se publican solos');
+  assert.equal(events[0].kind, 'level_up');
+  assert.equal(events[0].actorUid, uid);
+  assert.equal(events[0].level, 20);
+  await assert.rejects(updateDoc(timeline.docs[0].ref, {level: 999}),
+    (error) => error.code === 'permission-denied',
+    'El usuario no puede falsificar noticias sobre niveles');
 });
 
 
