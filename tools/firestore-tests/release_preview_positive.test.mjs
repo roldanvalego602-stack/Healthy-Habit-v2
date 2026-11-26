@@ -57,6 +57,23 @@ test('lockdown: comprar sin descuento se rechaza', async () => {
   await assertFails(updateDoc(doc(as('alice'), 'users/alice'),
     {shopInventory: ['avatar_frame'], habitCoins: 250}));
 });
+test('lockdown: ni siquiera el propietario puede fabricar constancias de desafíos', async () => {
+  await seed();
+  const path = 'system/challenge_attestations/users/alice/challenges/bonus';
+  const payload = {
+    uid: 'alice', challengeId: 'bonus',
+    source: 'official_habit_registration', status: 'verified',
+    progressVerified: true, currentProgress: 7, totalProgress: 7,
+    xpReward: 80, hcReward: 25,
+  };
+  await assertFails(setDoc(doc(as('alice'), path), payload));
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), payload);
+  });
+  await assertFails(updateDoc(doc(as('alice'), path), {xpReward: 999}));
+  await assertFails(getDoc(doc(as('alice'), path)));
+});
+
 test('lockdown: el propietario lee datos de intentos preexistentes', async () => {
   await seed();
   await env.withSecurityRulesDisabled(async (ctx) => {
