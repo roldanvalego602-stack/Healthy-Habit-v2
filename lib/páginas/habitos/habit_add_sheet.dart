@@ -195,16 +195,19 @@ class _HabitAddSheetState extends State<HabitAddSheet> {
                                     style: TextStyle(fontSize: 12,
                                       color: HealthyAdaptive.text),
                                   ),
-                                  CheckboxListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    dense: true,
-                                    controlAffinity: ListTileControlAffinity.leading,
-                                    title: const Text('No volver a mostrar '
-                                        'esta explicación',
-                                        style: TextStyle(fontSize: 12)),
-                                    value: _hideNextTime,
-                                    onChanged: (value) => setState(
-                                        () => _hideNextTime = value ?? false),
+                                  Material(
+                                    color: HealthyAdaptive.mint,
+                                    child: CheckboxListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                      controlAffinity: ListTileControlAffinity.leading,
+                                      title: const Text('No volver a mostrar '
+                                          'esta explicación',
+                                          style: TextStyle(fontSize: 12)),
+                                      value: _hideNextTime,
+                                      onChanged: (value) => setState(
+                                          () => _hideNextTime = value ?? false),
+                                    ),
                                   ),
                                   Align(
                                     alignment: Alignment.centerRight,
