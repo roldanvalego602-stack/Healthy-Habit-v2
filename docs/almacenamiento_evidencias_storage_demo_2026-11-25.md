@@ -515,3 +515,61 @@ npm --prefix functions test
 El comando de auditoría puede ejecutarse con Firestore y Storage Emulator
 activos mediante las variables de entorno ya documentadas. Los
 resultados de esta etapa **todavía requieren validación local**.
+
+
+## Décima etapa: formulario oficial integrado exclusivamente en demo
+
+Se conectó `lib/páginas/habitos/registrar_habito_screen.dart`
+con `HabitEvidenceImagePreparer` (JPEG <=250 KB) y con un nuevo
+`PendingOfficialHabitOperations.registerWithEvidence`.
+
+La fotografía seleccionada se asocia al **mismo operationId** que
+gobierna el registro de hábitos. El diario local persiste la operación
+antes de contactar a Functions Emulator y mantiene el ID si cualquier
+fase falla. El flujo con foto es:
+
+1. Revalidar el modo oficial aislado y preparar JPEG sin EXIF.
+2. Intentar recuperar una asociación ya confirmada si se perdió el ACK.
+3. Reservar la ruta, subir con estado transaccional en Firestore.
+4. Registrar el hábito con el mismo ID y los datos originales.
+5. Asociar la imagen al log; solo entonces se informa éxito completo.
+
+Un fallo de asociación posterior al registro **no inicia una operación
+nueva** ni concede XP duplicado en el siguiente reintento. El diario
+distingue `withEvidence: true` y nunca permite reintentar una operación
+fotográfica como si fuese una operación sin fotografía.
+
+La opción general `recuperar`, cuando detecta una operación
+fotográfica, solo intenta confirmar una asociación ya realizada.
+Si la foto no está adjunta, la operación permanece pendiente y el
+usuario debe continuar con la fotografía original; no se registrará
+sin ella ni se duplicarán recompensas.
+
+El modo normal de producción no usa el servicio fotográfico del
+Emulator. En la UI del modo demo se informa que la evidencia es
+privada, **no verificada** y vence en 60 minutos; tampoco se promete
+el antiguo bonus ficticio de 15 XP.
+
+**Pruebas pendientes de ejecución en el equipo del usuario:**
+
+```bash
+git status --short
+git diff -- lib/páginas/habitos/registrar_habito_screen.dart
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze lib/páginas/habitos/registrar_habito_screen.dart \
+  lib/servicios/operaciones_habitos_pendientes.dart \
+  lib/servicios/evidence_storage_demo_service.dart
+flutter test test/operacion_evidencia_pendiente_test.dart
+flutter test test/habit_evidence_image_preparer_test.dart
+npm --prefix tools/firestore-tests run test:cliente-integral:emulador
+```
+
+Si el archivo real del formulario tiene cambios locales, conservarlos
+antes del merge y fusionar manualmente; **no ejecutar reset --hard,
+clean -fd ni sobrescribir archivos sin revisar**.
+
+Advertencias abiertas: falta una prueba Flutter de extremo a extremo
+del formulario con emuladores, y la recuperación general sin el
+archivo original solamente confirma asociaciones preexistentes.
+No desplegar a producción.
