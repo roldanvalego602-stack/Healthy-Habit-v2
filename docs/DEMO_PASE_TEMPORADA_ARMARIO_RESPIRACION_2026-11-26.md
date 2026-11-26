@@ -100,3 +100,42 @@ las reglas de producción por estos cambios.
 - Integración de compras reales en un proceso separado y autorizado.
 - Refinar sprites faciales de Mr. Healthy (parpadeo/mirada animada).
 - Probar el diálogo de pase y los sonidos retro en un Android físico.
+
+## 7. Ajustes posteriores: entrada numérica, colección de títulos y pausas del chat
+
+En `wardrobe_screen.dart` se conservan los deslizadores pero ahora hay
+botones para escribir **tamaño exacto en px (30–250)** y **ángulo exacto
+en grados (−180 a +180)**. Se validan límites y números no finitos y se
+guardan mediante el mismo formato de ajustes locales existente.
+
+Los títulos se gestionan en el Armario, con tarjetas de colección,
+candados, requisitos y selección. Catálogo:
+- «Semilla saludable»: inicial.
+- «Cultivador de constancia»: nivel 3.
+- «Explorador del bienestar»: nivel 5.
+- «Leyenda saludable»: nivel 10.
+- «Primer paso cumplido»: insignia oficial `primera_meta`.
+- «Guardián de la constancia»: insignia oficial `racha_7`.
+- «Espíritu del festival»: insignia `festival_participant_2026`.
+- «Campeón de temporada»: insignia `season_champion_01`.
+
+Las insignias de festivales y temporadas todavía NO se emiten; sus
+títulos permanecerán bloqueados. El cliente comprueba el nivel y, cuando
+se pueda leer, la noticia oficial de desbloqueo. El perfil escucha
+`profileTitle` y muestra la elección autorizada, o un título inicial
+de respaldo. Esto ofrece bloqueo **en la interfaz**, no antifraude
+definitivo: las reglas del servidor deberán impedir escrituras falsas
+antes de la beta pública; el perfil normal todavía mantiene rutas de
+escritura heredadas.
+
+Mr. Healthy muestra el indicador animado de «está escribiendo» y su
+mascota equipada durante la espera. Para respuestas locales rápidas,
+el mínimo aumenta según el tamaño del texto a **1.1–2.4 segundos**;
+si el cálculo genuino ya tardó más, no se añade espera artificial.
+El retardo no cambia contenido ni consulta a un modelo remoto.
+
+Pruebas incluidas: `test/perfil/profile_titles_test.dart`.
+Verificar en Android que los campos numéricos se abren sin desbordamiento
+al aparecer el teclado; desbloquear nivel 3 y elegir título, observarlo
+en Perfil; comprobar que festivales permanezcan bloqueados y que el
+chat muestre los puntos animados mientras responde.
