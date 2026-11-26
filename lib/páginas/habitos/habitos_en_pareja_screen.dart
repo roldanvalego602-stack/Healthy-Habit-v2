@@ -175,6 +175,47 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
     }
   }
 
+  /// Sólo lee perfiles públicos; nunca consulta intentos privados ajenos.
+  /// Hasta implementar un resumen compartido firmado por el servidor,
+  /// no se atribuyen registros a la otra persona.
+  Widget _participantPortraits(Map<String, dynamic> invite) {
+    final sender = invite['senderUid']?.toString() ?? '';
+    final recipient = invite['recipientUid']?.toString() ?? '';
+    if (sender.isEmpty || recipient.isEmpty) return const SizedBox.shrink();
+    return FutureBuilder<Map<String, Map<String, dynamic>>>(
+      future: AmigosServicio.perfiles([sender, recipient]),
+      builder: (context, snapshot) {
+        final profiles = snapshot.data ?? const <String, Map<String, dynamic>>{};
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            for (final uid in [sender, recipient]) ...[
+              CircleAvatar(
+                radius: 20,
+                backgroundImage:
+                    (profiles[uid]?['photoUrl']?.toString().isNotEmpty == true)
+                        ? NetworkImage(profiles[uid]!['photoUrl'].toString())
+                        : null,
+                child: profiles[uid]?['photoUrl']?.toString().isNotEmpty == true
+                    ? null
+                    : const Icon(Icons.person_rounded, size: 21),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(child: Text('Participan dos amigos',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: HealthyAdaptive.text))),
+          ]),
+          const SizedBox(height: 5),
+          Text('Los registros individuales todavía no se sincronizan '
+              'entre participantes; no se atribuyen avances ni bonos sin '
+              'confirmación del servidor.',
+              style: TextStyle(fontSize: 11, color: HealthyAdaptive.muted)),
+        ]);
+      },
+    );
+  }
+
   Widget _invitations(
       QuerySnapshot<Map<String, dynamic>> snapshot, String side) {
     final items = snapshot.docs.where((doc) =>
@@ -212,6 +253,10 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
                   : side == 'received'
                     ? 'Un amigo quiere realizar este hábito contigo.'
                     : 'Esperando la respuesta de tu amigo.'),
+                if (item.data()['status'] == 'aceptada') ...[
+                  const SizedBox(height: 10),
+                  _participantPortraits(item.data()),
+                ],
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 6, children: [
                   if (side == 'received' &&
