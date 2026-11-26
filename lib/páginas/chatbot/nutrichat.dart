@@ -11,6 +11,7 @@ import 'nutri_respuestas_service.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_chat_history.dart';
+import 'mr_healthy_chat_avatar.dart';
 import 'healthy_chat_history_sheet.dart';
 import 'healthy_chat_habit_card.dart';
 import 'healthy_chat_store_card.dart';
@@ -687,14 +688,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              width: 38,
-              height: 38,
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (_, __, ___) => const Icon(Icons.eco, color: _green),
-            ),
+            child: MrHealthyChatAvatar(size: 38, isTyping: isTyping),
           ),
         ],
       ),
@@ -753,13 +747,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     padding: const EdgeInsets.only(bottom: 20),
     child: Row(
       children: [
-        Image.asset(
-          'assets/mascot/healthy.png',
-          width: 52,
-          height: 52,
-          errorBuilder:
-              (_, __, ___) => const Icon(Icons.eco, size: 45, color: _green),
-        ),
+        MrHealthyChatAvatar(size: 52, isTyping: isTyping),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
