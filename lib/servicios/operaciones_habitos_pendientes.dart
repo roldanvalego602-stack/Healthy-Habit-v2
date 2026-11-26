@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -351,9 +353,14 @@ class PendingOfficialHabitOperations {
             operationId: savedOperation,
           );
           alreadyAttached = link['attached'] == true;
-        } on Exception {
-          // Si aún no existe un registro, continuamos por el flujo normal.
-          // La reserva y la subida son idempotentes y el registro también.
+        } on StateError catch (error) {
+          // Solo la ausencia de un registro o de una reserva permite
+          // iniciar la subida. Los errores de red, permisos u otros
+          // fallos se propagan para no ocultar una asociación fallida.
+          if (!error.toString().contains('(failed-precondition)')) {
+            rethrow;
+          }
+          debugPrint('Evidencia aún sin asociar; iniciar subida reservada.');
         }
         if (!alreadyAttached) {
           await const EvidenceStorageDemoService().upload(
