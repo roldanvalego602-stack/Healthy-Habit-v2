@@ -31,9 +31,10 @@ Firestore nombrada `default`.
    Console y verificar un Android real con App Check antes de habilitar el modo.
    El archivo `pubspec.lock` debe regenerarse con `flutter pub get`
    y quedar versionado tras confirmar la resolución de dependencias.
-4. Falta una interfaz para listar y recuperar solicitudes pendientes
-   después de reiniciar el teléfono; NO se deben descartar sin verificar
-   el estado del servidor.
+4. La pantalla de hábitos ya muestra solicitudes pendientes de beta
+   y exige confirmación antes de recuperarlas, sin generar nuevos IDs.
+   Falta verificar esta ruta con una prueba de integración real en Firebase
+   Emulator que simule pérdida de respuesta y reinicio.
 5. En beta, la pantalla deshabilita la selección de imágenes y
    rechaza toda fotografía antes de registrar. La ruta de evidencia sigue
    aislada en `demo-healthy-habit`; no se rebaja silenciosamente un
@@ -120,3 +121,22 @@ Fuentes de implementación:
 Esta entrega no autoriza distribuir ni habilitar la beta real. Falta la
 interfaz de recuperación tras pérdida de respuesta, la migración de tienda
 y recompensas, y el bloqueo de las reglas de Firestore en `default`.
+
+## Recuperación manual de operaciones de beta
+
+La sección de hábitos detecta solicitudes locales guardadas por la sesión
+actual y muestra un panel independiente del emulador. El usuario puede
+reintentar la solicitud con el mismo `operationId`, `attemptId`, nota,
+interacción y penalización máxima. No se envían operaciones al mostrar el
+panel; el reintento exige confirmación expresa.
+
+Un registro dañado, perteneciente a otra sesión, o cuya carga haya cambiado
+desde su lectura, **no se reenvía automáticamente**. Las solicitudes
+persistidas no se eliminan ante errores de red o pérdida de respuesta.
+
+La idempotencia económica depende de las transacciones del servidor:
+la recuperación local solo conserva el identificador que las transacciones
+necesitan para reconocer un reintento.
+
+Sigue pendiente realizar pruebas de extremo a extremo con Firebase Emulator
+y migrar compras, logros y otras escrituras económicas.
