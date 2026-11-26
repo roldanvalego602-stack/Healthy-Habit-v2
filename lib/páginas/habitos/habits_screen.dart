@@ -221,8 +221,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
             .listarPendientes();
         if (mounted) setState(() => _betaPendientes = items);
       } catch (error) {
-        if (mounted) _showMessage('No se pudieron leer solicitudes de '
-            'beta pendientes: $error');
+        if (mounted) {
+          _showMessage('No se pudieron leer solicitudes de '
+              'beta pendientes: $error');
+        }
       }
       return;
     }
@@ -232,8 +234,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
           .listarPendientes();
       if (mounted) setState(() => _pendientes = items);
     } catch (error) {
-      if (mounted) _showMessage('No se pudieron leer operaciones '
-          'pendientes: $error');
+      if (mounted) {
+        _showMessage('No se pudieron leer operaciones '
+            'pendientes: $error');
+      }
     }
   }
 
