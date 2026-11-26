@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_coin.dart';
-import '../../tema/healthy_streak_art.dart';
 
 /// Selección del usuario al registrar su primera sesión válida del día.
 enum StreakRewardAction { claimed, alreadyClaimed, later, showHistory }
