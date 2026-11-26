@@ -14,6 +14,7 @@ import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import '../../servicios/habit_evidence_image_preparer.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/healthy_reminders_service.dart';
@@ -205,6 +206,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   Future<void> _seleccionarImagen(ImageSource origen) async {
     if (_guardando || _cargando) return;
+    if (BetaHabitGateway.enabled) {
+      _mostrarMensaje('La evidencia fotográfica no está disponible en beta.');
+      return;
+    }
     try {
       final XFile? imagen = await _imagePicker.pickImage(
         source: origen,
@@ -282,7 +287,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
     try {
       // La foto opcional no concede XP adicional ni verifica el hábito.
       // Solo funciona en el proyecto aislado demo-healthy-habit.
-      if (OfficialHabitEmulatorService.enabled) {
+      if (OfficialHabitEmulatorService.enabled || BetaHabitGateway.enabled) {
         if (!const {'manual', 'counter', 'hydration', 'timer', 'stopwatch',
               'breathing', 'pomodoro', 'steps'}
                 .contains(_interactionType)) {
@@ -301,27 +306,43 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   ? 'pasos' : _interactionUnit,
             };
         const service = OfficialHabitEmulatorService();
-        final pending = const PendingOfficialHabitOperations();
         final photoBytes = _bytesImagen;
-        final response = photoBytes == null
-            ? await pending.register(
-                habitoRef.id, attemptRef.id,
+        // En beta no existe endpoint de evidencias: rechazar antes de
+        // solicitar registro, sin convertir una foto en registro normal.
+        if (BetaHabitGateway.enabled && photoBytes != null) {
+          throw StateError(
+            'Las evidencias aún no están disponibles en la beta cerrada.',
+          );
+        }
+        final response = BetaHabitGateway.enabled
+            ? await const PendingBetaHabitOperations().execute(
+                action: 'registrar',
+                habitId: habitoRef.id,
+                attemptId: attemptRef.id,
                 note: _notaController.text.trim(),
                 interaction: interaction,
               )
-            : await pending.registerWithEvidence(
-                habitoRef.id, attemptRef.id,
-                imageBytes: photoBytes,
-                note: _notaController.text.trim(),
-                interaction: interaction,
-              );
+            : photoBytes == null
+                ? await const PendingOfficialHabitOperations().register(
+                    habitoRef.id, attemptRef.id,
+                    note: _notaController.text.trim(),
+                    interaction: interaction,
+                  )
+                : await const PendingOfficialHabitOperations()
+                    .registerWithEvidence(
+                    habitoRef.id, attemptRef.id,
+                    imageBytes: photoBytes,
+                    note: _notaController.text.trim(),
+                    interaction: interaction,
+                  );
         if (!mounted) return;
         final xp = _leerEntero(response['xpAwarded'], 0);
         final coins = _leerEntero(response['coinsAwarded'], 0);
         final progress = _leerEntero(response['progress'], 0);
         final target = _leerEntero(response['target'], _meta);
         final completed = response['completed'] == true;
-        if (response['dailyStreakNew'] == true) {
+        if (OfficialHabitEmulatorService.enabled &&
+            response['dailyStreakNew'] == true) {
           final dayCount = _leerEntero(response['dailyStreakCount'], 1);
           final bonus = _leerEntero(response['dailyStreakReward'], 2);
           final day = response['dailyStreakDay']?.toString() ?? '';
@@ -1219,7 +1240,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             value: tieneImagen,
             activeColor: HealthyAdaptive.accent,
             onChanged:
-                _guardando
+                (_guardando || BetaHabitGateway.enabled)
                     ? null
                     : (value) {
                       if (!value) {
@@ -1255,8 +1276,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         Semantics(
           liveRegion: true,
           child: Text(
-            OfficialHabitEmulatorService.enabled
-                ? 'La fotografía no añade XP; la recompensa depende del hábito.'
+            (OfficialHabitEmulatorService.enabled || BetaHabitGateway.enabled)
+                ? 'La recompensa se calcula en el servidor, sin bonus por foto.'
                 : conEvidencia
                     ? 'Recompensa prevista: 15 XP con fotografía'
                     : 'Recompensa prevista: 10 XP sin fotografía',
@@ -1273,7 +1294,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             Expanded(
               child: _tarjetaXP(
                 titulo: 'Registro normal',
-                xp: OfficialHabitEmulatorService.enabled
+                xp: (OfficialHabitEmulatorService.enabled || BetaHabitGateway.enabled)
                     ? 'Según hábito' : '+10 XP',
                 descripcion: conEvidencia ? 'Opción alternativa' : 'Seleccionado',
                 color: normalColor,
@@ -1287,7 +1308,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             Expanded(
               child: _tarjetaXP(
                 titulo: 'Con evidencia',
-                xp: OfficialHabitEmulatorService.enabled
+                xp: (OfficialHabitEmulatorService.enabled || BetaHabitGateway.enabled)
                     ? 'Sin bonus' : '+15 XP',
                 descripcion: conEvidencia ? 'Seleccionado' : 'Añade una fotografía',
                 color: evidenceColor,
