@@ -43,8 +43,8 @@ el archivo `firebase.json` original ni publica las funciones antiguas.
 ## Comandos en Linux, desde raíz del repositorio
 
 ```bash
-git fetch origin main
-git merge --ff-only origin/main
+git fetch origin feature/mr-healthy-foundations
+git merge --ff-only origin/feature/mr-healthy-foundations
 cd vision-functions
 npm install
 node --check index.js
