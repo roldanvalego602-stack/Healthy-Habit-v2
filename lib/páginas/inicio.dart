@@ -14,6 +14,7 @@ import 'package:healthy_habit/páginas/ranking_screen.dart';
 import 'habitos/habits_screen.dart';
 import 'habitos/registrar_habito_screen.dart';
 import 'tienda/store_screen.dart';
+import 'tienda/healthy_mascot_live.dart';
 import 'niveles/camino_niveles_screen.dart';
 import 'niveles/levels_system.dart';
 import 'perfil/profile_screen.dart';
@@ -1316,12 +1317,7 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
 
-          Image.asset(
-            'assets/mascot/healthy.png',
-            width: 72,
-            height: 72,
-            errorBuilder: (_, __, ___) => const Icon(Icons.eco, size: 50),
-          ),
+          const HealthyMascotLive(size: 72),
         ],
       ),
     );
