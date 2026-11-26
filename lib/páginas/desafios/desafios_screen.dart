@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -213,10 +215,26 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     setState(() => _procesando = true);
 
     try {
-      final challengeRef = _challengesRef.doc(id);
-      final userRef = _userRef;
+      // La beta cerrada exige un desafío acreditado por el servidor.
+      // Nunca continuar al flujo de recompensas directas si falla Functions.
+      if (BetaHabitGateway.enabled) {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid == null) {
+          throw StateError('Inicia sesión para reclamar recompensas.');
+        }
+        await FirebaseFunctions.instanceFor(
+          app: Firebase.app(), region: 'us-central1',
+        ).httpsCallable('claimVerifiedChallengeBeta').call({
+          'challengeId': id,
+        });
+        if (FirebaseAuth.instance.currentUser?.uid != uid) {
+          throw StateError('La sesión cambió; consulta tu progreso.');
+        }
+      } else {
+        final challengeRef = _challengesRef.doc(id);
+        final userRef = _userRef;
 
-      await _db.runTransaction((transaction) async {
+        await _db.runTransaction((transaction) async {
         final challengeSnapshot = await transaction.get(challengeRef);
         final userSnapshot = await transaction.get(userRef);
 
@@ -260,7 +278,8 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           'status': 'claimed',
           'claimedAt': FieldValue.serverTimestamp(),
         });
-      });
+        });
+      }
 
       _mensaje('¡Recompensa reclamada!');
       if (!mounted) return;
