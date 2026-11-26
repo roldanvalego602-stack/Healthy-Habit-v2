@@ -42,6 +42,8 @@ jobs:
         run: node --test tools/tests/demo_social_audio_regression.test.mjs
       - name: Comprobar autenticidad de la cronología social
         run: node --test tools/tests/social_timeline_security.test.mjs
+      - name: Comprobar demostración segura, respiración y armario
+        run: node --test tools/tests/demo_monetization_wardrobe_breathing.test.mjs
 
   flutter:
     name: Analisis y pruebas Flutter
