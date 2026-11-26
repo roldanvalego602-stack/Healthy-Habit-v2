@@ -616,7 +616,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
       await _speech.stop();
       _listening = false;
     }
-    await _tts.stop();
     setState(() {
       _hasSentMessage = true;
       messages.add(userMessage);
@@ -803,7 +802,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void dispose() {
     _speech.cancel();
-    _tts.stop();
     _inputFocus.removeListener(_onFocusChange);
     messageController.removeListener(_onDraftChanged);
     _inputFocus.dispose();
