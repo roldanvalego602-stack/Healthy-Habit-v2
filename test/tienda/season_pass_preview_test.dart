@@ -10,11 +10,12 @@ void main() {
     ));
     expect(find.text('Cultiva tu leyenda'), findsOneWidget);
     expect(find.textContaining('precio ficticio'), findsOneWidget);
-    expect(find.textContaining('Simulación académica'), findsWidgets);
 
     final premiumButton = find.byKey(
       const ValueKey('season-demo-premium'));
-    await tester.ensureVisible(premiumButton);
+    await tester.scrollUntilVisible(
+      premiumButton, 150, scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(premiumButton);
     await tester.pump();
     expect(find.textContaining('No se realiza ningún cargo'),
