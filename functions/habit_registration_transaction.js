@@ -367,15 +367,9 @@ async function registerHabitTransaction(
           createdAt: FieldValue.serverTimestamp(),
         });
       }
-      if (completed) {
-        tx.create(timeline.doc("completed_" + ids.attemptId), {
-          actorUid: uid,
-          kind: "habit_completed",
-          sourceId: ids.attemptId,
-          habitId: ids.habitId,
-          createdAt: FieldValue.serverTimestamp(),
-        });
-      }
+      // Completar un hábito NO es autorización para publicarlo.
+      // Los eventos "habit_completed" se crearán solo por una acción
+      // explícita de compartir validada en el servidor.
     }
     tx.create(logRef, {
       habitId: ids.habitId, attemptId: ids.attemptId,
