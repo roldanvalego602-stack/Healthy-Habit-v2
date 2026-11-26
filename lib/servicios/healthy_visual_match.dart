@@ -1,0 +1,112 @@
+import 'healthy_local_image_recognition.dart';
+import 'habit_vision_profile.dart';
+
+/// Comparación orientativa: no equivale a verificar consumo o actividad.
+class HealthyVisualMatch {
+  const HealthyVisualMatch({
+    required this.profile,
+    required this.isMatch,
+    required this.confidence,
+    required this.message,
+    required this.matchedLabel,
+  });
+
+  final String? profile;
+  final bool isMatch;
+  final double confidence;
+  final String message;
+  final String? matchedLabel;
+
+  static const _positive = <String, List<String>>{
+    'hydration': [
+      'water', 'drinking water', 'bottled water', 'water bottle',
+      'bottle', 'drinkware', 'drinking glass', 'glass', 'cup',
+    ],
+    'fruit_vegetable': [
+      'fruit', 'vegetable', 'apple', 'banana', 'orange', 'pear',
+      'grape', 'strawberry', 'pineapple', 'watermelon', 'mango',
+      'carrot', 'broccoli', 'lettuce', 'salad', 'tomato',
+      'cucumber', 'potato', 'citrus',
+    ],
+    'meal': [
+      'food', 'dish', 'meal', 'breakfast', 'lunch', 'dinner',
+      'cuisine', 'sandwich', 'soup', 'pasta', 'rice',
+      'salad', 'bread', 'vegetable', 'fruit', 'pizza',
+      'hamburger', 'plate',
+    ],
+  };
+
+  static const _spanish = <String, String>{
+    'water': 'agua', 'drinking water': 'agua para beber',
+    'bottled water': 'agua embotellada',
+    'water bottle': 'botella de agua',
+    'bottle': 'botella', 'drinkware': 'recipiente para beber',
+    'drinking glass': 'vaso', 'glass': 'vaso', 'cup': 'taza o vaso',
+    'fruit': 'fruta', 'vegetable': 'verdura', 'apple': 'manzana',
+    'banana': 'plátano', 'orange': 'naranja', 'pear': 'pera',
+    'grape': 'uva', 'strawberry': 'fresa', 'pineapple': 'piña',
+    'watermelon': 'sandía', 'mango': 'mango', 'carrot': 'zanahoria',
+    'broccoli': 'brócoli', 'lettuce': 'lechuga', 'salad': 'ensalada',
+    'tomato': 'tomate', 'cucumber': 'pepino', 'potato': 'papa',
+    'citrus': 'cítrico', 'food': 'alimento', 'dish': 'platillo',
+    'meal': 'comida', 'breakfast': 'desayuno', 'lunch': 'almuerzo',
+    'dinner': 'cena', 'cuisine': 'comida preparada',
+    'sandwich': 'sándwich', 'soup': 'sopa', 'pasta': 'pasta',
+    'rice': 'arroz', 'bread': 'pan', 'pizza': 'pizza',
+    'hamburger': 'hamburguesa', 'plate': 'plato',
+  };
+
+  static String displayName(String label) =>
+      _spanish[label.toLowerCase().trim()] ?? label;
+
+  static HealthyVisualMatch evaluate({
+    required List<HealthyDetectedLabel> labels,
+    required String? profile,
+  }) {
+    if (profile == null || !_positive.containsKey(profile)) {
+      return const HealthyVisualMatch(
+        profile: null,
+        isMatch: false,
+        confidence: 0,
+        matchedLabel: null,
+        message: 'Este hábito no permite comparar automáticamente '
+            'su cumplimiento mediante una fotografía.',
+      );
+    }
+    final expected = _positive[profile]!;
+    HealthyDetectedLabel? best;
+    for (final label in labels) {
+      final term = label.name.toLowerCase().trim();
+      if (expected.contains(term) && label.confidence >= 0.55 &&
+          (best == null || label.confidence > best.confidence)) {
+        best = label;
+      }
+    }
+    if (best == null) {
+      return HealthyVisualMatch(
+        profile: profile,
+        isMatch: false,
+        confidence: 0,
+        matchedLabel: null,
+        message: labels.isEmpty
+            ? 'No se detectaron elementos claros en esta fotografía.'
+            : 'No se encontró una coincidencia visual suficiente con '
+              'el tipo de evidencia esperado.',
+      );
+    }
+    return HealthyVisualMatch(
+      profile: profile,
+      isMatch: true,
+      confidence: best.confidence,
+      matchedLabel: best.name,
+      message: 'Coincidencia visual: se identificó '
+          '${displayName(best.name)} en la fotografía.',
+    );
+  }
+
+  static String? suggestedProfile(String title, String category) =>
+      HabitVisionProfile.suggest(title: title, category: category);
+
+  static String titleOf(String? profile) =>
+      HabitVisionProfile.label(profile);
+}
