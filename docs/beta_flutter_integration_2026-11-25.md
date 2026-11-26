@@ -236,3 +236,20 @@ pasen las pruebas ni convertir datos históricos en verificaciones.
 Sigue pendiente auditar usuarios existentes, asegurar la procedencia
 real de los registros utilizados para progreso, sincronizar Flutter
 con las reglas finales y validar App Check en un dispositivo real.
+
+## Corrección de lectura de constancias (26 de noviembre)
+
+La prueba adversarial detectó que `/system/{path=**}` permitía leer
+constancias de progreso a cualquier usuario autenticado, a pesar de que
+las escrituras estaban bloqueadas. El patrón era recursivo y en Firestore
+los permisos de coincidencias múltiples son aditivos.
+
+`firestore.candidate.rules` ahora permite lectura autenticada de
+`/system/{documentId}` únicamente y deniega acceso de cliente a
+`/system/{documentId}/{path=**}`, donde están las constancias.
+Se añadieron pruebas tanto de privacidad de la constancia como de
+compatibilidad de lectura de `system/catalog`.
+
+**No se ha desplegado este archivo.** Los documentos nuevos y secretos
+no deben guardarse en el primer nivel de `system`, que conserva lectura
+autenticada. Para registros privados, usar subcolecciones protegidas.
