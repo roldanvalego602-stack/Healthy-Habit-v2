@@ -350,6 +350,18 @@ async function registerHabitTransaction(
     } else {
       tx.create(periodRef, periodData);
     }
+    // El contador es una métrica NUEVA, solo de finalizaciones oficiales.
+    // No confundir con el campo histórico de logros del cliente.
+    const verifiedCompletesBefore = userSnap.data().verifiedCompletedHabits ?? 0;
+    if (mode === "official" &&
+        (!Number.isSafeInteger(verifiedCompletesBefore) ||
+         verifiedCompletesBefore < 0 ||
+         verifiedCompletesBefore > 1000000)) {
+      throw new RegistrationPolicyError(
+        "failed-precondition", "Historial verificado inválido.");
+    }
+    const verifiedCompletesAfter = verifiedCompletesBefore +
+      (mode === "official" && completed ? 1 : 0);
     // Eventos sociales verificables: solo el motor oficial los crea.
     // No se publica nota, foto, evidencia ni historial privado.
     // IDs derivados del registro: el mismo intento no genera duplicados.
@@ -366,6 +378,37 @@ async function registerHabitTransaction(
           level: reward.level,
           createdAt: FieldValue.serverTimestamp(),
         });
+      }
+      // Medallas por hitos verificables: sin depender de los contadores
+      // autodeclarados o editables del perfil público.
+      const achievement = (id, source) => tx.create(
+        timeline.doc("achievement_" + id + "_" + source), {
+          actorUid: uid,
+          kind: "achievement_unlocked",
+          achievementId: id,
+          sourceId: source,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      for (const [threshold, id] of [
+        [1, "primera_meta"], [3, "triple_victoria"],
+        [5, "cinco_logros"],
+      ]) {
+        if (completed && verifiedCompletesAfter === threshold) {
+          achievement(id, ids.attemptId);
+        }
+      }
+      for (const [threshold, id] of [[3, "nivel_3"], [5, "nivel_5"]]) {
+        if (reward.level >= threshold && beforeLevel < threshold) {
+          achievement(id, logRef.id);
+        }
+      }
+      for (const [threshold, id] of [
+        [3, "racha_3"], [7, "racha_7"], [30, "racha_30"],
+      ]) {
+        if (streakPlan && streakPlan.isNewDay && !streakDaySnap.exists &&
+            streakPlan.streak === threshold) {
+          achievement(id, streakPlan.day.replace(/-/g, ""));
+        }
       }
       // Completar un hábito NO es autorización para publicarlo.
       // Los eventos "habit_completed" se crearán solo por una acción
@@ -400,6 +443,8 @@ async function registerHabitTransaction(
       xp: reward.xp, currentXp: reward.xp, level: reward.level,
       habitCoins: reward.coins,
       claimedLevelRewards: reward.claimedLevelRewards,
+      ...(mode === "official" && completed ?
+        {verifiedCompletedHabits: verifiedCompletesAfter} : {}),
       ...(streakPlan && streakPlan.isNewDay ? {
         serverLastStreakDay: streakPlan.day,
         serverStreakDays: streakPlan.streak,
