@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'healthy_typing_indicator.dart';
+import 'mr_healthy_chat_avatar.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
@@ -895,9 +896,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                                 blurRadius: 15, offset: Offset(0, 4),
                               )],
                             ),
-                            child: const ClipOval(
-                              child: HealthyMascotLive(size: 70),
-                            ),
+                            child: MrHealthyChatAvatar(size: 70, isTyping: _replyPending),
                           ),
                           const SizedBox(width: 9),
                           AnimatedSwitcher(
@@ -971,7 +970,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     padding: const EdgeInsets.only(bottom: 20),
     child: Row(
       children: [
-        const HealthyMascotLive(size: 52),
+        MrHealthyChatAvatar(size: 52, isTyping: _replyPending),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
