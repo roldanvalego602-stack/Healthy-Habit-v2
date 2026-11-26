@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'healthy_typing_indicator.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -103,6 +104,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   bool _readAloud = false;
   String? _voiceError;
   bool isTyping = false;
+  bool _hasDraft = false;
   bool _hasSentMessage = false;
 
   final List<ChatMessage> messages = [
@@ -145,6 +147,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   void initState() {
     super.initState();
     _inputFocus.addListener(_onFocusChange);
+    messageController.addListener(_onDraftChanged);
     _cargarSaludoPersonalizado();
     _setupVoice();
     _loadRecentChat();
@@ -594,6 +597,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
     );
   }
 
+  void _onDraftChanged() {
+    final value = messageController.text.trim().isNotEmpty;
+    if (mounted && value != _hasDraft) setState(() => _hasDraft = value);
+  }
+
   void _onFocusChange() {
     if (_inputFocus.hasFocus) {
       // Espera al ajuste de tamaño causado por el teclado.
@@ -604,6 +612,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Future<void> sendMessage([String? predefinedText]) async {
     if (!mounted || isTyping || _historyLoading) return;
     final text = (predefinedText ?? messageController.text).trim();
+    final startedAt = DateTime.now();
     if (text.isEmpty) return;
     final first = _sessionId == null;
     final previousUserMessage = messages
@@ -774,6 +783,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
           'Puedes intentar de nuevo.';
     }
 
+    // Mantener visible la animación de escritura antes de la respuesta,
+    // incluso si el motor local respondió de inmediato.
+    final elapsed = DateTime.now().difference(startedAt);
+    const minimum = Duration(milliseconds: 620);
+    if (elapsed < minimum) await Future<void>.delayed(minimum - elapsed);
     if (!mounted) return;
     final botMessage = ChatMessage(
       text: response, isUser: false, time: _timeNow(),
@@ -781,13 +795,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
       card: intent.card,
     );
     setState(() {
+      isTyping = false;
       messages.add(botMessage);
     });
     _scrollToBottom();
     // La respuesta aparece de inmediato; la escritura se serializa después.
     await _persist(userMessage, first: first);
     await _persist(botMessage);
-    if (mounted) setState(() => isTyping = false);
     if (_readAloud && mounted) {
       try {
         await _tts.speak(response);
@@ -813,6 +827,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     _speech.cancel();
     _tts.stop();
     _inputFocus.removeListener(_onFocusChange);
+    messageController.removeListener(_onDraftChanged);
     _inputFocus.dispose();
     messageController.dispose();
     scrollController.dispose();
@@ -894,6 +909,38 @@ class _NutriChatPageState extends State<NutriChatPage> {
           children: [
             if (_historyLoading)
               const LinearProgressIndicator(minHeight: 2),
+            AnimatedSize(
+              duration: HealthyVisualEffects.duration(
+                context, const Duration(milliseconds: 220)),
+              curve: Curves.easeOutCubic,
+              child: _hasDraft && !isTyping
+                  ? Center(
+                      child: Container(
+                        key: const ValueKey('mr-healthy-draft-avatar'),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: HealthyAdaptive.mint,
+                          borderRadius: BorderRadius.circular(48),
+                          boxShadow: const [BoxShadow(
+                            color: Color(0x22000000),
+                            blurRadius: 15, offset: Offset(0, 4),
+                          )],
+                        ),
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: 78, height: 78,
+                            child: Image.asset(
+                              'assets/mascot/healthy.png',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Expanded(
               child: ListView.builder(
                 controller: scrollController,
@@ -920,16 +967,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     return _buildMessageBubble(messages[messageIndex]);
                   }
                   if (isTyping && messageIndex == messages.length) {
-                    return const Padding(
-                      padding: EdgeInsets.only(left: 6, bottom: 14),
-                      child: Text(
-                        'Mr. Healthy está escribiendo…',
-                        style: TextStyle(
-                          color: _green,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+                    return const Align(
+                      alignment: Alignment.centerLeft,
+                      child: HealthyTypingIndicator(),
                     );
                   }
                   return _hasSentMessage
@@ -1183,12 +1223,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
         tween: Tween(begin: 0.0, end: 1.0),
         duration: HealthyVisualEffects.duration(
           context, const Duration(milliseconds: 220)),
-        curve: Curves.easeOutCubic,
+        curve: Curves.easeOutBack,
         builder: (context, value, child) => Opacity(
           opacity: value.clamp(0.0, 1.0),
           child: Transform.translate(
-            offset: Offset(0, (1 - value) * 7),
-            child: child,
+            offset: Offset(0, (1 - value) * 10),
+            child: Transform.scale(
+              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+              scale: 0.82 + value * 0.18,
+              child: child,
+            ),
           ),
         ),
         child: Container(
