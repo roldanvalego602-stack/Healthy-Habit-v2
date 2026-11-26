@@ -586,64 +586,75 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     if (item == null || item.slot == null) return;
     final layout = _layouts[itemId] ?? _defaultLayout(item.slot!);
     final current = rotation ? layout.rotation : layout.size;
-    final controller = TextEditingController(text: current.round().toString());
+
+    // El diálogo administra solo una cadena. No crear ni desechar un
+    // TextEditingController mientras Flutter sigue desmontando la ruta.
+    // Eso puede disparar '_dependents.isEmpty' al cerrar el teclado.
+    var draft = current.round().toString();
     String? error;
+
     final value = await showDialog<double>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(rotation ? 'Giro del accesorio' : 'Tamaño del accesorio'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(rotation
-                ? 'Escribe un ángulo entre -180° y 180°.'
-                : 'Escribe un tamaño entre 30 y 250.'),
-            const SizedBox(height: 12),
-            TextField(
-              key: ValueKey(rotation
-                  ? 'wardrobe-rotation-number' : 'wardrobe-size-number'),
-              controller: controller,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                signed: true, decimal: false),
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                suffixText: rotation ? '°' : 'px',
-                errorText: error,
+        builder: (dialogContext, setDialogState) {
+          void apply() {
+            final parsed = double.tryParse(draft.trim());
+            final min = rotation ? -180.0 : 30.0;
+            final max = rotation ? 180.0 : 250.0;
+            if (parsed == null || !parsed.isFinite ||
+                parsed < min || parsed > max) {
+              setDialogState(() => error = 'Valor fuera de rango');
+              return;
+            }
+            // Un número negativo, como -5°, es un valor válido.
+            FocusScope.of(dialogContext).unfocus();
+            Navigator.of(dialogContext).pop(parsed);
+          }
+
+          return AlertDialog(
+            title: Text(rotation ? 'Giro del accesorio' : 'Tamaño del accesorio'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(rotation
+                  ? 'Escribe un ángulo entre -180° y 180°.'
+                  : 'Escribe un tamaño entre 30 y 250.'),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: ValueKey(rotation
+                    ? 'wardrobe-rotation-number' : 'wardrobe-size-number'),
+                initialValue: draft,
+                autofocus: true,
+                keyboardType: TextInputType.numberWithOptions(
+                  signed: rotation, decimal: false),
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  suffixText: rotation ? '°' : 'px',
+                  errorText: error,
+                ),
+                onChanged: (text) {
+                  draft = text;
+                  if (error != null) {
+                    setDialogState(() => error = null);
+                  }
+                },
+                onFieldSubmitted: (_) => apply(),
               ),
-              onSubmitted: (_) {
-                final parsed = double.tryParse(controller.text.trim());
-                final valid = parsed != null && parsed.isFinite &&
-                    parsed >= (rotation ? -180 : 30) &&
-                    parsed <= (rotation ? 180 : 250);
-                if (valid) {
-                  Navigator.pop(dialogContext, parsed);
-                } else {
-                  setDialogState(() => error = 'Valor fuera de rango');
-                }
-              },
-            ),
-          ]),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                final parsed = double.tryParse(controller.text.trim());
-                if (parsed == null || !parsed.isFinite ||
-                    parsed < (rotation ? -180 : 30) ||
-                    parsed > (rotation ? 180 : 250)) {
-                  setDialogState(() => error = 'Valor fuera de rango');
-                  return;
-                }
-                Navigator.pop(dialogContext, parsed);
-              },
-              child: const Text('Aplicar'),
-            ),
-          ],
-        ),
+            ]),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: apply,
+                child: const Text('Aplicar'),
+              ),
+            ],
+          );
+        },
       ),
     );
-    controller.dispose();
+
     if (!mounted || value == null) return;
     final latest = _layouts[itemId] ?? _defaultLayout(item.slot!);
     _updateLayout(item, _AccessoryLayout(
