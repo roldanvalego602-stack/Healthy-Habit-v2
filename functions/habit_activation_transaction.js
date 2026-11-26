@@ -21,6 +21,41 @@ function validateOfficialActivation(data) {
   return validateActivationPayload(data, true);
 }
 
+// Configuración de UI declarada por el cliente, nunca prueba de actividad.
+function parseActivationInteraction(value) {
+  if (value === undefined) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.keys(value).some((key) =>
+        !["type", "target", "unit"].includes(key))) {
+    throw new RegistrationPolicyError(
+      "invalid-argument", "Herramienta de hábito inválida."
+    );
+  }
+  const allowed = ["manual", "counter", "hydration", "timer",
+    "stopwatch", "breathing", "pomodoro", "steps"];
+  const timed = ["timer", "stopwatch", "breathing", "pomodoro"]
+    .includes(value.type);
+  if (!allowed.includes(value.type) ||
+      !Number.isSafeInteger(value.target) ||
+      value.target < 1 ||
+      value.target > (timed ? 86400 : 10000) ||
+      typeof value.unit !== "string" ||
+      value.unit.length < 1 || value.unit.length > 40 ||
+      !/^[\\p{L}\\p{N} .%_-]+$/u.test(value.unit) ||
+      (timed && value.unit !== "segundos") ||
+      (value.type === "hydration" && value.unit !== "ml") ||
+      (value.type === "steps" && value.unit !== "pasos") ||
+      (value.type === "manual" &&
+        (value.target !== 1 || value.unit !== "vez"))) {
+    throw new RegistrationPolicyError(
+      "invalid-argument", "Configuración de herramienta inválida."
+    );
+  }
+  return Object.freeze({
+    type: value.type, target: value.target, unit: value.unit,
+  });
+}
+
 function validateActivationPayload(data, official) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     throw new RegistrationPolicyError("invalid-argument", "Solicitud inválida.");
@@ -37,12 +72,17 @@ function validateActivationPayload(data, official) {
       typeof operationId !== "string" || !ID.test(operationId) ||
       Object.keys(data).some((name) => ![
         "habitId", "attemptId", "operationId",
+        ...(official ? ["interaction"] : []),
       ].includes(name))) {
     throw new RegistrationPolicyError(
       "invalid-argument", "Identificadores o campos de activación inválidos."
     );
   }
-  return {habitId, attemptId, operationId};
+  const interaction = official ?
+    parseActivationInteraction(data.interaction) : null;
+  return interaction == null ?
+    {habitId, attemptId, operationId} :
+    {habitId, attemptId, operationId, interaction};
 }
 
 function validateActivationState({
@@ -132,7 +172,7 @@ async function activateHabitTransaction(
   if (mode !== "demo" && mode !== "official") {
     throw new RegistrationPolicyError("invalid-argument", "Modo inválido.");
   }
-  const {habitId, attemptId, operationId} = mode === "demo" ?
+  const {habitId, attemptId, operationId, interaction = null} = mode === "demo" ?
     validateActivation(data) : validateOfficialActivation(data);
   const catalog = SERVER_CATALOG[habitId];
   const userRef = db.collection("users").doc(uid);
@@ -153,7 +193,10 @@ async function activateHabitTransaction(
       ]);
     if (operationSnap.exists) {
       const saved = operationSnap.data();
-      if (saved.habitId !== habitId || saved.attemptId !== attemptId) {
+      if (saved.habitId !== habitId || saved.attemptId !== attemptId ||
+          (mode === "official" &&
+            JSON.stringify(saved.interaction ?? null) !==
+              JSON.stringify(interaction))) {
         throw new RegistrationPolicyError(
           "already-exists", "Esta operación pertenece a otro intento."
         );
@@ -233,7 +276,8 @@ async function activateHabitTransaction(
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.set(habitRef, {
-      ...catalog, acquiredAt: FieldValue.serverTimestamp(),
+      ...catalog, ...(interaction ? {interaction} : {}),
+      acquiredAt: FieldValue.serverTimestamp(),
       lastAttemptId: attemptId, latestAttemptId: attemptId,
       lastStatus: "inProgress", latestStatus: "inProgress",
       latestProgress: 0, latestTarget: catalog.target,
@@ -254,8 +298,8 @@ async function activateHabitTransaction(
       ...(!legacyUtc ? {calendarTimeZone: timeZone} : {}),
     });
     tx.create(operationRef, {
-      habitId, attemptId, result,
-      createdAt: FieldValue.serverTimestamp(),
+      habitId, attemptId, ...(mode === "official" ? {interaction} : {}),
+      result, createdAt: FieldValue.serverTimestamp(),
     });
     return {...result, alreadyProcessed: false};
   });
@@ -271,6 +315,7 @@ function activateOfficialHabitTransaction(args) {
 
 module.exports = {
   validateOfficialActivation,
+  parseActivationInteraction,
   activateOfficialHabitTransaction,
   validateActivation,
   validateActivationState,
