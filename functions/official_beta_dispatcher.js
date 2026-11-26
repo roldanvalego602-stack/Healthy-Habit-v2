@@ -3,6 +3,9 @@
 // Contrato compartido para la futura migración a operaciones oficiales.
 // No expone Cloud Functions ni habilita rutas de producción por sí mismo.
 const {RegistrationPolicyError} = require("./habit_registration_policy");
+const {validateOfficialActivation} = require("./habit_activation_transaction");
+const {validateOfficialCancellation} = require("./habit_cancellation_transaction");
+const {parseOfficialRegistration} = require("./official_habit_reward_policy");
 
 const ALLOWED_ACTIONS = Object.freeze({
   activate: "activateOfficialHabitTransaction",
@@ -34,6 +37,20 @@ function assertOfficialRequest({action, uid, data}) {
     throw new RegistrationPolicyError(
       "invalid-argument", "La solicitud contiene datos económicos no autorizados."
     );
+  }
+  // Aplicar exactamente los contratos ya utilizados por las transacciones.
+  // La validación no debe transformar el payload: la transacción vuelve
+  // a comprobarlo antes de escribir en Firestore.
+  switch (action) {
+    case "activate":
+      validateOfficialActivation(data);
+      break;
+    case "cancel":
+      validateOfficialCancellation(data);
+      break;
+    case "register":
+      parseOfficialRegistration(data);
+      break;
   }
   return {uid, data};
 }
