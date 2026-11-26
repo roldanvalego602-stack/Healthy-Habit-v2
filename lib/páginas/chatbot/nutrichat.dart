@@ -764,11 +764,15 @@ class _NutriChatPageState extends State<NutriChatPage> {
           'Puedes intentar de nuevo.';
     }
 
-    // Mantener visible la animación de escritura antes de la respuesta,
-    // incluso si el motor local respondió de inmediato.
+    // Simula un tiempo breve de reflexión cuando el motor local responde
+    // instantáneamente. No añade demora si la búsqueda real tardó más.
+    // Límite bajo para no perjudicar la experiencia del chat.
     final elapsed = DateTime.now().difference(startedAt);
-    const minimum = Duration(milliseconds: 620);
-    if (elapsed < minimum) await Future<void>.delayed(minimum - elapsed);
+    final thinkingMs = (1000 + response.runes.length * 9).clamp(1100, 2400);
+    final minimum = Duration(milliseconds: thinkingMs);
+    if (elapsed < minimum) {
+      await Future<void>.delayed(minimum - elapsed);
+    }
     if (!mounted) return;
     final botMessage = ChatMessage(
       text: response, isUser: false, time: _timeNow(),
@@ -901,7 +905,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                               context, const Duration(milliseconds: 220)),
                             child: Text(
                               _replyPending
-                                  ? 'Mr. Healthy está pensando…'
+                                  ? 'Mr. Healthy está preparando una respuesta…'
                                   : 'Mr. Healthy sigue tu mensaje 👀',
                               key: ValueKey(_replyPending),
                               style: TextStyle(
