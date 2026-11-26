@@ -13,6 +13,12 @@ const challenge = Object.freeze({
   currentProgress: 7, totalProgress: 7,
   xpReward: 80, hcReward: 25,
 });
+const attestation = Object.freeze({
+  uid: "alice", challengeId: "challenge_123",
+  source: "official_habit_registration", status: "verified",
+  progressVerified: true, currentProgress: 7, totalProgress: 7,
+  xpReward: 80, hcReward: 25,
+});
 const user = Object.freeze({
   xp: 50, currentXp: 50, habitCoins: 100,
   claimedLevelRewards: [],
@@ -87,10 +93,45 @@ function fakeDb(initial) {
   };
 }
 
+test("bloquea desafíos heredados sin constancia independiente del servidor", async () => {
+  const db = fakeDb({
+    "users/alice": {...user},
+    "users/alice/challenges/challenge_123": {...challenge},
+  });
+  await assert.rejects(claimVerifiedChallenge({
+    db, uid: "alice", data: {challengeId: "challenge_123"},
+  }), {code: "failed-precondition"});
+  assert.equal(db.docs.get("users/alice").habitCoins, 100);
+  assert.equal(db.docs.get("users/alice/challenges/challenge_123").status,
+    "completed");
+});
+
+test("bloquea constancias adulteradas, cruzadas o que no respaldan la recompensa", async () => {
+  for (const changed of [
+    {uid: "other"}, {challengeId: "other"}, {status: "draft"},
+    {source: "client"}, {progressVerified: false},
+    {currentProgress: 6}, {totalProgress: 5},
+    {xpReward: 150}, {hcReward: 50},
+  ]) {
+    const db = fakeDb({
+      "users/alice": {...user},
+      "users/alice/challenges/challenge_123": {...challenge},
+      "system/challenge_attestations/users/alice/challenges/challenge_123":
+        {...attestation, ...changed},
+    });
+    await assert.rejects(claimVerifiedChallenge({
+      db, uid: "alice", data: {challengeId: "challenge_123"},
+    }), {code: "failed-precondition"});
+    assert.equal(db.docs.get("users/alice").habitCoins, 100);
+  }
+});
+
 test("reclamación atómica marca claimed y un segundo intento no vuelve a acreditar", async () => {
   const db = fakeDb({
     "users/alice": {...user},
     "users/alice/challenges/challenge_123": {...challenge},
+    "system/challenge_attestations/users/alice/challenges/challenge_123":
+      {...attestation},
   });
   const args = {db, uid: "alice", data: {challengeId: "challenge_123"}};
   const result = await claimVerifiedChallenge(args);
