@@ -272,3 +272,17 @@ activación/cancelación, **no 36 registros ni el recorrido gráfico de Flutter*
 Si Firebase Emulator no reconoce el token especial de propietario en la base
 nombrada `default`, revisar el método de siembra antes de dar por probados
 los flujos. No trasladar el token ni el código de siembra a producción.
+
+## Registro funcional de 36 hábitos (prueba pendiente)
+
+Tras aprobar el recorrido de activación/cancelación para los 36 hábitos, se
+amplió `habitos_36_funcional.test.mjs` con un segundo caso de integración.
+Para un perfil efímero independiente verifica un registro por cada uno de
+los 36 hábitos, XP derivado del catálogo, reintentos idénticos que no
+incrementan el progreso, persistencia del avance y cancelación posterior.
+El balance esperado excluye monedas nuevas porque el perfil simulado
+parte de nivel 20 y no cambia de nivel en este recorrido.
+
+La nueva prueba aún debe ejecutarse en el emulador. No equivale a cubrir
+los 36 hábitos durante sus periodos completos de cumplimiento; tampoco
+valida la UI Flutter ni autoriza un despliegue de reglas.
