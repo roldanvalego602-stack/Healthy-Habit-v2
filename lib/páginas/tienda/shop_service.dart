@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'shop_purchase_gateway.dart';
+import 'beta_shop_purchase_gateway.dart';
+import '../../servicios/beta_habit_gateway.dart';
 
 class ShopItem {
   const ShopItem(
@@ -336,6 +338,13 @@ class ShopService {
   Future<void> buy(ShopItem item) async {
     if (shopItemById(item.id) == null) {
       throw const ShopException('Objeto desconocido.');
+    }
+    // En beta cerrada: comprar únicamente con transacción autoritativa.
+    // Ante cualquier error conservar el ID y jamás volver a escribir
+    // Habit Coins directamente desde Flutter.
+    if (BetaHabitGateway.enabled) {
+      await const BetaShopPurchaseGateway().comprar(item.id);
+      return;
     }
     // Compilaciones normales conservan el flujo actual. La ruta demo
     // NUNCA vuelve a escribir directamente si el callable falla.
