@@ -104,6 +104,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   bool _readAloud = false;
   String? _voiceError;
   bool isTyping = false;
+  bool _replyPending = false;
   bool _hasDraft = false;
   bool _hasSentMessage = false;
 
@@ -634,6 +635,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _hasSentMessage = true;
       messages.add(userMessage);
       isTyping = true;
+      _replyPending = true;
     });
     _scrollToBottom();
 
@@ -795,13 +797,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
       card: intent.card,
     );
     setState(() {
-      isTyping = false;
+      _replyPending = false;
       messages.add(botMessage);
     });
     _scrollToBottom();
     // La respuesta aparece de inmediato; la escritura se serializa después.
     await _persist(userMessage, first: first);
     await _persist(botMessage);
+    if (mounted) setState(() => isTyping = false);
     if (_readAloud && mounted) {
       try {
         await _tts.speak(response);
@@ -951,7 +954,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 itemCount:
                     1 +
                     messages.length +
-                    (isTyping ? 1 : 0) +
+                    (_replyPending ? 1 : 0) +
                     (!_hasSentMessage && !keyboardVisible ? 1 : 0) +
                     (_hasSentMessage && !keyboardVisible &&
                             _calculatorService.opcionesRapidas.isNotEmpty
@@ -966,7 +969,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   if (messageIndex < messages.length) {
                     return _buildMessageBubble(messages[messageIndex]);
                   }
-                  if (isTyping && messageIndex == messages.length) {
+                  if (_replyPending && messageIndex == messages.length) {
                     return const Align(
                       alignment: Alignment.centerLeft,
                       child: HealthyTypingIndicator(),
