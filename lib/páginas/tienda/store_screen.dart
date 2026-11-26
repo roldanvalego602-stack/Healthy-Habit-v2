@@ -8,6 +8,8 @@ import '../../tema/healthy_coin.dart';
 
 import '../../servicios/healthy_feedback_service.dart';
 import 'shop_service.dart';
+import 'beta_shop_purchase_gateway.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import 'shop_item_artwork.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
@@ -55,6 +57,98 @@ class _StoreScreenState extends State<StoreScreen> {
 
   String _filter = 'Todos';
   String? _busy;
+  bool _recoveryBusy = false;
+  List<String> _pendingBetaPurchases = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (BetaHabitGateway.enabled) {
+      _loadBetaPurchases();
+    }
+  }
+
+  Future<void> _loadBetaPurchases() async {
+    if (!BetaHabitGateway.enabled) return;
+    try {
+      final items = await const BetaShopPurchaseGateway().listarPendientes();
+      if (mounted) {
+        setState(() => _pendingBetaPurchases = items);
+      }
+    } catch (_) {
+      _message('No se pudo revisar el diario de compras pendientes.');
+    }
+  }
+
+  Future<void> _recoverBetaPurchase(String itemId) async {
+    if (_busy != null || _recoveryBusy) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recuperar compra'),
+        content: Text(
+          'Se consultará la compra pendiente de $itemId '
+          'con el identificador original. El servidor podría haber '
+          'procesado el pago. No se generará una compra nueva.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Recuperar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _recoveryBusy = true);
+    try {
+      await const BetaShopPurchaseGateway().comprar(
+        itemId, soloRecuperar: true,
+      );
+      if (mounted) {
+        _message('Compra confirmada por el servidor.');
+      }
+      await _loadBetaPurchases();
+    } catch (_) {
+      _message('No se pudo recuperar la compra. Se conservó su identificador.');
+    } finally {
+      if (mounted) setState(() => _recoveryBusy = false);
+    }
+  }
+
+  Widget _pendingBetaBanner() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Compras pendientes de confirmar',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('La respuesta pudo perderse. '
+                'Recupera la compra original, no repitas el pago.'),
+            for (final itemId in _pendingBetaPurchases)
+              ListTile(
+                dense: true,
+                title: Text(shopItemById(itemId)?.name ?? itemId),
+                trailing: TextButton(
+                  onPressed: _recoveryBusy || _busy != null
+                      ? null : () => _recoverBetaPurchase(itemId),
+                  child: const Text('Recuperar'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+
   int _secretTaps = 0;
   DateTime? _lastSecretTap;
 
@@ -87,6 +181,7 @@ class _StoreScreenState extends State<StoreScreen> {
     setState(() => _busy = item.id);
     try {
       await ShopService.instance.buy(item);
+      await _loadBetaPurchases();
       // La compra ya fue confirmada por Firestore. Los efectos son opcionales.
       final celebrate = await HealthyFeedbackService.onReward();
       if (!mounted) return;
@@ -101,6 +196,7 @@ class _StoreScreenState extends State<StoreScreen> {
         _message('${item.name} se agregó a tu colección.');
       }
     } catch (error) {
+      await _loadBetaPurchases();
       _message(error is ShopException
           ? error.message
           : 'No se pudo completar la compra. Revisa tu conexión y permisos.');
@@ -215,6 +311,9 @@ class _StoreScreenState extends State<StoreScreen> {
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _header(state)),
+                if (BetaHabitGateway.enabled &&
+                    _pendingBetaPurchases.isNotEmpty)
+                  SliverToBoxAdapter(child: _pendingBetaBanner()),
                 if (snapshot.hasError)
                   const SliverToBoxAdapter(
                     child: Padding(
