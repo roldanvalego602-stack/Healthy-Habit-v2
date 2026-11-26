@@ -11,6 +11,7 @@ import '../../tema/healthy_cosmetics.dart';
 import '../../tema/healthy_theme.dart';
 import '../perfil/healthy_framed_avatar.dart';
 import '../perfil/profile_banner.dart';
+import '../perfil/profile_titles.dart';
 import 'healthy_mascot_outfit.dart';
 import 'healthy_mascot_idle.dart';
 import 'shop_item_artwork.dart';
@@ -211,41 +212,93 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Future<void> _changeProfileTitle() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    const choices = [
-      'Cultivador de constancia',
-      'Semilla saludable',
-      'Explorador del bienestar',
-    ];
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const ListTile(
-            title: Text('Título de perfil',
-              style: TextStyle(fontWeight: FontWeight.w900)),
-            subtitle: Text('Este texto aparece en tu perfil y no cuesta monedas.'),
-          ),
-          for (final title in choices)
-            ListTile(
-              leading: const Icon(Icons.badge_outlined),
-              title: Text(title),
-              onTap: () => Navigator.pop(sheetContext, title),
-            ),
-        ]),
-      ),
-    );
-    if (choice == null || !mounted) return;
+    final db = FirebaseFirestore.instanceFor(
+      app: Firebase.app(), databaseId: 'default');
     try {
-      final db = FirebaseFirestore.instanceFor(
-        app: Firebase.app(), databaseId: 'default');
+      final profile = await db.collection('users').doc(uid).get();
+      final level = (profile.data()?['level'] as num?)?.toInt() ?? 1;
+      final selected = profile.data()?['profileTitle']?.toString();
+      // Las distinciones de festivales requieren certificados oficiales.
+      // No permitir títulos de temporada basándose en entradas libres.
+      final verifiedBadges = <String>{};
+      try {
+        final official = await db.collection('public_profiles').doc(uid)
+          .collection('activity_events')
+          .where('kind', isEqualTo: 'achievement_unlocked')
+          .limit(100).get();
+        for (final doc in official.docs) {
+          final badge = doc.data()['achievementId'];
+          if (badge is String) verifiedBadges.add(badge);
+        }
+      } catch (_) {
+        // Sin permiso o sin eventos: títulos de eventos bloqueados.
+      }
+      if (!mounted) return;
+      final choice = await showModalBottomSheet<HealthyProfileTitle>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(child: SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * .72,
+          child: Column(children: [
+            const ListTile(
+              title: Text('Colección de títulos',
+                style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: Text('Desbloquea títulos con niveles, logros '
+                'y eventos oficiales. Los bloqueados no se pueden usar.'),
+            ),
+            Expanded(child: ListView.builder(
+              itemCount: HealthyProfileTitles.catalog.length,
+              itemBuilder: (context, index) {
+                final title = HealthyProfileTitles.catalog[index];
+                final unlocked = title.available(level, verifiedBadges);
+                final active = selected == title.name;
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 5),
+                  child: ListTile(
+                    key: ValueKey('profile-title-${title.id}'),
+                    leading: CircleAvatar(
+                      child: Icon(title.icon)),
+                    title: Text(title.name,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(unlocked
+                        ? title.description
+                        : 'Bloqueado · ${title.description}'),
+                    trailing: active && unlocked
+                        ? const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF198568))
+                        : Icon(unlocked
+                            ? Icons.arrow_forward_ios_rounded
+                            : Icons.lock_outline_rounded),
+                    enabled: unlocked,
+                    onTap: unlocked
+                        ? () => Navigator.pop(sheetContext, title) : null,
+                  ),
+                );
+              },
+            )),
+          ]),
+        )),
+      );
+      if (choice == null || !mounted) return;
+      // Releer el nivel justo antes de guardar evita desbloqueos por
+      // un panel desactualizado; el servidor debe imponer esta regla
+      // cuando se publique la beta comercial.
+      final latest = await db.collection('users').doc(uid).get();
+      final latestLevel =
+          (latest.data()?['level'] as num?)?.toInt() ?? 1;
+      if (!choice.available(latestLevel, verifiedBadges)) {
+        _message('El título todavía no está desbloqueado.');
+        return;
+      }
       await db.collection('users').doc(uid).update({
-        'profileTitle': choice,
+        'profileTitle': choice.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      _message('Título de perfil actualizado.');
+      _message('Título equipado: ${choice.name}.');
     } catch (_) {
-      _message('No se pudo guardar el título de perfil.');
+      _message('No se pudo consultar o guardar tu título.');
     }
   }
 
@@ -790,14 +843,14 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.badge_outlined, size: 42),
           const SizedBox(height: 10),
-          const Text('Tu título se personaliza aquí, en el armario.',
+          const Text('Colecciona títulos por nivel, logros y festivales.',
             textAlign: TextAlign.center),
           const SizedBox(height: 12),
           FilledButton.icon(
             key: const ValueKey('wardrobe-profile-title'),
             onPressed: _changeProfileTitle,
             icon: const Icon(Icons.edit_rounded),
-            label: const Text('Elegir título'),
+            label: const Text('Ver colección de títulos'),
           ),
         ]),
       ));
