@@ -350,6 +350,33 @@ async function registerHabitTransaction(
     } else {
       tx.create(periodRef, periodData);
     }
+    // Eventos sociales verificables: solo el motor oficial los crea.
+    // No se publica nota, foto, evidencia ni historial privado.
+    // IDs derivados del registro: el mismo intento no genera duplicados.
+    if (mode === "official") {
+      const timeline = db.collection("public_profiles").doc(uid)
+        .collection("activity_events");
+      const beforeLevel = levelForXp(userSnap.data().xp ??
+        userSnap.data().currentXp ?? 0);
+      if (reward.level > beforeLevel) {
+        tx.create(timeline.doc("level_" + logRef.id), {
+          actorUid: uid,
+          kind: "level_up",
+          sourceId: logRef.id,
+          level: reward.level,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+      if (completed) {
+        tx.create(timeline.doc("completed_" + ids.attemptId), {
+          actorUid: uid,
+          kind: "habit_completed",
+          sourceId: ids.attemptId,
+          habitId: ids.habitId,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+    }
     tx.create(logRef, {
       habitId: ids.habitId, attemptId: ids.attemptId,
       habitTitle: catalog.title, category: catalog.category,
