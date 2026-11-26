@@ -82,8 +82,8 @@ flutter_launcher_icons:
   android: true
   ios: false
   # Icono oficial solicitado para la demostración.
-  image_path: "assets/icon/icono de app.png"
-  adaptive_icon_foreground: "assets/icon/icono de app.png"
+  image_path: "assets/icon/logo prueba dos.png"
+  adaptive_icon_foreground: "assets/icon/logo prueba dos.png"
   adaptive_icon_background: "#087F5B"
   # Sin margen adicional: no generar franjas artificiales alrededor.
   adaptive_icon_foreground_inset: 0
