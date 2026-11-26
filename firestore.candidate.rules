@@ -563,6 +563,11 @@ service cloud.firestore {
         && request.resource.data.emoji.size() > 0
         && request.resource.data.challengeId is string
         && request.resource.data.challengeId.size() <= 128
+        // Toda reacción vinculada a una noticia debe apuntar a un evento
+        // oficial del destinatario y estar visible para amistades.
+        && (!request.resource.data.challengeId.matches(
+                '^(level_|completed_).*')
+            || exists(/databases/$(database)/documents/public_profiles/$(request.resource.data.toUid)/activity_events/$(request.resource.data.challengeId)))
         // Los stickers de pago requieren posesión; las reacciones
         // convencionales conservan challengeId vacío o de desafíos.
         && (
