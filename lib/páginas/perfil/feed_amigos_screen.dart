@@ -2,28 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
-import 'profile_avatar.dart';
-import 'reaction_picker_dialog.dart';
-import '../logros/logros_service.dart';
-import 'social_action_button.dart';
-
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
 import 'perfil_muestra.dart';
+import 'reaction_picker_dialog.dart';
 
-class _C {
-  static const green = Color(0xFF198568);
-  static Color get navy => HealthyAdaptive.text;
-  static Color get background => HealthyAdaptive.background;
-  static Color get grey => HealthyAdaptive.muted;
-  static Color get border => HealthyAdaptive.border;
-  static Color get mintSoft => HealthyAdaptive.mint;
-  static const gold = Color(0xFFD5A33E);
-
-}
-
-/// Feed con el progreso en vivo de las personas que sigues: nivel, racha,
-/// avance de XP hacia el siguiente nivel y su próximo logro.
+/// Cronología de eventos confirmados por el servidor, nunca estados de perfil
+/// presentados como noticias. Solo lectura; no concede premios ni XP.
 class FeedAmigosScreen extends StatefulWidget {
   const FeedAmigosScreen({super.key});
 
@@ -32,469 +17,212 @@ class FeedAmigosScreen extends StatefulWidget {
 }
 
 class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
-  String? get _uid => AmigosServicio.uidActual;
+  Future<List<_FriendEvent>>? _loading;
+  String? _loadedFor;
+  FirebaseFirestore get _db => FirebaseFirestore.instanceFor(
+    app: Firebase.app(), databaseId: 'default');
+
+  Future<List<_FriendEvent>> _read(String uid) async {
+    final friends = await AmigosServicio.amigos(uid).first;
+    final ids = friends.docs.map((d) => d.id).take(30).toList();
+    if (ids.isEmpty) return const [];
+    // Las reglas del servidor son la autoridad sobre visibilidad y amistad;
+    // ninguna fecha, XP o logro se infiere del perfil editable.
+    final profiles = await AmigosServicio.perfiles(ids);
+    final requests = await Future.wait(ids.map((id) =>
+        _db.collection('public_profiles').doc(id)
+          .collection('activity_events')
+          .orderBy('createdAt', descending: true).limit(15).get()));
+    final events = <_FriendEvent>[];
+    for (var i = 0; i < ids.length; i++) {
+      final id = ids[i];
+      final profile = profiles[id] ?? const <String, dynamic>{};
+      for (final event in requests[i].docs) {
+        final data = event.data();
+        if (data['actorUid'] != id ||
+            !const {'level_up', 'habit_completed'}.contains(data['kind']) ||
+            data['createdAt'] is! Timestamp) continue;
+        final level = data['level'];
+        if (data['kind'] == 'level_up' &&
+            (level is! int || level < 2 || level > 1000)) continue;
+        final habitId = data['habitId']?.toString() ?? '';
+        if (data['kind'] == 'habit_completed' && habitId.isEmpty) continue;
+        events.add(_FriendEvent(
+          eventId: event.id, uid: id, data: data,
+          name: (profile['name'] ?? 'Tu amigo').toString(),
+          photo: (profile['photoUrl'] ?? '').toString(),
+          date: (data['createdAt'] as Timestamp).toDate(),
+        ));
+      }
+    }
+    events.sort((a, b) => b.date.compareTo(a.date));
+    return events.take(70).toList();
+  }
+
+  void _refresh(String uid) => setState(() {
+    _loadedFor = uid;
+    _loading = _read(uid);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final uid = _uid;
-
+    final uid = AmigosServicio.uidActual;
+    if (uid != null && (_loading == null || _loadedFor != uid)) {
+      _loadedFor = uid;
+      _loading = _read(uid);
+    }
     return Scaffold(
-      backgroundColor: _C.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(context),
-              const SizedBox(height: 18),
-              Expanded(
-                child:
-                    uid == null
-                        ? const Center(
-                          child: Text('Inicia sesión para ver el feed.'),
-                        )
-                        : _cuerpo(uid),
-              ),
-            ],
+      backgroundColor: HealthyAdaptive.background,
+      appBar: AppBar(
+        title: const Text('Actividad de amigos'),
+        actions: [
+          IconButton(
+            tooltip: 'Actualizar actividad',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: uid == null ? null : () => _refresh(uid),
           ),
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _header(BuildContext context) {
-    return Row(
-      children: [
-        Material(
-          color: HealthyAdaptive.surface,
-          borderRadius: BorderRadius.circular(16),
-          child: IconButton(
-            tooltip: 'Volver',
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(Icons.arrow_back_rounded, color: _C.navy),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            'Feed de progreso',
-            style: TextStyle(
-              color: _C.navy,
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
+      body: uid == null
+          ? const Center(child: Text('Inicia sesión para ver a tus amigos.'))
+          : FutureBuilder<List<_FriendEvent>>(
+              future: _loading,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return _message(
+                    'No se pudo leer la actividad',
+                    'La cronología necesita permisos del servidor para '
+                    'eventos reales. No mostramos logros inventados.',
+                    action: () => _refresh(uid),
+                    label: 'Reintentar',
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final events = snapshot.data!;
+                if (events.isEmpty) {
+                  return _message(
+                    'Todavía no hay actividad para mostrar',
+                    'Aquí aparecerán los niveles y hábitos completados '
+                    'que el servidor confirme de tus amigos.',
+                    action: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const BuscarAmigosScreen())),
+                    label: 'Buscar amigos',
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: () async => _refresh(uid),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                    itemCount: events.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, index) => _eventTile(uid, events[index]),
+                  ),
+                );
+              },
             ),
-          ),
-        ),
-      ],
     );
   }
 
-  Widget _cuerpo(String uid) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: AmigosServicio.amigos(uid),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return _mensaje(
-            icono: Icons.cloud_off_outlined,
-            titulo: 'No se pudo cargar el feed',
-            detalle: 'Comprueba tu conexión e inténtalo de nuevo.',
-          );
-        }
-
-        if (!snap.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: _C.green),
-          );
-        }
-
-        final ids = snap.data!.docs.map((d) => d.id).toList();
-
-        if (ids.isEmpty) {
-          return _mensaje(
-            icono: Icons.dynamic_feed_outlined,
-            titulo: 'Aún no tienes amigos',
-            detalle: 'Agrega amigos y acepta solicitudes para compartir el progreso.',
-            accion: 'Buscar amigos',
-            onAccion: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BuscarAmigosScreen()),
-              );
-            },
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
-          itemCount: ids.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, i) => _TarjetaProgresoAmigo(uid: ids[i]),
-        );
-      },
-    );
-  }
-
-  Widget _mensaje({
-    required IconData icono,
-    required String titulo,
-    required String detalle,
-    String? accion,
-    VoidCallback? onAccion,
-  }) {
-    return Center(
+  Widget _eventTile(String me, _FriendEvent event) {
+    final level = event.data['kind'] == 'level_up';
+    final title = level
+        ? '${event.name} alcanzó el nivel ${event.data['level']}'
+        : '${event.name} completó un hábito';
+    final when = event.date.toLocal();
+    final localDate = '${when.day.toString().padLeft(2, '0')}/'
+        '${when.month.toString().padLeft(2, '0')}/${when.year} '
+        '${when.hour.toString().padLeft(2, '0')}:'
+        '${when.minute.toString().padLeft(2, '0')}';
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 60),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: _C.mintSoft,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icono, color: _C.green, size: 36),
+        padding: const EdgeInsets.all(13),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundImage: event.photo.startsWith('https://')
+                  ? NetworkImage(event.photo) : null,
+              child: event.photo.startsWith('https://')
+                  ? null : const Icon(Icons.person_outline_rounded),
             ),
-            const SizedBox(height: 16),
-            Text(
-              titulo,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _C.navy,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              detalle,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: _C.grey, fontSize: 13, height: 1.4),
-            ),
-            if (accion != null && onAccion != null) ...[
-              const SizedBox(height: 18),
-              SocialActionButton(
-                label: accion,
-                icon: Icons.person_add_alt_1_rounded,
-                onPressed: onAccion,
-              ),
-            ],
+            const SizedBox(width: 10),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: HealthyAdaptive.text)),
+                Text(localDate, style: TextStyle(
+                    fontSize: 11, color: HealthyAdaptive.muted)),
+              ],
+            )),
+            Icon(level ? Icons.trending_up_rounded
+                  : Icons.verified_rounded,
+              color: HealthyAdaptive.accent),
+          ]),
+          if (!level) ...[
+            const SizedBox(height: 9),
+            const Text('Actividad finalizada y confirmada por el servidor.',
+                style: TextStyle(fontSize: 12)),
           ],
-        ),
+          const SizedBox(height: 9),
+          Wrap(spacing: 8, children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add_reaction_outlined, size: 16),
+              label: const Text('Reaccionar'),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => ReactionPickerDialog(
+                  fromUid: me,
+                  toUid: event.uid,
+                  friendName: event.name,
+                  eventId: event.eventId,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.push(context,
+                MaterialPageRoute<void>(
+                  builder: (_) => PublicProfileScreen(
+                    userId: event.uid,
+                    name: event.name,
+                    username: '',
+                  ))),
+              child: const Text('Ver perfil'),
+            ),
+          ]),
+        ]),
       ),
     );
+  }
+
+  Widget _message(String title, String description,
+      {required VoidCallback action, required String label}) {
+    return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.dynamic_feed_outlined, size: 48),
+        const SizedBox(height: 12),
+        Text(title, textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text(description, textAlign: TextAlign.center),
+        const SizedBox(height: 14),
+        FilledButton(onPressed: action, child: Text(label)),
+      ]),
+    ));
   }
 }
 
-/// Tarjeta con el progreso de un amigo. Escucha su documento en vivo, así
-/// que se actualiza sola cuando esa persona avanza.
-class _TarjetaProgresoAmigo extends StatelessWidget {
-  final String uid;
-  const _TarjetaProgresoAmigo({required this.uid});
-
-  FirebaseFirestore get _db =>
-      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
-
-  String _texto(dynamic v, [String fallback = '']) {
-    if (v == null) return fallback;
-    final t = v.toString().trim();
-    return t.isEmpty ? fallback : t;
-  }
-
-  int _num(dynamic v, [int fallback = 0]) {
-    if (v is num) return v.toInt();
-    return int.tryParse(v?.toString() ?? '') ?? fallback;
-  }
-
-  double _doble(dynamic v, [double fallback = 0]) {
-    if (v is num) return v.toDouble();
-    return double.tryParse(v?.toString() ?? '') ?? fallback;
-  }
-
-  /// Lee el primer campo presente entre varios nombres posibles, para
-  /// aceptar tanto 'currentStreak'/'streakDays' como otras variantes que ya
-  /// usan distintas pantallas de la app.
-  dynamic _primero(Map<String, dynamic> d, List<String> claves) {
-    for (final k in claves) {
-      if (d[k] != null) return d[k];
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _db.collection('public_profiles').doc(uid).snapshots(),
-      builder: (context, snap) {
-        if (!snap.hasData || !snap.data!.exists) {
-          return const SizedBox.shrink();
-        }
-
-        final d = snap.data!.data() ?? {};
-
-        final nombre = _texto(d['name'], 'Usuario');
-        final username = _texto(d['username']);
-        final nivel = _num(_primero(d, ['level']), 1);
-        final racha = _num(_primero(d, ['currentStreak', 'streakDays']), 0);
-        final rawSettings = d['settings'];
-        final publicStreak = rawSettings is! Map ||
-            rawSettings['mostrarRachaAmigos'] != false;
-        final acceptsReactions = rawSettings is! Map ||
-            rawSettings['permitirReacciones'] != false;
-        final achievementVisibility = rawSettings is Map
-            ? (rawSettings['visibilidadLogros'] ?? 'Solo amigos').toString()
-            : 'Solo amigos';
-        final achievements = achievementVisibility == 'Solo yo'
-            ? const <String>[]
-            : LogrosService.catalogo.where((definition) {
-                if (!const {'nivel', 'xp', 'racha'}
-                    .contains(definition.tipo)) {
-                  return false;
-                }
-                return LogrosService.obtenido(
-                  definition,
-                  LogrosService.progreso(
-                    definition, d, 0, 0, const <String>{},
-                  ),
-                );
-              }).take(3).map((item) => item.nombre).toList();
-        final xpActual = _num(_primero(d, ['currentXp']), 0);
-        final xpSiguiente = _num(_primero(d, ['nextLevelXp']), 1000);
-        final progresoXp =
-            xpSiguiente > 0
-                ? (xpActual / xpSiguiente).clamp(0.0, 1.0).toDouble()
-                : 0.0;
-        final logro = _texto(d['nextAchievementTitle']);
-        final progresoLogro =
-            _doble(_primero(d, ['nextAchievementProgress']), -1);
-
-    
-        return Material(
-          color: HealthyAdaptive.surface,
-          borderRadius: BorderRadius.circular(22),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => PublicProfileScreen(
-                        userId: uid,
-                        name: nombre,
-                        username:
-                            username.isEmpty
-                                ? '@usuario'
-                                : (username.startsWith('@')
-                                    ? username
-                                    : '@$username'),
-                        level: nivel,
-                        streakDays: racha,
-                        completedHabits: _num(d['completedHabits']),
-                      ),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: _C.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      HealthyProfileAvatar(
-                        photoUrl: d['photoUrl']?.toString(),
-                         preset: d['profileAvatarStyle']?.toString() ?? 'foto',
-                        size: 44,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              nombre,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: _C.navy,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _C.mintSoft,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'Nivel $nivel',
-                                    style: TextStyle(
-                                      color: HealthyAdaptive.accent,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  publicStreak ? '$racha días 🔥' : 'Racha privada',
-                                  style: TextStyle(
-                                    color: _C.navy,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Progreso de nivel',
-                        style: TextStyle(
-                          color: _C.grey,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        '$xpActual / $xpSiguiente XP',
-                        style: TextStyle(
-                          color: _C.navy,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: progresoXp,
-                      minHeight: 8,
-                      backgroundColor: _C.mintSoft,
-                      valueColor: const AlwaysStoppedAnimation(_C.green),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      Chip(
-                        avatar: const Icon(Icons.emoji_events_outlined, size: 16),
-                        label: Text('${_num(d['completedHabits'])} hábitos completados'),
-                      ),
-                      Chip(
-                        avatar: const Icon(Icons.star_outline_rounded, size: 16),
-                        label: Text('Nivel $nivel'),
-                      ),
-                    ],
-                  ),
-                  if (achievements.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    const Text('Logros destacados',
-                      style: TextStyle(fontWeight: FontWeight.w800,
-                        fontSize: 12)),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final achievement in achievements)
-                          Chip(
-                            avatar: const Icon(Icons.military_tech_outlined,
-                              size: 16),
-                            label: Text(achievement),
-                          ),
-                      ],
-                    ),
-                  ],
-                  if (logro.isNotEmpty && progresoLogro >= 0) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '🏅 $logro',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _C.navy,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${(progresoLogro.clamp(0.0, 1.0) * 100).round()}%',
-                          style: const TextStyle(
-                            color: _C.gold,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: progresoLogro.clamp(0.0, 1.0),
-                        minHeight: 6,
-                        backgroundColor: _C.mintSoft,
-                        valueColor: const AlwaysStoppedAnimation(_C.gold),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 13),
-                  if (acceptsReactions) Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      key: ValueKey('feed-encourage-$uid'),
-                      onPressed: () {
-                        final me = AmigosServicio.uidActual;
-                        if (me == null || me == uid) return;
-                        showDialog<void>(
-                          context: context,
-                          builder: (_) => ReactionPickerDialog(
-                            fromUid: me,
-                            toUid: uid,
-                            friendName: nombre,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_reaction_outlined, size: 18),
-                      label: const Text('Animar'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+class _FriendEvent {
+  const _FriendEvent({
+    required this.eventId, required this.uid, required this.data,
+    required this.name, required this.photo, required this.date,
+  });
+  final String eventId, uid, name, photo;
+  final Map<String, dynamic> data;
+  final DateTime date;
 }
