@@ -52,9 +52,11 @@ List<ShopItem> wardrobeItemsForSlot(String slot) =>
 /// Coordenadas del accesorio dentro del lienzo de 280×275 de Mr. Healthy.
 /// Solo representa el diseño visual; no altera compras o propiedad.
 class _AccessoryLayout {
-  const _AccessoryLayout(this.x, this.y, this.size);
-  final double x, y, size;
-  Map<String, double> toJson() => {'x': x, 'y': y, 'size': size};
+  const _AccessoryLayout(this.x, this.y, this.size, [this.rotation = 0]);
+  final double x, y, size, rotation;
+  Map<String, double> toJson() => {
+    'x': x, 'y': y, 'size': size, 'rotation': rotation,
+  };
 
   factory _AccessoryLayout.fromJson(Object? raw) {
     if (raw is! Map || raw['x'] is! num ||
@@ -64,12 +66,15 @@ class _AccessoryLayout {
     final x = (raw['x'] as num).toDouble();
     final y = (raw['y'] as num).toDouble();
     final size = (raw['size'] as num).toDouble();
+    final angle = raw['rotation'] is num
+        ? (raw['rotation'] as num).toDouble() : 0.0;
     if (!x.isFinite || !y.isFinite || !size.isFinite ||
+        !angle.isFinite || angle < -180 || angle > 180 ||
         x < 0 || x > 270 || y < 0 || y > 265 ||
         size < 30 || size > 250) {
       throw const FormatException('Accesorio fuera del escenario');
     }
-    return _AccessoryLayout(x, y, size);
+    return _AccessoryLayout(x, y, size, angle);
   }
 }
 
@@ -154,7 +159,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       _layouts[item.id] = _AccessoryLayout(
         layout.x.clamp(0.0, 280.0 - size),
         layout.y.clamp(0.0, 275.0 - size),
-        size,
+        size, layout.rotation.clamp(-180.0, 180.0),
       );
     });
   }
@@ -378,7 +383,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             if (_editableSlot && state?.equipped[_slot] != null)
               IconButton(
                 key: const ValueKey('wardrobe-edit-layout'),
-                tooltip: _layoutEditor ? 'Terminar de ajustar' : 'Mover y escalar accesorio',
+                tooltip: _layoutEditor ? 'Terminar de ajustar' : 'Mover, escalar y girar accesorio',
                 onPressed: () => setState(() =>
                   _layoutEditor = !_layoutEditor),
                 icon: Icon(_layoutEditor ? Icons.check_circle_rounded :
@@ -461,7 +466,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             _updateLayout(item, _AccessoryLayout(
               placement.x + details.delta.dx,
               placement.y + details.delta.dy,
-              placement.size,
+              placement.size, placement.rotation,
             )) : null,
         onPanEnd: editable ? (_) => _saveLayouts() : null,
         child: DecoratedBox(
@@ -470,7 +475,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               color: HealthyAdaptive.accent, width: 2) : null,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: ShopItemArtwork(item: item, size: placement.size),
+          child: Transform.rotate(
+            angle: placement.rotation * 3.141592653589793 / 180,
+            child: ShopItemArtwork(item: item, size: placement.size),
+          ),
         ),
       ),
     );
@@ -480,21 +488,48 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     final item = shopItemById(itemId);
     if (item?.slot == null) return const SizedBox.shrink();
     final current = _layouts[itemId] ?? _defaultLayout(item!.slot!);
-    return Row(children: [
-      const Icon(Icons.open_with_rounded, size: 17),
-      const SizedBox(width: 5),
-      const Expanded(flex: 2, child: Text('Arrastra para mover',
-        style: TextStyle(fontSize: 11))),
-      const Icon(Icons.zoom_out_rounded, size: 17),
-      Expanded(flex: 3, child: Slider(
-        key: const ValueKey('wardrobe-accessory-scale'),
-        value: current.size.clamp(30.0, 250.0),
-        min: 30, max: 250,
-        onChanged: (size) => _updateLayout(item!, _AccessoryLayout(
-          current.x, current.y, size)),
-        onChangeEnd: (_) => _saveLayouts(),
-      )),
-      const Icon(Icons.zoom_in_rounded, size: 17),
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Row(children: [
+        const Icon(Icons.open_with_rounded, size: 17),
+        const SizedBox(width: 5),
+        const Expanded(flex: 2, child: Text('Arrastra para mover',
+          style: TextStyle(fontSize: 11))),
+        const Icon(Icons.zoom_out_rounded, size: 17),
+        Expanded(flex: 3, child: Slider(
+          key: const ValueKey('wardrobe-accessory-scale'),
+          value: current.size.clamp(30.0, 250.0),
+          min: 30, max: 250,
+          onChanged: (size) => _updateLayout(item!, _AccessoryLayout(
+            current.x, current.y, size, current.rotation)),
+          onChangeEnd: (_) => _saveLayouts(),
+        )),
+        const Icon(Icons.zoom_in_rounded, size: 17),
+      ]),
+      Row(children: [
+        const Icon(Icons.rotate_right_rounded, size: 19),
+        const SizedBox(width: 5),
+        const Text('Girar', style: TextStyle(fontSize: 11)),
+        Expanded(child: Slider(
+          key: const ValueKey('wardrobe-accessory-rotation'),
+          value: current.rotation.clamp(-180.0, 180.0),
+          min: -180, max: 180, divisions: 72,
+          label: '${current.rotation.round()}°',
+          onChanged: (angle) => _updateLayout(item!, _AccessoryLayout(
+            current.x, current.y, current.size, angle)),
+          onChangeEnd: (_) => _saveLayouts(),
+        )),
+        Text('${current.rotation.round()}°',
+          style: const TextStyle(fontSize: 11)),
+        IconButton(
+          tooltip: 'Restablecer giro',
+          onPressed: () {
+            _updateLayout(item!, _AccessoryLayout(
+              current.x, current.y, current.size, 0));
+            _saveLayouts();
+          },
+          icon: const Icon(Icons.restart_alt_rounded, size: 19),
+        ),
+      ]),
     ]);
   }
 
