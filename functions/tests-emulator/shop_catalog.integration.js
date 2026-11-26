@@ -94,7 +94,7 @@ test("catálogo completo: compras únicas, montos oficiales y equipamiento", asy
   }
 });
 
-test("tienda: no se compra gratis, sin saldo, con precio inyectado ni perfil ajeno", async () => {
+test("tienda: no se compra gratis, sin saldo ni con datos inyectados", async () => {
   requireIsolatedEmulator();
   const app = initializeApp({projectId: PROJECT}, "shop-invalid-emulator");
   try {
