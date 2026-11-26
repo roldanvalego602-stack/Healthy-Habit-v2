@@ -615,8 +615,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 final valid = parsed != null && parsed.isFinite &&
                     parsed >= (rotation ? -180 : 30) &&
                     parsed <= (rotation ? 180 : 250);
-                if (valid) Navigator.pop(dialogContext, parsed);
-                else setDialogState(() => error = 'Valor fuera de rango');
+                if (valid) {
+                  Navigator.pop(dialogContext, parsed);
+                } else {
+                  setDialogState(() => error = 'Valor fuera de rango');
+                }
               },
             ),
           ]),
