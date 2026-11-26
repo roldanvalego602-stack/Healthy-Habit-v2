@@ -1255,9 +1255,11 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         Semantics(
           liveRegion: true,
           child: Text(
-            conEvidencia
-                ? 'Recompensa prevista: 15 XP con fotografía'
-                : 'Recompensa prevista: 10 XP sin fotografía',
+            OfficialHabitEmulatorService.enabled
+                ? 'La fotografía no añade XP; la recompensa depende del hábito.'
+                : conEvidencia
+                    ? 'Recompensa prevista: 15 XP con fotografía'
+                    : 'Recompensa prevista: 10 XP sin fotografía',
             key: const ValueKey('habit-xp-preview'),
             style: TextStyle(
               color: HealthyAdaptive.text,
@@ -1271,7 +1273,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             Expanded(
               child: _tarjetaXP(
                 titulo: 'Registro normal',
-                xp: '+10 XP',
+                xp: OfficialHabitEmulatorService.enabled
+                    ? 'Según hábito' : '+10 XP',
                 descripcion: conEvidencia ? 'Opción alternativa' : 'Seleccionado',
                 color: normalColor,
                 colorTexto: normalInk,
@@ -1284,7 +1287,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             Expanded(
               child: _tarjetaXP(
                 titulo: 'Con evidencia',
-                xp: '+15 XP',
+                xp: OfficialHabitEmulatorService.enabled
+                    ? 'Sin bonus' : '+15 XP',
                 descripcion: conEvidencia ? 'Seleccionado' : 'Añade una fotografía',
                 color: evidenceColor,
                 colorTexto: evidenceInk,
