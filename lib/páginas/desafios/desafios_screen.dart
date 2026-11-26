@@ -215,70 +215,26 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     setState(() => _procesando = true);
 
     try {
-      // La beta cerrada exige un desafío acreditado por el servidor.
-      // Nunca continuar al flujo de recompensas directas si falla Functions.
-      if (BetaHabitGateway.enabled) {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid == null) {
-          throw StateError('Inicia sesión para reclamar recompensas.');
-        }
-        await FirebaseFunctions.instanceFor(
-          app: Firebase.app(), region: 'us-central1',
-        ).httpsCallable('claimVerifiedChallengeBeta').call({
-          'challengeId': id,
-        });
-        if (FirebaseAuth.instance.currentUser?.uid != uid) {
-          throw StateError('La sesión cambió; consulta tu progreso.');
-        }
-      } else {
-        final challengeRef = _challengesRef.doc(id);
-        final userRef = _userRef;
-
-        await _db.runTransaction((transaction) async {
-        final challengeSnapshot = await transaction.get(challengeRef);
-        final userSnapshot = await transaction.get(userRef);
-
-        if (!challengeSnapshot.exists) {
-          throw Exception('El desafío no existe.');
-        }
-
-        final challenge = challengeSnapshot.data()!;
-        final status = challenge['status']?.toString() ?? '';
-
-        if (status != 'completed') {
-          throw Exception('Debes completar el desafío antes de reclamar.');
-        }
-        if (!ChallengeProgressPolicy.claimable(challenge)) {
-          throw Exception(
-            'Este desafío no tiene progreso verificado con hábitos reales. '
-            'No se puede reclamar su recompensa todavía.');
-        }
-
-        final current = _toInt(challenge['currentProgress']);
-        final total = _toInt(challenge['totalProgress'], 1);
-
-        if (current < total) {
-          throw Exception('El progreso del desafío aún no está completo.');
-        }
-
-        final userData = userSnapshot.data() ?? <String, dynamic>{};
-        final xp = _toInt(userData['xp']);
-        final coins = _toInt(userData['habitCoins']);
-
-        final xpReward = _toInt(challenge['xpReward']);
-        final hcReward = _toInt(challenge['hcReward']);
-
-        transaction.set(userRef, {
-          'xp': xp + xpReward,
-          'habitCoins': coins + hcReward,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        transaction.update(challengeRef, {
-          'status': 'claimed',
-          'claimedAt': FieldValue.serverTimestamp(),
-        });
-        });
+      // Jamás acreditar XP, monedas ni el estado 'claimed' desde Flutter.
+      // Los documentos históricos pudieron alterarse con reglas anteriores;
+      // solo Functions puede validar una constancia independiente del servidor.
+      if (!BetaHabitGateway.enabled) {
+        throw StateError(
+          'El cobro de desafíos todavía no está disponible. '
+          'Se habilitará cuando el servidor certifique su progreso.',
+        );
+      }
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        throw StateError('Inicia sesión para reclamar recompensas.');
+      }
+      await FirebaseFunctions.instanceFor(
+        app: Firebase.app(), region: 'us-central1',
+      ).httpsCallable('claimVerifiedChallengeBeta').call({
+        'challengeId': id,
+      });
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw StateError('La sesión cambió; consulta tu progreso.');
       }
 
       _mensaje('¡Recompensa reclamada!');
