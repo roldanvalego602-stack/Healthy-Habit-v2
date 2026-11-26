@@ -144,8 +144,8 @@ class PendingBetaHabitOperations {
         (action != 'cancelar' && penalty != null) ||
         note is! String || note.length > 500 ||
         RegExp(r'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]').hasMatch(note) ||
-        (action != 'registrar' &&
-            (note.isNotEmpty || interaction != null)) ||
+        (note.isNotEmpty && action != 'registrar') ||
+        (interaction != null && action == 'cancelar') ||
         (interaction != null && interaction is! Map) ||
         data.keys.any((field) => !const {
           'habitId', 'attemptId', 'operationId', 'maxPenalty',
@@ -271,8 +271,9 @@ class PendingBetaHabitOperations {
         RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]').hasMatch(note)) {
       throw ArgumentError('Nota inválida.');
     }
-    if (action != 'registrar' && (note.isNotEmpty || interaction != null)) {
-      throw ArgumentError('Los datos de registro no pertenecen a esta acción.');
+    if ((action != 'registrar' && note.isNotEmpty) ||
+        (action == 'cancelar' && interaction != null)) {
+      throw ArgumentError('Datos incompatibles con la acción solicitada.');
     }
     final requestAttempt = attemptId ?? '';
     final key = keyFor(
@@ -296,7 +297,7 @@ class PendingBetaHabitOperations {
           'operationId': gateway.newOperationId(),
           if (action == 'cancelar') 'maxPenalty': maxPenalty,
           if (action == 'registrar' && note.isNotEmpty) 'note': note,
-          if (action == 'registrar' && interaction != null)
+          if (action != 'cancelar' && interaction != null)
             'interaction': interaction,
         };
         await prefs.setString(key, jsonEncode(data));
@@ -312,7 +313,7 @@ class PendingBetaHabitOperations {
             (action == 'cancelar' && decoded['maxPenalty'] != maxPenalty) ||
             (action == 'registrar' &&
                 (decoded['note'] ?? '') != note) ||
-            (action == 'registrar' &&
+            ((action == 'registrar' || action == 'activar') &&
                 jsonEncode(decoded['interaction']) != jsonEncode(interaction))) {
           throw StateError('La solicitud guardada no coincide; no se duplicará.');
         }
