@@ -60,6 +60,27 @@ class BetaHabitGateway {
   }
 }
 
+/// Operación pendiente local identificada sin consultar ni escribir Firestore.
+class BetaHabitPendingEntry {
+  const BetaHabitPendingEntry({
+    required this.action,
+    required this.habitId,
+    required this.attemptId,
+    required this.operationId,
+    this.maxPenalty,
+    this.note = '',
+    this.interaction,
+  });
+
+  final String action;
+  final String habitId;
+  final String attemptId;
+  final String operationId;
+  final int? maxPenalty;
+  final String note;
+  final Map<String, dynamic>? interaction;
+}
+
 /// Solicitudes únicas y recuperables. El operationId se conserva en disco
 /// ANTES de llamar al servidor y no se reemplaza tras fallos de red.
 /// Las operaciones con evidencia no se admiten en esta etapa.
@@ -83,6 +104,144 @@ class PendingBetaHabitOperations {
     }
     return 'hh_beta_pending_v1_${uid}_${action}_${habitId}_'
         '${action == 'activar' ? 'nueva' : attemptId}';
+  }
+
+  String _currentUserId() {
+    if (!BetaHabitGateway.enabled ||
+        Firebase.app().options.projectId != BetaHabitGateway.projectId) {
+      throw StateError('La beta no está habilitada para este proyecto.');
+    }
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw StateError('Inicia sesión para revisar solicitudes pendientes.');
+    }
+    return uid;
+  }
+
+  BetaHabitPendingEntry _decode({
+    required String key,
+    required String uid,
+    required Map<String, dynamic> data,
+  }) {
+    final parts = key.substring('hh_beta_pending_v1_${uid}_'.length);
+    final action = const ['activar', 'cancelar', 'registrar']
+        .where((value) => parts.startsWith('${value}_'))
+        .firstOrNull;
+    if (action == null) {
+      throw StateError('La acción pendiente no es válida.');
+    }
+    final habitId = data['habitId'];
+    final attemptId = data['attemptId'];
+    final operationId = data['operationId'];
+    final penalty = data['maxPenalty'];
+    final note = data['note'] ?? '';
+    final interaction = data['interaction'];
+    if (habitId is! String || !_habitId.hasMatch(habitId) ||
+        attemptId is! String || !_id.hasMatch(attemptId) ||
+        operationId is! String || !_id.hasMatch(operationId) ||
+        (action == 'cancelar' && (penalty is! int ||
+            penalty < 0 || penalty > 25)) ||
+        (action != 'cancelar' && penalty != null) ||
+        note is! String || note.length > 500 ||
+        RegExp(r'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]').hasMatch(note) ||
+        (action != 'registrar' &&
+            (note.isNotEmpty || interaction != null)) ||
+        (interaction != null && interaction is! Map) ||
+        data.keys.any((field) => !const {
+          'habitId', 'attemptId', 'operationId', 'maxPenalty',
+          'note', 'interaction',
+        }.contains(field)) ||
+        keyFor(uid: uid, action: action, habitId: habitId,
+          attemptId: attemptId) != key) {
+      throw StateError('Solicitud pendiente inválida: no se reenviará.');
+    }
+    // No aceptar datos no serializables o con claves que no sean texto.
+    Map<String, dynamic>? savedInteraction;
+    if (interaction != null) {
+      try {
+        savedInteraction = Map<String, dynamic>.from(interaction as Map);
+      } catch (_) {
+        throw StateError('Actividad pendiente inválida.');
+      }
+    }
+    return BetaHabitPendingEntry(
+      action: action,
+      habitId: habitId,
+      attemptId: attemptId,
+      operationId: operationId,
+      maxPenalty: penalty is int ? penalty : null,
+      note: note,
+      interaction: savedInteraction,
+    );
+  }
+
+  /// Enumera solicitudes para el UID de la sesión, sin reenviar ninguna.
+  Future<List<BetaHabitPendingEntry>> listarPendientes() async {
+    final uid = _currentUserId();
+    final prefs = SharedPreferencesAsync();
+    final prefix = 'hh_beta_pending_v1_${uid}_';
+    final keys = await prefs.getKeys();
+    final result = <BetaHabitPendingEntry>[];
+    for (final key in keys.where((key) => key.startsWith(prefix))) {
+      final raw = await prefs.getString(key);
+      if (raw == null) continue;
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is! Map<String, dynamic>) {
+          throw const FormatException('Formato de diario inválido.');
+        }
+        result.add(_decode(key: key, uid: uid, data: decoded));
+      } catch (_) {
+        throw StateError(
+          'Existe una solicitud pendiente dañada. '
+          'No se eliminará ni reenviará automáticamente.',
+        );
+      }
+    }
+    if (_currentUserId() != uid) {
+      throw StateError('Cambió la sesión al consultar operaciones.');
+    }
+    return result;
+  }
+
+  /// Reutiliza los identificadores originales de una solicitud ya guardada.
+  Future<Map<String, dynamic>> recuperar(BetaHabitPendingEntry item) async {
+    final uid = _currentUserId();
+    final key = keyFor(uid: uid, action: item.action,
+        habitId: item.habitId, attemptId: item.attemptId);
+    final saved = await SharedPreferencesAsync().getString(key);
+    if (saved == null) {
+      throw StateError('La solicitud pendiente ya no existe.');
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(saved);
+    } catch (_) {
+      throw StateError('No se pudo leer la solicitud pendiente.');
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw StateError('La solicitud pendiente está dañada.');
+    }
+    final original = _decode(key: key, uid: uid, data: decoded);
+    if (original.operationId != item.operationId ||
+        original.attemptId != item.attemptId ||
+        original.maxPenalty != item.maxPenalty ||
+        original.note != item.note ||
+        jsonEncode(original.interaction) != jsonEncode(item.interaction)) {
+      throw StateError('La solicitud cambió desde que fue consultada.');
+    }
+    if (_currentUserId() != uid) {
+      throw StateError('Cambió la sesión. No se reenviará la solicitud.');
+    }
+    return execute(
+      action: original.action,
+      habitId: original.habitId,
+      attemptId: original.action == 'activar' ? null : original.attemptId,
+      maxPenalty: original.maxPenalty,
+      note: original.note,
+      interaction: original.interaction,
+      recoveryOnly: true,
+    );
   }
 
   Future<Map<String, dynamic>> execute({
