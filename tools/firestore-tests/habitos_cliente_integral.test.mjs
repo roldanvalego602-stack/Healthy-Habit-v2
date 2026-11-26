@@ -744,3 +744,44 @@ test('subidas concurrentes: solo una solicitud obtiene la reserva de escritura',
     contentType: 'image/png',
   }), (error) => error.code === 'functions/already-exists');
 });
+
+test('beta cerrada nunca se activa en proyecto demo ni altera economía', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  const userRef = doc(db, 'users', uid);
+  await setDoc(userRef, {
+    uid, name: 'Beta denegada', username: 'beta_' + uid, email: '',
+    level: 1, xp: 0, habitCoins: 100, currentStreak: 0,
+    createdAt: serverTimestamp(),
+  });
+  const before = (await getDoc(userRef)).data();
+  const operations = [
+    ['activateOfficialHabitBeta',
+      {habitId: 'hidr_001', attemptId: nextId(), operationId: nextId()}],
+    ['cancelOfficialHabitBeta',
+      {habitId: 'hidr_001', attemptId: nextId(), operationId: nextId()}],
+    ['registerOfficialHabitBeta',
+      {habitId: 'hidr_001', attemptId: nextId(), operationId: nextId()}],
+    ['purchaseOfficialShopBeta',
+      {itemId: 'cap', operationId: 'purchase_' + nextId()}],
+    ['changeShopAppearanceBeta',
+      {action: 'equip', itemId: 'cap'}],
+    ['claimVerifiedChallengeBeta',
+      {challengeId: 'challenge_123'}],
+  ];
+  for (const [callable, data] of operations) {
+    await assert.rejects(
+      httpsCallable(functions, callable)(data),
+      (error) => ['functions/failed-precondition',
+        'functions/unauthenticated', 'functions/permission-denied']
+        .includes(error.code),
+      callable + ' no debe aceptar clientes de un proyecto demo',
+    );
+  }
+  const after = (await getDoc(userRef)).data();
+  assert.equal(after.xp, before.xp);
+  assert.equal(after.habitCoins, before.habitCoins);
+  assert.deepEqual(after.shopInventory ?? [], before.shopInventory ?? []);
+  assert.deepEqual(after.shopEquipped ?? {}, before.shopEquipped ?? {});
+});
