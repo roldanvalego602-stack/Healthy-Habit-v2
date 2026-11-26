@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'healthy_typing_indicator.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -98,10 +98,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Map<String, dynamic> _perfil = <String, dynamic>{};
   String _primerNombre = '';
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final FlutterTts _tts = FlutterTts();
   bool _voiceReady = false;
   bool _listening = false;
-  bool _readAloud = false;
+  bool _readAloud = true; // Bips originales; no voz hablada.
   String? _voiceError;
   bool isTyping = false;
   bool _replyPending = false;
@@ -150,18 +149,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     _inputFocus.addListener(_onFocusChange);
     messageController.addListener(_onDraftChanged);
     _cargarSaludoPersonalizado();
-    _setupVoice();
     _loadRecentChat();
-  }
-
-  Future<void> _setupVoice() async {
-    try {
-      await _tts.setLanguage('es-MX');
-      await _tts.setSpeechRate(0.48);
-      await _tts.setVolume(1.0);
-    } catch (_) {
-      // No speech engine installed: text chat continues to work.
-    }
   }
 
   Future<void> _toggleListening() async {
@@ -190,7 +178,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
         if (mounted) setState(() => _voiceError = 'El reconocimiento de voz no está disponible en este dispositivo.');
         return;
       }
-      await _tts.stop();
       await _speech.listen(
         listenOptions: stt.SpeechListenOptions(
           localeId: 'es_MX',
@@ -222,8 +209,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     }
   }
 
-  Future<void> _toggleReadAloud() async {
-    if (_readAloud) await _tts.stop();
+  void _toggleReadAloud() {
     if (mounted) setState(() => _readAloud = !_readAloud);
   }
 
@@ -799,11 +785,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     await _persist(botMessage);
     if (mounted) setState(() => isTyping = false);
     if (_readAloud && mounted) {
-      try {
-        await _tts.speak(response);
-      } catch (_) {
-        if (mounted) setState(() => _voiceError = 'No se puede reproducir audio en este dispositivo.');
-      }
+      await HealthyRetroSoundService.play('talk');
     }
   }
 
@@ -864,8 +846,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
         actions: [
           IconButton(
             key: const Key('healthy-chat-audio-toggle'),
-            tooltip: _readAloud ? 'Desactivar lectura en voz alta' :
-                'Activar lectura en voz alta',
+            tooltip: _readAloud ? 'Silenciar voz retro de Mr. Healthy' :
+                'Activar voz retro de Mr. Healthy',
             icon: Icon(_readAloud ? Icons.volume_up_rounded :
                 Icons.volume_off_rounded, color: _navy),
             onPressed: _toggleReadAloud,
