@@ -139,7 +139,7 @@ test("herramientas manipuladas nunca pueden introducir economía ni metas libres
     {type: "counter", target: 1, unit: "vasos", xp: 999},
     {type: "timer", target: 100, unit: "minutos"},
     {type: "hydration", target: 100, unit: "pasos"},
-    {type: "steps", target: 10001, unit: "pasos"},
+    {type: "steps", target: 86401, unit: "pasos"},
     {type: "counter", target: 0, unit: "vasos"},
     {type: "counter", target: 1.5, unit: "vasos"},
     {type: "counter", target: 1, unit: "<script>"},
