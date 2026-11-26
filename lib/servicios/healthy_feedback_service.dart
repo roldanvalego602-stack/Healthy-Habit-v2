@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
+import 'healthy_retro_sound_service.dart';
 
 /// Efectos de compras y recompensas que respetan los ajustes de la cuenta.
 /// No reproduce archivos sonoros externos; usa el clic del sistema operativo.
@@ -56,9 +57,7 @@ class HealthyFeedbackService {
       }
     }
     if (enableSound) {
-      try {
-        await SystemSound.play(SystemSoundType.click);
-      } catch (_) {}
+      await HealthyRetroSoundService.play('purchase');
     }
     if (enableHaptics) {
       try {
