@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,6 +43,7 @@ const profileWardrobeSlots = <WardrobeSlot>[
   WardrobeSlot('perfil_marco', 'Marco', Icons.crop_square_rounded),
   WardrobeSlot('perfil_banner', 'Banner', Icons.panorama_rounded),
   WardrobeSlot('perfil_expositor', 'Expositor', Icons.workspace_premium_rounded),
+  WardrobeSlot('perfil_titulo', 'Título', Icons.badge_rounded),
 ];
 
 /// Selecciona exclusivamente artículos equipables de la ranura elegida.
@@ -202,6 +205,47 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           : 'No se pudo guardar el cambio. Revisa tu conexión.');
     } finally {
       if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  Future<void> _changeProfileTitle() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    const choices = [
+      'Cultivador de constancia',
+      'Semilla saludable',
+      'Explorador del bienestar',
+    ];
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const ListTile(
+            title: Text('Título de perfil',
+              style: TextStyle(fontWeight: FontWeight.w900)),
+            subtitle: Text('Este texto aparece en tu perfil y no cuesta monedas.'),
+          ),
+          for (final title in choices)
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(title),
+              onTap: () => Navigator.pop(sheetContext, title),
+            ),
+        ]),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    try {
+      final db = FirebaseFirestore.instanceFor(
+        app: Firebase.app(), databaseId: 'default');
+      await db.collection('users').doc(uid).update({
+        'profileTitle': choice,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      _message('Título de perfil actualizado.');
+    } catch (_) {
+      _message('No se pudo guardar el título de perfil.');
     }
   }
 
@@ -659,6 +703,24 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   Widget _itemGrid(ShopState state) {
+    if (_slot == 'perfil_titulo') {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.badge_outlined, size: 42),
+          const SizedBox(height: 10),
+          const Text('Tu título se personaliza aquí, en el armario.',
+            textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const ValueKey('wardrobe-profile-title'),
+            onPressed: _changeProfileTitle,
+            icon: const Icon(Icons.edit_rounded),
+            label: const Text('Elegir título'),
+          ),
+        ]),
+      ));
+    }
     final items = wardrobeItemsForSlot(_slot);
     if (items.isEmpty) {
       return Center(
