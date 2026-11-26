@@ -154,3 +154,52 @@ test('36 hábitos: activación, cancelación y reintentos reales con reglas rest
   assert.equal(finalUser.habitMutationVersion, 72,
     'Cada activación y cancelación incrementa una única vez la versión');
 });
+
+
+test('36 hábitos: un registro oficial real por intento y cobro idempotente', async () => {
+  if (auth.currentUser) await signOut(auth);
+  const {user} = await signInAnonymously(auth);
+  const uid = user.uid;
+  await seedEmulatorProfile(uid);
+  const userRef = doc(db, 'users', uid);
+  const activate = httpsCallable(functions, 'activateOfficialHabitDemo');
+  const register = httpsCallable(functions, 'registerOfficialHabitDemo');
+  const cancel = httpsCallable(functions, 'cancelOfficialHabitDemo');
+  let awardedXp = 0;
+  let paidPenalty = 0;
+  let processed = 0;
+  for (const [habitId, catalog] of Object.entries(SERVER_CATALOG)) {
+    const attemptId = nextId();
+    await activate({habitId, attemptId, operationId: nextId()});
+    const record = {habitId, attemptId, operationId: nextId()};
+    const first = (await register(record)).data;
+    assert.equal(first.alreadyProcessed, false, habitId);
+    assert.equal(first.progress, 1, habitId);
+    assert.equal(first.target, catalog.target, habitId);
+    assert.equal(first.completed, false, habitId);
+    assert.equal(first.xpAwarded, catalog.xp, habitId);
+    const repeated = (await register(record)).data;
+    assert.equal(repeated.alreadyProcessed, true, habitId);
+    assert.equal(repeated.progress, 1, habitId);
+    assert.equal(repeated.xpAwarded, first.xpAwarded, habitId);
+    const attemptRef = doc(db, 'users', uid,
+      'user_habits', habitId, 'attempts', attemptId);
+    assert.equal((await getDoc(attemptRef)).data().progress, 1, habitId);
+    const difficult = catalog.difficulty === 'Difícil';
+    const penalty = difficult ? 25 : 0;
+    const cancellation = {habitId, attemptId,
+      operationId: nextId(), maxPenalty: penalty};
+    assert.equal((await cancel(cancellation)).data.chargedCoins, penalty, habitId);
+    paidPenalty += penalty;
+    awardedXp += catalog.xp;
+    processed++;
+  }
+  const profile = (await getDoc(userRef)).data();
+  assert.equal(processed, 36);
+  assert.equal(profile.xp, 10000 + awardedXp,
+    'El servidor entrega XP una sola vez por operación');
+  assert.equal(profile.currentXp, profile.xp);
+  assert.equal(profile.habitCoins, 1000 - paidPenalty,
+    'Solo se deducen penalizaciones de cancelación en este escenario');
+  assert.equal(profile.habitMutationVersion, 72);
+});
