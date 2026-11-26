@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import '../niveles/levels_system.dart';
 import 'catalogo.dart';
 import '../../servicios/official_habit_emulator_service.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import 'modelo/habit.dart';
 
@@ -230,6 +231,29 @@ class HabitActionService {
       final response = await pending.activate(habit.id);
       return HabitActionResult(
         habit: habit, removed: false,
+        chargedCoins: number(response['chargedCoins']),
+      );
+    }
+
+    // Ruta autoritativa de beta: el servidor valida cupos, monedas y
+    // estado. Nunca continuar a las transacciones directas de abajo.
+    if (BetaHabitGateway.enabled) {
+      if (!preview.remove && interaction != null &&
+          interaction['type'] != 'manual') {
+        throw StateError(
+          'Las herramientas configurables aún no están disponibles '
+          'en la activación de beta.',
+        );
+      }
+      final response = await const PendingBetaHabitOperations().execute(
+        action: preview.remove ? 'cancelar' : 'activar',
+        habitId: habit.id,
+        attemptId: preview.attemptId,
+        maxPenalty: preview.remove ? preview.estimatedCost : null,
+      );
+      return HabitActionResult(
+        habit: habit,
+        removed: preview.remove,
         chargedCoins: number(response['chargedCoins']),
       );
     }
