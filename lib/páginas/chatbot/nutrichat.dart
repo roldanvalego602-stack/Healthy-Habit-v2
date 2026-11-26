@@ -39,6 +39,7 @@ import '../niveles/camino_niveles_screen.dart';
 import '../niveles/levels_system.dart';
 import '../ranking_screen.dart';
 import '../tienda/store_screen.dart';
+import '../tienda/healthy_mascot_live.dart';
 import '../desafios/desafios_screen.dart';
 import '../logros/logros_screen.dart';
 import '../perfil/editar_perfil_screen.dart';
@@ -890,11 +891,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                         child: ClipOval(
                           child: SizedBox(
                             width: 78, height: 78,
-                            child: Image.asset(
-                              'assets/mascot/healthy.png',
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
-                            ),
+                            child: const HealthyMascotLive(size: 78),
                           ),
                         ),
                       ),
@@ -954,13 +951,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     padding: const EdgeInsets.only(bottom: 20),
     child: Row(
       children: [
-        Image.asset(
-          'assets/mascot/healthy.png',
-          width: 52,
-          height: 52,
-          errorBuilder:
-              (_, __, ___) => const Icon(Icons.eco, size: 45, color: _green),
-        ),
+        const HealthyMascotLive(size: 52),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
