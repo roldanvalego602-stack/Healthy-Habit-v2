@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'healthy_mascot_outfit.dart';
+import 'healthy_mascot_idle.dart';
 import 'shop_item_artwork.dart';
 import 'shop_service.dart';
 
@@ -91,13 +92,15 @@ class HealthyMascotLive extends StatelessWidget {
     height: size,
     child: FittedBox(
       fit: BoxFit.contain,
-      child: StreamBuilder<ShopState>(
-        stream: ShopService.instance.watch(),
+      child: HealthyMascotIdle(
+        child: StreamBuilder<ShopState>(
+          stream: ShopService.instance.watch(),
         builder: (context, snapshot) =>
             FutureBuilder<Map<String, dynamic>>(
           future: _readLayouts(),
           builder: (context, preferences) =>
               _buildOutfit(snapshot.data, preferences.data ?? {}),
+        ),
         ),
       ),
     ),
