@@ -1,0 +1,54 @@
+name: Healthy Habit - pruebas de integracion para beta
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/beta_quality_gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  funciones:
+    name: Pruebas unitarias de Cloud Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - name: Instalar dependencias reproducibles
+        run: npm ci --prefix functions
+      - name: Comprobar sintaxis del despachador y la entrada
+        run: |
+          node --check functions/official_beta_dispatcher.js
+          node --check functions/index.js
+      - name: Ejecutar pruebas unitarias
+        run: npm --prefix functions test
+
+  flutter:
+    name: Analisis y pruebas Flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Restaurar dependencias
+        run: flutter pub get
+      - name: Analizar cliente
+        run: flutter analyze --no-fatal-infos lib
+      - name: Ejecutar pruebas
+        run: flutter test
