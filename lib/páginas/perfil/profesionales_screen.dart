@@ -1,105 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../tema/healthy_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 
 class ProfesionalesScreen extends StatelessWidget {
   const ProfesionalesScreen({super.key});
 
-  // Sustituye estos datos de demostración por contactos reales autorizados.
+
+  // Perfiles ficticios para la demostración universitaria.
   static const _profesionales = <_Profesional>[
-    _Profesional(
-      nombre: 'Laura Méndez',
-      especialidad: 'Nutrición · consulta externa',
-      telefono: '+1111111111',
-      correo: 'laura.mendez@example.com',
-      horario: 'Lun–vie · 9:00–17:00 (hora local)',
-    ),
-    _Profesional(
-      nombre: 'Daniel Ríos',
-      especialidad: 'Nutrición · consulta externa',
-      telefono: '+111111111',
-      correo: 'daniel.rios@example.com',
-      horario: 'Lun–jue · 10:00–18:00 (hora local)',
-    ),
+    _Profesional(nombre: 'Nicol Ramírez',
+      especialidad: 'Alimentación e hidratación · Perfil de demostración',
+      telefono: '+52 000 000 0001', correo: 'nicol.ramirez@example.com',
+      horario: 'Lun–vie · 9:00–14:00 (simulado)',
+      descripcion: 'Ejemplo de acompañamiento en organización de comidas, hidratación y metas alimentarias. Credenciales y disponibilidad por confirmar para la beta.'),
+    _Profesional(nombre: 'Fernando López',
+      especialidad: 'Bienestar y hábitos · Perfil de demostración',
+      telefono: '+52 000 000 0002', correo: 'fernando.lopez@example.com',
+      horario: 'Lun–vie · 15:00–19:00 (simulado)',
+      descripcion: 'Ejemplo de seguimiento de rutinas, bienestar y constancia. Credenciales y disponibilidad por confirmar para la beta.'),
   ];
 
-  Future<void> _abrirEnlace(BuildContext context, Uri uri, String error) async {
-    try {
-      final abierto = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!abierto && context.mounted) _mostrarError(context, error);
-    } catch (_) {
-      if (context.mounted) _mostrarError(context, error);
-    }
-  }
-
-  void _mostrarError(BuildContext context, String mensaje) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(mensaje)));
-  }
-
-  Future<void> _llamar(BuildContext context, _Profesional profesional) async {
-    final numero = profesional.telefono.replaceAll(RegExp(r'[^\d+]'), '');
-    if (numero.isEmpty) {
-      _mostrarError(context, 'Este profesional no tiene teléfono registrado.');
-      return;
-    }
-    await _abrirEnlace(
-      context,
-      Uri(scheme: 'tel', path: numero),
-      'No se pudo abrir la aplicación de llamadas.',
+  Future<void> _simular(BuildContext context, _Profesional p, String accion) async {
+    final destino = accion == 'Correo' ? p.correo : p.telefono;
+    final mensaje = accion == 'WhatsApp'
+        ? 'Hola, ${p.nombre}. Te escribo desde Healthy Habit para solicitar información.'
+        : accion == 'Correo'
+            ? 'Asunto: Consulta desde Healthy Habit\nHola, ${p.nombre}. Solicito información sobre una consulta.'
+            : accion == 'Contactos'
+                ? 'Ficha de contacto ficticia para la demostración.'
+                : 'Vista previa de llamada telefónica.';
+    final icono = accion == 'Correo' ? Icons.email_outlined
+        : accion == 'WhatsApp' ? Icons.chat_outlined
+        : accion == 'Contactos' ? Icons.contacts_outlined : Icons.call_outlined;
+    await showModalBottomSheet<void>(
+      context: context, showDragHandle: true, isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      builder: (sheet) => SafeArea(top: false, child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
+        child: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Icon(icono, color: HealthyAdaptive.accent),
+            const SizedBox(width: 10), Expanded(child: Text('$accion · Simulación',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: HealthyAdaptive.text)))]),
+          const SizedBox(height: 12),
+          Text(p.nombre, style: TextStyle(color: HealthyAdaptive.text, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          SelectableText(destino, style: TextStyle(color: HealthyAdaptive.text)),
+          const SizedBox(height: 12),
+          Text(mensaje, style: TextStyle(color: HealthyAdaptive.muted, height: 1.4)),
+          const SizedBox(height: 12),
+          Text('Información ficticia. No se realizará ninguna comunicación real.',
+            style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted)),
+          const SizedBox(height: 16),
+          SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: () async {
+              final copia = accion == 'Contactos'
+                  ? 'BEGIN:VCARD\nVERSION:3.0\nFN:${p.nombre}\nTEL:${p.telefono}\nEMAIL:${p.correo}\nEND:VCARD'
+                  : '$destino\n\n$mensaje';
+              await Clipboard.setData(ClipboardData(text: copia));
+              if (sheet.mounted) Navigator.pop(sheet);
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Datos ficticios copiados.')));
+            },
+            icon: const Icon(Icons.copy_outlined),
+            label: Text(accion == 'Contactos' ? 'Copiar ficha de contacto' : 'Copiar datos de prueba'),
+          )),
+        ]),
+      )),
     );
   }
-
-  Future<void> _whatsapp(BuildContext context, _Profesional profesional) async {
-    final numero = profesional.telefono.replaceAll(RegExp(r'\D'), '');
-    if (numero.isEmpty) {
-      _mostrarError(context, 'Este profesional no tiene teléfono registrado.');
-      return;
-    }
-    final mensaje = Uri.encodeComponent(
-      'Hola, ${profesional.nombre}. Te contacto desde Healthy Habit para solicitar información sobre una consulta.',
-    );
-    await _abrirEnlace(
-      context,
-      Uri.parse('https://wa.me/$numero?text=$mensaje'),
-      'No se pudo abrir WhatsApp. Comprueba que el número sea válido y tenga WhatsApp.',
-    );
-  }
-
-  Future<void> _correo(BuildContext context, _Profesional profesional) async {
-    if (profesional.correo.trim().isEmpty) {
-      _mostrarError(
-        context,
-        'Aún no se ha configurado el correo de ${profesional.nombre}.',
-      );
-      return;
-    }
-    await _abrirEnlace(
-      context,
-      Uri(
-        scheme: 'mailto',
-        path: profesional.correo,
-        query: _encodeQueryParameters({
-          'subject': 'Consulta desde Healthy Habit',
-          'body':
-              'Hola, ${profesional.nombre}.\n\nQuisiera recibir información sobre sus servicios profesionales.\n',
-        }),
-      ),
-      'No se pudo abrir una aplicación de correo electrónico.',
-    );
-  }
-
-  String _encodeQueryParameters(Map<String, String> params) => params.entries
-      .map(
-        (entry) =>
-            '${Uri.encodeComponent(entry.key)}=${Uri.encodeComponent(entry.value)}',
-      )
-      .join('&');
+  Future<void> _llamar(BuildContext c, _Profesional p) => _simular(c, p, 'Llamada');
+  Future<void> _whatsapp(BuildContext c, _Profesional p) => _simular(c, p, 'WhatsApp');
+  Future<void> _correo(BuildContext c, _Profesional p) => _simular(c, p, 'Correo');
+  Future<void> _contactos(BuildContext c, _Profesional p) => _simular(c, p, 'Contactos');
 
   void _verInformacion(BuildContext context, _Profesional profesional) {
     showModalBottomSheet<void>(
@@ -124,6 +98,8 @@ class ProfesionalesScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(profesional.especialidad),
                   const SizedBox(height: 12),
+                  Text(profesional.descripcion),
+                  const SizedBox(height: 10),
                   Text('Horario: ${profesional.horario}'),
                   const SizedBox(height: 8),
                   Text('Teléfono: ${profesional.telefono}'),
@@ -136,6 +112,11 @@ class ProfesionalesScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _contactos(context, profesional),
+                        icon: const Icon(Icons.contacts_outlined),
+                        label: const Text('Contactos'),
+                      ),
                       OutlinedButton.icon(
                         onPressed: () => _llamar(context, profesional),
                         icon: const Icon(Icons.call_outlined),
@@ -155,7 +136,7 @@ class ProfesionalesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Healthy Habit no verifica automáticamente la disponibilidad de estos contactos. Confirma sus credenciales antes de contratar una consulta.',
+                    'Los perfiles y contactos son ficticios. Se sustituirán por información autorizada en la versión beta.',
                     style: TextStyle(fontSize: 12, color: HealthyAdaptive.muted),
                   ),
                 ],
@@ -202,7 +183,7 @@ class ProfesionalesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Habla con profesionales de la salud para obtener resultados óptimos y saludables.',
+              'Demostración de orientación profesional. Los perfiles y contactos son ficticios.',
               style: TextStyle(
                 fontSize: 13,
                 color: HealthyAdaptive.muted,
@@ -241,7 +222,7 @@ class ProfesionalesScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Mr. Healthy ofrece información general y no sustituye a un profesional de salud. Estos contactos externos son para orientación individual.',
+                    'Mr. Healthy ofrece información general y no sustituye a un profesional de salud. Estos contactos son ejemplos y no ofrecen atención real.',
                     style: TextStyle(
                       fontSize: 13,
                       color: HealthyAdaptive.muted,
@@ -402,6 +383,11 @@ class ProfesionalesScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(
+            onPressed: () => _contactos(context, profesional),
+            icon: const Icon(Icons.contacts_outlined),
+            label: const Text('Contactos'),
+          )),
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -421,6 +407,7 @@ class _Profesional {
   final String telefono;
   final String correo;
   final String horario;
+  final String descripcion;
 
   const _Profesional({
     required this.nombre,
@@ -428,5 +415,6 @@ class _Profesional {
     required this.telefono,
     required this.correo,
     required this.horario,
+    required this.descripcion,
   });
 }
