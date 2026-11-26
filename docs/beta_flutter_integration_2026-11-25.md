@@ -280,9 +280,19 @@ amplió `habitos_36_funcional.test.mjs` con un segundo caso de integración.
 Para un perfil efímero independiente verifica un registro por cada uno de
 los 36 hábitos, XP derivado del catálogo, reintentos idénticos que no
 incrementan el progreso, persistencia del avance y cancelación posterior.
-El balance esperado excluye monedas nuevas porque el perfil simulado
-parte de nivel 20 y no cambia de nivel en este recorrido.
+El perfil simulado parte de 10 000 XP (nivel 19), por lo que el registro
+de los 36 hábitos alcanza los 10 500 XP del nivel 20 y entrega 300 HC.
+La prueba ahora verifica que ese premio se acredita exactamente una vez,
+que el nivel queda reclamado y que los reintentos no vuelven a pagar.
 
 La nueva prueba aún debe ejecutarse en el emulador. No equivale a cubrir
 los 36 hábitos durante sus periodos completos de cumplimiento; tampoco
 valida la UI Flutter ni autoriza un despliegue de reglas.
+
+
+En la primera ejecución del nuevo caso, activación/cancelación pasó, pero
+falló la expectativa de saldo (1000 observado frente a 700 esperado):
+la diferencia corresponde al premio legítimo de nivel 20. Se corrigió
+la expectativa y se añadieron verificaciones de recompensa única.
+**Pendiente:** repetir el laboratorio tras este cambio; no declararlo
+aprobado antes de observar la ejecución real.
