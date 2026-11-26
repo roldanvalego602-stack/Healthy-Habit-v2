@@ -13,6 +13,8 @@ import 'package:healthy_habit/páginas/ranking_screen.dart';
 
 import 'habitos/habits_screen.dart';
 import 'habitos/registrar_habito_screen.dart';
+import 'habitos/healthy_vision_demo_screen.dart';
+import '../servicios/healthy_vision_debug_service.dart';
 import 'tienda/store_screen.dart';
 import 'tienda/healthy_mascot_live.dart';
 import 'niveles/camino_niveles_screen.dart';
@@ -1313,6 +1315,15 @@ class _HomeContent extends StatelessWidget {
                   icon: const Icon(Icons.auto_awesome),
                   label: const Text('Chatear'),
                 ),
+                if (HealthyVisionDebugService.enabled)
+                  TextButton.icon(
+                    key: const ValueKey('healthy-vision-demo-entry'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const HealthyVisionDemoScreen())),
+                    icon: const Icon(Icons.document_scanner_outlined),
+                    label: const Text('Probar reconocimiento de imágenes'),
+                  ),
               ],
             ),
           ),
