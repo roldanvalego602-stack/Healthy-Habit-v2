@@ -561,24 +561,31 @@ function requireIsolatedOfficialDemo(request) {
   }
 }
 
-function officialDemoCallable(operation) {
+const {createOfficialHabitDispatcher} =
+  require("./official_beta_dispatcher");
+const dispatchOfficialHabit = createOfficialHabitDispatcher({
+  activate: activateOfficialHabitTransaction,
+  cancel: cancelOfficialHabitTransaction,
+  register: registerOfficialHabitTransaction,
+});
+
+// Solo el proyecto demo, jamás la aplicación real. Este mismo despacho
+// valida la solicitud antes de ejecutar la transacción autoritativa.
+function officialHabitDemoAction(action) {
   return onCall(
     {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
     async (request) => {
       requireIsolatedOfficialDemo(request);
       try {
-        return await operation({
-          db, uid: request.auth.uid, data: request.data,
+        return await dispatchOfficialHabit({
+          action, db, uid: request.auth.uid, data: request.data,
         });
       } catch (error) {
         if (error instanceof RegistrationPolicyError) {
           throw new HttpsError(error.code, error.message);
         }
-        // Errores inesperados (Admin SDK, consultas, índices, etc.)
-        // normalmente se muestran al cliente solo como "internal".
-        // El log se emite exclusivamente en el emulador demo.
         console.error("[official-demo-callable] Error inesperado:", {
-          operation: operation.name || "anonymous",
+          action,
           code: error?.code ?? null,
           message: error?.message ?? String(error),
           stack: error?.stack ?? null,
@@ -593,15 +600,12 @@ function officialDemoCallable(operation) {
   );
 }
 
-exports.activateOfficialHabitDemo = officialDemoCallable(
-  activateOfficialHabitTransaction
-);
-exports.cancelOfficialHabitDemo = officialDemoCallable(
-  cancelOfficialHabitTransaction
-);
-exports.registerOfficialHabitDemo = officialDemoCallable(
-  registerOfficialHabitTransaction
-);
+exports.activateOfficialHabitDemo = officialHabitDemoAction("activate");
+exports.cancelOfficialHabitDemo = officialHabitDemoAction("cancel");
+exports.registerOfficialHabitDemo = officialHabitDemoAction("register");
+
+// Las operaciones oficiales de producción NO se exportan aquí.
+// Pendiente: cliente migrado, reglas restrictivas y pruebas adversariales.
 
 // Reservar una ruta de fotografía SOLO para el intento oficial en curso.
 // No adjunta imágenes al log y jamás acredita XP.
