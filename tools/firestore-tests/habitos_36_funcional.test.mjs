@@ -26,8 +26,12 @@ function requireEmulators() {
     'Se requiere Firestore Emulator LOCAL en 127.0.0.1:8080.');
   assert.equal(process.env.FIREBASE_AUTH_EMULATOR_HOST, HOST + ':9099',
     'Se requiere Auth Emulator LOCAL en 127.0.0.1:9099.');
-  assert.equal(process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST, HOST + ':5001',
-    'Se requiere Functions Emulator LOCAL en 127.0.0.1:5001.');
+  // No todas las versiones de Firebase CLI exportan esta variable.
+  // Siempre se conecta el SDK explícitamente al Functions Emulator local.
+  if (process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST) {
+    assert.equal(process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST,
+      HOST + ':5001', 'Functions Emulator debe ser local.');
+  }
 }
 
 before(() => {
