@@ -637,6 +637,28 @@ exports.activateOfficialHabitBeta = officialHabitBetaAction("activate");
 exports.cancelOfficialHabitBeta = officialHabitBetaAction("cancel");
 exports.registerOfficialHabitBeta = officialHabitBetaAction("register");
 
+// Compra autoritativa para beta cerrada: comparte catálogo y transacción
+// idempotente con el emulador, pero nunca el permiso de acceso.
+const {requireBetaHabitAccess} = require("./official_beta_access");
+exports.purchaseOfficialShopBeta = onCall(
+  {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
+  async (request) => {
+    try {
+      const uid = requireBetaHabitAccess(request);
+      return await purchaseDemoShopItem({db, uid, data: request.data});
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      console.error("[shop-beta-callable] Error inesperado:", {
+        code: error?.code ?? "internal",
+      });
+      throw new HttpsError("internal", "La compra no pudo completarse.");
+    }
+  }
+);
+
+
 // Adaptador preservado para operaciones demo de evidencia (reserva,
 // subida y asociación): utilizan contrato y validaciones propias.
 function officialDemoCallable(operation) {
