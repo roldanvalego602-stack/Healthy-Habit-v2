@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
 import 'tema/healthy_profile_presentation.dart';
 import 'páginas/perfil/profile_avatar.dart';
+import 'páginas/tienda/healthy_mascot_live.dart';
 import 'tema/healthy_visual_mode.dart';
 import 'tema/healthy_motion.dart';
 import 'tema/healthy_float.dart';
@@ -367,17 +368,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: AssetImage('assets/mascot/healthy.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
+        const HealthyMascotLive(size: 38),
         const SizedBox(width: 8),
         Text(
           'Healthy Habit',
@@ -1046,16 +1037,7 @@ class _MrHealthyBannerCard extends StatelessWidget {
           SizedBox(
             width: 72,
             height: 72,
-            child: Image.asset(
-              'assets/mascot/healthy.png',
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (context, error, stackTrace) => Icon(
-                    Icons.eco_rounded,
-                    color: AppColors.primaryGreen,
-                    size: 50,
-                  ),
-            ),
+            child: const HealthyMascotLive(size: 72),
           ),
         ],
       ),
