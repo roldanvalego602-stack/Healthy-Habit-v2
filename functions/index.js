@@ -607,6 +607,37 @@ exports.registerOfficialHabitDemo = officialHabitDemoAction("register");
 // Las operaciones oficiales de producción NO se exportan aquí.
 // Pendiente: cliente migrado, reglas restrictivas y pruebas adversariales.
 
+// Adaptador preservado para operaciones demo de evidencia (reserva,
+// subida y asociación): utilizan contrato y validaciones propias.
+function officialDemoCallable(operation) {
+  return onCall(
+    {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
+    async (request) => {
+      requireIsolatedOfficialDemo(request);
+      try {
+        return await operation({
+          db, uid: request.auth.uid, data: request.data,
+        });
+      } catch (error) {
+        if (error instanceof RegistrationPolicyError) {
+          throw new HttpsError(error.code, error.message);
+        }
+        console.error("[official-demo-callable] Error inesperado:", {
+          operation: operation.name || "anonymous",
+          code: error?.code ?? null,
+          message: error?.message ?? String(error),
+          stack: error?.stack ?? null,
+        });
+        throw new HttpsError(
+          "internal",
+          "Error interno del servidor de pruebas. Revisa el registro de "
+            + "Functions Emulator: [official-demo-callable]."
+        );
+      }
+    }
+  );
+}
+
 // Reservar una ruta de fotografía SOLO para el intento oficial en curso.
 // No adjunta imágenes al log y jamás acredita XP.
 const {reserveHabitEvidence} = require("./habit_evidence_reservation");
