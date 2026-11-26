@@ -134,6 +134,9 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
             HealthyLocalVisionPanel(
               key: ValueKey(_image),
               image: _image!,
+              initialProfile: 'fruit_vegetable',
+              habitTitle: 'Comer frutas y verduras',
+              category: 'Frutas y verduras',
             ),
           if (_image != null && HealthyVisionDebugService.enabled)
             HealthyVisionPreviewPanel(
