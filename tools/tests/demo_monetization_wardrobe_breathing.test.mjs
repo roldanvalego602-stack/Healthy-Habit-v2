@@ -44,3 +44,19 @@ test('vestimenta guardada se aplica a perfil y chat con animación de atención'
   assert.match(chatbot, /HealthyMascotLive\(/);
   assert.match(profile, /HealthyMascotLive\(/);
 });
+
+test('armario permite cifras exactas, y títulos bloqueados no se seleccionan', () => {
+  const titles = read('lib/páginas/perfil/profile_titles.dart');
+  assert.match(wardrobe, /wardrobe-edit-size-number/);
+  assert.match(wardrobe, /wardrobe-edit-rotation-number/);
+  assert.match(wardrobe, /double\.tryParse\(controller\.text\.trim\(\)\)/);
+  assert.match(wardrobe, /choice\.available\(latestLevel, verifiedBadges\)/);
+  assert.match(titles, /festival_participant_2026/);
+  assert.match(titles, /racha_7/);
+});
+
+test('Mr Healthy muestra pensamiento animado y espera acotada', () => {
+  assert.match(chatbot, /thinkingMs = \(1000 \+ response\.runes\.length \* 9\)\.clamp\(1100, 2400\)/);
+  assert.match(chatbot, /_replyPending = true/);
+  assert.match(chatbot, /HealthyTypingIndicator\(/);
+});
