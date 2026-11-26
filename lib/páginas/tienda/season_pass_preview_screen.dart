@@ -68,9 +68,11 @@ class _SeasonPassPreviewScreenState extends State<SeasonPassPreviewScreen> {
                 color: premium ? const Color(0xFF475D50)
                     : HealthyAdaptive.mint,
               ),
-              child: Icon(icon, size: 30,
-                color: premium ? const Color(0xFFF6D58E)
-                    : HealthyAdaptive.accent),
+              child: title.contains('Habit Coins')
+                  ? const Center(child: HealthyCoinIcon(size: 38))
+                  : Icon(icon, size: 30,
+                      color: premium ? const Color(0xFFF6D58E)
+                          : HealthyAdaptive.accent),
             ),
             const SizedBox(height: 9),
             Text(title, maxLines: 2, textAlign: TextAlign.center,
