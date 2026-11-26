@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'shop_purchase_gateway.dart';
@@ -376,6 +377,19 @@ class ShopService {
     if (item.slot == null) {
       throw const ShopException('Este artículo no se puede equipar.');
     }
+    if (BetaHabitGateway.enabled) {
+      final uid = _user.uid;
+      await FirebaseFunctions.instanceFor(
+        app: Firebase.app(), region: 'us-central1',
+      ).httpsCallable('changeShopAppearanceBeta').call({
+        'action': remove ? 'unequip' : 'equip',
+        'itemId': item.id,
+      });
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw StateError('Cambió la sesión durante el equipamiento.');
+      }
+      return;
+    }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {
       final doc = await transaction.get(ref);
@@ -395,6 +409,18 @@ class ShopService {
   }
 
   Future<void> resetLook() async {
+    if (BetaHabitGateway.enabled) {
+      final uid = _user.uid;
+      await FirebaseFunctions.instanceFor(
+        app: Firebase.app(), region: 'us-central1',
+      ).httpsCallable('changeShopAppearanceBeta').call({
+        'action': 'reset',
+      });
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw StateError('Cambió la sesión durante la restauración.');
+      }
+      return;
+    }
     final ref = _userRef;
     await _db.runTransaction((transaction) async {
       final doc = await transaction.get(ref);
