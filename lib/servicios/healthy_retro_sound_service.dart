@@ -15,7 +15,9 @@ class HealthyRetroSoundService {
   static Future<void> play(String kind) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     if (!const {'talk', 'purchase', 'reward', 'achievement', 'friend'}
-        .contains(kind)) return;
+        .contains(kind)) {
+      return;
+    }
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
