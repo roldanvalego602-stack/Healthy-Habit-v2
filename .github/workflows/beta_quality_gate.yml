@@ -7,6 +7,7 @@ on:
       - 'functions/**'
       - 'lib/**'
       - 'test/**'
+      - 'tools/tests/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/beta_quality_gate.yml'
@@ -37,6 +38,8 @@ jobs:
         run: npm --prefix functions test
       - name: Comprobar auditoría preventiva de Firebase
         run: node --test tools/tests/beta_security_gate.test.cjs
+      - name: Comprobar regresiones sociales y audio
+        run: node --test tools/tests/demo_social_audio_regression.test.mjs
 
   flutter:
     name: Analisis y pruebas Flutter
