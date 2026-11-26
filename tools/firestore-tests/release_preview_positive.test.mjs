@@ -38,10 +38,19 @@ test('lockdown: el titular puede cambiar preferencias', async () => {
   await assertSucceeds(updateDoc(doc(as('alice'), 'users/alice'),
     {settings: {permitirRecordatorios: true}}));
 });
-test('lockdown: comprar con precio y descuento validado sigue permitido', async () => {
+test('lockdown: comprar incluso con descuento válido requiere Functions', async () => {
   await seed();
-  await assertSucceeds(updateDoc(doc(as('alice'), 'users/alice'),
+  await assertFails(updateDoc(doc(as('alice'), 'users/alice'),
     {shopInventory: ['avatar_frame'], habitCoins: 130}));
+});
+test('lockdown: equipar artículos comprados requiere Functions', async () => {
+  await seed();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'users/alice'),
+      {shopInventory: ['avatar_frame']});
+  });
+  await assertFails(updateDoc(doc(as('alice'), 'users/alice'),
+    {shopEquipped: {perfil_marco: 'avatar_frame'}}));
 });
 test('lockdown: comprar sin descuento se rechaza', async () => {
   await seed();
