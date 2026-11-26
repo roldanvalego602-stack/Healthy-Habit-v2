@@ -50,9 +50,13 @@ block(!source.tienda.includes("if (BetaHabitGateway.enabled)") ||
   !source.tienda.includes("BetaShopPurchaseGateway().comprar") ||
   !source.tienda.includes("changeShopAppearanceBeta"),
   'La tienda carece de ruta de beta con compra y equipamiento autoritativos');
-block(!source.desafios.includes("if (BetaHabitGateway.enabled)") ||
-  !source.desafios.includes("claimVerifiedChallengeBeta"),
-  'Los desafíos carecen de ruta de beta de cobro por Functions');
+// La ruta segura es fail-closed: el cliente normal rechaza el cobro,
+// la beta solicita la autorización al servidor. No exigir un if positivo,
+// porque "if (!BetaHabitGateway.enabled) throw" es equivalente y más seguro.
+block(!/if\s*\(!BetaHabitGateway\.enabled\)\s*\{\s*throw StateError/.test(source.desafios) ||
+  !source.desafios.includes("claimVerifiedChallengeBeta") ||
+  !source.desafios.includes("onPressed: !BetaHabitGateway.enabled || processing"),
+  'Los desafíos carecen del bloqueo normal o la ruta de cobro por Functions');
 block(source.puente.includes('demo-healthy-habit') && source.puente.includes('OfficialHabitEmulatorService'),
   'El servicio oficial de hábitos sigue restringido al emulador demo');
 block(source.configuracion.includes("defaultValue: false") &&
