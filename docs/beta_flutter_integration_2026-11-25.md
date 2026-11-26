@@ -185,3 +185,30 @@ invalidarse los indicadores de verificación antiguos y volver a
 certificarse mediante una ruta exclusivamente de servidor. No
 se autoriza la beta hasta completar ese procedimiento, cerrar las
 reglas y ejecutar pruebas integrales.
+
+## Equipamiento de tienda — beta
+
+Se creó `functions/shop_appearance_transaction.js` y la callable
+`changeShopAppearanceBeta` con `enforceAppCheck: true` y el mismo
+bloqueo de acceso cerrado de la beta. La transacción comprueba la
+propiedad desde `shopInventory`, permite artículos gratuitos, valida
+el `slot` contra una réplica del catálogo Flutter y actualiza
+`shopEquipped` en el perfil autenticado. No admite `uid`, ranuras,
+precios ni monedas aportados por el cliente.
+
+En `ShopService.equip()` y `resetLook()`, la beta invoca únicamente
+esa callable y **no** vuelve a ejecutar escrituras Firestore desde
+Flutter cuando existe un error. El comportamiento ordinario permanece
+intacto porque el cliente de beta está deshabilitado.
+
+El comando `reset` conserva solamente los elementos de ranuras
+`perfil_*`; se requieren pruebas en dispositivos para perfiles
+existentes y combinaciones heredadas. Si el mapa guardado incluye
+valores no reconocidos o artículos no poseídos, la función rechaza
+sin actualizar el perfil, para no sobrescribir datos anómalos.
+
+**Nota de confianza:** la lista `shopInventory` de usuarios existentes
+no puede considerarse autorizada mientras las reglas globales
+actuales hayan permitido que cualquier usuario autenticado la
+modifique. Antes de habilitar las operaciones, hay que cerrar las
+reglas y auditar o reconstruir inventarios e historial de compras.
