@@ -82,3 +82,44 @@ Revisar: activación y silenciamiento de la voz retro, volumen con audífonos, g
 6. Revisar todos los símbolos de monedas, añadir sonidos de logros y pulir racha/animaciones.
 
 **Advertencia:** los tests de integración de hábitos/tienda previamente aprobados NO incluyen el nuevo feed, FCM, audio Android ni el bono de pareja; esos módulos no deben anunciarse como terminados.
+
+## 7. Primera implementación de cronología auténtica (26 noviembre, laboratorio)
+
+Se añadió una primera versión del feed cronológico en
+`lib/páginas/perfil/feed_amigos_screen.dart`: lee hasta 15 eventos por
+amigo (máximo 30 amigos), los ordena por `createdAt`, muestra nombre/foto
+públicos, fecha local, entrada al perfil y opción de reaccionar a cada
+evento. No confunde el nivel actual del perfil con una noticia reciente.
+La pantalla indica un error si todavía no hay permisos para consultar
+eventos: **sin despliegue de reglas candidatas, esto es esperado**.
+
+El motor oficial de registro (`functions/habit_registration_transaction.js`)
+genera noticias inmutables de `level_up` y logros verificables
+`achievement_unlocked` por umbrales de nivel, racha y hábitos
+completados en el motor oficial. Se añadió el contador
+`verifiedCompletedHabits` exclusivamente para los logros basados
+en finalizaciones oficiales, separado de métricas heredadas.
+
+Por privacidad, un hábito completado NO genera un evento público de
+manera automática; la publicación voluntaria `habit_completed` sigue
+pendiente de un endpoint explícito validado por servidor.
+
+Las reacciones vinculan su `challengeId` al identificador inmutable de
+actividad. Las reglas candidatas comprueban la existencia del evento
+para `level_` y `completed_`. El selector conserva stickers, pero
+**los stickers siguen siendo reacciones generales y no están vinculados
+a un evento**, pendiente de refinar el modelo de datos de reacciones.
+
+La carpeta `public_profiles/{uid}/activity_events/{eventId}` queda
+reservada a escritura administrativa; la lectura de la rama candidata
+requiere amistad recíproca o ser dueño del perfil.
+
+La prueba `test:36-habitos:emulador` comprueba que cruzar un umbral
+crea una única noticia de nivel y que no aparecen publicaciones
+automáticas de hábitos, además de rechazar alteraciones desde el
+cliente. Esta prueba **aún requiere ejecución del desarrollador**.
+
+Esta entrega no habilita producción, beta, nuevas rules ni FCM.
+Pendiente antes de distribuir: prueba de dos usuarios, consentimientos
+de publicación, carga incremental, medidas de privacidad y políticas
+de retención, reacciones a logros y módulo de compartir explícitamente.
