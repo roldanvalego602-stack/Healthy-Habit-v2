@@ -6,6 +6,19 @@ void main() {
     expect(BetaHabitGateway.enabled, isFalse);
   });
 
+  test('el cliente beta no crea operaciones con la bandera apagada', () async {
+    // La comprobación ocurre antes de consultar Firebase o crear un
+    // identificador de operación local. No necesita SDK inicializado.
+    await expectLater(
+      const PendingBetaHabitOperations().execute(
+        action: 'registrar',
+        habitId: 'alim_001',
+        attemptId: 'attempt_123456789',
+      ),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test('la clave de reintento separa acciones y evita doble activación', () {
     final activate = PendingBetaHabitOperations.keyFor(
       uid: 'usuarioA', action: 'activar', habitId: 'alim_001',
