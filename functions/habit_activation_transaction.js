@@ -276,7 +276,9 @@ async function activateHabitTransaction(
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.set(habitRef, {
-      ...catalog, ...(interaction ? {interaction} : {}),
+      ...catalog,
+      // Un nuevo intento sin herramienta no debe heredar la anterior.
+      ...(mode === "official" ? {interaction} : {}),
       acquiredAt: FieldValue.serverTimestamp(),
       lastAttemptId: attemptId, latestAttemptId: attemptId,
       lastStatus: "inProgress", latestStatus: "inProgress",
