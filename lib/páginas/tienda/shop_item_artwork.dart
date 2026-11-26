@@ -5,6 +5,7 @@ import '../../tema/healthy_streak_items.dart';
 import 'shop_service.dart';
 import 'healthy_leaf_aura.dart';
 import 'healthy_special_auras.dart';
+import 'healthy_achievement_display.dart';
 
 /// Usa las imágenes reales subidas por el equipo y conserva el emoji
 /// como respaldo para los cosméticos que todavía no tienen ilustración.
@@ -18,6 +19,9 @@ class ShopItemArtwork extends StatelessWidget {
   Widget build(BuildContext context) {
     // El artículo histórico sigue retirado de la venta, pero su imagen
     // oficial se muestra si aparece en inventarios antiguos.
+    if (item.id == 'achievement_display') {
+      return HealthyAchievementDisplay(width: size, height: size);
+    }
     if (item.id == 'streak_guard') {
       return HealthyStreakItemIcon(
         item: HealthyStreakItem.shield,
