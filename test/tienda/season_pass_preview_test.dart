@@ -15,9 +15,12 @@ void main() {
 
     final premiumButton = find.byKey(
       const ValueKey('season-demo-premium'));
-    await tester.scrollUntilVisible(
-      premiumButton, 150, scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(premiumButton);
+    await tester.pumpAndSettle();
+    // La tarjeta puede quedar al borde inferior del viewport de prueba.
+    await tester.drag(find.byType(ListView).first,
+      const Offset(0, -180));
+    await tester.pumpAndSettle();
     await tester.tap(premiumButton);
     await tester.pump();
     expect(find.byType(SnackBar), findsOneWidget);
