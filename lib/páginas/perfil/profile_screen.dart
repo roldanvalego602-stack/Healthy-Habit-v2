@@ -19,6 +19,7 @@ import 'healthy_framed_avatar.dart';
 import '../../tema/healthy_cosmetics.dart';
 import 'profile_banner.dart';
 import 'profile_photo_viewer.dart';
+import 'profile_titles.dart';
 import '../../servicios/daily_streak_display.dart';
 import 'profile_monthly_summary.dart';
 import 'profile_habit_insights.dart';
@@ -448,7 +449,7 @@ class ProfileScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '✦ ${_string(data['profileTitle'], fallback: 'Cultivador de constancia')}',
+                    '✦ ${HealthyProfileTitles.visibleTitle(_string(data['profileTitle']), _integer(data['level'], fallback: 1), const <String>{})}',
                     style: TextStyle(
                       color: HealthyAdaptive.isDark
                           ? const Color(0xFFFFD477)
