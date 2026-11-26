@@ -227,7 +227,7 @@ class _SeasonPassPreviewScreenState extends State<SeasonPassPreviewScreen> {
                 subtitle: const Text('Simulación académica'),
                 trailing: OutlinedButton(
                   onPressed: () => _explain('${pack.$1} Habit Coins'),
-                  child: Text('\${pack.$2} MXN'),
+                  child: Text('${pack.$2} MXN'),
                 ),
               ),
             ),
