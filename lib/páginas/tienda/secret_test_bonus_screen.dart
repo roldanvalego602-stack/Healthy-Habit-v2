@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../servicios/shop_demo_bootstrap.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/healthy_coin.dart';
 import 'shop_purchase_gateway.dart';
 
 /// Página oculta de pruebas: las monedas son reales SOLO en la base
@@ -142,7 +143,7 @@ class _SecretTestBonusScreenState extends State<SecretTestBonusScreen> {
                 icon: _loading
                     ? const SizedBox(width: 18, height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.toll_rounded),
+                    : const HealthyCoinIcon(size: 20),
                 label: const Text('Reclamar 1,000 monedas'),
               ),
               if (_message != null) ...[
