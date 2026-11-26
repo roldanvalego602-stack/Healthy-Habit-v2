@@ -162,3 +162,26 @@ económicas o de gamificación por auditar.
 
 No ejecutar `firebase deploy` ni habilitar las banderas de beta
 con las reglas globales abiertas compartidas anteriormente.
+
+## Reclamación autoritativa de desafíos
+
+La pantalla `DesafiosScreen` utiliza en beta
+`claimVerifiedChallengeBeta` en lugar de acreditar XP o monedas
+mediante la transacción del cliente. El backend valida el estado y
+la marca de progreso verificado, calcula el XP, los premios de nivel
+y las monedas, y cambia `status` a `claimed` dentro de una sola
+transacción. Una segunda reclamación se rechaza sin volver a abonar.
+
+La versión de reglas **del laboratorio solamente** también impide
+que Flutter marque desafíos como reclamados; se añadió una prueba
+adversarial específica en `security_release_gate.test.mjs`.
+
+**Bloqueante:** aún no existe un emisor de progreso de desafío
+verificado por el servidor. Los documentos demostrativos deben
+continuar sin premios. Además, los documentos creados mientras
+Firestore tenía permisos globales abiertos **no son evidencia
+confiable**: antes de activar la reclamación, deben eliminarse o
+invalidarse los indicadores de verificación antiguos y volver a
+certificarse mediante una ruta exclusivamente de servidor. No
+se autoriza la beta hasta completar ese procedimiento, cerrar las
+reglas y ejecutar pruebas integrales.
