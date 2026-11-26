@@ -768,7 +768,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     // instantáneamente. No añade demora si la búsqueda real tardó más.
     // Límite bajo para no perjudicar la experiencia del chat.
     final elapsed = DateTime.now().difference(startedAt);
-    final thinkingMs = (1000 + response.runes.length * 9).clamp(1100, 2400);
+    final thinkingMs = (1000 + response.runes.length * 9).clamp(1100, 2400).toInt();
     final minimum = Duration(milliseconds: thinkingMs);
     if (elapsed < minimum) {
       await Future<void>.delayed(minimum - elapsed);
