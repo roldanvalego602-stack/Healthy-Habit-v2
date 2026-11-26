@@ -42,16 +42,22 @@ class _FeedAmigosScreenState extends State<FeedAmigosScreen> {
         if (data['actorUid'] != id ||
             !const {'level_up', 'habit_completed', 'achievement_unlocked'}
                 .contains(data['kind']) ||
-            data['createdAt'] is! Timestamp) continue;
+            data['createdAt'] is! Timestamp) {
+          continue;
+        }
         final level = data['level'];
         if (data['kind'] == 'level_up' &&
-            (level is! int || level < 2 || level > 1000)) continue;
+            (level is! int || level < 2 || level > 1000)) {
+          continue;
+        }
         final habitId = data['habitId']?.toString() ?? '';
         if (data['kind'] == 'habit_completed' && habitId.isEmpty) continue;
         if (data['kind'] == 'achievement_unlocked' &&
             !const {'primera_meta', 'triple_victoria', 'cinco_logros',
               'nivel_3', 'nivel_5', 'racha_3', 'racha_7', 'racha_30'}
-                .contains(data['achievementId'])) continue;
+                .contains(data['achievementId'])) {
+          continue;
+        }
         events.add(_FriendEvent(
           eventId: event.id, uid: id, data: data,
           name: (profile['name'] ?? 'Tu amigo').toString(),
