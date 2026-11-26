@@ -40,12 +40,26 @@ block(source.tienda.includes('_db.runTransaction'),
   'La tienda conserva transacciones directas en Firestore');
 block(source.desafios.includes('_db.runTransaction'),
   'Los desafíos conservan cobros directos de XP y monedas en Firestore');
+block(!source.registro.includes("if (OfficialHabitEmulatorService.enabled || BetaHabitGateway.enabled)") ||
+  !source.registro.includes("PendingBetaHabitOperations().execute("),
+  'El registro carece de ruta de beta separada de las escrituras directas');
+block(!source.acciones.includes("if (BetaHabitGateway.enabled)") ||
+  !source.acciones.includes("PendingBetaHabitOperations().execute("),
+  'Las acciones carecen de ruta de beta separada de las escrituras directas');
+block(!source.tienda.includes("if (BetaHabitGateway.enabled)") ||
+  !source.tienda.includes("BetaShopPurchaseGateway().comprar") ||
+  !source.tienda.includes("changeShopAppearanceBeta"),
+  'La tienda carece de ruta de beta con compra y equipamiento autoritativos');
+block(!source.desafios.includes("if (BetaHabitGateway.enabled)") ||
+  !source.desafios.includes("claimVerifiedChallengeBeta"),
+  'Los desafíos carecen de ruta de beta de cobro por Functions');
 block(source.puente.includes('demo-healthy-habit') && source.puente.includes('OfficialHabitEmulatorService'),
   'El servicio oficial de hábitos sigue restringido al emulador demo');
 block(source.configuracion.includes("defaultValue: false") &&
   source.configuracion.includes('HH_DEMO_OFFICIAL_HABITS'),
   'El recorrido seguro de hábitos requiere banderas experimentales');
-// Este control no acredita pruebas de permisos, despliegue, privacidad ni Android.
+// Estas comprobaciones demuestran solo la presencia de rutas. No prueban
+// que la rama se ejecute, ni permisos, despliegue, privacidad o Android.
 console.log(`Resultado: ${failures} bloqueo(s) estático(s).`);
 if (failures) {
   console.error('NO DISTRIBUIR beta conectada a Firebase real. Ejecutar además las pruebas de reglas y flujos integrales.');
