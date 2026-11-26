@@ -2,6 +2,7 @@ import '../niveles/levels_system.dart';
 import '../estadisticas/daily_streak_screen.dart';
 import '../estadisticas/daily_streak_reward_dialog.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -186,6 +187,32 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   (_interactionType == 'counter' ? 'vaso' : 'segundos'))
               .toString();
       _interactionComplete = _interactionType == 'manual';
+      // Preferencia no económica: cambia la herramienta de medición,
+      // nunca la meta oficial ni el XP. Se aísla por usuario e intento.
+      final prefKey = 'hh_habit_tool_v1_${FirebaseAuth.instance.currentUser!.uid}_'
+          '${widget.habitId}_${widget.attemptId}';
+      final saved = await SharedPreferencesAsync().getString(prefKey);
+      if (saved != null) {
+        try {
+          final decoded = jsonDecode(saved);
+          if (decoded is Map &&
+              const {'manual', 'counter', 'stopwatch', 'timer', 'steps',
+                'breathing', 'pomodoro', 'hydration'}.contains(decoded['type']) &&
+              decoded['target'] is int &&
+              (decoded['target'] as int) >= 1 &&
+              (decoded['target'] as int) <= 86400 &&
+              decoded['unit'] is String &&
+              (decoded['unit'] as String).isNotEmpty &&
+              (decoded['unit'] as String).length <= 40) {
+            _interactionType = decoded['type'] as String;
+            _interactionTarget = decoded['target'] as int;
+            _interactionUnit = decoded['unit'] as String;
+            _interactionComplete = _interactionType == 'manual';
+          }
+        } catch (_) {
+          // Una preferencia dañada no altera el intento oficial.
+        }
+      }
       _meta = _leerEntero(datosAttempt['target'], widget.goal ?? 6);
       if (_meta < 1) _meta = 1;
       if (mounted) {
@@ -241,6 +268,132 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
         'No se pudo seleccionar la imagen. '
         'Comprueba los permisos o la compatibilidad del dispositivo.',
       );
+    }
+  }
+
+  Future<void> _editTool() async {
+    if (_guardando || _metaCompletada) return;
+    const types = <String, String>{
+      'manual': 'Registro tradicional',
+      'counter': 'Contador',
+      'stopwatch': 'Cronómetro',
+      'timer': 'Temporizador',
+      'steps': 'Podómetro',
+      'breathing': 'Respiración guiada',
+      'pomodoro': 'Pomodoro',
+      'hydration': 'Hidratación',
+    };
+    const timed = {'stopwatch', 'timer', 'breathing', 'pomodoro'};
+    var type = _interactionType;
+    var target = _interactionTarget;
+    var unit = _interactionUnit;
+    final controller = TextEditingController(text:
+        (timed.contains(type) ? (target / 60).ceil() : target).toString());
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, update) => AlertDialog(
+          title: const Text('Editar herramienta de registro'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                value: type,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Herramienta', border: OutlineInputBorder()),
+                items: types.entries.map((entry) => DropdownMenuItem(
+                  value: entry.key, child: Text(entry.value))).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  update(() {
+                    type = value;
+                    target = value == 'hydration' ? 2000 :
+                        value == 'steps' ? 1000 :
+                        value == 'counter' ? 6 : 600;
+                    unit = value == 'hydration' ? 'ml' :
+                        value == 'steps' ? 'pasos' :
+                        timed.contains(value) ? 'segundos' : 'unidades';
+                    controller.text = (timed.contains(value)
+                        ? (target / 60).ceil() : target).toString();
+                  });
+                },
+              ),
+              if (type != 'manual') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: timed.contains(type)
+                        ? 'Meta por sesión (minutos)' : 'Meta por sesión',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+              if (type == 'counter') ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: const {'vasos','pasos','repeticiones','unidades'}
+                      .contains(unit) ? unit : 'unidades',
+                  decoration: const InputDecoration(labelText: 'Unidad'),
+                  items: const [
+                    DropdownMenuItem(value: 'vasos', child: Text('Vasos')),
+                    DropdownMenuItem(value: 'pasos', child: Text('Pasos')),
+                    DropdownMenuItem(value: 'repeticiones',
+                        child: Text('Repeticiones')),
+                    DropdownMenuItem(value: 'unidades',
+                        child: Text('Unidades')),
+                  ],
+                  onChanged: (v) { if (v != null) update(() => unit = v); },
+                ),
+              ],
+              const SizedBox(height: 8),
+              const Text('Cambiar la herramienta no modifica el objetivo '
+                  'oficial ni las recompensas.',
+                  style: TextStyle(fontSize: 12)),
+            ]),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () {
+                final n = int.tryParse(controller.text.trim());
+                final maximum = timed.contains(type) ? 1440 : 10000;
+                if (type != 'manual' &&
+                    (n == null || n < 1 || n > maximum)) return;
+                Navigator.pop(dialogContext, {
+                  'type': type,
+                  'target': type == 'manual' ? 1 :
+                      timed.contains(type) ? n! * 60 : n!,
+                  'unit': type == 'manual' ? 'vez' : unit,
+                });
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (result == null || !mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final key = 'hh_habit_tool_v1_${uid}_'
+        '${widget.habitId}_${widget.attemptId}';
+    try {
+      await SharedPreferencesAsync().setString(key, jsonEncode(result));
+      if (!mounted) return;
+      setState(() {
+        _interactionType = result['type'] as String;
+        _interactionTarget = result['target'] as int;
+        _interactionUnit = result['unit'] as String;
+        _interactionValue = 0;
+        _interactionComplete = _interactionType == 'manual';
+      });
+    } catch (_) {
+      _mostrarMensaje('No se pudo guardar la configuración.');
     }
   }
 
@@ -746,6 +899,18 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               const SizedBox(height: 16),
             ],
             if (!_modoPasos || _pasoRegistro == 0) ...[
+            Row(children: [
+              Expanded(child: Text('Herramienta de registro',
+                style: TextStyle(fontWeight: FontWeight.w800,
+                  color: HealthyAdaptive.text))),
+              TextButton.icon(
+                key: const ValueKey('edit-habit-tool'),
+                onPressed: _guardando ? null : _editTool,
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                label: const Text('Cambiar'),
+              ),
+            ]),
+            const SizedBox(height: 8),
             if (_interactionType != 'manual') ...[
               HabitInteractionCard(
                 type: _interactionType,
