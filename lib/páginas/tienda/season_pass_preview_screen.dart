@@ -190,7 +190,7 @@ class _SeasonPassPreviewScreenState extends State<SeasonPassPreviewScreen> {
             padding: const EdgeInsets.all(15),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pase premium · $99 MXN (precio ficticio)',
+                Text('Pase premium · \$99 MXN (precio ficticio)',
                   style: TextStyle(fontWeight: FontWeight.w900,
                     color: HealthyAdaptive.text)),
                 const SizedBox(height: 6),
@@ -227,7 +227,7 @@ class _SeasonPassPreviewScreenState extends State<SeasonPassPreviewScreen> {
                 subtitle: const Text('Simulación académica'),
                 trailing: OutlinedButton(
                   onPressed: () => _explain('${pack.$1} Habit Coins'),
-                  child: Text('$${pack.$2} MXN'),
+                  child: Text('\${pack.$2} MXN'),
                 ),
               ),
             ),
