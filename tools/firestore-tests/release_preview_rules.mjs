@@ -54,6 +54,14 @@ export function releasePreviewRules() {
     'match /achievements/{path=**} {\n        allow read: if owner(uid);\n        allow write: if false;\n      }',
     'logros de servidor',
   );
+  // Cuando la recompensa sale del servidor, Flutter jamás puede marcar
+  // un desafío como cobrado: esa transición también pertenece al backend.
+  rules = replaceExactlyOnce(
+    rules,
+    "&& (demoChallengeAccept() || trustedChallengeClaim());",
+    "&& demoChallengeAccept();",
+    "reclamación de desafíos solo por Admin SDK",
+  );
   // La alta inicial conserva el saldo inicial validado en reglas candidatas.
   return rules;
 }
