@@ -718,17 +718,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   habits: _habitosPerfil, lastTopic: _lastTopic,
                   lastHabitTitle: _lastHabitTitle,
                   lastShopItemId: _lastShopItemId);
-              final toneCommand = NutriRespuestasService.contiene(text, const [
-                'cambia tu humor', 'modo serio', 'modo divertido',
-                'modo motivador', 'modo tranquilo', 'modo amigable',
-              ]);
-              // Prioridad: seguridad/calculadora → acciones de la app →
-              // búsqueda educativa estructurada → conversación general.
-              // Ninguna ficha del dataset realiza operaciones sobre Firebase.
-              if (toneCommand) {
-                response = _respuestas.responder(
-                  text, nombre: _primerNombre, perfil: _perfil);
-              } else if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
+              // Los modos de personalidad no se ofrecen hasta que exista
+              // un cambio de comportamiento verificable en el asistente.
+              // Prioridad: acciones → conocimiento → conversación.
+              if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
                 response = intent.text;
               } else {
                 final previousKnowledge = _chatContext.referenceFor(text);
@@ -869,29 +862,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Personalidad de Mr. Healthy',
-            icon: Icon(Icons.sentiment_satisfied_alt_rounded, color: _navy),
-            onSelected: (mood) {
-              if (mood == '_audio') {
-                _toggleReadAloud();
-                return;
-              }
-              setState(() => _respuestas.cambiarHumor(mood));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Mr. Healthy: modo $mood')),
-              );
-            },
-            itemBuilder: (_) => [
-              ...NutriRespuestasService.moods.map((mood) => PopupMenuItem<String>(
-                value: mood,
-                child: Text(mood[0].toUpperCase() + mood.substring(1)),
-              )),
-              PopupMenuItem<String>(
-                value: '_audio',
-                child: Text(_readAloud ? 'Desactivar voz' : 'Activar voz'),
-              ),
-            ],
+          IconButton(
+            key: const Key('healthy-chat-audio-toggle'),
+            tooltip: _readAloud ? 'Desactivar lectura en voz alta' :
+                'Activar lectura en voz alta',
+            icon: Icon(_readAloud ? Icons.volume_up_rounded :
+                Icons.volume_off_rounded, color: _navy),
+            onPressed: _toggleReadAloud,
           ),
           IconButton(
             key: const Key('healthy-chat-history-button'),
