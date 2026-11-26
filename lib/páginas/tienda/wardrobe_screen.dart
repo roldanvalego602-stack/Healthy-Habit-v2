@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../servicios/healthy_feedback_service.dart';
 import '../../tema/healthy_coin.dart';
@@ -47,6 +49,30 @@ List<ShopItem> wardrobeItemsForSlot(String slot) =>
     shopCatalog.where((item) => item.slot == slot &&
         (isShopItemVisible(item.id))).toList(growable: false);
 
+/// Coordenadas del accesorio dentro del lienzo de 280×275 de Mr. Healthy.
+/// Solo representa el diseño visual; no altera compras o propiedad.
+class _AccessoryLayout {
+  const _AccessoryLayout(this.x, this.y, this.size);
+  final double x, y, size;
+  Map<String, double> toJson() => {'x': x, 'y': y, 'size': size};
+
+  factory _AccessoryLayout.fromJson(Object? raw) {
+    if (raw is! Map || raw['x'] is! num ||
+        raw['y'] is! num || raw['size'] is! num) {
+      throw const FormatException('Coordenadas inválidas');
+    }
+    final x = (raw['x'] as num).toDouble();
+    final y = (raw['y'] as num).toDouble();
+    final size = (raw['size'] as num).toDouble();
+    if (!x.isFinite || !y.isFinite || !size.isFinite ||
+        x < 0 || x > 270 || y < 0 || y > 265 ||
+        size < 30 || size > 250) {
+      throw const FormatException('Accesorio fuera del escenario');
+    }
+    return _AccessoryLayout(x, y, size);
+  }
+}
+
 class WardrobeScreen extends StatefulWidget {
   const WardrobeScreen({super.key});
 
@@ -58,6 +84,80 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   bool _profileMode = false;
   String _slot = 'cabeza';
   String? _busy;
+  bool _layoutEditor = false;
+  final Map<String, _AccessoryLayout> _layouts = {};
+  static const _layoutPrefix = 'hh_wardrobe_layout_v1_';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLayouts();
+  }
+
+  Future<void> _loadLayouts() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final raw = await SharedPreferencesAsync().getString('$_layoutPrefix$uid');
+      if (raw == null) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return;
+      final loaded = <String, _AccessoryLayout>{};
+      for (final entry in decoded.entries) {
+        if (entry.key is! String || shopItemById(entry.key) == null) continue;
+        try {
+          loaded[entry.key as String] = _AccessoryLayout.fromJson(entry.value);
+        } catch (_) {
+          // No usar posiciones que estén fuera del escenario.
+        }
+      }
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
+        setState(() { _layouts..clear()..addAll(loaded); });
+      }
+    } catch (_) {
+      // Se restaura la disposición estándar sin alterar el inventario.
+    }
+  }
+
+  Future<void> _saveLayouts() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await SharedPreferencesAsync().setString('$_layoutPrefix$uid',
+        jsonEncode(_layouts.map((id, placement) =>
+          MapEntry(id, placement.toJson()))));
+    } catch (_) {
+      _message('No se pudieron guardar los ajustes del armario.');
+    }
+  }
+
+  static _AccessoryLayout _defaultLayout(String slot) {
+    return switch (slot) {
+      'cabeza' => const _AccessoryLayout(75, 25, 130),
+      'ojos' => const _AccessoryLayout(88, 106, 110),
+      'cuello' => const _AccessoryLayout(88, 181, 95),
+      'torso' => const _AccessoryLayout(74, 144, 130),
+      'brazos' => const _AccessoryLayout(25, 151, 225),
+      'mano' => const _AccessoryLayout(200, 157, 65),
+      'espalda' => const _AccessoryLayout(41, 127, 190),
+      'pies' => const _AccessoryLayout(74, 221, 132),
+      _ => const _AccessoryLayout(75, 25, 120),
+    };
+  }
+
+  bool get _editableSlot => !_profileMode &&
+      _slot != 'skin' && _slot != 'aura';
+
+  void _updateLayout(ShopItem item, _AccessoryLayout layout) {
+    final size = layout.size.clamp(30.0, 250.0);
+    setState(() {
+      _layouts[item.id] = _AccessoryLayout(
+        layout.x.clamp(0.0, 280.0 - size),
+        layout.y.clamp(0.0, 275.0 - size),
+        size,
+      );
+    });
+  }
 
   Color get _ink => HealthyAdaptive.text;
   Color get _accent => HealthyAdaptive.accent;
@@ -75,6 +175,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     setState(() {
       _profileMode = profile;
       _slot = profile ? 'perfil_avatar' : 'cabeza';
+      _layoutEditor = false;
     });
   }
 
@@ -156,6 +257,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                       ),
                     ),
                   ),
+                  if (_layoutEditor && _editableSlot && state != null &&
+                      state.equipped[_slot] != null) ...[
+                    const SizedBox(height: 6),
+                    _layoutControls(state.equipped[_slot]!),
+                  ],
                   const SizedBox(height: 10),
                   _sectionTitle(slots),
                   const SizedBox(height: 7),
@@ -268,11 +374,22 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         ),
         Positioned(
           top: 2, right: 7,
-          child: IconButton(
-            tooltip: 'Restablecer accesorios y skin',
-            onPressed: state == null || _busy != null ? null : _reset,
-            icon: Icon(Icons.restart_alt_rounded, color: _ink),
-          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (_editableSlot && state?.equipped[_slot] != null)
+              IconButton(
+                key: const ValueKey('wardrobe-edit-layout'),
+                tooltip: _layoutEditor ? 'Terminar de ajustar' : 'Mover y escalar accesorio',
+                onPressed: () => setState(() =>
+                  _layoutEditor = !_layoutEditor),
+                icon: Icon(_layoutEditor ? Icons.check_circle_rounded :
+                  Icons.open_with_rounded, color: _ink),
+              ),
+            IconButton(
+              tooltip: 'Restablecer accesorios y skin',
+              onPressed: state == null || _busy != null ? null : _reset,
+              icon: Icon(Icons.restart_alt_rounded, color: _ink),
+            ),
+          ]),
         ),
         Align(
           alignment: const Alignment(0, .94),
@@ -298,8 +415,28 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               // El balanceo incluye todas las capas para que ningún
               // accesorio se separe de Mr. Healthy al respirar.
               child: HealthyMascotIdle(
-                child: HealthyMascotOutfit(
-                  equipped: state?.equipped ?? const <String, String>{},
+                child: SizedBox(width: 280, height: 275,
+                  child: Stack(clipBehavior: Clip.none, children: [
+                    HealthyMascotOutfit(
+                      equipped: {
+                        ...?state?.equipped,
+                        for (final entry in (state?.equipped ??
+                            const <String, String>{}).entries)
+                          if (_layouts.containsKey(entry.value) ||
+                              (_layoutEditor && entry.key == _slot &&
+                               _editableSlot))
+                            entry.key: '',
+                      },
+                    ),
+                    for (final entry in (state?.equipped ??
+                        const <String, String>{}).entries)
+                      if (shopItemById(entry.value) != null &&
+                          (_layouts.containsKey(entry.value) ||
+                           (_layoutEditor && entry.key == _slot &&
+                            _editableSlot)) &&
+                          entry.key != 'aura' && entry.key != 'skin')
+                        _positionedAccessory(entry.key, entry.value),
+                  ]),
                 ),
               ),
             ),
@@ -307,6 +444,58 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         ),
       ],
     );
+  }
+
+  Widget _positionedAccessory(String slot, String itemId) {
+    final item = shopItemById(itemId);
+    if (item == null) return const SizedBox.shrink();
+    final placement = _layouts[itemId] ?? _defaultLayout(slot);
+    final editable = _layoutEditor && slot == _slot;
+    return Positioned(
+      left: placement.x, top: placement.y,
+      width: placement.size, height: placement.size,
+      child: GestureDetector(
+        key: ValueKey('wardrobe-movable-$itemId'),
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: editable ? (details) =>
+            _updateLayout(item, _AccessoryLayout(
+              placement.x + details.delta.dx,
+              placement.y + details.delta.dy,
+              placement.size,
+            )) : null,
+        onPanEnd: editable ? (_) => _saveLayouts() : null,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: editable ? Border.all(
+              color: HealthyAdaptive.accent, width: 2) : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ShopItemArtwork(item: item, size: placement.size),
+        ),
+      ),
+    );
+  }
+
+  Widget _layoutControls(String itemId) {
+    final item = shopItemById(itemId);
+    if (item?.slot == null) return const SizedBox.shrink();
+    final current = _layouts[itemId] ?? _defaultLayout(item!.slot!);
+    return Row(children: [
+      const Icon(Icons.open_with_rounded, size: 17),
+      const SizedBox(width: 5),
+      const Expanded(flex: 2, child: Text('Arrastra para mover',
+        style: TextStyle(fontSize: 11))),
+      const Icon(Icons.zoom_out_rounded, size: 17),
+      Expanded(flex: 3, child: Slider(
+        key: const ValueKey('wardrobe-accessory-scale'),
+        value: current.size.clamp(30.0, 250.0),
+        min: 30, max: 250,
+        onChanged: (size) => _updateLayout(item!, _AccessoryLayout(
+          current.x, current.y, size)),
+        onChangeEnd: (_) => _saveLayouts(),
+      )),
+      const Icon(Icons.zoom_in_rounded, size: 17),
+    ]);
   }
 
   Widget _profileStage(ShopState? state) {
