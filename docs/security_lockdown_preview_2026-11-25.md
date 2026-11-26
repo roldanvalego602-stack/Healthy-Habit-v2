@@ -18,8 +18,8 @@ antes de migrar esas operaciones interrumpiría funciones de Healthy Habit.
   **en memoria** una variante restrictiva. No se crea un archivo de reglas
   desplegable.
 - La variante permite modificar campos limitados de perfil y preferencias,
-  conserva las compras que satisfacen `validInventoryChange`, y permite
-  equipar artículos mediante `validEquipped`.
+  pero ya rechaza las escrituras directas de inventario, Habit Coins y
+  equipamiento; en beta esas operaciones pertenecen a Cloud Functions.
 - Rechaza otras escrituras sobre el documento de usuario, incluidos XP,
   monedas incrementadas, nivel, rachas y estadísticas.
 - Rechaza escrituras desde clientes en `user_habits/{path=**}` y
@@ -27,9 +27,9 @@ antes de migrar esas operaciones interrumpiría funciones de Healthy Habit.
 - `security_release_gate.test.mjs` ejecuta **exactamente las mismas
   expectativas de rechazo**, con regla candidata por defecto, o con
   reglas de laboratorio solamente si `HH_RELEASE_PREVIEW=1`.
-- `release_preview_positive.test.mjs` prueba que nombres, preferencias,
-  compras válidas y lectura de intentos persisten, y que las escrituras
-  directas de progreso no pasan.
+- `release_preview_positive.test.mjs` comprueba que nombres, preferencias,
+  lectura de intentos y flujos sociales legítimos funcionan; compras,
+  equipamiento y escrituras directas de progreso son rechazados.
 
 Comando para el laboratorio (Linux):
 
