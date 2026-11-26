@@ -167,7 +167,11 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                           Text('Día $day', style: const TextStyle(
                               fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
-                          Text('🪙 +${DailyStreakRewardTiers.preview(day)}'),
+                          HealthyCoinAmount(
+                             amount: '+${DailyStreakRewardTiers.preview(day)}',
+                             size: 16,
+                             style: const TextStyle(fontWeight: FontWeight.w800),
+                           ),
                         ],
                       ),
                     );
@@ -209,7 +213,7 @@ class _DailyStreakScreenState extends State<DailyStreakScreen> {
                       for (final doc in days)
                         Card(
                           child: ListTile(
-                            leading: const Icon(Icons.card_giftcard_rounded),
+                            leading: const HealthyCoinIcon(size: 28),
                             title: Text('Día ${doc.id} · '
                                 '${_number(doc.data()['rewardCoins'])} monedas'),
                             subtitle: Text(doc.data()['claimed'] == true
