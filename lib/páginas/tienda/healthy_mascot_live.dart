@@ -40,7 +40,9 @@ class HealthyMascotLive extends StatelessWidget {
       final raw = layouts[id];
       if (raw is! Map ||
           raw['x'] is! num || raw['y'] is! num ||
-          raw['size'] is! num) continue;
+          raw['size'] is! num) {
+        continue;
+      }
       final x = (raw['x'] as num).toDouble();
       final y = (raw['y'] as num).toDouble();
       final scale = (raw['size'] as num).toDouble();
@@ -49,7 +51,9 @@ class HealthyMascotLive extends StatelessWidget {
       if (![x, y, scale, rotation].every((v) => v.isFinite) ||
           x < 0 || y < 0 || x > 270 || y > 265 ||
           scale < 30 || scale > 250 ||
-          rotation < -180 || rotation > 180) continue;
+          rotation < -180 || rotation > 180) {
+        continue;
+      }
       custom[id] = {
         'x': x, 'y': y, 'size': scale, 'rotation': rotation,
       };
