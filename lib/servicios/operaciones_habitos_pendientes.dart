@@ -24,11 +24,13 @@ class OperacionHabitoPendiente {
     required this.habitoId,
     required this.intentoId,
     this.penalizacionMaxima,
+    this.conEvidencia = false,
   });
   final String accion;
   final String habitoId;
   final String intentoId;
   final int? penalizacionMaxima;
+  final bool conEvidencia;
 }
 
 class PendingOfficialHabitOperations {
@@ -229,6 +231,7 @@ class PendingOfficialHabitOperations {
       items.add(OperacionHabitoPendiente(
         accion: action, habitoId: habitId, intentoId: attemptId,
         penalizacionMaxima: maxPenalty is int ? maxPenalty : null,
+        conEvidencia: decoded['withEvidence'] == true,
       ));
     }
     if (_userId() != uid) {
@@ -246,6 +249,7 @@ class PendingOfficialHabitOperations {
     attemptId: item.accion == 'activar' ? null : item.intentoId,
     maxPenalty: item.penalizacionMaxima,
     recoveryOnly: true,
+    withEvidence: item.conEvidencia,
     send: (service, saved) {
       final habitId = saved['habitId'] as String;
       final attemptId = saved['attemptId'] as String;
@@ -255,6 +259,24 @@ class PendingOfficialHabitOperations {
           return service.activate(
             habitId: habitId, attemptId: attemptId, operationId: operationId);
         case 'registrar':
+          if (item.conEvidencia) {
+            // Recuperación sin bytes: sólo se permite recuperar un vínculo
+            // que el servidor ya confirmó; nunca registrar sin fotografía.
+            return service.attachEvidence(
+              habitId: habitId, attemptId: attemptId,
+              operationId: operationId,
+            ).then((linked) async {
+              if (linked['attached'] != true) {
+                throw StateError('La foto sigue pendiente de asociación.');
+              }
+              return service.register(
+                habitId: habitId, attemptId: attemptId,
+                operationId: operationId,
+                note: saved['note'] as String,
+                interaction: saved['interaction'] == null ? null :
+                    Map<String, dynamic>.from(saved['interaction'] as Map));
+            });
+          }
           return service.register(
             habitId: habitId, attemptId: attemptId, operationId: operationId,
             note: saved['note'] as String,
