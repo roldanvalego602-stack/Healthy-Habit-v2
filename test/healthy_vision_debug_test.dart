@@ -20,9 +20,9 @@ void main() {
     );
   });
 
-  testWidgets('el análisis no aparece sin bandera experimental', (tester) async {
-    // La ejecución normal de flutter test no incluye HH_VISION_DEBUG.
-    expect(HealthyVisionDebugService.enabled, isFalse);
+  testWidgets('el análisis aparece para usuarios del backend real', (tester) async {
+    expect(HealthyVisionDebugService.useLiveBackend, isTrue);
+    expect(HealthyVisionDebugService.enabled, isTrue);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: HealthyVisionPreviewPanel(
@@ -33,7 +33,7 @@ void main() {
       ),
     ));
     expect(find.byKey(const ValueKey('healthy-vision-debug-panel')),
-        findsNothing);
+        findsOneWidget);
     expect(find.byKey(const ValueKey('healthy-vision-analyze')),
         findsNothing);
   });
