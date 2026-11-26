@@ -2,10 +2,8 @@
 
 // Desplegar únicamente este codebase. No importar functions/index.js.
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
-const {defineString} = require("firebase-functions/params");
 // Mantener liviana la carga durante discovery de Firebase CLI.
 // Admin, Firestore y Vision se inicializan únicamente al recibir una solicitud.
-const allowedUid = defineString("HEALTHY_VISION_TEST_UID");
 let db;
 let fieldValue;
 let client;
@@ -72,18 +70,15 @@ exports.analyzeEvidencePreviewLive = onCall({
   timeoutSeconds: 30,
   maxInstances: 1,
   concurrency: 1,
-  // Prueba restringida a un único UID. Requiere App Check antes de
-  // habilitar para usuarios generales.
-  enforceAppCheck: false,
+  // Solo sesiones de Healthy Habit con un token App Check válido.
+  enforceAppCheck: true,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Inicia sesión en Healthy Habit.");
   }
-  const permitted = allowedUid.value();
-  if (!permitted || uid !== permitted) {
-    throw new HttpsError("permission-denied",
-        "El piloto está restringido a una cuenta de prueba autorizada.");
+  if (!request.app) {
+    throw new HttpsError("permission-denied", "App Check requerido.");
   }
   if (!request.data || typeof request.data !== "object" ||
       Array.isArray(request.data) ||
@@ -95,29 +90,43 @@ exports.analyzeEvidencePreviewLive = onCall({
     throw new HttpsError("invalid-argument", "Categoría visual inválida.");
   }
   const bytes = decodeImage(imageBase64);
-  // Cuota persistente, aplicable a TODOS los intentos aceptados.
-  // Incluye rechazos diferenciados para informar el tiempo exacto al cliente.
+  // Cuotas global y por UID en una misma transacción: evita gasto ilimitado.
+  const USER_DAILY_LIMIT = 3;
+  const GLOBAL_DAILY_LIMIT = 100;
+  const COOLDOWN_MS = 60000;
   const today = new Date().toISOString().slice(0, 10);
   const resetAtMillis = Date.parse(today + "T00:00:00.000Z") + 86400000;
   const database = getPilotDb();
   const quotaRef = database.collection("_vision_preview_pilot_limits").doc(uid);
+  const globalRef = database.collection("_vision_preview_global_limits").doc(today);
   const quota = await database.runTransaction(async (tx) => {
-    const doc = await tx.get(quotaRef);
-    const prior = doc.data() || {};
+    const [userDoc, globalDoc] = await Promise.all([
+      tx.get(quotaRef), tx.get(globalRef),
+    ]);
+    const prior = userDoc.data() || {};
+    const total = globalDoc.data()?.count || 0;
     const count = prior.day === today ? (prior.count || 0) : 0;
     const now = Date.now();
-    const nextAllowedAtMillis = (prior.lastAtMillis || 0) + 60000;
-    if (count >= 15) {
+    const nextAllowedAtMillis = (prior.lastAtMillis || 0) + COOLDOWN_MS;
+    if (total >= GLOBAL_DAILY_LIMIT) {
       throw new HttpsError("resource-exhausted",
-          "Alcanzaste las 15 solicitudes de hoy. Intenta mañana (UTC).", {
-            reason: "daily-limit", remaining: 0, dailyLimit: 15,
-            retryAtMillis: resetAtMillis,
+          "Se alcanzó el cupo global del servicio por hoy.", {
+            reason: "global-limit", remaining: 0,
+            dailyLimit: USER_DAILY_LIMIT, retryAtMillis: resetAtMillis,
+          });
+    }
+    if (count >= USER_DAILY_LIMIT) {
+      throw new HttpsError("resource-exhausted",
+          "Alcanzaste el cupo diario. Intenta mañana (UTC).", {
+            reason: "daily-limit", remaining: 0,
+            dailyLimit: USER_DAILY_LIMIT, retryAtMillis: resetAtMillis,
           });
     }
     if (now < nextAllowedAtMillis) {
       throw new HttpsError("resource-exhausted",
           "Espera un minuto entre análisis.", {
-            reason: "cooldown", remaining: 15 - count, dailyLimit: 15,
+            reason: "cooldown", remaining: USER_DAILY_LIMIT - count,
+            dailyLimit: USER_DAILY_LIMIT,
             retryAtMillis: nextAllowedAtMillis,
           });
     }
@@ -125,11 +134,13 @@ exports.analyzeEvidencePreviewLive = onCall({
       day: today, count: count + 1, lastAtMillis: now,
       updatedAt: fieldValue.serverTimestamp(),
     });
+    tx.set(globalRef, {
+      count: total + 1, updatedAt: fieldValue.serverTimestamp(),
+    }, {merge: true});
     return {
-      remaining: 14 - count,
-      dailyLimit: 15,
-      nextAllowedAtMillis: now + 60000,
-      resetAtMillis,
+      remaining: USER_DAILY_LIMIT - count - 1,
+      dailyLimit: USER_DAILY_LIMIT,
+      nextAllowedAtMillis: now + COOLDOWN_MS, resetAtMillis,
     };
   });
   try {
