@@ -296,3 +296,22 @@ la diferencia corresponde al premio legítimo de nivel 20. Se corrigió
 la expectativa y se añadieron verificaciones de recompensa única.
 **Pendiente:** repetir el laboratorio tras este cambio; no declararlo
 aprobado antes de observar la ejecución real.
+
+## Configuración interactiva en activación oficial (laboratorio)
+
+La activación oficial de los 36 hábitos ahora acepta el campo opcional
+`interaction` (`type`, `target`, `unit`) enviado por la pantalla
+`HabitAddSheet`. El servidor valida tipos, unidades, límites y campos
+permitidos. Esta configuración es autodeclarada y **no acredita actividad,
+progreso, XP ni recompensas**. Los endpoints demo limitados a tres hábitos
+conservan su contrato anterior.
+
+`PendingBetaHabitOperations` conserva la configuración en la solicitud
+pendiente y la compara en reintentos. El servidor rechaza reutilizar un
+`operationId` con una configuración diferente. Cuando un hábito oficial se
+reactiva sin herramienta, su campo anterior se limpia.
+
+Se añadieron tests unitarios de validación, pruebas estáticas de transmisión
+y una nueva prueba integral de persistencia/idempotencia en Firestore Emulator.
+**Pendiente ejecutar pruebas y verificar CI**. No habilitar esta beta en
+producción ni desplegar reglas hasta completar el resto de la migración.
