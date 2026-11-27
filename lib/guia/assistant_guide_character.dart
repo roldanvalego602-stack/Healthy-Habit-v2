@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'guide_character_pose.dart';
 import 'guide_gesture.dart';
+import 'guide_animated_limbs.dart';
 
 /// Presentador con gestos diferenciados sobre el recurso gráfico existente.
 /// La imagen original no tiene articulaciones independientes: movimiento de
@@ -92,6 +93,18 @@ class AssistantGuideCharacter extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                    // Brazos independientes por debajo del cuerpo para
+                    // ocultar de forma natural sus uniones al sprite.
+                    Positioned.fill(
+                      bottom: 7,
+                      child: GuideAnimatedLimbs(
+                        gesture: gesture,
+                        phase: phase,
+                        motion: motion,
+                        facesLeft: pose.facesLeft,
+                        accent: accent,
                       ),
                     ),
                     Positioned.fill(
