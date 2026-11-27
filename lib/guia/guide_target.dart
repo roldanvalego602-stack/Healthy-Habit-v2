@@ -20,11 +20,3 @@ class HealthyGuideTargets {
     }
   }
 }
-
-class HealthyGuideTarget extends StatelessWidget {
-  const HealthyGuideTarget({super.key, required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => child;
-}
