@@ -121,9 +121,10 @@ class MrHealthyResponseBank {
     r'que recomiendas|y si|otro ejemplo|si|claro|vale|'
     r'una economica|economica|barata|una facil|facil|'
     r'para principiantes|con ejemplos|paso a paso|'
-    r'una rapida|rapida|la primera|la segunda)\??
+    r'una rapida|rapida|la primera|la segunda)\??$',
+  );
 
-  static final RegExp _referentialFollowUp = RegExp(
+    static final RegExp _referentialFollowUp = RegExp(
     r'^(y si |y con |y cuando |y en caso de |'
     r'le pongo |le agrego |y eso |y lo |'
     r'se puede combinar |puedo combinarlo |'
@@ -184,7 +185,8 @@ class MrHealthyResponseBank {
           'Tu pregunta añade un detalle nuevo y no quiero asumir '
           'cantidades, ingredientes o condiciones. '
           '${previous.detail} ¿Puedes concretar a qué te refieres?',
-          card: 'topic', knowledgeId: previous.id,
+          card: 'topic', actionArgument: previous.id,
+          knowledgeId: previous.id,
         );
       }
       return HealthyAssistantReply(
@@ -199,6 +201,7 @@ class MrHealthyResponseBank {
                     'información o suponer detalles personales. '
                     '${previous.followUp}',
         card: 'topic',
+        actionArgument: previous.id,
         knowledgeId: previous.id,
       );
     }
@@ -222,122 +225,7 @@ class MrHealthyResponseBank {
     return HealthyAssistantReply(
       '${match.answer}\n\n${match.followUp}',
       card: 'topic',
-      knowledgeId: match.id,
-    );
-  }
-}
-
-class MrHealthyTopicService {
-  MrHealthyResponseBank? _bank;
-  Future<MrHealthyResponseBank>? _pending;
-
-  Future<MrHealthyResponseBank> load() => _pending ??=
-      rootBundle.loadString('assets/knowledge/mr_healthy_topics_v2.json')
-          .then((raw) => _bank = MrHealthyResponseBank.fromJsonString(raw))
-          .catchError((Object error) {
-            _pending = null;
-            throw error;
-          });
-
-  Future<HealthyAssistantReply?> answer(
-    String input, {
-    String previousTopicId = '',
-    int followUpDepth = 0,
-  }) async {
-    try {
-      final bank = _bank ?? await load();
-      return bank.answer(input, previousTopicId: previousTopicId,
-          followUpDepth: followUpDepth);
-    } catch (_) {
-      // Preserve legacy knowledge and natural conversation on asset failures.
-      return null;
-    }
-  }
-}
-,
-  );
-
-  static bool isFollowUpPhrase(String input) =>
-      _continuation.hasMatch(normalize(input));
-
-  static final RegExp _riskTerms = RegExp(
-    r'\b(alergia|asfixia|intoxicacion|envenenamiento|'
-    r'dolor fuerte|pecho|desmayo|embaraz|lactancia|'
-    r'diabetes|cancer|enfermedad|tratamiento|'
-    r'medicamento|diagnostico|dosis|adelgazar rapido|'
-    r'comer nada|vomitar|laxantes|autolesion|suicidio)\b',
-  );
-
-  static final RegExp _unsafeRequests = RegExp(
-    r'\b(cuantas calorias|cuantos gramos|cuantos mg|'
-    r'cuanta proteina|cuanto debo|dosis exacta|'
-    r'cantidad exacta|recetame|diagnostica|'
-    r'cura|curarme|tratame|debo tomar)\b',
-  );
-
-  // La app y seguridad operativa se resuelven en HealthyAssistantEngine.
-  static final RegExp _operationalCommands = RegExp(
-    r'^(agrega|agregar|anade|anadir|elimina|eliminar|'
-    r'quita|quitar|compra|comprar|cancela|cancelar|'
-    r'borra|borrar|abre|abrir|pon|activa|desactiva)\b',
-  );
-
-  static bool _shouldDeferToSpecialist(String query) {
-    if (_riskTerms.hasMatch(query) || _unsafeRequests.hasMatch(query) ||
-        _operationalCommands.hasMatch(query)) return true;
-    // Preserve the existing, more specific egg/cooking safety cards.
-    return query.contains('huevo') && RegExp(
-      r'\b(jamon|crudo|salmonella|coccion|danino|dano|peligroso)\b',
-    ).hasMatch(query);
-  }
-
-  /// Returns null if ambiguous. No silent guesses on sensitive questions.
-  HealthyAssistantReply? answer(
-    String input, {
-    String previousTopicId = '',
-    int followUpDepth = 0,
-  }) {
-    final q = normalize(input);
-    if (q.isEmpty || _shouldDeferToSpecialist(q)) return null;
-
-    if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
-      final previous = _topicsById[previousTopicId];
-      if (previous == null || followUpDepth >= 3) return null;
-      return HealthyAssistantReply(
-        followUpDepth == 0
-            ? '${previous.detail}\n\n${previous.followUp}'
-            : followUpDepth == 1
-                ? 'Para orientarte mejor sobre ${previous.terms.first}, '
-                    'dime qué parte quieres aplicar a tu situación. '
-                    '${previous.followUp}'
-                : 'Puedo seguir con un aspecto concreto de '
-                    '${previous.terms.first}, pero no quiero repetir '
-                    'información o suponer detalles personales. '
-                    '${previous.followUp}',
-        card: 'topic',
-        knowledgeId: previous.id,
-      );
-    }
-
-    var match = _exactIndex[q];
-    if (match == null && q.length > 8) {
-      // Only accept a unique, sufficiently specific alias as a whole phrase.
-      // Single-word matches are too risky for arbitrary questions.
-      final candidates = <MrHealthyTopic>{};
-      for (final topic in topics) {
-        if (topic.terms.any((term) {
-          final alias = normalize(term);
-          return alias.split(' ').length >= 2 && alias.length >= 9 &&
-              (' $q ').contains(' $alias ');
-        })) candidates.add(topic);
-        if (candidates.length > 1) break;
-      }
-      if (candidates.length == 1) match = candidates.single;
-    }
-    if (match == null) return null;
-    return HealthyAssistantReply(
-      '${match.answer}\n\n${match.followUp}',
-      card: 'topic',
+      actionArgument: match.id,
       knowledgeId: match.id,
     );
   }
