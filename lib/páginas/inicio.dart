@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/cosmos_theme_sync.dart';
 import '../tema/healthy_magic_guide.dart';
 import '../servicios/healthy_retro_sound_service.dart';
 import '../tema/healthy_coin.dart';
@@ -43,6 +44,9 @@ class HabitTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: (context, child) => CosmosThemeSync(
+        child: CosmosAppScene(child: child ?? const SizedBox.shrink()),
+      ),
       debugShowCheckedModeBanner: false,
       title: 'Healthy Habit',
       theme: HealthyThemes.light(),
