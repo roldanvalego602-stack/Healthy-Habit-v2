@@ -381,7 +381,10 @@ class MrHealthyChoiceResolver {
   };
 
   static int _offeredPosition(String priorReply, String choice) {
-    final reply = _normalize(priorReply);
+    // Consider only the last proposal, not incidental words in the
+    // explanation that preceded it. This preserves ordinal order.
+    final proposal = priorReply.trim().split(RegExp(r'\n\s*\n')).last;
+    final reply = _normalize(proposal);
     final candidates = synonyms[choice] ?? [choice];
     var position = -1;
     for (final candidate in candidates) {
