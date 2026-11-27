@@ -77,3 +77,36 @@ flutter test test/healthy_guide_phase2_test.dart
 En Android: abrir Hábitos, activar la guía, revisar el desplazamiento de Mr. Healthy al avanzar/retroceder, la línea indicadora y la ausencia de superposición con la tarjeta en pantallas pequeñas. Revisar también modo Lite y la preferencia de movimiento reducido.
 
 **Pendiente:** validar compilación y pruebas en la instalación de Flutter del proyecto. Esta fase no incluye extracción/ampliación de widgets ni nuevos recursos gráficos articulados. 
+
+## Fase 3 — Extracción cinematográfica de widgets
+
+Se incorporó la posibilidad de **extraer y ampliar visualmente** elementos de Hábitos mediante una captura temporal `RepaintBoundary.toImage()`. La animación se realiza exclusivamente sobre una imagen PNG de la interfaz visible; el widget original permanece intacto, los botones del duplicado no reciben eventos y el bloqueo modal de la guía sigue activo.
+
+### Nuevas piezas
+
+- `lib/guia/guide_extraction.dart`: posiciona y anima el fotograma entre su rectángulo original y una zona reservada de primer plano, con borde luminoso, sombra y regreso a su origen.
+- `lib/guia/guide_step.dart`: permite marcar un paso con `extract: true`.
+- `lib/guia/healthy_guide_overlay.dart`: toma la captura después del fotograma de pintura, usa un presupuesto de píxeles limitado, libera el `ui.Image` nativo y anima la representación inerte; antes de avanzar o retroceder intenta mostrar la animación de retorno. El spotlight y el señalador siguen la representación ampliada.
+- `lib/páginas/habitos/habits_screen.dart`: marca la cuadrícula de categorías y la primera tarjeta visible de hábito activo con `RepaintBoundary`.
+- `lib/tema/healthy_magic_guide.dart`: activa la extracción durante el recorrido de categorías y añade un paso específico para examinar una tarjeta de hábito real.
+
+### Casos de ausencia
+
+Si no existen hábitos activos, la primera tarjeta no está montada, falla la captura, o el dispositivo no ofrece espacio suficiente para una ampliación, se mantiene el recorrido normal con texto y spotlight cuando sea posible. No se inventan datos de progreso ni se construye un hábito ficticio para la demostración.
+
+La captura es de **solo lectura**, puede contener el contenido que el usuario ya está viendo y no se guarda en Firebase, disco ni historial; permanece en memoria temporal del recorrido. No se añade capacidad de hacer compras, registrar hábitos o abandonar actividades desde la vista extraída.
+
+### Validación
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase1_test.dart
+flutter test test/healthy_guide_phase2_test.dart
+flutter test test/healthy_guide_phase3_test.dart
+```
+
+Verificar visualmente en Android: llegada de la captura al primer plano, zoom y retorno, bloqueo de botones bajo la máscara, ausencia de desbordamiento en teléfonos pequeños, experiencia con y sin hábitos y reducción de movimiento. La extracción aún no está habilitada en otras pantallas.
+
+**Estado:** archivos integrados en GitHub; el análisis y los widget tests todavía deben ejecutarse en el equipo con Flutter.
