@@ -1352,7 +1352,7 @@
         "ponme un acertijo"
       ],
       "answer": "Aquí va una: cuanto más me quitas, más grande me hago. ¿Qué soy?",
-      "followUp": "Si necesitas una pista, dímelo.",
+      "followUp": "¿Quieres una pista o prefieres intentar resolverlo?",
       "detail": "Pista: no soy un objeto que puedas recoger; aparezco cuando retiras tierra. La respuesta es un agujero."
     },
     {
