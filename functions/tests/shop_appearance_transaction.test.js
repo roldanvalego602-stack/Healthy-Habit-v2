@@ -24,6 +24,22 @@ test("catálogo de 56 accesorios y sus ranuras coincide con Flutter", () => {
   assert.deepEqual(SHOP_SLOTS, slots);
 });
 
+test("el tema Cosmos solo se equipa si se compró y no se borra al restaurar mascota", () => {
+  assert.throws(() => calculateAppearance({
+    shopInventory: [], shopEquipped: {},
+  }, {action: "equip", itemId: "theme_cosmos"}));
+
+  const owned = {
+    shopInventory: ["theme_cosmos", "crown"],
+    shopEquipped: {app_theme: "theme_cosmos", cabeza: "crown"},
+  };
+  assert.deepEqual(calculateAppearance(owned, {action: "reset"}),
+    {app_theme: "theme_cosmos"});
+  assert.deepEqual(calculateAppearance(owned, {
+    action: "unequip", itemId: "theme_cosmos",
+  }), {cabeza: "crown"});
+});
+
 test("rechaza inyección de inventario, ranuras y monedas", () => {
   assert.deepEqual(validateAppearanceRequest({action: "reset"}), {action: "reset"});
   for (const data of [
