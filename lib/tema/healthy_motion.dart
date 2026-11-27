@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'healthy_visual_mode.dart';
 import 'cosmos_theme.dart';
+import 'healthy_theme.dart';
 
 /// Entrada breve sin animación infinita ni cambios de tamaño de layout.
 class HealthyMotionCard extends StatefulWidget {
@@ -146,19 +147,27 @@ class HealthyPageSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!HealthyVisualEffects.enabled(context)) return child;
+    final cosmos = HealthyAdaptive.isCosmos;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 240),
-      reverseDuration: const Duration(milliseconds: 130),
+      duration: Duration(milliseconds: cosmos ? 360 : 240),
+      reverseDuration: Duration(milliseconds: cosmos ? 210 : 130),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: (page, animation) => FadeTransition(
         opacity: animation,
         child: SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0.025, 0.015),
+            begin: cosmos ? const Offset(0.055, -0.014)
+                : const Offset(0.025, 0.015),
             end: Offset.zero,
           ).animate(animation),
-          child: page,
+          child: cosmos
+              ? ScaleTransition(
+                  scale: Tween<double>(begin: .975, end: 1)
+                      .animate(CurvedAnimation(
+                        parent: animation, curve: Curves.easeOutCubic)),
+                  child: page)
+              : page,
         ),
       ),
       child: KeyedSubtree(
@@ -182,15 +191,21 @@ class HealthyRouteTransitions extends PageTransitionsBuilder {
     Widget child,
   ) {
     if (!HealthyVisualEffects.enabled(context)) return child;
+    final cosmos = HealthyAdaptive.isCosmos;
+    final reveal = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
     return FadeTransition(
       opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(0.035, 0.015),
+          begin: cosmos ? const Offset(.07, -.025)
+              : const Offset(0.035, 0.015),
           end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation, curve: Curves.easeOutCubic)),
-        child: child,
+        ).animate(reveal),
+        child: cosmos
+            ? ScaleTransition(
+                scale: Tween<double>(begin: .96, end: 1).animate(reveal),
+                child: child)
+            : child,
       ),
     );
   }
