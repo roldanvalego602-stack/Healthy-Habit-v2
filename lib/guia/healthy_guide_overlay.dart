@@ -36,6 +36,9 @@ class HealthyGuideOverlay {
     _visible = true;
     final completed = Completer<void>();
     final overlay = Overlay.of(context, rootOverlay: true);
+    // El overlay raíz puede estar por encima del MediaQuery de la ruta.
+    // Conservamos las preferencias efectivas de accesibilidad del origen.
+    final originMedia = MediaQuery.of(context);
     var closed = false;
     late OverlayEntry entry;
     void close() {
@@ -48,11 +51,14 @@ class HealthyGuideOverlay {
     }
 
     entry = OverlayEntry(
-      builder: (_) => _HealthyGuideScene(
-        steps: steps,
-        sectionTitle: sectionTitle,
-        capture: capture,
-        onClose: close,
+      builder: (_) => MediaQuery(
+        data: originMedia,
+        child: _HealthyGuideScene(
+          steps: steps,
+          sectionTitle: sectionTitle,
+          capture: capture,
+          onClose: close,
+        ),
       ),
     );
     overlay.insert(entry);
