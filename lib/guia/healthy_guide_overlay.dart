@@ -15,26 +15,22 @@ class HealthyGuideOverlay {
   }) async {
     if (steps.isEmpty) return;
     final overlay = Overlay.of(context, rootOverlay: true);
-    final completed = <void>[];
-    final finished = ValueNotifier<bool>(false);
+    var closed = false;
     late OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => _HealthyGuideScene(
         steps: steps,
         sectionTitle: sectionTitle,
         onClose: () {
-          if (finished.value) return;
-          finished.value = true;
+          if (closed) return;
+          closed = true;
           entry.remove();
           entry.dispose();
         },
       ),
     );
     overlay.insert(entry);
-    // La función inicia de inmediato y el ciclo de vida queda en la escena.
-    // Mantener API Future permite migrar sin modificar las pantallas.
-    finished.dispose();
-    assert(completed.isEmpty);
+    // La guía queda montada hasta pulsar cerrar o finalizar.
   }
 }
 
@@ -127,9 +123,10 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       });
       return;
     }
-    final topLeft = targetRender.localToGlobal(
-      Offset.zero, ancestor: overlayRender,
-    );
+    // Las pantallas están bajo Navigator, no bajo el render de esta escena.
+    // Convertimos ambas posiciones globales al espacio local del overlay.
+    final topLeft = targetRender.localToGlobal(Offset.zero) -
+        overlayRender.localToGlobal(Offset.zero);
     setState(() {
       targetRect = topLeft & targetRender.size;
       resolving = false;
