@@ -173,6 +173,26 @@ class HealthyMagicGuide {
     final steps = sections[section];
     if (steps == null || steps.isEmpty) return;
     HealthyRetroSoundService.play('guide');
+    if (const {'inicio', 'tienda', 'catalogo', 'perfil'}.contains(section)) {
+      final guided = <HealthySpotlightStep>[
+        for (var i = 0; i < steps.length; i++)
+          HealthySpotlightStep(
+            title: steps[i].title,
+            description: steps[i].description,
+            icon: steps[i].icon,
+            targetKey: HealthyGuideTargets.forSectionStep(section, i),
+            // Solo elementos editoriales sin datos personales ni acciones.
+            extract: (section == 'inicio' && i == 1) ||
+                (section == 'tienda' && i == 1),
+          ),
+      ];
+      await HealthyGuideOverlay.show(
+        context,
+        sectionTitle: _titles[section] ?? 'Healthy Habit',
+        steps: guided,
+      );
+      return;
+    }
     if (section == 'habitos') {
       await HealthyGuideOverlay.show(context,
         sectionTitle: 'Hábitos',
