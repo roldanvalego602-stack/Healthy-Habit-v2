@@ -8,9 +8,9 @@ import 'healthy_hybrid_knowledge.dart';
 class MrHealthyTopic {
   const MrHealthyTopic({
     required this.id, required this.category, required this.terms,
-    required this.answer, required this.followUp,
+    required this.answer, required this.followUp, required this.detail,
   });
-  final String id, category, answer, followUp;
+  final String id, category, answer, followUp, detail;
   final List<String> terms;
 
   factory MrHealthyTopic.fromJson(Map<String, dynamic> value) {
@@ -20,6 +20,7 @@ class MrHealthyTopic {
       terms: (value['terms'] as List).cast<String>(),
       answer: value['answer'] as String,
       followUp: value['followUp'] as String,
+      detail: value['detail'] as String,
     );
   }
 }
@@ -105,7 +106,8 @@ class MrHealthyResponseBank {
     if (records.isEmpty ||
         records.map((t) => t.id).toSet().length != records.length ||
         records.any((t) => t.terms.length < 4 ||
-            t.answer.trim().isEmpty || t.followUp.trim().isEmpty)) {
+            t.answer.trim().isEmpty || t.followUp.trim().isEmpty ||
+            t.detail.trim().isEmpty)) {
       throw const FormatException('Banco de diálogo incompleto o duplicado');
     }
     return MrHealthyResponseBank(records);
@@ -166,7 +168,16 @@ class MrHealthyResponseBank {
       final previous = _topicsById[previousTopicId];
       if (previous == null || followUpDepth >= 3) return null;
       return HealthyAssistantReply(
-        previous.followUp,
+        followUpDepth == 0
+            ? '${previous.detail}\\n\\n${previous.followUp}'
+            : followUpDepth == 1
+                ? 'Para orientarte mejor sobre ${previous.terms.first}, '
+                    'dime qué parte quieres aplicar a tu situación. '
+                    '${previous.followUp}'
+                : 'Puedo seguir con un aspecto concreto de '
+                    '${previous.terms.first}, pero no quiero repetir '
+                    'información o suponer detalles personales. '
+                    '${previous.followUp}',
         card: 'topic',
         knowledgeId: previous.id,
       );
