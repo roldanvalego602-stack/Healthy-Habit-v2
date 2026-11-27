@@ -177,7 +177,9 @@ class CosmosLevelOverlay {
 
   static void show(BuildContext context) {
     if (!HealthyAdaptive.isCosmos ||
-        !HealthyVisualEffects.enabled(context)) return;
+        !HealthyVisualEffects.enabled(context)) {
+      return;
+    }
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
     OverlayEntry? entry;
@@ -196,6 +198,9 @@ class CosmosLevelOverlay {
         ),
       ),
     );
-    overlay.insert(entry);
+    final activeEntry = entry;
+    if (activeEntry != null) {
+      overlay.insert(activeEntry);
+    }
   }
 }
