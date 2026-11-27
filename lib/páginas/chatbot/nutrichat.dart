@@ -924,50 +924,79 @@ class _NutriChatPageState extends State<NutriChatPage> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: _background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: _navy),
-          onPressed: () => Navigator.maybePop(context),
+        toolbarHeight: 70,
+        leadingWidth: 54,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: _chatHeaderAction(
+            icon: Icons.arrow_back_rounded,
+            tooltip: 'Regresar',
+            onPressed: () => Navigator.maybePop(context),
+          ),
         ),
-        titleSpacing: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Mr. Healthy',
-              style: TextStyle(
-                color: _navy,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
+        titleSpacing: 6,
+        title: Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            color: HealthyAdaptive.surface,
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(color: HealthyAdaptive.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.auto_awesome_rounded, size: 17,
+                color: _green),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mr. Healthy',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(color: _navy,
+                        fontSize: 14.5, fontWeight: FontWeight.w800)),
+                    Text('Tu asistente',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(color: _muted, fontSize: 10)),
+                  ],
+                ),
               ),
-            ),
-            Text(
-              'Asistente de Healthy Habit',
-              style: TextStyle(color: _muted, fontSize: 11),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
-          IconButton(
+          _chatHeaderAction(
             key: const Key('healthy-chat-audio-toggle'),
-            tooltip: _readAloud ? 'Silenciar voz retro de Mr. Healthy' :
-                'Activar voz retro de Mr. Healthy',
-            icon: Icon(_readAloud ? Icons.volume_up_rounded :
-                Icons.volume_off_rounded, color: _navy),
+            icon: _readAloud
+                ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+            tooltip: _readAloud
+                ? 'Silenciar voz retro de Mr. Healthy'
+                : 'Activar voz retro de Mr. Healthy',
             onPressed: _toggleReadAloud,
           ),
-          IconButton(
+          const SizedBox(width: 5),
+          _chatHeaderAction(
             key: const Key('healthy-chat-history-button'),
-            onPressed: isTyping || _historyLoading ? null : _showChatHistory,
+            icon: Icons.history_rounded,
             tooltip: 'Historial de conversaciones',
-            icon: Icon(Icons.history_rounded, color: _navy),
+            onPressed: isTyping || _historyLoading
+                ? null : _showChatHistory,
           ),
-          IconButton(
+          const SizedBox(width: 5),
+          _chatHeaderAction(
             key: const Key('healthy-chat-new-button'),
-            onPressed: isTyping ? null : _newConversation,
+            icon: Icons.add_comment_outlined,
             tooltip: 'Nueva conversación',
-            icon: Icon(Icons.add_comment_outlined, color: _navy),
+            onPressed: isTyping ? null : _newConversation,
           ),
+          const SizedBox(width: 12),
         ],
       ),
       body: SafeArea(
@@ -986,7 +1015,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                         children: [
                           Container(
                             key: const ValueKey('mr-healthy-draft-avatar'),
-                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            margin: const EdgeInsets.symmetric(vertical: 4),
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
                               color: HealthyAdaptive.mint,
@@ -996,10 +1025,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
                                 blurRadius: 15, offset: Offset(0, 4),
                               )],
                             ),
-                            child: MrHealthyChatAvatar(size: 70, isTyping: _replyPending),
+                            child: MrHealthyChatAvatar(size: 42, isTyping: _replyPending),
                           ),
-                          const SizedBox(width: 9),
-                          AnimatedSwitcher(
+                          const SizedBox(width: 7),
+                          Flexible(child: AnimatedSwitcher(
                             duration: HealthyVisualEffects.duration(
                               context, const Duration(milliseconds: 220)),
                             child: Text(
@@ -1023,7 +1052,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                 itemCount:
                     1 +
                     messages.length +
@@ -1062,6 +1091,33 @@ class _NutriChatPageState extends State<NutriChatPage> {
             _buildComposer(keyboardVisible),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Controles independientes: sin una barra visual continua.
+  Widget _chatHeaderAction({
+    Key? key,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: 38,
+      height: 40,
+      decoration: BoxDecoration(
+        color: HealthyAdaptive.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: HealthyAdaptive.border),
+      ),
+      child: IconButton(
+        key: key,
+        onPressed: onPressed,
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 38, height: 40),
+        icon: Icon(icon, size: 19, color: onPressed == null
+            ? _muted : _navy),
       ),
     );
   }
@@ -1205,7 +1261,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   );
 
   Widget _buildComposer(bool keyboardVisible) => Container(
-    padding: EdgeInsets.fromLTRB(14, 8, 14, keyboardVisible ? 8 : 12),
+    padding: EdgeInsets.fromLTRB(10, 6, 10, keyboardVisible ? 6 : 8),
     decoration: BoxDecoration(
       color: _background,
       border: Border(top: BorderSide(color: HealthyAdaptive.border)),
@@ -1214,7 +1270,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.only(left: 16, right: 5),
+          padding: const EdgeInsets.only(left: 13, right: 4),
           decoration: BoxDecoration(
             color: HealthyAdaptive.surface,
             borderRadius: BorderRadius.circular(26),
@@ -1239,7 +1295,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: EdgeInsets.symmetric(vertical: 11),
                   ),
                 ),
               ),
@@ -1306,11 +1362,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ),
         ),
         child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: isUser
               ? (HealthyAdaptive.isDark ? const Color(0xFF284B56) : const Color(0xFF174F48))
