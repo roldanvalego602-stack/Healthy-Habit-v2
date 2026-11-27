@@ -35,7 +35,21 @@ class AssistantGuideCharacter extends StatelessWidget {
           label: 'Mr. Healthy señala el elemento de este paso',
           image: true,
           child: RepaintBoundary(
-            child: AnimatedBuilder(
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey('healthy-guide-pose-$stepIndex'),
+              tween: Tween<double>(begin: motion ? .75 : 1, end: 1),
+              duration: motion
+                  ? const Duration(milliseconds: 290) : Duration.zero,
+              curve: Curves.easeOutBack,
+              builder: (context, arrival, child) => Opacity(
+                opacity: arrival.clamp(0.0, 1.0),
+                child: Transform.scale(
+                  scale: arrival,
+                  alignment: Alignment.bottomCenter,
+                  child: child,
+                ),
+              ),
+              child: AnimatedBuilder(
               animation: phase,
               builder: (context, child) {
                 final t = motion ? phase.value : 0.0;
@@ -94,14 +108,19 @@ class AssistantGuideCharacter extends StatelessWidget {
                     left: pose.facesLeft ? -3 : null,
                     child: Icon(
                       pose.pointsUp
-                          ? Icons.north_east_rounded
-                          : Icons.south_east_rounded,
+                          ? (pose.facesLeft
+                              ? Icons.north_west_rounded
+                              : Icons.north_east_rounded)
+                          : (pose.facesLeft
+                              ? Icons.south_west_rounded
+                              : Icons.south_east_rounded),
                       size: 21,
                       color: accent,
                     ),
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ),
