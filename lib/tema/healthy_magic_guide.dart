@@ -251,7 +251,7 @@ class HealthyMagicGuideButton extends StatefulWidget {
 }
 
 class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
-  static const double _diameter = 48;
+  static const double _diameter = 72;
   static const double _margin = 12;
 
   // Mantiene la última ubicación cuando el usuario cambia de sección.
@@ -312,18 +312,31 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
                   );
                 });
               },
-              child: FloatingActionButton.small(
-                heroTag: 'healthy-magic-guide-${widget.section}',
-                tooltip: 'Explícame esta pantalla (arrastra para mover)',
-                backgroundColor: HealthyAdaptive.isCosmos
-                    ? CosmosPalette.cyan
-                    : const Color(0xFF7547D7),
-                foregroundColor: HealthyAdaptive.isCosmos
-                    ? CosmosPalette.background
-                    : Colors.white,
-                onPressed: () =>
-                    HealthyMagicGuide.open(context, widget.section),
-                child: const Icon(Icons.auto_awesome_rounded),
+              onTap: () => HealthyMagicGuide.open(context, widget.section),
+              child: Tooltip(
+                message: 'Explícame esta pantalla (arrastra para mover)',
+                child: SizedBox(
+                  width: _diameter,
+                  height: _diameter,
+                  child: Image.asset(
+                    'assets/UFO/Mascota de Hábitos Saludables en Ovni.png',
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (context, error, stackTrace) =>
+                        DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: HealthyAdaptive.isCosmos
+                            ? CosmosPalette.cyan
+                            : const Color(0xFF7547D7),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
