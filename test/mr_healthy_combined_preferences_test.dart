@@ -99,6 +99,25 @@ void main() {
     expect(reply, isNull);
   });
 
+  test('negar una opción no la selecciona por accidente', () {
+    final reply = question('food_desayuno', 'No quiero algo barato');
+    expect(reply?.text, contains('descartar una alternativa'));
+    expect(reply?.text, isNot(contains('Para un desayuno económico')));
+  });
+
+  test('para llevar no significa necesariamente sin refrigeración', () {
+    final reply = question('food_colacion',
+        'Algo económico para llevar');
+    expect(reply?.text, isNot(contains('sin refrigeración')));
+  });
+
+  test('tres restricciones simultáneas piden priorización', () {
+    final reply = question('food_desayuno',
+        'Quiero algo rápido, económico y sin leche');
+    expect(reply?.text, contains('imprescindibles'));
+    expect(reply?.action, isEmpty);
+  });
+
   test('elige una sola opción cuando no hay combinación válida', () {
     final reply = question('food_desayuno', 'La económica');
     expect(reply?.text, contains('desayuno económico'));
