@@ -162,7 +162,9 @@ class MrHealthyResponseBank {
 
   static bool _shouldDeferToSpecialist(String query) {
     if (_riskTerms.hasMatch(query) || _unsafeRequests.hasMatch(query) ||
-        _operationalCommands.hasMatch(query)) return true;
+        _operationalCommands.hasMatch(query)) {
+      return true;
+    }
     // Preserve the existing, more specific egg/cooking safety cards.
     return query.contains('huevo') && RegExp(
       r'\b(jamon|crudo|salmonella|coccion|danino|dano|peligroso)\b',
@@ -218,7 +220,9 @@ class MrHealthyResponseBank {
           final alias = normalize(term);
           return alias.split(' ').length >= 2 && alias.length >= 9 &&
               (' $q ').contains(' $alias ');
-        })) candidates.add(topic);
+        })) {
+          candidates.add(topic);
+        }
         if (candidates.length > 1) {
           break;
         }
