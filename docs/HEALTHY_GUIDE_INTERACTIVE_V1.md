@@ -252,3 +252,25 @@ flutter test test/healthy_guide_phase*_test.dart test/healthy_guide_gestures_tes
 ```
 
 Inspeccionar en Android el saludo al abrir el recorrido, la inclinación al señalar, el cambio de emblema al ampliar componentes, la celebración de nivel en Inicio y la pose final de despedida; comprobar Lite y tamaños compactos. El entorno remoto confirmó los cambios en GitHub, **no ejecutó la compilación ni los tests Flutter**.
+
+## Etapa 7 — Primer rig gráfico de extremidades
+
+El repositorio conserva una única imagen base `assets/mascot/healthy.png`; las carpetas de cabeza y rostro contienen **accesorios de la tienda**, no una hoja de sprites con poses anatómicas. Para no inventar sprites ni alterar archivos de compras se implementó una **capa vectorial de brazos y manos** en Flutter, independiente del sprite original.
+
+- `lib/guia/guide_animated_limbs.dart`: componente `GuideAnimatedLimbs` y `GuideLimbPainter` con hombros, codos y manos dibujados con curvas de Bézier y pequeñas hojas decorativas. Pose específica para saludo, presentación, señalamiento, inspección, celebración y despedida; admite ambos lados de orientación y modo estático.
+- `lib/guia/assistant_guide_character.dart`: la nueva capa se dibuja detrás del sprite base para ocultar el anclaje de los hombros. Continúan intactos la animación del cuerpo, el emblema de expresión y el etiquetado accesible.
+- `test/healthy_guide_articulated_test.dart`: cubre todos los gestos, ambas orientaciones, ausencia de movimiento, repintado y actualización en el árbol de widgets.
+- La animación usa el `Animation<double>` de pulso que ya posee la guía. No incorpora nuevas dependencias, información personal, efectos de compra ni timers.
+
+**Límite visual:** esta es una articulación gráfica vectorial superpuesta, no una reconstrucción del cuerpo del PNG por partes. Las manos son figuras estilizadas dibujadas por Flutter; la anatomía exacta y las expresiones faciales independientes deberán diseñarse con sprites transparentes de Mr. Healthy o un rig exportado del arte original. Los cosméticos de la Tienda no se reutilizan como extremidades para evitar activar o representar artículos que el usuario no posee.
+
+Para comprobar:
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase*_test.dart test/healthy_guide_gestures_test.dart test/healthy_guide_articulated_test.dart
+```
+
+Tras las pruebas, revisar en Android el anclaje visual de hombros, los movimientos de las manos al señalar y el recorrido de celebración, además de modo Lite y pantallas compactas. La compilación Flutter debe verificarse en el entorno local.
