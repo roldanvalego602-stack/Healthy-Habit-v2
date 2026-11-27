@@ -26,7 +26,7 @@ void main() {
   test('entender preguntas reales de las cinco categorías', () {
     const prompts = <String, String>{
       '¿Cómo funciona el tema cosmos?': 'app_cosmos',
-      '¿Qué sabes de etiquetas nutricionales?': 'food_etiqueta',
+      '¿Qué sabes de etiqueta nutricional?': 'food_etiqueta',
       'Explícame entrenamiento de fuerza': 'ex_fuerza',
       '¿Qué me puedes decir de bebidas energéticas?': 'risk_energetica',
       'Cuéntame sobre el planeta rojo': 'random_marte',
