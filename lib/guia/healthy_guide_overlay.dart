@@ -235,7 +235,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final reduceMotion = !HealthyVisualEffects.enabled(context);
     const accent = Color(0xFF63E6BE);
     final cardWidth = screen.width > 480 ? 420.0 : screen.width - 32;
-    final cardHeight = 230.0;
+    final cardHeight = 260.0;
     final belowTarget = targetRect == null ||
         targetRect!.center.dy < screen.height * .47;
     final top = belowTarget
@@ -254,10 +254,13 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
       explanation: cardBounds,
     );
+    final highlightedRect = _previewExpanded &&
+            _previewPng != null && extractedDestination != null
+        ? extractedDestination : targetRect;
     final pose = GuideCharacterPose.resolve(
       viewport: screen,
       safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
-      target: targetRect,
+      target: highlightedRect,
       explanation: cardBounds,
       characterSize: screen.width < 350
           ? const Size(72, 86) : const Size(90, 104),
@@ -274,7 +277,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
             animation: pulse,
             builder: (_, __) => CustomPaint(
               painter: HealthyGuideSpotlightPainter(
-                target: targetRect,
+                target: highlightedRect,
                 phase: reduceMotion ? 0 : pulse.value,
                 accent: accent,
               ),
@@ -303,7 +306,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
               builder: (_, __) => CustomPaint(
                 painter: GuidePointerPainter(
                   pose: pose,
-                  target: targetRect,
+                  target: highlightedRect,
                   progress: reduceMotion ? 0 : pulse.value,
                   accent: accent,
                 ),
