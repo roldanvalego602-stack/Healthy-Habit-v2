@@ -550,8 +550,7 @@ class MrHealthyChoiceResolver {
 
     // Negar una preferencia no equivale a seleccionarla.
     // Una aclaración es más segura que recomendar lo rechazado.
-    if (RegExp(r'^(no quiero|no prefiero|descarta|evita)\\b'
-        .replaceAll(r'\\b', r'\b')).hasMatch(q)) {
+    if (RegExp(r'^(no quiero|no prefiero|descarta|evita)\b').hasMatch(q)) {
       return HealthyAssistantReply(
         'Entiendo que quieres descartar una alternativa. '
         '¿Cuál de estas opciones sí te sirve: ${options.join(', ')}?',
