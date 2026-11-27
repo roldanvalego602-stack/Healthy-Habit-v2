@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../guia/healthy_ufo_visual.dart';
 import 'cosmos_theme.dart';
 import 'healthy_theme.dart';
 import '../servicios/healthy_retro_sound_service.dart';
@@ -250,22 +252,33 @@ class HealthyMagicGuideButton extends StatefulWidget {
       _HealthyMagicGuideButtonState();
 }
 
-class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
-  static const double _diameter = 72;
-  static const double _margin = 12;
-
-  // Mantiene la última ubicación cuando el usuario cambia de sección.
-  // El valor es relativo al área disponible para adaptarse a otros tamaños.
+class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
+    with SingleTickerProviderStateMixin {
+  static const double _diameter = 84;
+  static const double _margin = 8;
   static Offset? _savedRelativePosition;
 
   final OverlayPortalController _portal = OverlayPortalController();
+  late final AnimationController _hover;
+  bool _dragging = false;
+  double _tilt = 0;
 
   @override
   void initState() {
     super.initState();
+    _hover = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _portal.show();
     });
+  }
+
+  @override
+  void dispose() {
+    _hover.dispose();
+    super.dispose();
   }
 
   @override
@@ -277,31 +290,28 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
         final screen = media.size;
         final minX = _margin;
         final minY = media.padding.top + _margin;
-        final maxX = (screen.width - _diameter - _margin)
-            .clamp(minX, double.infinity).toDouble();
-        final maxY = (screen.height -
-                media.padding.bottom -
-                media.viewInsets.bottom -
-                _diameter -
-                _margin)
-            .clamp(minY, double.infinity).toDouble();
+        final maxX = math.max(minX, screen.width - _diameter - _margin);
+        final maxY = math.max(minY, screen.height -
+            media.padding.bottom - media.viewInsets.bottom -
+            _diameter - _margin);
         final relative = _savedRelativePosition;
         final x = relative == null
             ? minX
-            : (minX + (maxX - minX) * relative.dx).clamp(minX, maxX)
-                .toDouble();
+            : (minX + (maxX - minX) * relative.dx).clamp(minX, maxX).toDouble();
         final y = relative == null
             ? (maxY - 72).clamp(minY, maxY).toDouble()
-            : (minY + (maxY - minY) * relative.dy).clamp(minY, maxY)
-                .toDouble();
+            : (minY + (maxY - minY) * relative.dy).clamp(minY, maxY).toDouble();
 
         return Positioned(
           left: x,
           top: y,
           child: Semantics(
-            label: 'Guía de esta pantalla. Mantén pulsado y arrastra para mover.',
+            label: 'Mr. Healthy. Toca para explicar la pantalla o arrastra para mover.',
             button: true,
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              dragStartBehavior: DragStartBehavior.down,
+              onPanStart: (_) => setState(() => _dragging = true),
               onPanUpdate: (details) {
                 final nx = (x + details.delta.dx).clamp(minX, maxX).toDouble();
                 final ny = (y + details.delta.dy).clamp(minY, maxY).toDouble();
@@ -310,31 +320,27 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
                     maxX > minX ? (nx - minX) / (maxX - minX) : 0,
                     maxY > minY ? (ny - minY) / (maxY - minY) : 0,
                   );
+                  _tilt = (details.delta.dx * .018).clamp(-.14, .14).toDouble();
                 });
               },
+              onPanEnd: (_) => setState(() {
+                _dragging = false;
+                _tilt = 0;
+              }),
+              onPanCancel: () => setState(() {
+                _dragging = false;
+                _tilt = 0;
+              }),
               onTap: () => HealthyMagicGuide.open(context, widget.section),
               child: Tooltip(
                 message: 'Explícame esta pantalla',
                 child: SizedBox(
                   width: _diameter,
                   height: _diameter,
-                  child: Image.asset(
-                    'assets/UFO/Mascota de Hábitos Saludables en Ovni.png',
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (context, error, stackTrace) =>
-                        DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: HealthyAdaptive.isCosmos
-                            ? CosmosPalette.cyan
-                            : const Color(0xFF7547D7),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                      ),
-                    ),
+                  child: HealthyUfoVisual(
+                    phase: _hover,
+                    dragging: _dragging,
+                    tilt: _tilt,
                   ),
                 ),
               ),
@@ -342,8 +348,6 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
           ),
         );
       },
-      // El botón real se pinta sobre la ruta; este espacio solo conserva
-      // compatibilidad con los Scaffold existentes.
       child: const SizedBox(width: _diameter, height: _diameter),
     );
   }
