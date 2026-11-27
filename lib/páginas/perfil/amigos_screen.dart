@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 import '../../tema/healthy_theme.dart';
 import 'amigos_servicio.dart';
 import 'buscar_amigos_screen.dart';
@@ -246,6 +247,8 @@ class _AmigosScreenState extends State<AmigosScreen> {
   Widget build(BuildContext context) {
     final uid = _uid;
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'amigos'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(title: const Text('Amigos')),
       body: uid == null ? _error('Inicia sesión para agregar amigos.')
