@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tema/healthy_theme.dart';
+import '../tema/healthy_magic_guide.dart';
+import '../servicios/healthy_retro_sound_service.dart';
 import '../tema/healthy_coin.dart';
 import '../tema/healthy_motion.dart';
 import 'package:healthy_habit/páginas/ranking_screen.dart';
@@ -243,6 +245,9 @@ class _HomeScreen2State extends State<HomeScreen2>
 
     return Scaffold(
       backgroundColor: AppColors.page,
+      floatingActionButton: HealthyMagicGuideButton(
+        section: const ['inicio', 'habitos', 'tienda', 'catalogo', 'perfil'][_selectedIndex]),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: screens[_selectedIndex])),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -257,9 +262,10 @@ class _HomeScreen2State extends State<HomeScreen2>
               (i) => Expanded(
                 child: InkWell(
                   onTap: () {
-                    setState(() {
-                      _selectedIndex = i;
-                    });
+                    if (_selectedIndex != i) {
+                      HealthyRetroSoundService.play('tap');
+                      setState(() => _selectedIndex = i);
+                    }
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 11),
