@@ -320,7 +320,8 @@ class MrHealthyChoiceResolver {
 
   static const Map<String, List<String>> synonyms = {
     'rapida': ['rapida', 'rapido', 'facil', 'sencilla', 'sencillo'],
-    'economica': ['economica', 'economico', 'barata', 'barato',
+    'economica': ['economica', 'economico', 'economicas',
+      'economicos', 'barata', 'barato', 'baratas', 'baratos',
       'poco dinero', 'bajo presupuesto'],
     'sin lacteos': ['sin lacteos', 'sin leche'],
     'vegetariana': ['vegetariana', 'vegetariano', 'sin carne'],
@@ -398,8 +399,10 @@ class MrHealthyChoiceResolver {
 
   static bool _offered(String priorReply, List<String> available) {
     if (priorReply.trim().isEmpty) return false;
-    return available.any((choice) =>
-        _offeredPosition(priorReply, choice) >= 0);
+    // At least two alternatives must be present in the latest proposal.
+    // A lone incidental word (for example "comida") is not a menu.
+    return available.where((choice) =>
+        _offeredPosition(priorReply, choice) >= 0).length >= 2;
   }
 
   static bool isOrdinalSelection(String text) =>
