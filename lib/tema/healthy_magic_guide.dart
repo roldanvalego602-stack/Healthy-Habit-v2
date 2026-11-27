@@ -2,8 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../guia/healthy_ufo_visual.dart';
-import 'cosmos_theme.dart';
-import 'healthy_theme.dart';
 import '../servicios/healthy_retro_sound_service.dart';
 import '../guia/guide_step.dart';
 import '../guia/guide_screen_routes.dart';
