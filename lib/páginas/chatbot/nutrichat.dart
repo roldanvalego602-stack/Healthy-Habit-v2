@@ -690,15 +690,25 @@ class _NutriChatPageState extends State<NutriChatPage> {
             response = error.message;
           }
         } else {
+          // Las explicaciones generales deben funcionar sin consultar
+          // Firestore. Las consultas personales siguen usando datos reales.
+          final normalizedQuestion = MrHealthyResponseBank.normalize(text);
+          final generalQuestion = RegExp(
+            r'^(que es|que son|como funciona|para que sirve|'
+            r'habla(me)? de|explicame|dime sobre|quiero saber de|'
+            r'que sabes de|como se usa|me interesa|informacion sobre)\\b',
+          ).hasMatch(normalizedQuestion);
           final requiresProfile = HealthyIntentRouter.asksForCoinBalance(text) ||
-              NutriRespuestasService.contiene(normalized, [
-            'mi perfil','mis datos','mis estadisticas','mi progreso',
-            'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
-            'mis habitos','habitos activos','que habitos tengo',
-            'mis actividades','camino de xp',
-            'subir de nivel','mi posicion','cuanto he avanzado','cuantos xp',
-            'tienda','armario','canjear',
-          ]) || _lastTopic == 'profile';
+              (!generalQuestion && (
+                NutriRespuestasService.contiene(normalized, [
+                  'mi perfil','mis datos','mis estadisticas','mi progreso',
+                  'mi nivel','mi xp','mis xp','habit coins','monedas','racha',
+                  'mis habitos','habitos activos','que habitos tengo',
+                  'mis actividades','camino de xp',
+                  'subir de nivel','mi posicion','cuanto he avanzado',
+                  'cuantos xp','tienda','armario','canjear',
+                ]) || _lastTopic == 'profile'
+              ));
           final available = !requiresProfile ||
               await _refreshAssistantData();
           if (!available) {
