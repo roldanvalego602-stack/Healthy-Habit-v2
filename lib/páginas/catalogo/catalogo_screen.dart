@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 import 'catalogo_media.dart';
 import '../../tema/healthy_theme.dart';
 import 'datos/catalogo_datos.dart';
@@ -68,11 +69,14 @@ class _CatalogoScreenState extends State<CatalogoScreen>
     }
   }
 
-  void _abrirDetalle(CatalogoItem item) => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => CatalogoDetalleScreen(item: item),
-        ),
-      );
+  void _abrirDetalle(CatalogoItem item) {
+    HealthyRetroSoundService.play('open');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CatalogoDetalleScreen(item: item),
+      ),
+    );
+  }
 
   Widget _imagen(CatalogoItem item, double altura) => CatalogoMedia(
         item: item,
