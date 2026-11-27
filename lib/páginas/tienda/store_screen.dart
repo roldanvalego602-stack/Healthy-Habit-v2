@@ -4,6 +4,7 @@ import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_float.dart';
 import '../../tema/healthy_celebration.dart';
+import '../../tema/cosmos_interaction_fx.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../tema/healthy_coin.dart';
 
@@ -194,6 +195,7 @@ class _StoreScreenState extends State<StoreScreen> {
           title: '¡Recompensa adquirida!',
           subtitle: '${item.name} ya está en tu colección.',
           icon: Icons.card_giftcard_rounded,
+          effect: CosmosEffect.purchase,
         );
       } else {
         _message('${item.name} se agregó a tu colección.');
