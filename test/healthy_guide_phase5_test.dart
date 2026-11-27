@@ -65,7 +65,7 @@ void main() {
 
   testWidgets('el overlay se puede cerrar en una pantalla compacta',
       (tester) async {
-    await tester.view.physicalSize = const Size(340, 470);
+    tester.view.physicalSize = const Size(340, 470);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
       tester.view.resetPhysicalSize();
