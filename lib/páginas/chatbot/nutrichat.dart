@@ -644,6 +644,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ]);
       if (danger) {
         response = _respuestas.moderar(text, _primerNombre);
+      } else if (NutriRespuestasService.contiene(normalized, const [
+        'no puedo respirar', 'me estoy asfixiando',
+        'me atragante', 'hinchazon de garganta',
+        'me intoxique', 'tengo intoxicacion',
+        'tome veneno', 'me desmaye', 'dolor fuerte en el pecho',
+      ])) {
+        _lastEditorialTopic = '';
+        _editorialFollowUps = 0;
+        response = 'Esto puede ser una urgencia médica. Busca atención '
+            'presencial inmediata o llama al servicio de emergencias de '
+            'tu zona. No intentes provocarte el vómito ni retrases la '
+            'atención esperando una respuesta del chat. '
+            '¿Hay alguien contigo que pueda ayudarte?';
       } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
       } else if (NutriRespuestasService.contiene(normalized, [
