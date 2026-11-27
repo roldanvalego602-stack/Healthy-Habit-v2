@@ -806,7 +806,7 @@
         "pesas"
       ],
       "answer": "El entrenamiento de fuerza puede ayudar al músculo y las actividades diarias. Empieza con técnica correcta, cargas apropiadas y recuperación suficiente.",
-      "followUp": "¿Tienes equipo o prefieres usar tu peso corporal?",
+      "followUp": "¿Prefieres entrenar con equipo o sin equipo?",
       "detail": "Puedes empezar con una sentadilla asistida y una flexión contra pared. Usa movimientos controlados y deja tiempo de recuperación."
     },
     {
@@ -1391,7 +1391,7 @@
         "no se que hacer"
       ],
       "answer": "Podemos jugar a una adivinanza, inventar una historia breve o elegir un mini-reto creativo sin presión.",
-      "followUp": "¿Qué te apetece?",
+      "followUp": "¿Prefieres una adivinanza, una historia o un reto creativo?",
       "detail": "Mini-reto creativo: inventa el nombre de un planeta donde cada ciudad tenga una comida diferente. ¿Cómo se llamaría?"
     },
     {
