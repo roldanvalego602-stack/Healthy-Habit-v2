@@ -128,6 +128,9 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       // Elemento desmontado mientras cambia la pantalla.
     }
     if (!mounted || index != controller.index) return;
+    // Garantiza una medición incluso si el usuario reduce animaciones
+    // y no hay un ticker que produzca fotogramas automáticamente.
+    WidgetsBinding.instance.scheduleFrame();
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted || index != controller.index) return;
     final overlayRender = context.findRenderObject();
