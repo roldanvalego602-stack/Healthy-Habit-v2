@@ -58,15 +58,13 @@ class GuideCharacterPose {
     ];
     double score(Offset p) {
       final rect = p & characterSize;
-      final targetOverlap = target == null
-          ? 0.0 : rect.intersect(target.inflate(9)).size;
-      final cardOverlap = rect.intersect(explanation.inflate(6)).size;
-      final overlapA = targetOverlap is Size
-          ? math.max(0, targetOverlap.width) *
-              math.max(0, targetOverlap.height)
-          : 0.0;
-      final overlapB = math.max(0, cardOverlap.width) *
-          math.max(0, cardOverlap.height);
+      final targetIntersection = target == null
+          ? Rect.zero : rect.intersect(target.inflate(9));
+      final cardIntersection = rect.intersect(explanation.inflate(6));
+      final overlapA = math.max(0.0, targetIntersection.width) *
+          math.max(0.0, targetIntersection.height);
+      final overlapB = math.max(0.0, cardIntersection.width) *
+          math.max(0.0, cardIntersection.height);
       return overlapA * 7 + overlapB * 9 +
           (rect.center - reference.center).distance * .12;
     }
