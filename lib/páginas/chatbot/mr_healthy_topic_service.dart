@@ -30,7 +30,7 @@ class MrHealthyTopic {
 /// entre temas se descartan. Nunca se confunden con 11,500 respuestas
 /// redactadas de forma independiente ni con entrenamiento neuronal.
 class MrHealthyResponseBank {
-  const MrHealthyResponseBank(this.topics);
+  MrHealthyResponseBank(this.topics);
 
   final List<MrHealthyTopic> topics;
 
@@ -80,7 +80,9 @@ class MrHealthyResponseBank {
       for (final term in topic.terms) {
         for (final template in templates) {
           final key = normalize(template.replaceAll('{tema}', term));
-          if (key.isEmpty || ambiguous.contains(key)) continue;
+          if (key.isEmpty || ambiguous.contains(key)) {
+            continue;
+          }
           final existing = result[key];
           if (existing != null && existing.id != topic.id) {
             result.remove(key);
@@ -124,7 +126,7 @@ class MrHealthyResponseBank {
     r'una rapida|rapida|la primera|la segunda)\??$',
   );
 
-    static final RegExp _referentialFollowUp = RegExp(
+  static final RegExp _referentialFollowUp = RegExp(
     r'^(y si |y con |y cuando |y en caso de |'
     r'le pongo |le agrego |y eso |y lo |'
     r'se puede combinar |puedo combinarlo |'
@@ -217,7 +219,9 @@ class MrHealthyResponseBank {
           return alias.split(' ').length >= 2 && alias.length >= 9 &&
               (' $q ').contains(' $alias ');
         })) candidates.add(topic);
-        if (candidates.length > 1) break;
+        if (candidates.length > 1) {
+          break;
+        }
       }
       if (candidates.length == 1) match = candidates.single;
     }
