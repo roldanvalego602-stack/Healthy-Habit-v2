@@ -79,7 +79,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (MediaQuery.of(context).disableAnimations) {
       pulse.stop();
     } else if (!pulse.isAnimating) {
       pulse.repeat();
