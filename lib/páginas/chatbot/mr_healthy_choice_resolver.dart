@@ -180,6 +180,9 @@ class MrHealthyChoiceResolver {
     });
   }
 
+  static bool isOrdinalSelection(String text) =>
+      _ordinal(_normalize(text)) != null;
+
   static int? _ordinal(String q) {
     if (RegExp(r'^(la |el |opcion |prefiero la )?(primera|primero|1)$')
         .hasMatch(q)) return 0;
