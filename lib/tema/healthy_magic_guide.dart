@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'cosmos_theme.dart';
 import 'healthy_theme.dart';
 import '../servicios/healthy_retro_sound_service.dart';
+import '../guia/guide_step.dart';
+import '../guia/guide_target.dart';
+import '../guia/healthy_guide_overlay.dart';
 
 /// Pasos de ayuda elaborados según las funciones reales de Healthy Habit.
 /// No hace inferencias de IA ni concede permisos o recompensas.
@@ -170,6 +173,21 @@ class HealthyMagicGuide {
     final steps = sections[section];
     if (steps == null || steps.isEmpty) return;
     HealthyRetroSoundService.play('guide');
+    if (section == 'habitos') {
+      await HealthyGuideOverlay.show(context,
+        sectionTitle: 'Hábitos',
+        steps: [
+          for (var i = 0; i < steps.length; i++)
+            HealthySpotlightStep(
+              title: steps[i].title,
+              description: steps[i].description,
+              icon: steps[i].icon,
+              targetKey: HealthyGuideTargets.forHabitsStep(i),
+            ),
+        ],
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
