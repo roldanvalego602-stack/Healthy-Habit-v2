@@ -585,6 +585,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Color categoryBg(String category) {
+    if (HealthyAdaptive.isCosmos) {
+      return switch (category) {
+        'Alimentación' => const Color(0xE635294C),
+        'Hidratación' => const Color(0xE615355C),
+        'Energía' => const Color(0xE63E3158),
+        'Bienestar' => const Color(0xE632285C),
+        _ => HealthyAdaptive.surface,
+      };
+    }
     if (HealthyAdaptive.isDark) {
       switch (category) {
         case 'Alimentación': return const Color(0xFF302A32);
@@ -604,6 +613,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
   }
 
   Color categoryInk(String category) {
+    if (HealthyAdaptive.isCosmos) {
+      return switch (category) {
+        'Alimentación' => const Color(0xFFFFAECF),
+        'Hidratación' => const Color(0xFF9CEBFF),
+        'Energía' => const Color(0xFFFFE4AA),
+        'Bienestar' => const Color(0xFFD2B9FF),
+        _ => CosmosPalette.cyan,
+      };
+    }
     switch (category) {
       case 'Alimentación':
         return const Color(0xFFE66C65);
@@ -1271,8 +1289,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 ),
                 child: Text(
                   '+${habit.xp} XP',
-                  style: const TextStyle(
-                    color: Color(0xFF9B7415),
+                  style: TextStyle(
+                    color: HealthyAdaptive.isCosmos
+                        ? CosmosPalette.text : const Color(0xFF9B7415),
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
