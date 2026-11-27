@@ -172,3 +172,9 @@ Después de que las fases 1, 2 y 3 pasaran y el análisis quedara sin advertenci
 `HealthyGuideOverlay.show` ahora toma `MediaQuery.of(context)` desde la pantalla que solicitó el recorrido y envuelve la escena en ese `MediaQuery` al insertarla en el overlay raíz. Así conserva la configuración de reducción de movimiento, el tamaño, la escala de texto y los márgenes de la pantalla que abrió la guía. La prueba `healthy_guide_phase4_test.dart` comprueba explícitamente que la escena recibe `disableAnimations: true` y que `AnimatedSwitcher.duration` es cero.
 
 Esta modificación no altera la lógica de la Fase 3 ni la animación normal de quien no solicitó movimiento reducido. La ejecución real de Flutter está pendiente en el equipo del proyecto.
+
+## Ajuste de viewport y cierre en Fase 4
+
+La prueba de reducción de movimiento ya verificaba correctamente `disableAnimations: true`, pero su `MediaQueryData` local no incluía dimensiones de pantalla y el botón `Finalizar` se situaba fuera de los límites reales del test (`800 × 600`). En el overlay raíz, se toma ahora **el tamaño del `MediaQuery` del overlay** y se combina con las preferencias de accesibilidad del origen. De este modo, la guía mantiene `disableAnimations` y coloca la tarjeta dentro del viewport efectivo.
+
+La prueba de Fase 4 también comprueba el tamaño heredado, los límites del botón y que se pueda pulsar realmente. No se ocultó la advertencia `tap()` ni se desactivaron las comprobaciones de hit testing. Verificar con `flutter analyze --no-fatal-infos lib` y `flutter test test/healthy_guide_phase4_test.dart`.
