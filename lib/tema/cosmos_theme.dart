@@ -198,3 +198,64 @@ class _CosmosCardShellState extends State<CosmosCardShell>
     );
   }
 }
+
+/// Microórbita exclusiva para iconos de hábitos y recompensas.
+class CosmosOrbitingIcon extends StatefulWidget {
+  const CosmosOrbitingIcon({
+    super.key, required this.icon, this.size = 20,
+  });
+  final IconData icon;
+  final double size;
+
+  @override
+  State<CosmosOrbitingIcon> createState() => _CosmosOrbitingIconState();
+}
+
+class _CosmosOrbitingIconState extends State<CosmosOrbitingIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _orbit;
+  @override
+  void initState() {
+    super.initState();
+    _orbit = AnimationController(
+      vsync: this, duration: const Duration(seconds: 7));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animate = HealthyAdaptive.isCosmos &&
+        !HealthyVisualController.instance.isLite &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (animate && !_orbit.isAnimating) {
+      _orbit.repeat();
+    } else if (!animate && _orbit.isAnimating) {
+      _orbit.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _orbit.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(widget.icon,
+      size: widget.size, color: CosmosPalette.cyan);
+    if (!HealthyAdaptive.isCosmos) return icon;
+    return AnimatedBuilder(
+      animation: _orbit,
+      builder: (context, child) {
+        final a = _orbit.value * math.pi * 2;
+        return Transform.translate(
+          offset: Offset(1.8 * math.cos(a), 2.7 * math.sin(a)),
+          child: Transform.rotate(
+            angle: .06 * math.sin(a), child: child),
+        );
+      },
+      child: icon,
+    );
+  }
+}
