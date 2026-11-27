@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../guia/guide_target.dart';
 import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_float.dart';
@@ -401,8 +402,12 @@ class _StoreScreenState extends State<StoreScreen> {
 
             return CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(child: _header(state)),
-                SliverToBoxAdapter(child: _cosmosThemePanel(state)),
+                SliverToBoxAdapter(child: KeyedSubtree(
+                  key: HealthyGuideTargets.shopHeader,
+                  child: _header(state))),
+                SliverToBoxAdapter(child: KeyedSubtree(
+                  key: HealthyGuideTargets.shopFeatured,
+                  child: _cosmosThemePanel(state))),
                 if (BetaHabitGateway.enabled &&
                     _pendingBetaPurchases.isNotEmpty)
                   SliverToBoxAdapter(child: _pendingBetaBanner()),
@@ -466,12 +471,16 @@ class _StoreScreenState extends State<StoreScreen> {
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(child: _categoryFilters()),
+                SliverToBoxAdapter(child: RepaintBoundary(
+                  key: HealthyGuideTargets.shopCategories,
+                  child: _categoryFilters())),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      Row(
+                      KeyedSubtree(
+                        key: HealthyGuideTargets.shopRewards,
+                        child: Row(
                         children: [
                           HealthyGlowIcon(
                             icon: Icons.auto_awesome_rounded,
@@ -497,6 +506,7 @@ class _StoreScreenState extends State<StoreScreen> {
                             ),
                           ),
                         ],
+                      ),
                       ),
                       const SizedBox(height: 14),
                       if (items.isEmpty)
