@@ -15,6 +15,10 @@ import 'guide_fx_theme.dart';
 import 'guide_choreography.dart';
 import '../tema/healthy_visual_mode.dart';
 
+/// Capturador inyectable para tests; la app usa toImage() por defecto.
+typedef HealthyGuideCapture = Future<Uint8List?> Function(
+    RenderRepaintBoundary boundary);
+
 /// Capa interactiva modal. No permite pulsar controles del fondo.
 /// La guía antigua permanece disponible para pantallas no migradas.
 class HealthyGuideOverlay {
@@ -26,6 +30,7 @@ class HealthyGuideOverlay {
     BuildContext context, {
     required List<HealthySpotlightStep> steps,
     String sectionTitle = 'Hábitos',
+    HealthyGuideCapture? capture,
   }) async {
     if (steps.isEmpty || _visible) return;
     _visible = true;
@@ -46,6 +51,7 @@ class HealthyGuideOverlay {
       builder: (_) => _HealthyGuideScene(
         steps: steps,
         sectionTitle: sectionTitle,
+        capture: capture,
         onClose: close,
       ),
     );
@@ -58,11 +64,13 @@ class _HealthyGuideScene extends StatefulWidget {
   const _HealthyGuideScene({
     required this.steps,
     required this.sectionTitle,
+    required this.capture,
     required this.onClose,
   });
 
   final List<HealthySpotlightStep> steps;
   final String sectionTitle;
+  final HealthyGuideCapture? capture;
   final VoidCallback onClose;
 
   @override
@@ -198,13 +206,21 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     if (!mounted || index != controller.index) return;
     ui.Image? image;
     try {
-      final area = math.max(1.0, boundary.size.width * boundary.size.height);
-      final pixelRatio = math.min(1.5, math.sqrt(1100000 / area));
-      image = await boundary.toImage(pixelRatio: pixelRatio);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null || !mounted || index != controller.index) return;
-      final png = bytes.buffer.asUint8List(
-        bytes.offsetInBytes, bytes.lengthInBytes);
+      Uint8List? png;
+      if (widget.capture != null) {
+        png = await widget.capture!(boundary);
+      } else {
+        final area = math.max(1.0,
+            boundary.size.width * boundary.size.height);
+        final pixelRatio = math.min(1.5, math.sqrt(1100000 / area));
+        image = await boundary.toImage(pixelRatio: pixelRatio);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (bytes != null) {
+          png = bytes.buffer.asUint8List(
+            bytes.offsetInBytes, bytes.lengthInBytes);
+        }
+      }
+      if (png == null || !mounted || index != controller.index) return;
       setState(() {
         _previewPng = png;
         _previewSource = origin;
