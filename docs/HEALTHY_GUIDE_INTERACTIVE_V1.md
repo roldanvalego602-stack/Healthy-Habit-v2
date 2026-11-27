@@ -211,3 +211,18 @@ flutter test test/healthy_guide_phase1_test.dart test/healthy_guide_phase2_test.
 En Android recorrer las cinco pestañas, con y sin conexión, probar Inicio cargando datos, Tienda sin artículos, Catálogo sin resultados y Perfil sin sesión. Comprobar también modo Lite, Cosmos, tema oscuro, Android con texto grande y teléfonos compactos. Durante la guía no debe activarse ninguna acción de los controles del fondo.
 
 **Alcance de las pruebas:** los widget tests de la Fase 5 verifican los recorridos declarados, su carácter no operativo y la adaptación del overlay. La integración con Firebase y las capturas GPU reales requiere validación en el dispositivo. Este entorno remoto no ejecuta Flutter, por lo que los resultados de compilación/test deben confirmarse en Linux.
+
+## Corrección de overflow en pantallas compactas — Fase 5
+
+La prueba `el overlay se puede cerrar en una pantalla compacta` detectó un `RenderFlex overflowed by 40 pixels on the right` en la fila de botones de navegación (`Anterior` y `Siguiente/Finalizar`) al usar un viewport de 340 × 470. Se reemplazó el `Row` rígido por un `Wrap` con espacio y separación vertical: los botones pasan a dos filas cuando no hay ancho suficiente, conservando su funcionalidad y accesibilidad. La tarjeta explicativa ya admite desplazamiento interno.
+
+La prueba incluye ahora una aserción `tester.takeException() == null` para detectar desbordamientos y errores de renderizado en vez de limitarse a comprobar que el botón de cerrar esté dentro de la pantalla. Los errores del inspector de widgets observados después del overflow podrían ser secundarios; se debe repetir la prueba para verificarlo.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase5_test.dart
+```
+
+No se ejecutó Flutter desde el entorno remoto; la corrección requiere confirmación en Linux.
