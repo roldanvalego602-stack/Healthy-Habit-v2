@@ -357,7 +357,7 @@ class _StoreScreenState extends State<StoreScreen> {
               child: FilledButton.icon(
                 key: const ValueKey('cosmos-buy-equip'),
                 onPressed: busy || (!owned && !canBuy)
-                    ? null : () => _toggleCosmos(state),
+                    ? null : () => _toggleCosmos(state!),
                 icon: Icon(equipped ? Icons.check_circle_outline :
                     owned ? Icons.auto_awesome_rounded :
                     Icons.toll_rounded),
