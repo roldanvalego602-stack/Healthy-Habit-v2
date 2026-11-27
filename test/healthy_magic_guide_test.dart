@@ -28,22 +28,23 @@ void main() {
     // La animación de flotación es infinita: evitar pumpAndSettle.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Guía mágica · Tienda'), findsOneWidget);
-    expect(find.text('Tus Habit Coins'), findsOneWidget);
+    // La tienda usa el recorrido spotlight, no el bottom sheet antiguo.
+    expect(find.text('MR. HEALTHY · TIENDA'), findsOneWidget);
+    expect(find.text('Saldo y tienda'), findsOneWidget);
     await tester.tap(find.text('Siguiente'));
     // La animación de flotación es infinita: evitar pumpAndSettle.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Artículos y categorías'), findsOneWidget);
+    expect(find.text('Filtra los artículos'), findsOneWidget);
     await tester.tap(find.text('Anterior'));
     // La animación de flotación es infinita: evitar pumpAndSettle.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Tus Habit Coins'), findsOneWidget);
-    await tester.tap(find.text('Salir'));
+    expect(find.text('Saldo y tienda'), findsOneWidget);
+    await tester.tap(find.byTooltip('Cerrar guía'));
     // La animación de flotación es infinita: evitar pumpAndSettle.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Guía mágica · Tienda'), findsNothing);
+    expect(find.text('MR. HEALTHY · TIENDA'), findsNothing);
   });
 }
