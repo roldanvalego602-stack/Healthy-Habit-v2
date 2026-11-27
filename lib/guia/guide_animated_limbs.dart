@@ -23,14 +23,17 @@ class GuideAnimatedLimbs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => RepaintBoundary(
-    child: CustomPaint(
-      key: const ValueKey('guide-articulated-limbs'),
-      painter: GuideLimbPainter(
-        gesture: gesture,
-        phase: motion ? phase.value : 0,
-        motion: motion,
-        facesLeft: facesLeft,
-        accent: accent,
+    child: AnimatedBuilder(
+      animation: phase,
+      builder: (_, __) => CustomPaint(
+        key: const ValueKey('guide-articulated-limbs'),
+        painter: GuideLimbPainter(
+          gesture: gesture,
+          phase: motion ? phase.value : 0,
+          motion: motion,
+          facesLeft: facesLeft,
+          accent: accent,
+        ),
       ),
     ),
   );
@@ -58,7 +61,6 @@ class GuideLimbPainter extends CustomPainter {
     if (size.isEmpty) return;
     final unit = size.width;
     final wave = motion ? math.sin(phase * 2 * math.pi) : 0.0;
-    final direction = facesLeft ? -1.0 : 1.0;
     final stroke = (unit * .070).clamp(3.2, 8.2).toDouble();
 
     // El sprite es la capa frontal; estas extremidades quedan detrás.
@@ -152,8 +154,6 @@ class GuideLimbPainter extends CustomPainter {
             Paint()..color = accent.withValues(alpha: .7));
       }
     }
-    // Mantener explícita la orientación cuando el gesto usa un solo brazo.
-    assert(direction.abs() == 1);
   }
 
   @override
