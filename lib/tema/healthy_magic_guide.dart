@@ -254,24 +254,41 @@ class HealthyMagicGuideButton extends StatefulWidget {
 class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
     with SingleTickerProviderStateMixin {
   static const double _diameter = 84;
+  static const double _radarDiameter = 44;
   static const double _margin = 8;
   static Offset? _savedRelativePosition;
 
   final OverlayPortalController _portal = OverlayPortalController();
   late final AnimationController _hover;
   bool _dragging = false;
+  bool _expanded = false;
+  bool _guideOpen = false;
   double _tilt = 0;
 
   @override
   void initState() {
     super.initState();
     _hover = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      vsync: this, duration: const Duration(milliseconds: 2000),
     )..repeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _portal.show();
     });
+  }
+
+  Future<void> _openGuide() async {
+    if (_guideOpen) return;
+    setState(() => _guideOpen = true);
+    try {
+      await HealthyMagicGuide.open(context, widget.section);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _guideOpen = false;
+          _expanded = false;
+        });
+      }
+    }
   }
 
   @override
@@ -285,8 +302,11 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
     return OverlayPortal(
       controller: _portal,
       overlayChildBuilder: (overlayContext) {
+        if (_guideOpen) return const SizedBox.shrink();
         final media = MediaQuery.of(overlayContext);
         final screen = media.size;
+        // Reservar siempre el diámetro expandido para evitar saltos al
+        // desplegar el radar cerca de los límites del dispositivo.
         final minX = _margin;
         final minY = media.padding.top + _margin;
         final maxX = math.max(minX, screen.width - _diameter - _margin);
@@ -296,16 +316,20 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
         final relative = _savedRelativePosition;
         final x = relative == null
             ? minX
-            : (minX + (maxX - minX) * relative.dx).clamp(minX, maxX).toDouble();
+            : (minX + (maxX - minX) * relative.dx)
+                .clamp(minX, maxX).toDouble();
         final y = relative == null
             ? (maxY - 72).clamp(minY, maxY).toDouble()
-            : (minY + (maxY - minY) * relative.dy).clamp(minY, maxY).toDouble();
+            : (minY + (maxY - minY) * relative.dy)
+                .clamp(minY, maxY).toDouble();
 
         return Positioned(
           left: x,
           top: y,
           child: Semantics(
-            label: 'Mr. Healthy. Toca para explicar la pantalla o arrastra para mover.',
+            label: _expanded
+                ? 'Mr. Healthy desplegado. Toca para iniciar la guía.'
+                : 'Mini radar de Mr. Healthy. Toca para desplegarlo.',
             button: true,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -319,7 +343,8 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
                     maxX > minX ? (nx - minX) / (maxX - minX) : 0,
                     maxY > minY ? (ny - minY) / (maxY - minY) : 0,
                   );
-                  _tilt = (details.delta.dx * .018).clamp(-.14, .14).toDouble();
+                  _tilt = (details.delta.dx * .018)
+                      .clamp(-.14, .14).toDouble();
                 });
               },
               onPanEnd: (_) => setState(() {
@@ -330,16 +355,89 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
                 _dragging = false;
                 _tilt = 0;
               }),
-              onTap: () => HealthyMagicGuide.open(context, widget.section),
+              onTap: () {
+                if (_expanded) {
+                  _openGuide();
+                } else {
+                  setState(() => _expanded = true);
+                }
+              },
+              onLongPress: () {
+                if (_expanded) setState(() => _expanded = false);
+              },
               child: Tooltip(
-                message: 'Explícame esta pantalla',
+                message: _expanded
+                    ? 'Explícame esta pantalla'
+                    : 'Desplegar mini radar de Mr. Healthy',
                 child: SizedBox(
                   width: _diameter,
                   height: _diameter,
-                  child: HealthyUfoVisual(
-                    phase: _hover,
-                    dragging: _dragging,
-                    tilt: _tilt,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: _expanded
+                          ? SizedBox(
+                              key: const ValueKey('healthy-ufo-expanded'),
+                              width: _diameter,
+                              height: _diameter,
+                              child: HealthyUfoVisual(
+                                phase: _hover,
+                                dragging: _dragging,
+                                tilt: _tilt,
+                              ),
+                            )
+                          : AnimatedBuilder(
+                              key: const ValueKey('healthy-ufo-mini-radar'),
+                              animation: _hover,
+                              builder: (context, _) => Container(
+                                width: _radarDiameter,
+                                height: _radarDiameter,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xE9162931),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFF70E8BB)
+                                        .withValues(alpha: .65 + .3 *
+                                            math.sin(_hover.value * math.pi * 2)
+                                                .abs()),
+                                    width: 1.6,
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x6632D7A0),
+                                      blurRadius: 12,
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    const Icon(Icons.radar_rounded,
+                                      size: 29, color: Color(0xFF80E5BC)),
+                                    Transform.rotate(
+                                      angle: _hover.value * math.pi * 2,
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        child: Container(
+                                          width: 4, height: 4,
+                                          margin: const EdgeInsets.only(top: 7),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF9BFFE1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ),
                   ),
                 ),
               ),
