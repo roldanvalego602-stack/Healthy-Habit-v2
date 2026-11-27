@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'guide_controller.dart';
 import 'guide_spotlight_painter.dart';
@@ -6,6 +10,7 @@ import 'guide_step.dart';
 import 'guide_character_pose.dart';
 import 'assistant_guide_character.dart';
 import 'guide_pointer.dart';
+import 'guide_extraction.dart';
 import '../tema/healthy_visual_mode.dart';
 
 /// Capa interactiva modal. No permite pulsar controles del fondo.
@@ -68,6 +73,10 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
   late final AnimationController pulse;
   Rect? targetRect;
   bool resolving = false;
+  bool _navigating = false;
+  Uint8List? _previewPng;
+  Rect? _previewSource;
+  bool _previewExpanded = false;
 
   @override
   void initState() {
@@ -109,6 +118,9 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     setState(() {
       targetRect = null;
       resolving = true;
+      _previewPng = null;
+      _previewSource = null;
+      _previewExpanded = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _resolveTarget());
   }
@@ -154,10 +166,62 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     // Convertimos ambas posiciones globales al espacio local del overlay.
     final topLeft = targetRender.localToGlobal(Offset.zero) -
         overlayRender.localToGlobal(Offset.zero);
+    final measured = topLeft & targetRender.size;
     setState(() {
-      targetRect = topLeft & targetRender.size;
+      targetRect = measured;
       resolving = false;
     });
+    if (widget.steps[index].extract && targetRender is RenderRepaintBoundary) {
+      await _capture(targetRender, measured, index);
+    }
+  }
+
+  Future<void> _capture(
+      RenderRepaintBoundary boundary, Rect origin, int index) async {
+    if (!mounted || index != controller.index) return;
+    ui.Image? image;
+    try {
+      final area = math.max(1.0, boundary.size.width * boundary.size.height);
+      final pixelRatio = math.min(1.5, math.sqrt(1100000 / area));
+      image = await boundary.toImage(pixelRatio: pixelRatio);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null || !mounted || index != controller.index) return;
+      final png = bytes.buffer.asUint8List(
+        bytes.offsetInBytes, bytes.lengthInBytes);
+      setState(() {
+        _previewPng = png;
+        _previewSource = origin;
+        _previewExpanded = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && index == controller.index && _previewPng != null) {
+          setState(() => _previewExpanded = true);
+        }
+      });
+    } catch (_) {
+      // Fallback: spotlight y explicación sin fotografía ni fallo del tour.
+    } finally {
+      image?.dispose();
+    }
+  }
+
+  Future<void> _navigate({required bool forward}) async {
+    if (_navigating || !mounted) return;
+    _navigating = true;
+    if (_previewPng != null && _previewExpanded) {
+      setState(() => _previewExpanded = false);
+      if (HealthyVisualEffects.enabled(context)) {
+        await Future<void>.delayed(const Duration(milliseconds: 280));
+      }
+    }
+    if (mounted) {
+      if (forward) {
+        controller.next();
+      } else {
+        controller.previous();
+      }
+    }
+    _navigating = false;
   }
 
   @override
@@ -184,6 +248,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final cardBounds = Rect.fromLTWH(
       (screen.width - cardWidth) / 2, clampedTop,
       cardWidth, cardHeight,
+    );
+    final extractedDestination = guideExtractionDestination(
+      viewport: screen,
+      safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
+      explanation: cardBounds,
     );
     final pose = GuideCharacterPose.resolve(
       viewport: screen,
@@ -249,6 +318,16 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
           stepIndex: controller.index,
           accent: accent,
         ),
+        if (_previewPng != null && _previewSource != null &&
+            extractedDestination != null)
+          GuideExtraction(
+            png: _previewPng!,
+            source: _previewSource!,
+            destination: extractedDestination,
+            expanded: _previewExpanded,
+            motion: !reduceMotion,
+            accent: accent,
+          ),
         AnimatedPositioned(
           duration: reduceMotion
               ? Duration.zero : const Duration(milliseconds: 420),
@@ -299,11 +378,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                 Row(children: [
                   TextButton(
                     onPressed: controller.index == 0
-                        ? null : controller.previous,
+                        ? null : () => _navigate(forward: false),
                     child: const Text('Anterior')),
                   const Spacer(),
                   FilledButton(
-                    onPressed: controller.next,
+                    onPressed: () => _navigate(forward: true),
                     child: Text(controller.isLast ? 'Finalizar' : 'Siguiente')),
                 ]),
               ]),
