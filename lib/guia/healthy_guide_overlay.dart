@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'guide_controller.dart';
 import 'guide_spotlight_painter.dart';
 import 'guide_step.dart';
+import 'guide_gesture.dart';
 import 'guide_character_pose.dart';
 import 'assistant_guide_character.dart';
 import 'guide_pointer.dart';
@@ -271,6 +272,8 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
   @override
   Widget build(BuildContext context) {
     final step = widget.steps[controller.index];
+    final guideGesture =
+        step.effectiveGesture(controller.index, controller.count);
     final media = MediaQuery.of(context);
     final screen = media.size;
     final safeTop = media.padding.top;
@@ -397,6 +400,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
           motion: !reduceMotion,
           phase: pulse,
           stepIndex: controller.index,
+          gesture: guideGesture,
           accent: accent,
         ),
         if (_previewPng != null && _previewSource != null &&
