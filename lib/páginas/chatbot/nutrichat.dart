@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_chat_display_mode.dart';
+import 'mr_healthy_reply_style.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
 import 'mr_healthy_chat_avatar.dart';
@@ -81,12 +82,24 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Color get _muted => HealthyAdaptive.muted;
   static const _green = Color(0xFF198568);
   HealthyChatDisplayMode _displayMode = HealthyChatDisplayMode.balanced;
+  MrHealthyReplyStyle _replyStyle = MrHealthyReplyStyle.natural;
 
   Future<void> _loadDisplayMode() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() => _displayMode = HealthyChatDisplayModeCodec.parse(
-      prefs.getString(HealthyChatDisplayModeCodec.preferenceKey)));
+    setState(() {
+      _displayMode = HealthyChatDisplayModeCodec.parse(
+        prefs.getString(HealthyChatDisplayModeCodec.preferenceKey));
+      _replyStyle = MrHealthyReplyStyler.parse(
+        prefs.getString(MrHealthyReplyStyler.preferenceKey));
+    });
+  }
+
+  Future<void> _selectReplyStyle(MrHealthyReplyStyle style) async {
+    if (style == _replyStyle) return;
+    setState(() => _replyStyle = style);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(MrHealthyReplyStyler.preferenceKey, style.name);
   }
 
   Future<void> _selectDisplayMode(HealthyChatDisplayMode mode) async {
@@ -908,13 +921,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     );
                   } else {
                     _chatContext.reset();
-                    response = _conversation.reply(
-                          text,
-                          name: _primerNombre,
-                          previousUserMessage: lastUserPrompt,
-                        ) ??
-                        _respuestas.responder(
-                          text, nombre: _primerNombre, perfil: _perfil);
+                    final conversational = _conversation.reply(
+                      text,
+                      name: _primerNombre,
+                      previousUserMessage: lastUserPrompt,
+                    );
+                    response = conversational == null
+                        ? _respuestas.responder(
+                            text, nombre: _primerNombre, perfil: _perfil)
+                        : MrHealthyReplyStyler.format(
+                            conversational, _replyStyle);
                   }
                 }
               }
@@ -1149,14 +1165,20 @@ class _NutriChatPageState extends State<NutriChatPage> {
         ),
         const SizedBox(width: 6),
         Expanded(
-          child: PopupMenuButton<HealthyChatDisplayMode>(
+          child: PopupMenuButton<Object>(
             key: const Key('healthy-chat-display-mode'),
             tooltip: 'Cambiar presentación del chat',
-            onSelected: _selectDisplayMode,
+            onSelected: (selected) {
+              if (selected is HealthyChatDisplayMode) {
+                _selectDisplayMode(selected);
+              } else if (selected is MrHealthyReplyStyle) {
+                _selectReplyStyle(selected);
+              }
+            },
             position: PopupMenuPosition.under,
             itemBuilder: (_) => [
               for (final mode in HealthyChatDisplayMode.values)
-                PopupMenuItem<HealthyChatDisplayMode>(
+                PopupMenuItem<Object>(
                   value: mode,
                   child: Row(
                     children: [
@@ -1171,7 +1193,36 @@ class _NutriChatPageState extends State<NutriChatPage> {
                             fontSize: 13, fontWeight: FontWeight.w700)),
                           Text(mode.description, style: TextStyle(
                             fontSize: 10, color: _muted)),
+                          const PopupMenuItem<Object>(
+                enabled: false,
+                height: 30,
+                child: Text('FORMA DE RESPONDER',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
+              ),
+              for (final style in MrHealthyReplyStyle.values)
+                PopupMenuItem<Object>(
+                  value: style,
+                  child: Row(
+                    children: [
+                      Icon(style.icon, size: 19,
+                        color: style == _replyStyle ? _green : _muted),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(style.label, style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700)),
+                          Text(style.description, style: TextStyle(
+                            fontSize: 10, color: _muted)),
                         ],
+                      )),
+                      if (style == _replyStyle)
+                        const Icon(Icons.check_rounded, color: _green, size: 18),
+                    ],
+                  ),
+                ),
+            ],
                       )),
                       if (mode == _displayMode)
                         const Icon(Icons.check_rounded, color: _green, size: 18),
