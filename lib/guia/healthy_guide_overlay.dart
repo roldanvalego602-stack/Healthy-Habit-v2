@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'guide_controller.dart';
 import 'guide_spotlight_painter.dart';
@@ -8,29 +9,37 @@ import 'guide_step.dart';
 class HealthyGuideOverlay {
   const HealthyGuideOverlay._();
 
+  static bool _visible = false;
+
   static Future<void> show(
     BuildContext context, {
     required List<HealthySpotlightStep> steps,
     String sectionTitle = 'Hábitos',
   }) async {
-    if (steps.isEmpty) return;
+    if (steps.isEmpty || _visible) return;
+    _visible = true;
+    final completed = Completer<void>();
     final overlay = Overlay.of(context, rootOverlay: true);
     var closed = false;
     late OverlayEntry entry;
+    void close() {
+      if (closed) return;
+      closed = true;
+      entry.remove();
+      entry.dispose();
+      _visible = false;
+      completed.complete();
+    }
+
     entry = OverlayEntry(
       builder: (_) => _HealthyGuideScene(
         steps: steps,
         sectionTitle: sectionTitle,
-        onClose: () {
-          if (closed) return;
-          closed = true;
-          entry.remove();
-          entry.dispose();
-        },
+        onClose: close,
       ),
     );
     overlay.insert(entry);
-    // La guía queda montada hasta pulsar cerrar o finalizar.
+    await completed.future;
   }
 }
 
@@ -158,8 +167,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     return Material(
       color: Colors.transparent,
       child: Stack(children: [
+        const Positioned.fill(
+          child: ModalBarrier(dismissible: false, color: Colors.transparent),
+        ),
         Positioned.fill(
-          child: AnimatedBuilder(
+          child: IgnorePointer(child: AnimatedBuilder(
             animation: pulse,
             builder: (_, __) => CustomPaint(
               painter: HealthyGuideSpotlightPainter(
@@ -168,7 +180,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                 accent: accent,
               ),
             ),
-          ),
+          )),
         ),
         Positioned(
           top: safeTop + 12, left: 16, right: 16,
