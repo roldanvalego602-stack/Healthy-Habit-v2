@@ -185,13 +185,26 @@ class HealthyMagicGuide {
             icon: Icons.auto_awesome_rounded,
             targetKey: HealthyGuideTargets.habitsHeader,
           ),
-          for (final i in const [1, 3, 0, 2])
+          for (final i in const [1, 3, 0, 2]) ...[
             HealthySpotlightStep(
               title: steps[i].title,
               description: steps[i].description,
               icon: steps[i].icon,
               targetKey: HealthyGuideTargets.forHabitsStep(i),
+              extract: i == 1,
             ),
+            if (i == 0)
+              HealthySpotlightStep(
+                title: 'Una tarjeta, de cerca',
+                description: 'Si tienes hábitos activos, aquí puedes '
+                    'examinar una tarjeta real: nombre, progreso y XP. '
+                    'La vista ampliada es solo informativa; '
+                    'no activa Registrar ni Abandonar hábito.',
+                icon: Icons.zoom_in_rounded,
+                targetKey: HealthyGuideTargets.habitsCard,
+                extract: true,
+              ),
+          ],
         ],
       );
       return;
