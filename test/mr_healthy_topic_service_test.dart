@@ -44,7 +44,7 @@ void main() {
     expect(first?.knowledgeId, 'risk_energetica');
     final follow = bank.answer('¿Qué más?',
       previousTopicId: first!.knowledgeId);
-    expect(follow?.text, contains('distinguir'));
+    expect(follow?.text, contains('bebida deportiva'));
     final again = bank.answer('Explícame más',
       previousTopicId: first.knowledgeId, followUpDepth: 2);
     expect(again?.knowledgeId, first.knowledgeId);
