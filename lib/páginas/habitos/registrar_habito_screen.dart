@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
 import '../tienda/healthy_mascot_live.dart';
 import '../../tema/healthy_celebration.dart';
+import '../../tema/cosmos_interaction_fx.dart';
 import 'temporary_evidence_service.dart';
 import 'healthy_vision_preview_panel.dart';
 import 'healthy_local_vision_panel.dart';
@@ -534,6 +535,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                   ? '+$bonus Habit Coins por tu racha.'
                   : 'Puedes consultar tu historial de racha.',
               icon: Icons.redeem_rounded,
+              effect: CosmosEffect.streak,
             );
           }
         } else {
@@ -545,6 +547,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 ' · $progress/$target registros',
             icon: completed
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
+            effect: completed ? CosmosEffect.habit : CosmosEffect.reward,
           );
         }
         HealthyRetroSoundService.play(completed ? 'habit' : 'tap');
@@ -775,6 +778,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           title: '¡Subiste al nivel ${resultado.nivelNuevo}!',
           subtitle: resumenRecompensa,
           icon: Icons.workspace_premium_rounded,
+          effect: CosmosEffect.level,
         );
       } else if (resultado.completado) {
         HealthyCelebration.show(
@@ -782,6 +786,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           title: '¡Hábito completado!',
           subtitle: resumenRecompensa,
           icon: Icons.emoji_events_rounded,
+          effect: CosmosEffect.habit,
         );
       } else if (resultado.nuevaRacha > resultado.rachaAnterior) {
         HealthyCelebration.show(
@@ -789,6 +794,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           title: '¡${resultado.nuevaRacha} días de racha!',
           subtitle: resumenRecompensa,
           icon: Icons.local_fire_department_rounded,
+          effect: CosmosEffect.streak,
         );
       } else {
         HealthyCelebration.show(
@@ -796,9 +802,15 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           title: '¡Registro guardado!',
           subtitle: resumenRecompensa,
           icon: Icons.check_circle_rounded,
+          effect: CosmosEffect.reward,
         );
       }
-      HealthyRetroSoundService.play(resultado.completado ? 'habit' : 'tap');
+      HealthyRetroSoundService.play(
+        resultado.nivelNuevo > resultado.nivelAnterior
+            ? 'achievement'
+            : resultado.completado ? 'habit'
+            : resultado.nuevaRacha > resultado.rachaAnterior
+                ? 'reward' : 'tap');
       // Registro habitual confirmado en Firestore: reconstruir la agenda.
       await HealthyRemindersService.instance.refreshForCurrentUser();
       if (!mounted) return;
