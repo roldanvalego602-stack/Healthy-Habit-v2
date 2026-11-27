@@ -135,8 +135,22 @@ class _CosmosCardShellState extends State<CosmosCardShell>
   void initState() {
     super.initState();
     _pulse = AnimationController(
-      vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
+      vsync: this, duration: const Duration(seconds: 5));
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animate = HealthyAdaptive.isCosmos &&
+        !HealthyVisualController.instance.isLite &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (animate && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!animate && _pulse.isAnimating) {
+      _pulse.stop();
+    }
+  }
+
   @override
   void dispose() {
     _pulse.dispose();
@@ -161,7 +175,26 @@ class _CosmosCardShellState extends State<CosmosCardShell>
         ),
         child: child,
       ),
-      child: widget.child,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          widget.child,
+          const Positioned(
+            right: 7, top: 4,
+            child: IgnorePointer(
+              child: Icon(Icons.auto_awesome_rounded,
+                size: 13, color: Color(0x6678E8FF)),
+            ),
+          ),
+          const Positioned(
+            left: 8, bottom: 7,
+            child: IgnorePointer(
+              child: Icon(Icons.circle, size: 5,
+                color: Color(0x77C59FFF)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
