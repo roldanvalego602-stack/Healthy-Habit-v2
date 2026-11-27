@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'guide_character_pose.dart';
 import 'guide_gesture.dart';
-import 'guide_animated_limbs.dart';
+import 'healthy_ufo_visual.dart';
 
 /// Presentador con gestos diferenciados sobre el recurso gráfico existente.
 /// La imagen original no tiene articulaciones independientes: movimiento de
@@ -80,41 +80,9 @@ class AssistantGuideCharacter extends StatelessWidget {
                   alignment: Alignment.center,
                   clipBehavior: Clip.none,
                   children: [
-                    Positioned(
-                      bottom: 0, left: 7, right: 7, height: 16,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: .14),
-                          borderRadius: BorderRadius.circular(80),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withValues(alpha: .29),
-                              blurRadius: 18, spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Brazos independientes por debajo del cuerpo para
-                    // ocultar de forma natural sus uniones al sprite.
                     Positioned.fill(
-                      bottom: 7,
-                      child: GuideAnimatedLimbs(
-                        gesture: gesture,
+                      child: HealthyUfoVisual(
                         phase: phase,
-                        motion: motion,
-                        facesLeft: pose.facesLeft,
-                        accent: accent,
-                      ),
-                    ),
-                    Positioned.fill(
-                      bottom: 7,
-                      child: Image.asset(
-                        'assets/mascot/healthy.png',
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.medium,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.spa_rounded, size: 58, color: accent),
                       ),
                     ),
                     Positioned(
