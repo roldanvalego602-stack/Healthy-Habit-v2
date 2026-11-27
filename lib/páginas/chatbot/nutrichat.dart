@@ -17,6 +17,7 @@ import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_hybrid_knowledge.dart';
 import 'mr_healthy_topic_service.dart';
+import 'mr_healthy_preference_memory.dart';
 import 'healthy_intent_router.dart';
 import 'healthy_chat_context.dart';
 import 'healthy_chat_history.dart';
@@ -86,6 +87,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final NutriRespuestasService _respuestas = NutriRespuestasService();
   final HealthyHybridKnowledge _hybridKnowledge = HealthyHybridKnowledge();
   final MrHealthyTopicService _topicService = MrHealthyTopicService();
+  final MrHealthyPreferenceMemory _preferenceMemory = MrHealthyPreferenceMemory();
   String _lastEditorialTopic = '';
   int _editorialFollowUps = 0;
   int _editorialTurnIndex = 0;
@@ -292,6 +294,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         _lastEditorialTopic = '';
         _editorialFollowUps = 0;
         _editorialTurnIndex = 0;
+        _preferenceMemory.reset();
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -344,6 +347,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _lastEditorialTopic = '';
       _editorialFollowUps = 0;
       _editorialTurnIndex = 0;
+      _preferenceMemory.reset();
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -668,6 +672,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         _lastEditorialTopic = '';
         _editorialFollowUps = 0;
         _editorialTurnIndex = 0;
+        _preferenceMemory.reset();
         response = 'Esto puede ser una urgencia médica. Busca atención '
             'presencial inmediata o llama al servicio de emergencias de '
             'tu zona. No intentes provocarte el vómito ni retrases la '
@@ -747,6 +752,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
               _lastEditorialTopic = '';
               _editorialFollowUps = 0;
               _editorialTurnIndex = 0;
+              _preferenceMemory.reset();
               _lastTopic = '';
               _lastHabitTitle = '';
               _lastShopItemId = '';
@@ -763,12 +769,15 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 _lastEditorialTopic = '';
                 _editorialFollowUps = 0;
                 _editorialTurnIndex = 0;
+                _preferenceMemory.reset();
               } else {
                 // Capas seguras: acciones > banco revisable de 10k+
                 // formulaciones > fichas educativas > conversación.
                 // El motor de temas nunca ejecuta compras o registros.
+                final contextualQuestion = _preferenceMemory.compose(
+                  text, _lastEditorialTopic);
                 final editorial = await _topicService.answer(
-                  text,
+                  contextualQuestion,
                   previousTopicId: _lastEditorialTopic,
                   followUpDepth: _editorialFollowUps,
                   previousAssistantText: previousAssistantText,
@@ -784,6 +793,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   _editorialTurnIndex = isSameTopic
                       ? (_editorialTurnIndex + 1) % 100 : 0;
                   _lastEditorialTopic = editorial.knowledgeId;
+                  _preferenceMemory.record(text, editorial.knowledgeId);
                   intent = editorial;
                   response = editorial.text;
                   _chatContext.reset();
@@ -791,6 +801,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   _lastEditorialTopic = '';
                   _editorialFollowUps = 0;
                   _editorialTurnIndex = 0;
+                  _preferenceMemory.reset();
                   final previousKnowledge = _chatContext.referenceFor(text);
                   final educational = await _hybridKnowledge.answer(
                     text, operational: intent,
