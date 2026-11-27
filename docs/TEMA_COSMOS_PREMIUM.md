@@ -90,3 +90,39 @@ flutter run -t lib/main.dart
 En el dispositivo, probar la barra inferior, tarjetas de hábitos de las cuatro categorías, progreso en Perfil y Desafíos, fichas de Catálogo y filtros de la Tienda. Cambiar a modo Lite mientras Cosmos está equipado; la animación debe detenerse y los contenidos deben permanecer visibles.
 
 No afirmar que esta fase está certificada para beta hasta realizar pruebas reales de navegación y contraste, pruebas Flutter y verificación de compra/equipamiento con backend desplegado.
+
+## Fase 3 — Efectos interactivos exclusivos (26 de noviembre de 2026)
+
+El tema Cosmos ahora cuenta con un motor de partículas **finito y no interactivo** (sin interceptar toques), diseñado específicamente para los eventos de la app:
+
+- **Hábito completado:** partículas cian y verdes tras un registro confirmado.
+- **Recompensa y racha:** destellos dorados, violetas y rosados con una presentación diferente a la de hábitos.
+- **Compra exitosa:** estallido holográfico exclusivamente después de que el backend confirme la adquisición.
+- **Subida de nivel:** dos anillos expansivos y 48 partículas en un overlay de pantalla completa con duración de 1.55 segundos; se retira automáticamente.
+- **Navegación:** transición Cosmos con deslizamiento orbital, escalado leve y desvanecimiento tanto en pestañas como en rutas normales.
+
+Arquitectura:
+- `lib/tema/cosmos_interaction_fx.dart`: `CosmosEffect`, `CosmosParticleBurst` y `CosmosLevelOverlay`.
+- `lib/tema/healthy_celebration.dart`: permite seleccionar el efecto del banner según la acción.
+- `lib/tema/healthy_motion.dart` y `lib/tema/healthy_theme.dart`: transiciones espaciales.
+- `lib/páginas/habitos/registrar_habito_screen.dart`: selección de efecto después de confirmación y sonido especial para subir de nivel.
+- `lib/páginas/tienda/store_screen.dart`: selección de partículas de compra únicamente tras compra confirmada.
+- `test/cosmos_interaction_fx_test.dart`: pruebas de humo para animación, overlay y reducción de movimiento.
+
+Los efectos no conceden recompensas ni cambian ningún dato. Se respetan las preferencias `Lite`, `animacionesDivertidas` y la reducción de movimiento del sistema. No se agregaron dependencias, efectos de audio externos o archivos multimedia adicionales en esta fase.
+
+### Validación en el equipo
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test test/cosmos_interaction_fx_test.dart
+flutter test test/cosmos_theme_test.dart
+flutter run -t lib/main.dart
+```
+
+Para observar un evento de nivel real, debe ocurrir una subida de nivel legítima tras una transacción confirmada; no modificar manualmente XP ni monedas solo para forzar la animación en una cuenta de producción. En modo Lite no debe animarse ni bloquearse la navegación.
+
+**Estado de validación:** código revisado en GitHub, sin compilación ni pruebas Flutter ejecutadas desde este entorno; verificar en el dispositivo Android antes de publicar la beta.
