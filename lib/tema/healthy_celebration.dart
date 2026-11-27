@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'healthy_visual_mode.dart';
+import 'healthy_theme.dart';
+import 'cosmos_theme.dart';
 
 /// Feedback exclusivamente visual: jamás concede XP, monedas ni desbloqueos.
 class HealthyCelebration {
@@ -53,7 +55,9 @@ class HealthyCelebrationBanner extends StatelessWidget {
     final accent = color ?? scheme.primary;
     final body = Row(
       children: [
-        Icon(icon, color: accent, size: 32),
+        HealthyAdaptive.isCosmos
+            ? CosmosOrbitingIcon(icon: icon, size: 32)
+            : Icon(icon, color: accent, size: 32),
         const SizedBox(width: 12),
         Expanded(child: Column(
           mainAxisSize: MainAxisSize.min,
