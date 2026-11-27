@@ -32,6 +32,22 @@ class MrHealthyChoiceResolver {
     'random_aburrido': ['adivinanza', 'historia', 'reto creativo'],
     'app_tienda': ['accesorio', 'tema', 'inventario'],
     'app_cosmos': ['comprar', 'volver al anterior'],
+    'app_inicio': ['habitos', 'progreso', 'tienda'],
+    'app_habitos': ['agregar', 'registrar'],
+    'app_registrar': ['contador', 'temporizador', 'fotografias'],
+    'app_catalogo': ['alimentos', 'ejercicio'],
+    'app_misiones': ['diarias', 'temporada'],
+    'food_plato': ['desayuno', 'comida', 'cena'],
+    'food_colacion': ['sin refrigeracion', 'en casa'],
+    'food_carbo': ['integrales', 'refinados'],
+    'food_verduras': ['comida', 'sopa'],
+    'food_frutas': ['temporada', 'para llevar'],
+    'ex_cardio': ['caminar', 'bicicleta', 'baile'],
+    'ex_sin_equipo': ['piernas', 'brazos', 'movilidad'],
+    'ex_plancha': ['rodillas', 'pared'],
+    'ex_estirar': ['antes', 'despues'],
+    'random_planeta': ['marte', 'luna'],
+    'random_luna': ['fases', 'exploraciones'],
   };
 
   static const Map<String, Map<String, String>> responses = {
@@ -140,6 +156,75 @@ class MrHealthyChoiceResolver {
           'desequiparlo para recuperar tu aspecto anterior, '
           'conservando el artículo adquirido.',
     },
+    'app_inicio': {
+      'habitos': 'Para ver tus actividades, entra en Hábitos desde la navegación inferior. Allí aparecen las fichas y las herramientas de registro.',
+      'progreso': 'En Progreso encontrarás un resumen de avances y estadísticas disponibles en tu cuenta; las cifras requieren conexión y permisos.',
+      'tienda': 'La Tienda reúne recompensas virtuales que puedes revisar antes de comprar con Habit Coins.',
+    },
+    'app_habitos': {
+      'agregar': 'Para agregar un hábito, abre Hábitos y busca el catálogo de actividades. Lee las condiciones antes de confirmarlo.',
+      'registrar': 'Para registrar una actividad, abre un hábito que ya esté activo y usa su herramienta de registro. No inventes evidencia de una actividad.',
+    },
+    'app_registrar': {
+      'contador': 'El contador sirve para marcar unidades o repeticiones si el hábito dispone de ese método. Confirma solo lo que hayas realizado.',
+      'temporizador': 'El temporizador ayuda a medir sesiones basadas en tiempo. Puedes revisar el resultado antes de guardar el registro.',
+      'fotografias': 'Si el registro admite fotografías, usa buena iluminación. Una etiqueta visual no demuestra por sí sola que completaste la actividad.',
+    },
+    'app_catalogo': {
+      'alimentos': 'En Catálogo puedes buscar fichas de alimentos y revisar su descripción y datos disponibles. Comprueba las unidades antes de comparar.',
+      'ejercicio': 'Las fichas de actividad del Catálogo ofrecen orientación general; adapta el ejercicio a tus capacidades y detente ante dolor.',
+    },
+    'app_misiones': {
+      'diarias': 'Las misiones diarias se consultan en Desafíos. Revisa sus requisitos y el periodo de validez antes de reclamarlas.',
+      'temporada': 'Los desafíos de temporada tienen metas y fechas propias. Consulta su estado en Desafíos para verificar si están disponibles.',
+    },
+    'food_plato': {
+      'desayuno': 'Para desayunar puedes combinar avena, una fruta y alguna fuente de proteína que toleres. No necesitas una receta rígida.',
+      'comida': 'Para la comida prueba combinar verduras, frijoles o lentejas y un cereal o tortilla, según tu apetito y presupuesto.',
+      'cena': 'Para cenar considera una sopa de leguminosas con verduras o un plato sencillo de alimentos que te resulten cómodos.',
+    },
+    'food_colacion': {
+      'sin refrigeracion': 'Una fruta entera o nueces, si no hay alergias, son opciones que pueden transportarse con facilidad y no requieren la misma conservación que un lácteo.',
+      'en casa': 'En casa puedes preparar verduras con una salsa sencilla o yogur natural si lo toleras. No es obligatorio comer entre comidas.',
+    },
+    'food_carbo': {
+      'integrales': 'Los cereales integrales suelen conservar más fibra. Revisa la etiqueta para saber qué ingredientes contiene realmente el producto.',
+      'refinados': 'Los cereales refinados también aportan energía. Importan frecuencia, porciones y el conjunto de la alimentación, no una etiqueta de alimento prohibido.',
+    },
+    'food_verduras': {
+      'comida': 'Puedes añadir verduras a arroz, frijoles o una tortilla. Elegir productos de temporada suele ayudar con el costo.',
+      'sopa': 'Para una sopa sencilla, combina verduras bien lavadas y una leguminosa cocida; ajusta el sazón sin exceder la sal.',
+    },
+    'food_frutas': {
+      'temporada': 'Las frutas de temporada suelen ser accesibles. Alterna variedades y prioriza fruta entera cuando te sea posible.',
+      'para llevar': 'Para llevar elige una fruta entera lavada y protégela de golpes y contaminación durante el traslado.',
+    },
+    'ex_cardio': {
+      'caminar': 'Caminar a ritmo cómodo es un comienzo accesible. Usa una ruta segura y progresa gradualmente.',
+      'bicicleta': 'La bicicleta puede ayudarte con actividad aeróbica. Revisa frenos, usa protección adecuada y evita tráfico peligroso.',
+      'baile': 'Bailar también cuenta como movimiento. Elige una canción y un ritmo que puedas mantener sin sentirte mal.',
+    },
+    'ex_sin_equipo': {
+      'piernas': 'Para piernas puedes empezar sentándote y levantándote de una silla firme. Detente si aparece dolor.',
+      'brazos': 'Para brazos puedes practicar empujes contra pared y controlar el movimiento sin forzar hombros ni muñecas.',
+      'movilidad': 'Para movilidad prueba movimientos articulares suaves y pausas breves entre periodos de estar sentado.',
+    },
+    'ex_plancha': {
+      'rodillas': 'Para empezar sobre rodillas, mantén una alineación cómoda y respira normalmente; termina ante dolor.',
+      'pared': 'La variante contra pared permite entrenar estabilidad con menor carga. Apoya las manos en una superficie segura.',
+    },
+    'ex_estirar': {
+      'antes': 'Antes de entrenar, haz un calentamiento con movimientos suaves relacionados con la actividad prevista.',
+      'despues': 'Después del ejercicio puedes realizar estiramientos suaves sin rebotes ni molestias, si te resultan cómodos.',
+    },
+    'random_planeta': {
+      'marte': 'Marte es un planeta rocoso conocido por su superficie rojiza y por sus exploraciones robóticas.',
+      'luna': 'La Luna es el satélite natural de la Tierra; su exploración ayuda a entender la historia del Sistema Solar.',
+    },
+    'random_luna': {
+      'fases': 'Las fases lunares dependen de cómo vemos desde la Tierra la parte iluminada por el Sol.',
+      'exploraciones': 'Distintas misiones han estudiado la Luna con sondas, orbitadores y astronautas; podemos hablar de sus hallazgos generales.',
+    },
   };
 
   static const Map<String, List<String>> synonyms = {
@@ -170,6 +255,38 @@ class MrHealthyChoiceResolver {
     'comprar': ['comprar', 'compra'],
     'volver al anterior': ['volver al anterior', 'anterior',
       'desequipar', 'quitar tema'],
+    'habitos': ['habitos', 'actividades'],
+    'progreso': ['progreso', 'estadisticas'],
+    'tienda': ['tienda'],
+    'agregar': ['agregar', 'anadir', 'nuevo habito'],
+    'registrar': ['registrar', 'guardar un registro'],
+    'contador': ['contador', 'contar'],
+    'temporizador': ['temporizador', 'cronometro'],
+    'fotografias': ['fotografias', 'fotos', 'foto'],
+    'alimentos': ['alimentos', 'alimentacion'],
+    'ejercicio': ['ejercicio', 'actividad fisica'],
+    'diarias': ['diarias', 'diaria'],
+    'temporada': ['temporada', 'estacionales'],
+    'desayuno': ['desayuno'],
+    'comida': ['comida', 'almuerzo'],
+    'cena': ['cena'],
+    'sin refrigeracion': ['sin refrigeracion', 'sin refri', 'para llevar'],
+    'integrales': ['integrales', 'integral'],
+    'refinados': ['refinados', 'refinado'],
+    'sopa': ['sopa'],
+    'bicicleta': ['bicicleta', 'bici'],
+    'baile': ['baile', 'bailar'],
+    'piernas': ['piernas'],
+    'brazos': ['brazos'],
+    'movilidad': ['movilidad'],
+    'rodillas': ['rodillas'],
+    'pared': ['pared'],
+    'antes': ['antes'],
+    'despues': ['despues'],
+    'marte': ['marte'],
+    'luna': ['luna'],
+    'fases': ['fases'],
+    'exploraciones': ['exploraciones', 'exploracion'],
   };
 
   static int _offeredPosition(String priorReply, String choice) {
