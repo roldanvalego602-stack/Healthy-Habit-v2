@@ -11,6 +11,8 @@ import 'guide_character_pose.dart';
 import 'assistant_guide_character.dart';
 import 'guide_pointer.dart';
 import 'guide_extraction.dart';
+import 'guide_fx_theme.dart';
+import 'guide_choreography.dart';
 import '../tema/healthy_visual_mode.dart';
 
 /// Capa interactiva modal. No permite pulsar controles del fondo.
@@ -68,9 +70,10 @@ class _HealthyGuideScene extends StatefulWidget {
 }
 
 class _HealthyGuideSceneState extends State<_HealthyGuideScene>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final HealthyGuideController controller;
   late final AnimationController pulse;
+  late final AnimationController _arrival;
   Rect? targetRect;
   bool resolving = false;
   bool _navigating = false;
@@ -86,6 +89,9 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     pulse = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 1700),
     );
+    _arrival = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 540),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _resolveTarget());
   }
 
@@ -95,14 +101,20 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     if (!HealthyVisualEffects.enabled(context)) {
       pulse.stop();
       pulse.value = 0;
-    } else if (!pulse.isAnimating) {
-      pulse.repeat();
+      _arrival.stop();
+      _arrival.value = 1;
+    } else {
+      if (!pulse.isAnimating) pulse.repeat();
+      if (_arrival.value == 0 && !_arrival.isAnimating) {
+        _arrival.forward();
+      }
     }
   }
 
   @override
   void dispose() {
     pulse.dispose();
+    _arrival.dispose();
     controller
       ..removeListener(_onStepChanged)
       ..dispose();
@@ -122,6 +134,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       _previewSource = null;
       _previewExpanded = false;
     });
+    if (HealthyVisualEffects.enabled(context)) {
+      _arrival.forward(from: 0);
+    } else {
+      _arrival.value = 1;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _resolveTarget());
   }
 
@@ -233,7 +250,8 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final safeBottom = media.padding.bottom;
     final theme = Theme.of(context);
     final reduceMotion = !HealthyVisualEffects.enabled(context);
-    const accent = Color(0xFF63E6BE);
+    final fx = GuideFxTheme.current();
+    final accent = fx.accent;
     final cardWidth = screen.width > 480 ? 420.0 : screen.width - 32;
     final cardHeight = 260.0;
     final belowTarget = targetRect == null ||
@@ -283,6 +301,24 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
               ),
             ),
           )),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: Listenable.merge([pulse, _arrival]),
+                builder: (_, __) => CustomPaint(
+                  painter: GuideChoreographyPainter(
+                    target: highlightedRect,
+                    phase: reduceMotion ? 0 : pulse.value,
+                    intro: reduceMotion ? 1 : _arrival.value,
+                    fx: fx,
+                    motion: !reduceMotion,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
         Positioned(
           top: safeTop + 12, left: 16, right: 16,
@@ -340,12 +376,18 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
           width: cardWidth,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: fx.background,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: accent.withValues(alpha: .55), width: 1.2),
-              boxShadow: const [BoxShadow(
-                color: Color(0x60000000), blurRadius: 30,
-                offset: Offset(0, 14))],
+              border: Border.all(color: accent.withValues(alpha: .68), width: 1.2),
+              boxShadow: [
+                const BoxShadow(
+                  color: Color(0x60000000), blurRadius: 30,
+                  offset: Offset(0, 14)),
+                if (fx.cosmos && !reduceMotion)
+                  BoxShadow(
+                    color: fx.secondary.withValues(alpha: .18),
+                    blurRadius: 28, spreadRadius: 1),
+              ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(18),
