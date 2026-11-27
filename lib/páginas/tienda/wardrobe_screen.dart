@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -319,6 +320,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Widget build(BuildContext context) {
     final slots = _profileMode ? profileWardrobeSlots : mascotWardrobeSlots;
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'armario'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: HealthyAdaptive.background,
       body: SafeArea(
         child: StreamBuilder<ShopState>(
