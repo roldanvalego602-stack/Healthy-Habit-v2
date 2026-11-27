@@ -21,18 +21,29 @@ void main() {
         body: Center(child: Text('Tienda')),
       ),
     ));
+    // El OverlayPortal del OVNI se activa después del primer fotograma.
+    await tester.pump();
+    expect(find.byTooltip('Explícame esta pantalla'), findsOneWidget);
     await tester.tap(find.byTooltip('Explícame esta pantalla'));
-    await tester.pumpAndSettle();
+    // La animación de flotación es infinita: evitar pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Guía mágica · Tienda'), findsOneWidget);
     expect(find.text('Tus Habit Coins'), findsOneWidget);
     await tester.tap(find.text('Siguiente'));
-    await tester.pumpAndSettle();
+    // La animación de flotación es infinita: evitar pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Artículos y categorías'), findsOneWidget);
     await tester.tap(find.text('Anterior'));
-    await tester.pumpAndSettle();
+    // La animación de flotación es infinita: evitar pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Tus Habit Coins'), findsOneWidget);
     await tester.tap(find.text('Salir'));
-    await tester.pumpAndSettle();
+    // La animación de flotación es infinita: evitar pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Guía mágica · Tienda'), findsNothing);
   });
 }
