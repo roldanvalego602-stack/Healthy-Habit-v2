@@ -105,7 +105,7 @@ function calculateAppearance(user, request) {
   const next = {...equipped};
   if (request.action === "reset") {
     for (const slot of Object.keys(next)) {
-      if (!slot.startsWith("perfil_")) delete next[slot];
+      if (!slot.startsWith("perfil_") && slot !== "app_theme") delete next[slot];
     }
   } else {
     const {itemId, action} = request;
