@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_coin.dart';
 import 'challenge_progress_policy.dart';
 import 'package:healthy_habit/p%C3%A1ginas/desafios/achievement_screen.dart';
@@ -527,11 +528,16 @@ class _SeasonBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F2D38), Color(0xFF1E424D)],
+        gradient: LinearGradient(
+          colors: HealthyAdaptive.isCosmos
+              ? const [Color(0xFF242F70), Color(0xFF502B77), Color(0xFF14224B)]
+              : const [Color(0xFF0F2D38), Color(0xFF1E424D)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        border: HealthyAdaptive.isCosmos
+            ? Border.all(color: CosmosPalette.cyan.withValues(alpha: .55))
+            : null,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
@@ -605,12 +611,14 @@ class _SeasonBanner extends StatelessWidget {
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation(Colors.amber),
-            ),
+            child: HealthyAdaptive.isCosmos
+                ? CosmosEnergyBar(value: progress, height: 8)
+                : LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.white12,
+                    valueColor: const AlwaysStoppedAnimation(Colors.amber),
+                  ),
           ),
         ],
       ),
