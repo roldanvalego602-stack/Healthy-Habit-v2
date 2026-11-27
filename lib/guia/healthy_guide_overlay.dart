@@ -72,8 +72,18 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       ..addListener(_onStepChanged);
     pulse = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 1700),
-    )..repeat();
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _resolveTarget());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      pulse.stop();
+    } else if (!pulse.isAnimating) {
+      pulse.repeat();
+    }
   }
 
   @override
@@ -207,8 +217,9 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                 : (targetRect!.top - 44)
                     .clamp(safeTop + 58, screen.height - safeBottom - 48)
                     .toDouble(),
-            child: const IgnorePointer(child: Icon(
-              Icons.south_rounded, color: accent, size: 28)),
+            child: IgnorePointer(child: Icon(
+              belowTarget ? Icons.north_rounded : Icons.south_rounded,
+              color: accent, size: 28)),
           ),
         AnimatedPositioned(
           duration: reduceMotion
@@ -231,9 +242,20 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
               child: Column(mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  CircleAvatar(
-                    backgroundColor: accent.withValues(alpha: .15),
-                    child: Icon(step.icon, color: theme.colorScheme.primary)),
+                  AnimatedBuilder(
+                    animation: pulse,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(0, reduceMotion ? 0 : -2 * pulse.value),
+                      child: child,
+                    ),
+                    child: Semantics(
+                      label: 'Mr. Healthy, asistente de la guía',
+                      child: Image.asset('assets/mascot/healthy.png',
+                        width: 48, height: 48, fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Icon(step.icon,
+                          color: theme.colorScheme.primary, size: 32)),
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(child: Text(step.title,
                     style: theme.textTheme.titleMedium?.copyWith(
