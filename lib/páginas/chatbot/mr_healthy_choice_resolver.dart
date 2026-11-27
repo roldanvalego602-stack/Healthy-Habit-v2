@@ -605,9 +605,14 @@ class MrHealthyChoiceResolver {
         r'otra opcion|prefiero otra|no esa|otra alternativa)\b'
       ).hasMatch(q)) {
       // Do not assume what "esa" refers to when multiple alternatives exist.
+      final prompt = turnIndex.isOdd
+          ? 'Podemos descartar esa sugerencia. '
+              'De estas opciones, ¿cuál te interesa más: '
+              '${options.join(', ')}?'
+          : 'Entiendo. ¿Quieres probar otra alternativa: '
+              '${options.join(', ')}? No hace falta elegir de inmediato.';
       return HealthyAssistantReply(
-        'Entiendo. ¿Quieres probar otra alternativa: '
-        '${options.join(', ')}? No hace falta elegir de inmediato.',
+        prompt,
         card: 'topic', actionArgument: topicId, knowledgeId: topicId,
       );
     }
