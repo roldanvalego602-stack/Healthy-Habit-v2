@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../guia/guide_target.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
 import 'catalogo_media.dart';
 import '../../tema/healthy_theme.dart';
@@ -426,6 +427,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         title: Text('Explorar catálogo',
             style: TextStyle(fontWeight: FontWeight.w900, color: _oscuro)),
         bottom: TabBar(
+          key: HealthyGuideTargets.catalogTabs,
           controller: _tabs,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
@@ -444,6 +446,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
           child: TextField(
+            key: HealthyGuideTargets.catalogSearch,
             controller: _buscador,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
@@ -471,7 +474,9 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                 fontWeight: FontWeight.w700, fontSize: 12)),
           ),
         ),
-        SizedBox(
+        KeyedSubtree(
+          key: HealthyGuideTargets.catalogFilters,
+          child: SizedBox(
           height: 43,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -486,10 +491,13 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               backgroundColor: HealthyAdaptive.surface,
             ),
           ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 2),
-          child: Row(children: [
+          child: KeyedSubtree(
+            key: HealthyGuideTargets.catalogOptions,
+            child: Row(children: [
             Expanded(child: Text('${resultados.length} resultados',
                 style: TextStyle(color: _gris, fontSize: 12))),
             PopupMenuButton<OrdenCatalogo>(
@@ -531,6 +539,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
               ],
             ),
           ]),
+          ),
         ),
         if (_tabs.index == 0 &&
             CatalogoExplorador.campoOrden(_orden) != null)
