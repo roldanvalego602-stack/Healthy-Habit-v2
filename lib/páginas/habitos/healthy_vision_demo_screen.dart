@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../servicios/habit_evidence_image_preparer.dart';
@@ -60,6 +61,8 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'imagenes'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(title: const Text('Reconocimiento de imágenes')),
       body: ListView(
