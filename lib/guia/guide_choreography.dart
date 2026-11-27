@@ -62,7 +62,9 @@ class GuideChoreographyPainter extends CustomPainter {
           center.dy + radial * math.sin(theta));
       if (point.dx < 10 || point.dy < 55 ||
           point.dx > size.width - 10 ||
-          point.dy > size.height - 15) continue;
+          point.dy > size.height - 15) {
+        continue;
+      }
       final shimmer = motion
           ? (.35 + .4 * math.sin(progress * math.pi * 2 + i).abs())
           : .4;
