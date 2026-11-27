@@ -26,6 +26,7 @@ class HealthyFeedbackService {
         // La lectura de preferencias no impide equipar el objeto.
       }
     }
+    HealthyRetroSoundService.play('equip');
     if (enabled) {
       try {
         await HapticFeedback.selectionClick();
