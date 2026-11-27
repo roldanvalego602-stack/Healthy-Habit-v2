@@ -774,9 +774,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 // Capas seguras: acciones > banco revisable de 10k+
                 // formulaciones > fichas educativas > conversación.
                 // El motor de temas nunca ejecuta compras o registros.
-                final contextualQuestion = _preferenceMemory.compose(
-                  text, _lastEditorialTopic);
-                final editorial = await _topicService.answer(
+                final correction = _preferenceMemory.correct(
+                  text, _lastEditorialTopic,
+                  previousAssistantText: previousAssistantText);
+                final contextualQuestion = correction == null
+                    ? _preferenceMemory.compose(text, _lastEditorialTopic)
+                    : text;
+                final editorial = correction ?? await _topicService.answer(
                   contextualQuestion,
                   previousTopicId: _lastEditorialTopic,
                   followUpDepth: _editorialFollowUps,
@@ -793,7 +797,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   _editorialTurnIndex = isSameTopic
                       ? (_editorialTurnIndex + 1) % 100 : 0;
                   _lastEditorialTopic = editorial.knowledgeId;
-                  _preferenceMemory.record(text, editorial.knowledgeId);
+                  if (correction == null) {
+                    _preferenceMemory.record(text, editorial.knowledgeId);
+                  }
                   intent = editorial;
                   response = editorial.text;
                   _chatContext.reset();
