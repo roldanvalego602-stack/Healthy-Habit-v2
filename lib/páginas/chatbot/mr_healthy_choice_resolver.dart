@@ -382,6 +382,120 @@ class MrHealthyChoiceResolver {
     'exploraciones': ['exploraciones', 'exploracion'],
   };
 
+  // Respuestas compuestas revisadas: solo se utilizan cuando ambas
+  // condiciones están expresadas por el usuario. No se mezclan dos
+  // respuestas independientes que pudieran contradecirse.
+  static const Map<String, Map<String, String>> combinedResponses = {
+    'food_desayuno': {
+      'rapida+sin lacteos': 'Para algo rápido y sin lácteos, puedes '
+          'preparar avena con agua y fruta o una tortilla con '
+          'frijoles ya cocidos. Comprueba los ingredientes si '
+          'debes evitar lácteos. ¿Cuál te resulta más práctica?',
+      'economica+sin lacteos': 'Una opción económica y sin lácteos '
+          'es avena con agua y fruta de temporada, o frijoles '
+          'con tortilla y verduras. ¿Quieres una preparación sencilla?',
+      'economica+rapida': 'Para algo rápido y económico, puedes '
+          'combinar frijoles ya cocidos con tortilla y jitomate '
+          'o preparar avena con fruta. ¿Prefieres salado o dulce?',
+    },
+    'food_cena': {
+      'economica+vegetariana': 'Una cena vegetariana y económica '
+          'puede ser lentejas bien cocidas con verduras y tortilla. '
+          'Otra idea es arroz con frijoles. ¿Prefieres sopa o plato seco?',
+    },
+    'food_almuerzo': {
+      'economica+para llevar': 'Una comida económica para llevar '
+          'puede combinar arroz, frijoles y verduras. Mantén los '
+          'alimentos perecederos a una temperatura segura. '
+          '¿La prepararías con anticipación?',
+    },
+    'food_fibra': {
+      'economica+para llevar': 'Si buscas fibra, bajo costo y algo '
+          'para llevar, una fruta entera o avena preparada y '
+          'conservada de forma segura pueden servir. '
+          '¿Necesitas evitar refrigeración?',
+    },
+    'food_colacion': {
+      'economica+sin refrigeracion': 'Para una colación económica '
+          'sin refrigeración puedes llevar fruta entera limpia '
+          'o una pequeña porción de semillas si no hay alergias. '
+          '¿Prefieres algo crujiente?',
+    },
+    'ex_principiante': {
+      'en casa+sin equipo': 'Para empezar en casa y sin equipo, '
+          'prueba caminar en el sitio y hacer movimientos suaves '
+          'de hombros. Ajusta la duración a tu condición y '
+          'detente ante dolor o mareo. ¿Quieres una versión más fácil?',
+      'caminar+sin equipo': 'Para comenzar sin equipo, una caminata '
+          'breve a ritmo cómodo puede servir. Elige una ruta segura '
+          'y aumenta gradualmente si te encuentras bien.',
+    },
+    'ex_fuerza': {
+      'en casa+sin equipo': 'Para practicar fuerza en casa sin equipo, '
+          'puedes hacer empujes contra pared y sentarte y levantarte '
+          'de una silla firme, con movimientos controlados.',
+    },
+    'ex_cardio': {
+      'caminar+tiempo': 'Si tienes poco tiempo para cardio, '
+          'una caminata breve a ritmo cómodo es una opción. '
+          'Puedes dividirla en pausas si te resulta más práctico.',
+    },
+    'ex_motivacion': {
+      'cansancio+tiempo': 'Si tienes poco tiempo y estás cansado, '
+          'prioriza descanso o una pausa de movimiento suave '
+          'en lugar de exigirte una sesión intensa.',
+    },
+  };
+
+  static const Map<String, List<String>> _extraConditions = {
+    'sin equipo': ['sin equipo', 'sin aparatos', 'sin pesas'],
+    'en casa': ['en casa', 'desde casa', 'de casa'],
+    'economica': ['economica', 'economico', 'barata', 'barato',
+      'poco dinero', 'bajo presupuesto'],
+    'sin refrigeracion': ['sin refrigeracion', 'sin refri'],
+    'tiempo': ['poco tiempo', 'sin tiempo', 'tengo prisa'],
+    'cansancio': ['cansado', 'cansada', 'cansancio'],
+  };
+
+  static bool _mentions(String input, String condition) {
+    final terms = <String>{
+      condition,
+      ...?synonyms[condition],
+      ...?_extraConditions[condition],
+    };
+    return terms.any((term) =>
+        (' $input ').contains(' ${_normalize(term)} '));
+  }
+
+  static HealthyAssistantReply? _combinedAnswer(
+      String normalizedInput, String topicId, List<String> options) {
+    final combinations = combinedResponses[topicId];
+    if (combinations == null) return null;
+    final supported = <String>[];
+    for (final entry in combinations.entries) {
+      final parts = entry.key.split('+');
+      if (parts.length == 2 &&
+          parts.every((condition) => _mentions(normalizedInput, condition))) {
+        supported.add(entry.key);
+      }
+    }
+    if (supported.length != 1) {
+      // Multiple compatible pairs are ambiguous: don't guess a priority.
+      return supported.isEmpty ? null : HealthyAssistantReply(
+        'Mencionaste varias preferencias. ¿Cuáles dos son '
+        'imprescindibles para ti? Así evito recomendar algo '
+        'que no cumpla tus condiciones.',
+        card: 'topic', actionArgument: topicId, knowledgeId: topicId,
+      );
+    }
+    return HealthyAssistantReply(
+      '${combinations[supported.single]}\n\n'
+      'También podemos revisar otra alternativa: '
+      '${options.join(', ')}.',
+      card: 'topic', actionArgument: topicId, knowledgeId: topicId,
+    );
+  }
+
   static int _offeredPosition(String priorReply, String choice) {
     // Consider only the last proposal, not incidental words in the
     // explanation that preceded it. This preserves ordinal order.
@@ -432,6 +546,9 @@ class MrHealthyChoiceResolver {
 
     final eligible = _offered(previousAssistantText, options);
     if (!eligible) return null;
+
+    final combined = _combinedAnswer(q, topicId, options);
+    if (combined != null) return combined;
 
     String? option;
     final ordinal = _ordinal(q);
