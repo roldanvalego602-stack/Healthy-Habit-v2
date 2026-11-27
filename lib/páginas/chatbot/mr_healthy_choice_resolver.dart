@@ -363,7 +363,7 @@ class MrHealthyChoiceResolver {
     'desayuno': ['desayuno'],
     'comida': ['comida', 'almuerzo'],
     'cena': ['cena'],
-    'sin refrigeracion': ['sin refrigeracion', 'sin refri', 'para llevar'],
+    'sin refrigeracion': ['sin refrigeracion', 'sin refri'],
     'integrales': ['integrales', 'integral'],
     'refinados': ['refinados', 'refinado'],
     'sopa': ['sopa'],
