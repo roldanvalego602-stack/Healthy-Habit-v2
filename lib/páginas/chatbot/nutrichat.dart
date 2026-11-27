@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'healthy_chat_display_mode.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
 import 'mr_healthy_chat_avatar.dart';
@@ -77,6 +79,22 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Color get _navy => HealthyAdaptive.text;
   Color get _muted => HealthyAdaptive.muted;
   static const _green = Color(0xFF198568);
+  HealthyChatDisplayMode _displayMode = HealthyChatDisplayMode.balanced;
+
+  Future<void> _loadDisplayMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _displayMode = HealthyChatDisplayModeCodec.parse(
+      prefs.getString(HealthyChatDisplayModeCodec.preferenceKey)));
+  }
+
+  Future<void> _selectDisplayMode(HealthyChatDisplayMode mode) async {
+    if (_displayMode == mode) return;
+    setState(() => _displayMode = mode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(HealthyChatDisplayModeCodec.preferenceKey, mode.name);
+  }
+
 
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -155,6 +173,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   @override
   void initState() {
     super.initState();
+    _loadDisplayMode();
     _inputFocus.addListener(_onFocusChange);
     messageController.addListener(_onDraftChanged);
     _cargarSaludoPersonalizado();
@@ -933,7 +952,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
               duration: HealthyVisualEffects.duration(
                 context, const Duration(milliseconds: 220)),
               curve: Curves.easeOutCubic,
-              child: (_hasDraft || _replyPending)
+              child: (_replyPending || (_hasDraft && _displayMode != HealthyChatDisplayMode.compact))
                   ? Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -950,7 +969,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                                 blurRadius: 15, offset: Offset(0, 4),
                               )],
                             ),
-                            child: MrHealthyChatAvatar(size: 42, isTyping: _replyPending),
+                            child: MrHealthyChatAvatar(
+                              size: _displayMode == HealthyChatDisplayMode.reading ? 46 : 34,
+                              isTyping: _replyPending),
                           ),
                           const SizedBox(width: 7),
                           Flexible(child: AnimatedSwitcher(
@@ -979,7 +1000,11 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 physics: const BouncingScrollPhysics(),
                 // Reserve the first message's space; while scrolling, content
                 // remains visible behind the floating header.
-                padding: const EdgeInsets.fromLTRB(12, 76, 12, 12),
+                padding: EdgeInsets.fromLTRB(
+                  _displayMode == HealthyChatDisplayMode.compact ? 8 : 12,
+                  76,
+                  _displayMode == HealthyChatDisplayMode.compact ? 8 : 12,
+                  12),
                 itemCount:
                     1 +
                     messages.length +
@@ -1041,34 +1066,66 @@ class _NutriChatPageState extends State<NutriChatPage> {
         ),
         const SizedBox(width: 6),
         Expanded(
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 9),
-            decoration: BoxDecoration(
-              color: HealthyAdaptive.surface.withValues(alpha: .93),
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(color: HealthyAdaptive.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded, size: 16, color: _green),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          child: PopupMenuButton<HealthyChatDisplayMode>(
+            key: const Key('healthy-chat-display-mode'),
+            tooltip: 'Cambiar presentación del chat',
+            onSelected: _selectDisplayMode,
+            position: PopupMenuPosition.under,
+            itemBuilder: (_) => [
+              for (final mode in HealthyChatDisplayMode.values)
+                PopupMenuItem<HealthyChatDisplayMode>(
+                  value: mode,
+                  child: Row(
                     children: [
-                      Text('Mr. Healthy', maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: _navy, fontSize: 13,
-                          fontWeight: FontWeight.w800)),
-                      Text('Tu asistente', maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: _muted, fontSize: 9)),
+                      Icon(mode.icon, size: 19,
+                        color: mode == _displayMode ? _green : _muted),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(mode.label, style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700)),
+                          Text(mode.description, style: TextStyle(
+                            fontSize: 10, color: _muted)),
+                        ],
+                      )),
+                      if (mode == _displayMode)
+                        const Icon(Icons.check_rounded, color: _green, size: 18),
                     ],
                   ),
                 ),
-              ],
+            ],
+            child: Container(
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 9),
+              decoration: BoxDecoration(
+                color: HealthyAdaptive.surface.withValues(alpha: .93),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: HealthyAdaptive.border),
+              ),
+              child: Row(
+                children: [
+                  Icon(_displayMode.icon, size: 16, color: _green),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mr. Healthy', maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _navy, fontSize: 13,
+                            fontWeight: FontWeight.w800)),
+                        Text(_displayMode.label, maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _muted, fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.expand_more_rounded, size: 15),
+                ],
+              ),
             ),
           ),
         ),
@@ -1267,7 +1324,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
   );
 
   Widget _buildComposer(bool keyboardVisible) => Container(
-    padding: EdgeInsets.fromLTRB(10, 6, 10, keyboardVisible ? 6 : 8),
+    padding: EdgeInsets.fromLTRB(10, 6, 10, keyboardVisible ? 6 :
+      (_displayMode == HealthyChatDisplayMode.compact ? 5 : 8)),
     decoration: BoxDecoration(
       color: _background,
       border: Border(top: BorderSide(color: HealthyAdaptive.border)),
@@ -1330,7 +1388,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
             ],
           ),
         ),
-        if (!keyboardVisible) ...[
+        if (!keyboardVisible && _displayMode != HealthyChatDisplayMode.compact) ...[
           const SizedBox(height: 8),
           const Text(
             'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
@@ -1368,11 +1426,13 @@ class _NutriChatPageState extends State<NutriChatPage> {
           ),
         ),
         child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: EdgeInsets.only(bottom: _displayMode.messageGap),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
+          maxWidth: MediaQuery.sizeOf(context).width * _displayMode.messageWidth,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: EdgeInsets.symmetric(
+          horizontal: _displayMode.messageHorizontalPadding,
+          vertical: _displayMode.messageVerticalPadding),
         decoration: BoxDecoration(
           color: isUser
               ? (HealthyAdaptive.isDark ? const Color(0xFF284B56) : const Color(0xFF174F48))
@@ -1391,8 +1451,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
               message.text,
               style: TextStyle(
                 color: isUser ? Colors.white : HealthyAdaptive.text,
-                fontSize: 13.5,
-                height: 1.36,
+                fontSize: _displayMode.messageFontSize,
+                height: _displayMode.messageLineHeight,
               ),
             ),
             if (!isUser &&
@@ -1495,7 +1555,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
+            SizedBox(height: _displayMode == HealthyChatDisplayMode.compact ? 2 : 4),
             Text(
               '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
