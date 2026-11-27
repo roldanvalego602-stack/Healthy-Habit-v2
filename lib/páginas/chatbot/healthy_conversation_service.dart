@@ -60,11 +60,75 @@ class HealthyConversationService {
           'más grande se vuelve. ¿Quieres otro acertijo?';
     }
 
+    final investigating = assistant.contains('investiguemos la puerta') ||
+        assistant.contains('investigamos la puerta');
+    if (investigating && const {
+      'si', 'claro', 'investiguemos', 'abramos la puerta', 'continuar',
+    }.contains(q)) {
+      return 'Detrás de la puerta había un reloj sin agujas. '
+          'Cada vez que la semilla pronunciaba una palabra, '
+          'una nueva habitación aparecía entre las raíces. '
+          'En el suelo encontró dos pistas: una llave y una carta. '
+          '¿Cuál investigamos?';
+    }
+    if (assistant.contains('continuamos el viaje') &&
+        const {'si', 'claro', 'continuemos', 'vamos', 'seguir'}.contains(q)) {
+      return 'La brújula los guió hasta un jardín suspendido. '
+          'En el centro había una escalera hecha de hojas. '
+          'La semilla podía subir hacia el cielo o explorar '
+          'las cuevas bajo el jardín. ¿Qué ruta prefieres?';
+    }
+
     final offeredEmotion = assistant.contains('que ocurrio') &&
         assistant.contains('distraerte un rato');
     if (offeredEmotion && (q == 'distraerme' || q == 'distraerme un rato')) {
       return 'Podemos cambiar de ritmo. ¿Prefieres un acertijo, '
           'una historia breve o un juego de palabras?';
+    }
+    return null;
+  }
+
+  /// Interpreta correcciones explícitas únicamente sobre actividades
+  /// ofrecidas en la conversación general. Nunca reutiliza este contexto
+  /// para compras, operaciones, tratamientos ni datos del perfil.
+  static String? _correctRecentChoice(
+    String input, String previousUser, String assistant,
+  ) {
+    if (input.length > 75 || assistant.isEmpty) return null;
+    final q = input.replaceAll(RegExp(r'[¿?!¡.,;:]'), '').trim();
+    final correction = RegExp(
+      r'^(no|mejor|perdon|perdon me referia a|no queria|'
+      r'no me referia a|queria decir)\\b',
+    ).hasMatch(q);
+    if (!correction) return null;
+
+    final wantsAdventure = RegExp(r'\\baventura\\b').hasMatch(q);
+    final wantsMystery = RegExp(r'\\bmisterio\\b').hasMatch(q);
+    final mysteryScene = assistant.contains('huella que se movia sola');
+    final adventureScene = assistant.contains('rio de las nubes');
+
+    if (wantsAdventure && !wantsMystery && mysteryScene &&
+        (previousUser == 'misterio' || previousUser == 'la primera')) {
+      return 'De acuerdo, cambiamos a aventura. '
+          'La semilla siguió un sendero de luciérnagas hasta un puente '
+          'sobre el río de las nubes. Allí encontró una brújula que '
+          'señalaba lugares por descubrir. ¿Continuamos el viaje?';
+    }
+    if (wantsMystery && !wantsAdventure && adventureScene &&
+        (previousUser == 'aventura' || previousUser == 'la segunda')) {
+      return 'De acuerdo, cambiamos a misterio. '
+          'La semilla abrió el libro y encontró una página en blanco. '
+          'Al tocarla apareció una huella que se movía sola hacia '
+          'una puerta olvidada. ¿Investigamos la puerta?';
+    }
+
+    if (const {
+      'no', 'no era eso', 'no me referia a eso', 'me entendiste mal',
+      'eso no era lo que queria', 'no queria eso',
+    }.contains(q)) {
+      return 'Entiendo que interpreté mal tu mensaje. '
+          '¿Qué quisiste decir o qué parte debo cambiar? '
+          'No haré suposiciones.';
     }
     return null;
   }
@@ -83,11 +147,16 @@ class HealthyConversationService {
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     final previous = NutriRespuestasService.normalizar(previousUserMessage);
-    final assistant = NutriRespuestasService.normalizar(previousAssistantText);
+    final assistant = NutriRespuestasService.normalizar(previousAssistantText)
+        .replaceAll(RegExp(r'[¿?!¡.,;:]'), ' ')
+        .replaceAll(RegExp(r'\\s+'), ' ')
+        .trim();
     if (t.isEmpty) return null;
     final greeting = name.trim().isEmpty ? '' : ', ${name.trim()}';
     // Continuaciones inequívocas: exige una invitación concreta en la
     // respuesta anterior, no infiere temas de conversaciones remotas.
+    final correction = _correctRecentChoice(t, previous, assistant);
+    if (correction != null) return correction;
     final continuation = _continueLastChoice(t, assistant);
     if (continuation != null) return continuation;
 
