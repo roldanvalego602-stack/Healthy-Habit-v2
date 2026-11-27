@@ -22,6 +22,25 @@ class HealthyRetroSoundService {
   }
   static DateTime? _readAt;
 
+  /// Reproduce una muestra directamente en Android y devuelve el diagnóstico.
+  /// Solo se invoca por una acción explícita del usuario en Configuración.
+  static Future<String> preview(String kind) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return 'La vista previa está disponible en Android.';
+    }
+    try {
+      final result = await _channel.invokeMethod<String>(
+        'preview', {'kind': kind});
+      return result ?? 'Android no devolvió un diagnóstico de audio.';
+    } on MissingPluginException {
+      return 'Canal de audio no disponible. Cierra y recompila la app.';
+    } on PlatformException catch (error) {
+      return 'Error Android: ${error.message ?? error.code}';
+    } catch (error) {
+      return 'No se pudo reproducir: $error';
+    }
+  }
+
   static Future<void> play(String kind) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     if (!const {'talk', 'purchase', 'reward', 'achievement', 'friend', 'tap', 'guide', 'open', 'habit', 'equip', 'error'}
