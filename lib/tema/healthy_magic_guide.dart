@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'cosmos_theme.dart';
+import 'healthy_theme.dart';
 import '../servicios/healthy_retro_sound_service.dart';
 
 /// Pasos de ayuda elaborados según las funciones reales de Healthy Habit.
@@ -198,8 +200,10 @@ class HealthyMagicGuideButton extends StatelessWidget {
   Widget build(BuildContext context) => FloatingActionButton.small(
     heroTag: 'healthy-magic-guide-$section',
     tooltip: 'Explícame esta pantalla',
-    backgroundColor: const Color(0xFF7547D7),
-    foregroundColor: Colors.white,
+    backgroundColor: HealthyAdaptive.isCosmos
+        ? CosmosPalette.cyan : const Color(0xFF7547D7),
+    foregroundColor: HealthyAdaptive.isCosmos
+        ? CosmosPalette.background : Colors.white,
     onPressed: () => HealthyMagicGuide.open(context, section),
     child: const Icon(Icons.auto_awesome_rounded),
   );
