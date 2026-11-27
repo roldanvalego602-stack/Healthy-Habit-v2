@@ -176,6 +176,54 @@ class HealthyThemes {
         ),
       ),
       dividerColor: const Color(0xFF526391),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Color(0xFF57E5FF),
+        foregroundColor: Color(0xFF081426),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xEF1C2850),
+        labelStyle: const TextStyle(color: Color(0xFFB6C8E3)),
+        hintStyle: const TextStyle(color: Color(0xFF92A6CA)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF647BB9)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF52699F)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF57E5FF),
+            width: 1.7),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFC6E7FF),
+          side: const BorderSide(color: Color(0xFF647BB9)),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: const Color(0xFF24345F),
+        selectedColor: const Color(0xFF36588B),
+        side: const BorderSide(color: Color(0xFF536AA0)),
+        labelStyle: const TextStyle(color: Color(0xFFF4F7FF)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF1C2850),
+        contentTextStyle: const TextStyle(color: Color(0xFFF4F7FF)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+        behavior: SnackBarBehavior.floating,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFF57E5FF),
+        linearTrackColor: Color(0xFF24345F),
+      ),
     );
   }
 
