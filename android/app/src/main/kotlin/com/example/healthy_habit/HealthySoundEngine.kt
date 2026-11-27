@@ -6,7 +6,6 @@ import android.media.AudioTrack
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.sin
 
 /**
