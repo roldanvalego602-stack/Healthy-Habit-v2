@@ -260,7 +260,7 @@
         "catalogo de ejercicios"
       ],
       "answer": "El Catálogo ofrece información orientativa sobre alimentos, ejercicio y bienestar. Puedes buscar, filtrar y consultar detalles; no sustituye asesoría individual.",
-      "followUp": "¿Buscas una ficha alimentaria o de actividad física?",
+      "followUp": "¿Buscas información sobre alimentos o ejercicio en el Catálogo?",
       "detail": "Prueba escribir un alimento en el buscador del Catálogo y luego cambia entre las vistas disponibles para consultar su descripción."
     },
     {
@@ -455,7 +455,7 @@
         "comer entre comidas"
       ],
       "answer": "Si tienes hambre entre comidas, fruta, yogur natural, nueces o verduras pueden ser opciones, según alergias y necesidades. No es obligatorio comer colaciones.",
-      "followUp": "¿Buscas algo que no requiera refrigeración?",
+      "followUp": "¿Prefieres una colación sin refrigeración o una para preparar en casa?",
       "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
@@ -507,7 +507,7 @@
         "fibra dieta"
       ],
       "answer": "Frutas, verduras, legumbres y cereales integrales aportan fibra. Incrementarla gradualmente y acompañarla de líquidos suele mejorar tolerancia.",
-      "followUp": "¿Te interesan alimentos con fibra que sean económicos?",
+      "followUp": "¿Buscas fuentes económicas de fibra o alternativas para llevar?",
       "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
@@ -520,7 +520,7 @@
         "que beber"
       ],
       "answer": "El agua es una opción habitual para hidratarse. Las necesidades cambian con clima, actividad, alimentos y salud; evita asumir una cantidad única para todos.",
-      "followUp": "¿Quieres ideas para recordar beber agua?",
+      "followUp": "¿Quieres recordatorios para beber agua o ideas para darle sabor?",
       "detail": "Una idea práctica es tener agua disponible y beber durante el día según sed y actividad. No conviertas un número fijo en obligación universal."
     },
     {
@@ -533,7 +533,7 @@
         "mas verduras"
       ],
       "answer": "Las verduras aportan distintos nutrientes y fibra. Puedes alternar colores, variedades y preparaciones; congeladas o de temporada también pueden servir.",
-      "followUp": "¿Quieres ideas para integrarlas a una comida?",
+      "followUp": "¿Quieres ideas para integrarlas a una comida o preparar una sopa?",
       "detail": "Por ejemplo, añade zanahoria rallada a un guiso, jitomate a una tortilla o verduras congeladas a una sopa."
     },
     {
@@ -546,7 +546,7 @@
         "frutas de temporada"
       ],
       "answer": "La fruta entera aporta agua, fibra y nutrientes. Varía las opciones y procura no reemplazar siempre la fruta por jugo.",
-      "followUp": "¿Quieres opciones accesibles de temporada?",
+      "followUp": "¿Prefieres frutas de temporada o ideas para llevar?",
       "detail": "Puedes variar entre una fruta entera al desayuno y otra de temporada como colación, sin necesitar jugos embotellados."
     },
     {
@@ -819,7 +819,7 @@
         "mejorar condicion"
       ],
       "answer": "La actividad aeróbica eleva la respiración y el pulso. Puedes empezar con caminatas, bicicleta o baile y ajustar la intensidad según tu condición.",
-      "followUp": "¿Qué actividad disfrutas más?",
+      "followUp": "¿Qué te atrae más: caminar, bicicleta o baile?",
       "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
@@ -923,7 +923,7 @@
         "rutina casera"
       ],
       "answer": "Puedes entrenar en casa con sentadillas asistidas, empujes contra pared y caminatas en el sitio. Adapta a tu espacio y condición.",
-      "followUp": "¿Tienes una silla estable o espacio para caminar?",
+      "followUp": "¿Prefieres empezar con silla o sin equipo?",
       "detail": "Un circuito suave puede incluir marcha en el sitio, sentarse y levantarse de una silla estable y movilidad de hombros."
     },
     {
