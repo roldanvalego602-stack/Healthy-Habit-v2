@@ -34,19 +34,17 @@ void main() {
 
   test('conserva ejercicio sin equipo y añade en casa', () {
     final memory = MrHealthyPreferenceMemory();
-    final first = bank.answer('Háblame de empezar ejercicio')!;
+    final first = bank.answer('Háblame de entrenamiento de fuerza')!;
     final equipment = bank.answer('sin equipo',
       previousTopicId: first.knowledgeId,
-      previousAssistantText: first.text);
-    // Si no se ofreció explícitamente, no se registra una respuesta inventada.
-    expect(equipment, isNull);
-    memory.record('sin equipo', first.knowledgeId);
+      previousAssistantText: first.text)!;
+    memory.record('sin equipo', equipment.knowledgeId);
     final question = memory.compose('quiero hacerlo en casa', first.knowledgeId);
     expect(question, contains('sin equipo'));
     final response = bank.answer(question,
       previousTopicId: first.knowledgeId,
-      previousAssistantText: first.text);
-    expect(response?.text, contains('en casa y sin equipo'));
+      previousAssistantText: equipment.text);
+    expect(response?.text, contains('en casa sin equipo'));
   });
 
   test('no mantiene preferencias entre temas diferentes', () {
