@@ -1167,7 +1167,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         Expanded(
           child: PopupMenuButton<Object>(
             key: const Key('healthy-chat-display-mode'),
-            tooltip: 'Cambiar presentación del chat',
+            tooltip: 'Cambiar presentación y estilo del chat',
             onSelected: (selected) {
               if (selected is HealthyChatDisplayMode) {
                 _selectDisplayMode(selected);
@@ -1177,6 +1177,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
             },
             position: PopupMenuPosition.under,
             itemBuilder: (_) => [
+              const PopupMenuItem<Object>(
+                enabled: false,
+                height: 30,
+                child: Text('PRESENTACIÓN',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
+              ),
               for (final mode in HealthyChatDisplayMode.values)
                 PopupMenuItem<Object>(
                   value: mode,
@@ -1193,11 +1199,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
                             fontSize: 13, fontWeight: FontWeight.w700)),
                           Text(mode.description, style: TextStyle(
                             fontSize: 10, color: _muted)),
-                          const PopupMenuItem<Object>(
+                        ],
+                      )),
+                      if (mode == _displayMode)
+                        const Icon(Icons.check_rounded, color: _green, size: 18),
+                    ],
+                  ),
+                ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<Object>(
                 enabled: false,
                 height: 30,
                 child: Text('FORMA DE RESPONDER',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
               ),
               for (final style in MrHealthyReplyStyle.values)
                 PopupMenuItem<Object>(
@@ -1208,8 +1222,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
                         color: style == _replyStyle ? _green : _muted),
                       const SizedBox(width: 10),
                       Expanded(child: Column(
-                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(style.label, style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w700)),
@@ -1218,13 +1232,6 @@ class _NutriChatPageState extends State<NutriChatPage> {
                         ],
                       )),
                       if (style == _replyStyle)
-                        const Icon(Icons.check_rounded, color: _green, size: 18),
-                    ],
-                  ),
-                ),
-            ],
-                      )),
-                      if (mode == _displayMode)
                         const Icon(Icons.check_rounded, color: _green, size: 18),
                     ],
                   ),
