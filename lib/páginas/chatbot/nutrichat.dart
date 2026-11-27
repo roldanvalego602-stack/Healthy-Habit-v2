@@ -1040,7 +1040,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                                 color: HealthyAdaptive.muted,
                                 fontSize: 11, fontWeight: FontWeight.w700),
                             ),
-                          ),
+                          )),
                         ],
                       ),
                     )
