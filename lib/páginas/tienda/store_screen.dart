@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_float.dart';
 import '../../tema/healthy_celebration.dart';
@@ -54,6 +55,7 @@ class _StoreScreenState extends State<StoreScreen> {
     'Cabeza',
     'Accesorios',
     'Especiales',
+    'Temas',
   ];
 
   String _filter = 'Todos';
@@ -286,6 +288,92 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
+  Future<void> _toggleCosmos(ShopState state) async {
+    final item = shopItemById(cosmosShopId);
+    if (item == null || _busy != null) return;
+    if (!state.owns(item.id)) {
+      await _buy(item);
+      return;
+    }
+    final active = state.equipped[cosmosSlot] == cosmosShopId;
+    setState(() => _busy = item.id);
+    try {
+      await ShopService.instance.equip(item, remove: active);
+      if (!mounted) return;
+      _message(active ? 'Volviste a tu estilo anterior.' :
+          'Cosmos equipado. ¡Explora tu nueva galaxia!');
+    } catch (_) {
+      _message('No fue posible cambiar el tema. Comprueba tu conexión.');
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  Widget _cosmosThemePanel(ShopState? state) {
+    final item = shopItemById(cosmosShopId)!;
+    final owned = state?.owns(cosmosShopId) ?? false;
+    final equipped = state?.equipped[cosmosSlot] == cosmosShopId;
+    final busy = _busy != null || state == null;
+    final canBuy = state != null && state.coins >= item.price;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+      child: Container(
+        key: const ValueKey('cosmos-premium-theme-card'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF202957), Color(0xFF43235E), Color(0xFF0F1A3D)],
+          ),
+          border: Border.all(color: CosmosPalette.cyan.withValues(alpha: .8)),
+          boxShadow: const [BoxShadow(color: Color(0x38245BAA), blurRadius: 18)],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.public_rounded,
+                color: CosmosPalette.cyan, size: 34),
+              const SizedBox(width: 12),
+              const Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('COSMOS · TEMA ANIMADO',
+                    style: TextStyle(color: Colors.white,
+                      fontWeight: FontWeight.w900, fontSize: 17)),
+                  SizedBox(height: 3),
+                  Text('Nebulosas · Estrellas · Sonidos exclusivos',
+                    style: TextStyle(color: Color(0xFFD9DFFF), fontSize: 11)),
+                ],
+              )),
+            ]),
+            const SizedBox(height: 12),
+            const Text('Una galaxia completa para tus hábitos: '
+              'colores espaciales, fondos vivos y tarjetas luminosas.',
+              style: TextStyle(color: Color(0xFFEEF0FF), fontSize: 12)),
+            const SizedBox(height: 13),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('cosmos-buy-equip'),
+                onPressed: busy || (!owned && !canBuy)
+                    ? null : () => _toggleCosmos(state),
+                icon: Icon(equipped ? Icons.check_circle_outline :
+                    owned ? Icons.auto_awesome_rounded :
+                    Icons.toll_rounded),
+                label: Text(equipped ? 'Equipado · Quitar tema' :
+                    owned ? 'Equipar Cosmos' :
+                    state == null ? 'Consultando inventario' :
+                    canBuy ? 'Desbloquear · 1800 Habit Coins' :
+                    'Necesitas 1800 Habit Coins'),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   void _openWardrobe() {
     if (widget.onOpenWardrobe != null) {
       widget.onOpenWardrobe!();
@@ -312,6 +400,7 @@ class _StoreScreenState extends State<StoreScreen> {
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _header(state)),
+                SliverToBoxAdapter(child: _cosmosThemePanel(state)),
                 if (BetaHabitGateway.enabled &&
                     _pendingBetaPurchases.isNotEmpty)
                   SliverToBoxAdapter(child: _pendingBetaBanner()),
