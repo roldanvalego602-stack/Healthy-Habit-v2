@@ -7,7 +7,7 @@ La primera fase integra un recorrido visual real en la pantalla **Hábitos** sin
 - **Punto de entrada:** botón flotante «Explícame esta pantalla» en `lib/páginas/inicio.dart`, conservado.
 - **Guía fuente:** `lib/tema/healthy_magic_guide.dart`. Para `habitos`, ahora abre `HealthyGuideOverlay`; el resto de las secciones conserva su modal original.
 - **Objetivos registrados:** cabecera, accesos «Mis rutinas»/«En pareja», categorías y encabezado «Mis hábitos activos» de `lib/páginas/habitos/habits_screen.dart`.
-- **Efectos:** fondo atenuado con recorte, contorno luminoso pulsante, indicador de dirección, tarjeta superpuesta con progreso y botones Anterior/Siguiente/Finalizar/Cerrar.
+- **Efectos:** fondo atenuado con recorte, contorno luminoso pulsante, puntero orientado hacia el objetivo, avatar de Mr. Healthy con flotación ligera, tarjeta superpuesta con progreso y botones Anterior/Siguiente/Finalizar/Cerrar.
 - **Seguridad:** `ModalBarrier` bloquea acciones de fondo durante el recorrido. No modifica hábitos, monedas, XP, registros ni Firebase.
 - **Objetivos ausentes:** si el widget todavía no está construido (por ejemplo, contenido perezoso de una lista), la guía muestra la explicación sin recorte. Si está construido, se intenta desplazar mediante `Scrollable.ensureVisible`.
 - **Compatibilidad:** tema claro/oscuro; respeto básico de `MediaQuery.disableAnimations`. Los efectos Cosmos específicos aún no se implementan.
@@ -48,3 +48,5 @@ Abrir la app en Android, entrar a **Hábitos** y pulsar **Explícame esta pantal
 ## Criterio de salida de Fase 1
 
 Sin errores de análisis, suite de widget tests aprobada y revisión en Android sin bloqueos, objetivos duplicados, desbordamientos ni toques a acciones reales.
+
+**Secuencia inicial:** introducción enfocada en la cabecera y cuatro pasos editoriales (explorar, rutinas, hábitos activos y registro). Cuando un elemento de la lista aún no está construido, la explicación continúa sin recorte y sin forzar una operación.
