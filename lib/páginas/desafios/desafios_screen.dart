@@ -714,10 +714,13 @@ class _ChallengeCard extends StatelessWidget {
         color: isLocked ? HealthyAdaptive.surfaceAlt : HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color:
-              isCompleted
-                  ? const Color(0xFF00C88C).withValues(alpha: 0.35)
-                  : Colors.grey.shade200,
+          color: HealthyAdaptive.isCosmos
+              ? (isCompleted
+                  ? CosmosPalette.cyan.withValues(alpha: .75)
+                  : CosmosPalette.border.withValues(alpha: .52))
+              : (isCompleted
+                  ? const Color(0xFF00C88C).withValues(alpha: .35)
+                  : Colors.grey.shade200),
         ),
         boxShadow: [
           BoxShadow(
