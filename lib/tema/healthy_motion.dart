@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'healthy_visual_mode.dart';
+import 'cosmos_theme.dart';
 
 /// Entrada breve sin animación infinita ni cambios de tamaño de layout.
 class HealthyMotionCard extends StatefulWidget {
@@ -41,7 +42,7 @@ class _HealthyMotionCardState extends State<HealthyMotionCard> {
       ),
     );
 
-    if (!entrance) return card;
+    if (!entrance) return CosmosCardShell(child: card);
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
@@ -54,7 +55,7 @@ class _HealthyMotionCardState extends State<HealthyMotionCard> {
           child: child,
         ),
       ),
-      child: card,
+      child: CosmosCardShell(child: card),
     );
   }
 }
