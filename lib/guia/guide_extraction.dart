@@ -36,12 +36,17 @@ class GuideExtraction extends StatelessWidget {
         child: Semantics(
           label: 'Vista ampliada, solo lectura, del elemento señalado',
           image: true,
-          child: AnimatedScale(
-            scale: expanded ? 1 : .98,
+          child: AnimatedRotation(
+            turns: motion && expanded ? .008 : 0,
             duration: motion
                 ? const Duration(milliseconds: 530) : Duration.zero,
             curve: Curves.easeInOutCubic,
-            child: RepaintBoundary(
+            child: AnimatedScale(
+              scale: expanded ? 1 : .98,
+              duration: motion
+                  ? const Duration(milliseconds: 530) : Duration.zero,
+              curve: Curves.easeInOutCubic,
+              child: RepaintBoundary(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
@@ -66,6 +71,7 @@ class GuideExtraction extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         ),
