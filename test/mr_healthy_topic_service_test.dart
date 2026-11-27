@@ -95,6 +95,7 @@ void main() {
     final answer = bank.answer('¿Qué es Habit Coins?');
     expect(answer?.action, isEmpty);
     expect(answer?.card, 'topic');
+    expect(answer?.actionArgument, 'app_monedas');
     expect(answer?.knowledgeId, 'app_monedas');
   });
 
