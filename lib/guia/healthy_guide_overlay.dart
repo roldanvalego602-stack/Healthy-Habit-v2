@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'guide_controller.dart';
 import 'guide_spotlight_painter.dart';
 import 'guide_step.dart';
+import 'guide_character_pose.dart';
+import 'assistant_guide_character.dart';
+import 'guide_pointer.dart';
+import '../tema/healthy_visual_mode.dart';
 
 /// Capa interactiva modal. No permite pulsar controles del fondo.
 /// La guía antigua permanece disponible para pantallas no migradas.
@@ -163,7 +167,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final safeTop = media.padding.top;
     final safeBottom = media.padding.bottom;
     final theme = Theme.of(context);
-    final reduceMotion = media.disableAnimations;
+    final reduceMotion = !HealthyVisualEffects.enabled(context);
     const accent = Color(0xFF63E6BE);
     final cardWidth = screen.width > 480 ? 420.0 : screen.width - 32;
     final cardHeight = 230.0;
@@ -176,6 +180,18 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       safeTop + 8, (screen.height - safeBottom - cardHeight - 8)
           .clamp(safeTop + 8, double.infinity),
     ).toDouble();
+    final cardBounds = Rect.fromLTWH(
+      (screen.width - cardWidth) / 2, clampedTop,
+      cardWidth, cardHeight,
+    );
+    final pose = GuideCharacterPose.resolve(
+      viewport: screen,
+      safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
+      target: targetRect,
+      explanation: cardBounds,
+      characterSize: screen.width < 350
+          ? const Size(72, 86) : const Size(90, 104),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -210,20 +226,28 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
             ),
           ]),
         ),
-        if (targetRect != null)
-          Positioned(
-            left: (targetRect!.center.dx - 13)
-                .clamp(16.0, screen.width - 42).toDouble(),
-            top: belowTarget
-                ? (targetRect!.bottom + 14)
-                    .clamp(safeTop + 64, clampedTop - 38).toDouble()
-                : (targetRect!.top - 44)
-                    .clamp(safeTop + 58, screen.height - safeBottom - 48)
-                    .toDouble(),
-            child: IgnorePointer(child: Icon(
-              belowTarget ? Icons.north_rounded : Icons.south_rounded,
-              color: accent, size: 28)),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: pulse,
+              builder: (_, __) => CustomPaint(
+                painter: GuidePointerPainter(
+                  pose: pose,
+                  target: targetRect,
+                  progress: reduceMotion ? 0 : pulse.value,
+                  accent: accent,
+                ),
+              ),
+            ),
           ),
+        ),
+        AssistantGuideCharacter(
+          pose: pose,
+          motion: !reduceMotion,
+          phase: pulse,
+          stepIndex: controller.index,
+          accent: accent,
+        ),
         AnimatedPositioned(
           duration: reduceMotion
               ? Duration.zero : const Duration(milliseconds: 420),
@@ -245,19 +269,9 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
               child: Column(mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  AnimatedBuilder(
-                    animation: pulse,
-                    builder: (context, child) => Transform.translate(
-                      offset: Offset(0, reduceMotion ? 0 : -2 * pulse.value),
-                      child: child,
-                    ),
-                    child: Semantics(
-                      label: 'Mr. Healthy, asistente de la guía',
-                      child: Image.asset('assets/mascot/healthy.png',
-                        width: 48, height: 48, fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Icon(step.icon,
-                          color: theme.colorScheme.primary, size: 32)),
-                    ),
+                  CircleAvatar(
+                    backgroundColor: accent.withValues(alpha: .14),
+                    child: Icon(step.icon, color: theme.colorScheme.primary),
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Text(step.title,
