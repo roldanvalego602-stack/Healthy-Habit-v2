@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'healthy_assistant_reply.dart';
 import 'healthy_hybrid_knowledge.dart';
+import 'mr_healthy_choice_resolver.dart';
 
 /// Banco editorial de preguntas y respuestas. No es modelo de lenguaje,
 /// no accede a Firestore ni ejecuta acciones; su salida es solo texto.
@@ -210,11 +211,21 @@ class MrHealthyResponseBank {
     String input, {
     String previousTopicId = '',
     int followUpDepth = 0,
+    String previousAssistantText = '',
   }) {
     final q = normalize(input);
     if (q.isEmpty || _shouldDeferToSpecialist(q) ||
         _sensitiveQuestion.hasMatch(q) || _topicChange.hasMatch(q)) {
       return null;
+    }
+
+    if (previousTopicId.isNotEmpty) {
+      final selected = MrHealthyChoiceResolver.answer(
+        input,
+        topicId: previousTopicId,
+        previousAssistantText: previousAssistantText,
+      );
+      if (selected != null) return selected;
     }
 
     if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
@@ -300,11 +311,13 @@ class MrHealthyTopicService {
     String input, {
     String previousTopicId = '',
     int followUpDepth = 0,
+    String previousAssistantText = '',
   }) async {
     try {
       final bank = _bank ?? await load();
       return bank.answer(input, previousTopicId: previousTopicId,
-          followUpDepth: followUpDepth);
+          followUpDepth: followUpDepth,
+          previousAssistantText: previousAssistantText);
     } catch (_) {
       // Preserve legacy knowledge and natural conversation on asset failures.
       return null;
