@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_coin.dart';
 
 import 'amigos_servicio.dart';
@@ -726,11 +727,18 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF112F3C), Color(0xFF285566)],
+        gradient: LinearGradient(
+          colors: HealthyAdaptive.isCosmos
+              ? const [
+                  Color(0xFF253C7C), Color(0xFF492B71), Color(0xFF10192F),
+                ]
+              : const [Color(0xFF112F3C), Color(0xFF285566)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        border: HealthyAdaptive.isCosmos
+            ? Border.all(color: CosmosPalette.cyan.withValues(alpha: .65))
+            : null,
       ),
       child: Column(
         children: [
@@ -810,12 +818,14 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 9),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 9,
-              backgroundColor: const Color(0xFF42616B),
-              valueColor: const AlwaysStoppedAnimation<Color>(mint),
-            ),
+            child: HealthyAdaptive.isCosmos
+                ? CosmosEnergyBar(value: progress, height: 9)
+                : LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 9,
+                    backgroundColor: const Color(0xFF42616B),
+                    valueColor: const AlwaysStoppedAnimation<Color>(mint),
+                  ),
           ),
           const SizedBox(height: 9),
           Align(
