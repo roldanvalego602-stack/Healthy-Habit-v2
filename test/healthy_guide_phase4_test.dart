@@ -118,10 +118,16 @@ void main() {
     // Comprueba que el overlay raíz reciba el MediaQuery de la ruta.
     final guideContext = tester.element(find.text('Sin movimiento'));
     expect(MediaQuery.of(guideContext).disableAnimations, isTrue);
+    expect(MediaQuery.sizeOf(guideContext), tester.view.physicalSize /
+        tester.view.devicePixelRatio);
     final switches = tester.widgetList<AnimatedSwitcher>(
         find.byType(AnimatedSwitcher));
     expect(switches.any((w) => w.duration == Duration.zero), isTrue);
-    await tester.tap(find.text('Finalizar'));
+    final finishButton = find.widgetWithText(FilledButton, 'Finalizar');
+    expect(tester.getRect(finishButton).bottom,
+        lessThanOrEqualTo(tester.view.physicalSize.height /
+            tester.view.devicePixelRatio));
+    await tester.tap(finishButton);
     await tester.pump();
     await finished;
   });
