@@ -302,7 +302,7 @@ class CosmosEnergyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
+    final progress = value.isFinite ? value.clamp(0.0, 1.0).toDouble() : 0.0;
     if (!HealthyAdaptive.isCosmos) {
       return LinearProgressIndicator(
         value: progress,
