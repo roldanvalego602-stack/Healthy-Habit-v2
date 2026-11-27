@@ -406,9 +406,29 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                     style: theme.textTheme.labelMedium),
                 ]),
                 const SizedBox(height: 12),
-                Text(step.description,
-                  maxLines: 4, overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
+                AnimatedSwitcher(
+                  duration: reduceMotion
+                      ? Duration.zero : const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, .09),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  ),
+                  child: Text(
+                    step.description,
+                    key: ValueKey('guide-explanation-${controller.index}'),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                  ),
+                ),
                 if (targetRect == null || resolving) ...[
                   const SizedBox(height: 7),
                   Text('Puedes seguir el recorrido aunque el elemento '
