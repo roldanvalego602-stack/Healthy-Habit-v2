@@ -16,6 +16,7 @@ import 'nutri_respuestas_service.dart';
 import 'healthy_conversation_service.dart';
 import 'healthy_assistant_engine.dart';
 import 'healthy_hybrid_knowledge.dart';
+import 'mr_healthy_topic_service.dart';
 import 'healthy_intent_router.dart';
 import 'healthy_chat_context.dart';
 import 'healthy_chat_history.dart';
@@ -84,6 +85,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
   final HealthyHybridKnowledge _hybridKnowledge = HealthyHybridKnowledge();
+  final MrHealthyTopicService _topicService = MrHealthyTopicService();
+  String _lastEditorialTopic = '';
+  int _editorialFollowUps = 0;
   final HealthyConversationService _conversation =
       const HealthyConversationService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
@@ -284,6 +288,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
         _hasSentMessage = records.isNotEmpty;
         _lastTopic = '';
         _chatContext.reset();
+        _lastEditorialTopic = '';
+        _editorialFollowUps = 0;
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -327,6 +333,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _sessionId = null;
       _lastTopic = '';
       _chatContext.reset();
+      _lastEditorialTopic = '';
+      _editorialFollowUps = 0;
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -710,29 +718,52 @@ class _NutriChatPageState extends State<NutriChatPage> {
               // Prioridad: acciones → conocimiento → conversación.
               if (intent.text.isNotEmpty || intent.action.isNotEmpty) {
                 response = intent.text;
+                _lastEditorialTopic = '';
+                _editorialFollowUps = 0;
               } else {
-                final previousKnowledge = _chatContext.referenceFor(text);
-                final educational = await _hybridKnowledge.answer(
-                  text, operational: intent,
-                  lastKnowledgeId: previousKnowledge,
+                // Capas seguras: acciones > banco revisable de 10k+
+                // formulaciones > fichas educativas > conversación.
+                // El motor de temas nunca ejecuta compras o registros.
+                final editorial = await _topicService.answer(
+                  text,
+                  previousTopicId: _lastEditorialTopic,
+                  followUpDepth: _editorialFollowUps,
                 );
-                if (educational != null) {
-                  intent = educational;
-                  response = educational.text;
-                  _chatContext.recordEducationalReply(
-                    input: text,
-                    knowledgeId: educational.knowledgeId,
-                    previousReference: previousKnowledge,
-                  );
-                } else {
+                if (editorial != null) {
+                  final isFollowUp = MrHealthyResponseBank.normalize(text);
+                  final continues = _lastEditorialTopic == editorial.knowledgeId &&
+                      MrHealthyResponseBank.isFollowUpPhrase(isFollowUp);
+                  _editorialFollowUps = continues ? _editorialFollowUps + 1 : 0;
+                  _lastEditorialTopic = editorial.knowledgeId;
+                  intent = editorial;
+                  response = editorial.text;
                   _chatContext.reset();
-                  response = _conversation.reply(
-                        text,
-                        name: _primerNombre,
-                        previousUserMessage: lastUserPrompt,
-                      ) ??
-                      _respuestas.responder(
-                        text, nombre: _primerNombre, perfil: _perfil);
+                } else {
+                  _lastEditorialTopic = '';
+                  _editorialFollowUps = 0;
+                  final previousKnowledge = _chatContext.referenceFor(text);
+                  final educational = await _hybridKnowledge.answer(
+                    text, operational: intent,
+                    lastKnowledgeId: previousKnowledge,
+                  );
+                  if (educational != null) {
+                    intent = educational;
+                    response = educational.text;
+                    _chatContext.recordEducationalReply(
+                      input: text,
+                      knowledgeId: educational.knowledgeId,
+                      previousReference: previousKnowledge,
+                    );
+                  } else {
+                    _chatContext.reset();
+                    response = _conversation.reply(
+                          text,
+                          name: _primerNombre,
+                          previousUserMessage: lastUserPrompt,
+                        ) ??
+                        _respuestas.responder(
+                          text, nombre: _primerNombre, perfil: _perfil);
+                  }
                 }
               }
               if (intent.card == 'catalog_item' &&
@@ -744,7 +775,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   knowledgeId: 'huevo',
                   previousReference: '',
                 );
-              } else if (intent.card != 'knowledge') {
+              } else if (intent.card != 'knowledge' && intent.card != 'topic') {
                 _chatContext.reset();
               }
               _lastTopic = _engine.topicFor(intent);
