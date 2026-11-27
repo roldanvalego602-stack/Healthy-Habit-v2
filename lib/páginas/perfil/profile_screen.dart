@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../guia/guide_target.dart';
 import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_coin.dart';
 
@@ -140,9 +141,13 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _header(context),
+                  KeyedSubtree(
+                    key: HealthyGuideTargets.profileHeader,
+                    child: _header(context)),
                   const SizedBox(height: 18),
-                  _profileCard(
+                  KeyedSubtree(
+                    key: HealthyGuideTargets.profileIdentity,
+                    child: _profileCard(
                     context,
                     name: name,
                     username: username,
@@ -150,9 +155,11 @@ class ProfileScreen extends StatelessWidget {
                     coins: coins,
                     showCoins: showCoins,
                     data: data,
-                  ),
+                  )),
                   const SizedBox(height: 16),
-                  _friendsCard(context, user.uid),
+                  KeyedSubtree(
+                    key: HealthyGuideTargets.profileFriends,
+                    child: _friendsCard(context, user.uid)),
                   const SizedBox(height: 22),
                   if (showLevel || showXp) ...[
                     _levelCard(level: level, xp: xp,
@@ -204,7 +211,9 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   _professionalsCard(context),
                   const SizedBox(height: 20),
-                  _settingsCard(context),
+                  KeyedSubtree(
+                    key: HealthyGuideTargets.profileSettings,
+                    child: _settingsCard(context)),
                   const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
