@@ -17,6 +17,23 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.id == 'theme_cosmos') {
+      return SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const RadialGradient(colors: [
+              Color(0xFF5366B5), Color(0xFF1E194A), Color(0xFF060816),
+            ]),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF57E5FF), width: 1.5),
+          ),
+          child: Center(child: Icon(
+            Icons.auto_awesome_rounded,
+            color: const Color(0xFFBAABFF), size: size * .54)),
+        ),
+      );
+    }
     // El artículo histórico sigue retirado de la venta, pero su imagen
     // oficial se muestra si aparece en inventarios antiguos.
     if (item.id == 'achievement_display') {
