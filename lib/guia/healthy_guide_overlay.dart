@@ -39,6 +39,11 @@ class HealthyGuideOverlay {
     // El overlay raíz puede estar por encima del MediaQuery de la ruta.
     // Conservamos las preferencias efectivas de accesibilidad del origen.
     final originMedia = MediaQuery.of(context);
+    // La ruta puede sobreescribir MediaQuery sin establecer un tamaño válido.
+    // El overlay debe usar el viewport real del Navigator raíz y conservar
+    // del origen la accesibilidad, escala tipográfica y márgenes.
+    final overlaySize = MediaQuery.sizeOf(overlay.context);
+    final guideMedia = originMedia.copyWith(size: overlaySize);
     var closed = false;
     late OverlayEntry entry;
     void close() {
@@ -52,7 +57,7 @@ class HealthyGuideOverlay {
 
     entry = OverlayEntry(
       builder: (_) => MediaQuery(
-        data: originMedia,
+        data: guideMedia,
         child: _HealthyGuideScene(
           steps: steps,
           sectionTitle: sectionTitle,
