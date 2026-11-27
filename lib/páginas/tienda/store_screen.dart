@@ -583,7 +583,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _ink,
                   backgroundColor: HealthyAdaptive.surface,
-                  side: const BorderSide(color: Color(0xFFB8DCD0)),
+                  side: BorderSide(color: HealthyAdaptive.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -615,10 +615,13 @@ class _StoreScreenState extends State<StoreScreen> {
             selectedColor: _green,
             backgroundColor: HealthyAdaptive.surface,
             side: BorderSide(
-              color: selected ? _green : const Color(0xFFB8DCD0),
+              color: selected ? _green : HealthyAdaptive.border,
             ),
             labelStyle: TextStyle(
-              color: selected ? Colors.white : _ink,
+              color: selected
+                  ? (HealthyAdaptive.isCosmos
+                      ? CosmosPalette.background : Colors.white)
+                  : _ink,
               fontWeight: FontWeight.w800,
             ),
             shape: RoundedRectangleBorder(
@@ -835,6 +838,17 @@ class _StoreScreenState extends State<StoreScreen> {
   // Colores de las recompensas: el modo oscuro utiliza pigmentos profundos,
   // no pasteles luminosos con texto casi blanco.
   List<Color> _palette(String category) {
+    if (HealthyAdaptive.isCosmos) {
+      return switch (category) {
+        'Temas' => const [Color(0xFF352A70), Color(0xFF121B44)],
+        'Ropa' || 'Cabeza' => const [
+          Color(0xFF392F70), Color(0xFF1C2149)],
+        'Especiales' => const [Color(0xFF16465F), Color(0xFF19234D)],
+        'Marcos' || 'Banners' => const [
+          Color(0xFF4B285B), Color(0xFF1E2351)],
+        _ => const [Color(0xFF233B68), Color(0xFF171F44)],
+      };
+    }
     if (HealthyAdaptive.isDark) {
       switch (category) {
         case 'Ropa':
