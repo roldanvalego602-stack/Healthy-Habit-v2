@@ -1385,8 +1385,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
               message.text,
               style: TextStyle(
                 color: isUser ? Colors.white : HealthyAdaptive.text,
-                fontSize: 14,
-                height: 1.4,
+                fontSize: 13.5,
+                height: 1.36,
               ),
             ),
             if (!isUser &&
@@ -1489,7 +1489,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
               style: TextStyle(
