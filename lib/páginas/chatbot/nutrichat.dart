@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
 import 'mr_healthy_chat_avatar.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -819,6 +820,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
   Widget build(BuildContext context) {
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'chatbot'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: _background,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
