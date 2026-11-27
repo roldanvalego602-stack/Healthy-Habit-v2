@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_chat_display_mode.dart';
 import '../../tema/healthy_magic_guide.dart';
@@ -98,6 +99,68 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
+  bool _nearLatestMessage = true;
+  bool _showJumpToLatest = false;
+
+  void _trackMessageScroll() {
+    if (!scrollController.hasClients) return;
+    final distance = scrollController.position.extentAfter;
+    final nearLatest = distance < 140;
+    final showJump = distance > 220;
+    if (nearLatest != _nearLatestMessage || showJump != _showJumpToLatest) {
+      setState(() {
+        _nearLatestMessage = nearLatest;
+        _showJumpToLatest = showJump;
+      });
+    }
+  }
+
+  Future<void> _copyChatMessage(ChatMessage message) async {
+    await Clipboard.setData(ClipboardData(text: message.text));
+    if (mounted) _chatNotice('Mensaje copiado al portapapeles.');
+  }
+
+  void _showMessageDetails(ChatMessage message) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message.isUser ? 'Tu mensaje' : 'Mensaje de Mr. Healthy',
+                style: Theme.of(sheetContext).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text('Hora: ${message.time}',
+                style: Theme.of(sheetContext).textTheme.bodySmall),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight:
+                  MediaQuery.sizeOf(sheetContext).height * .45),
+                child: SingleChildScrollView(
+                  child: SelectableText(message.text),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.pop(sheetContext);
+                  _copyChatMessage(message);
+                },
+                icon: const Icon(Icons.copy_rounded),
+                label: const Text('Copiar mensaje'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
   final ClimaServicio _climaServicio = ClimaServicio();
@@ -175,6 +238,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     super.initState();
     _loadDisplayMode();
     _inputFocus.addListener(_onFocusChange);
+    scrollController.addListener(_trackMessageScroll);
     messageController.addListener(_onDraftChanged);
     _cargarSaludoPersonalizado();
     _loadRecentChat();
@@ -347,7 +411,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       });
       await _refreshAssistantData();
       if (mounted) setState(() {});
-      _scrollToBottom();
+      _scrollToBottom(force: true);
     } catch (_) {
       _chatNotice('No se pudo abrir el historial de ese chat.');
     } finally {
@@ -370,6 +434,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
+      _nearLatestMessage = true;
+      _showJumpToLatest = false;
       messages
         ..clear()
         ..add(ChatMessage(
@@ -670,7 +736,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       isTyping = true;
       _replyPending = true;
     });
-    _scrollToBottom();
+    _scrollToBottom(force: true);
 
     String response = '';
     HealthyAssistantReply intent = const HealthyAssistantReply('');
@@ -911,12 +977,15 @@ class _NutriChatPageState extends State<NutriChatPage> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool force = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !scrollController.hasClients) return;
+      // No interrumpir a quien está leyendo mensajes antiguos.
+      if (!force && !_nearLatestMessage) return;
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 260),
+        duration: HealthyVisualEffects.duration(
+          context, const Duration(milliseconds: 240)),
         curve: Curves.easeOutCubic,
       );
     });
@@ -929,6 +998,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     messageController.removeListener(_onDraftChanged);
     _inputFocus.dispose();
     messageController.dispose();
+    scrollController.removeListener(_trackMessageScroll);
     scrollController.dispose();
     super.dispose();
   }
@@ -1049,6 +1119,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
               right: 10,
               child: _buildFloatingChatHeader(),
             ),
+            if (_showJumpToLatest)
+              Positioned(
+                bottom: 100,
+                right: 14,
+                child: FloatingActionButton.small(
+                  heroTag: 'healthy-chat-jump-latest',
+                  tooltip: 'Ir al mensaje más reciente',
+                  onPressed: () => _scrollToBottom(force: true),
+                  backgroundColor: HealthyAdaptive.surface,
+                  foregroundColor: _navy,
+                  child: const Icon(Icons.keyboard_double_arrow_down_rounded),
+                ),
+              ),
           ],
         ),
       ),
@@ -1556,12 +1639,39 @@ class _NutriChatPageState extends State<NutriChatPage> {
               ),
             ],
             SizedBox(height: _displayMode == HealthyChatDisplayMode.compact ? 2 : 4),
-            Text(
-              '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
-              style: TextStyle(
-                color: isUser ? Colors.white70 : HealthyAdaptive.muted,
-                fontSize: 10,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: Text(
+                  '${isUser ? 'Tú' : 'Mr. Healthy'} · ${message.time}',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isUser ? Colors.white70 : HealthyAdaptive.muted,
+                    fontSize: 10,
+                  ),
+                )),
+                const SizedBox(width: 7),
+                InkWell(
+                  key: ValueKey('healthy-chat-copy-${messages.indexOf(message)}'),
+                  onTap: () => _copyChatMessage(message),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Icon(Icons.copy_rounded, size: 15,
+                      color: isUser ? Colors.white70 : HealthyAdaptive.muted),
+                  ),
+                ),
+                InkWell(
+                  key: ValueKey('healthy-chat-details-${messages.indexOf(message)}'),
+                  onTap: () => _showMessageDetails(message),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Icon(Icons.more_horiz_rounded, size: 17,
+                      color: isUser ? Colors.white70 : HealthyAdaptive.muted),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
