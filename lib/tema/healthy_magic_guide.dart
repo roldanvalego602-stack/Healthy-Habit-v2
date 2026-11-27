@@ -239,22 +239,101 @@ class HealthyMagicGuide {
   };
 }
 
-/// Se puede agregar a cualquier Scaffold sin copiar la lógica del tutorial.
-class HealthyMagicGuideButton extends StatelessWidget {
+/// Botón de ayuda arrastrable, compartido por todas las pantallas.
+/// Un toque abre la guía; arrastrarlo solo modifica su posición visual.
+class HealthyMagicGuideButton extends StatefulWidget {
   const HealthyMagicGuideButton({super.key, required this.section});
   final String section;
 
   @override
-  Widget build(BuildContext context) => FloatingActionButton.small(
-    heroTag: 'healthy-magic-guide-$section',
-    tooltip: 'Explícame esta pantalla',
-    backgroundColor: HealthyAdaptive.isCosmos
-        ? CosmosPalette.cyan : const Color(0xFF7547D7),
-    foregroundColor: HealthyAdaptive.isCosmos
-        ? CosmosPalette.background : Colors.white,
-    onPressed: () => HealthyMagicGuide.open(context, section),
-    child: const Icon(Icons.auto_awesome_rounded),
-  );
+  State<HealthyMagicGuideButton> createState() =>
+      _HealthyMagicGuideButtonState();
+}
+
+class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
+  static const double _diameter = 48;
+  static const double _margin = 12;
+
+  // Mantiene la última ubicación cuando el usuario cambia de sección.
+  // El valor es relativo al área disponible para adaptarse a otros tamaños.
+  static Offset? _savedRelativePosition;
+
+  final OverlayPortalController _portal = OverlayPortalController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _portal.show();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OverlayPortal(
+      controller: _portal,
+      overlayChildBuilder: (overlayContext) {
+        final media = MediaQuery.of(overlayContext);
+        final screen = media.size;
+        final minX = _margin;
+        final minY = media.padding.top + _margin;
+        final maxX = (screen.width - _diameter - _margin)
+            .clamp(minX, double.infinity).toDouble();
+        final maxY = (screen.height -
+                media.padding.bottom -
+                media.viewInsets.bottom -
+                _diameter -
+                _margin)
+            .clamp(minY, double.infinity).toDouble();
+        final relative = _savedRelativePosition;
+        final x = relative == null
+            ? minX
+            : (minX + (maxX - minX) * relative.dx).clamp(minX, maxX)
+                .toDouble();
+        final y = relative == null
+            ? (maxY - 72).clamp(minY, maxY).toDouble()
+            : (minY + (maxY - minY) * relative.dy).clamp(minY, maxY)
+                .toDouble();
+
+        return Positioned(
+          left: x,
+          top: y,
+          child: Semantics(
+            label: 'Guía de esta pantalla. Mantén pulsado y arrastra para mover.',
+            button: true,
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                final nx = (x + details.delta.dx).clamp(minX, maxX).toDouble();
+                final ny = (y + details.delta.dy).clamp(minY, maxY).toDouble();
+                setState(() {
+                  _savedRelativePosition = Offset(
+                    maxX > minX ? (nx - minX) / (maxX - minX) : 0,
+                    maxY > minY ? (ny - minY) / (maxY - minY) : 0,
+                  );
+                });
+              },
+              child: FloatingActionButton.small(
+                heroTag: 'healthy-magic-guide-${widget.section}',
+                tooltip: 'Explícame esta pantalla (arrastra para mover)',
+                backgroundColor: HealthyAdaptive.isCosmos
+                    ? CosmosPalette.cyan
+                    : const Color(0xFF7547D7),
+                foregroundColor: HealthyAdaptive.isCosmos
+                    ? CosmosPalette.background
+                    : Colors.white,
+                onPressed: () =>
+                    HealthyMagicGuide.open(context, widget.section),
+                child: const Icon(Icons.auto_awesome_rounded),
+              ),
+            ),
+          ),
+        );
+      },
+      // El botón real se pinta sobre la ruta; este espacio solo conserva
+      // compatibilidad con los Scaffold existentes.
+      child: const SizedBox(width: _diameter, height: _diameter),
+    );
+  }
 }
 
 class _GuideWalkthrough extends StatefulWidget {
