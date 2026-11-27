@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'guide_step.dart';
+import 'guide_gesture.dart';
 import 'guide_target.dart';
 
 /// Recorridos editoriales sobre controles reales, sin acciones automáticas.
@@ -29,6 +30,7 @@ class HealthyGuideScreenRoutes {
             icon: Icons.insights_rounded,
             targetKey: HealthyGuideTargets.homeLevel,
             extract: true,
+            gesture: HealthyGuideGesture.celebrate,
           ),
           HealthySpotlightStep(
             title: 'Tus Habit Coins',
@@ -64,6 +66,7 @@ class HealthyGuideScreenRoutes {
             icon: Icons.category_outlined,
             targetKey: HealthyGuideTargets.shopCategories,
             extract: true,
+            gesture: HealthyGuideGesture.inspect,
           ),
           HealthySpotlightStep(
             title: 'Recompensas disponibles',
