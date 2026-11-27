@@ -1,4 +1,5 @@
 import 'healthy_hybrid_knowledge.dart';
+import 'healthy_assistant_reply.dart';
 
 /// Contexto efímero de restricciones expresadas por el usuario.
 /// No se persiste, no analiza historiales ajenos ni representa datos médicos.
@@ -96,6 +97,112 @@ class MrHealthyPreferenceMemory {
   void reset() {
     _topicId = '';
     _conditions.clear();
+  }
+
+  /// Corrige únicamente la recomendación editorial actual. No toca hábitos,
+  /// compras ni datos almacenados; tampoco infiere preferencias no expresadas.
+  HealthyAssistantReply? correct(String input, String previousTopicId,
+      {String previousAssistantText = ''}) {
+    final q = _normalize(input);
+    if (previousTopicId.isEmpty || _topicId != previousTopicId ||
+        _clinical.hasMatch(q) || _operational.hasMatch(q)) {
+      return null;
+    }
+
+    final misunderstood = RegExp(
+      r'^(no (me referia|es eso|era eso)|'
+      r'me entendiste mal|no entendiste|'
+      r'eso no es lo que pedi|otra cosa era)',
+    ).hasMatch(q);
+    if (misunderstood) {
+      _conditions.clear();
+      return HealthyAssistantReply(
+        'Entiendo que mi respuesta no correspondió a lo que pedías. '
+        '¿Qué parte interpreté mal: el alimento, la actividad '
+        'o la preferencia? No cambiaré nada en tu cuenta.',
+        card: 'topic',
+        actionArgument: previousTopicId,
+        knowledgeId: previousTopicId,
+      );
+    }
+
+    final keepBudget = RegExp(
+      r'\b(manten|mantener|conserva|conservar|respeta|'
+      r'mismo|igual|sin cambiar)\b',
+    ).hasMatch(q) &&
+        RegExp(r'\b(presupuesto|precio|costo|barato|economico)\b')
+            .hasMatch(q);
+    final changeFood = RegExp(
+      r'\b(cambia|cambiar|cambiame|otro|otra|distinto|diferente)\b',
+    ).hasMatch(q) &&
+        RegExp(r'\b(alimento|comida|ingrediente|platillo|plato)\b')
+            .hasMatch(q);
+    if (keepBudget && changeFood &&
+        previousTopicId.startsWith('food_')) {
+      if (!_conditions.contains('economica')) {
+        return HealthyAssistantReply(
+          'Para conservar el presupuesto necesito saber cuál era '
+          'tu límite o si prefieres opciones económicas en general. '
+          'No voy a inventar un precio.',
+          card: 'topic',
+          actionArgument: previousTopicId,
+          knowledgeId: previousTopicId,
+        );
+      }
+      // Alternativas editoriales específicas, sin prometer un precio fijo.
+      final suggestion = switch (previousTopicId) {
+        'food_desayuno' => previousAssistantText
+                .toLowerCase().contains('huevo')
+            ? 'Prueba avena preparada con agua y fruta de temporada.'
+            : 'Otra opción es huevo bien cocido con tortilla y jitomate, '
+                'si consumes huevo.',
+        'food_cena' => 'Puedes alternar con frijoles cocidos, '
+            'arroz y verduras de temporada.',
+        'food_almuerzo' => 'Puedes probar lentejas bien cocidas '
+            'con arroz y verduras.',
+        _ => '',
+      };
+      if (suggestion.isEmpty) {
+        return HealthyAssistantReply(
+          'Mantengo la preferencia económica. '
+          '¿Qué alimento quieres sustituir y qué opciones tienes '
+          'a mano? No asumiré un precio concreto.',
+          card: 'topic', actionArgument: previousTopicId,
+          knowledgeId: previousTopicId,
+        );
+      }
+      final dairyFree = _conditions.contains('sin lacteos');
+      return HealthyAssistantReply(
+        'Mantengo la preferencia de bajo costo'
+        '\${dairyFree ? " y sin lácteos" : ""}. '
+        '$suggestion Los precios dependen de dónde compres. '
+        '¿Qué ingrediente prefieres evitar?',
+        card: 'topic', actionArgument: previousTopicId,
+        knowledgeId: previousTopicId,
+      );
+    }
+
+    final changeOnlyExercise = RegExp(
+      r'\b(cambia|cambiar|cambiame|modifica|modificar|'
+      r'otro|otra)\b',
+    ).hasMatch(q) &&
+        RegExp(r'\b(ejercicio|actividad|movimiento)\b').hasMatch(q) &&
+        RegExp(r'\b(solo|solamente|unicamente|nada mas)\b').hasMatch(q);
+    if (changeOnlyExercise && previousTopicId.startsWith('ex_')) {
+      final noEquipment = _conditions.contains('sin equipo');
+      final home = _conditions.contains('en casa');
+      return HealthyAssistantReply(
+        'Cambiaré solo la sugerencia de ejercicio; no modificaré '
+        'tus hábitos registrados. Puedes probar '
+        '\${noEquipment || home ? "movilidad suave de hombros y caminar en el sitio" : "una caminata breve a ritmo cómodo"}, '
+        'adaptando la intensidad y deteniéndote ante dolor. '
+        '\${noEquipment ? "Mantengo la preferencia de no usar equipo. " : ""}'
+        '¿Te interesa otra variante de movimiento?',
+        card: 'topic', actionArgument: previousTopicId,
+        knowledgeId: previousTopicId,
+      );
+    }
+    return null;
   }
 
   /// No altera la memoria. El candidato se usa solamente para una respuesta
