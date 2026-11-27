@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
@@ -1243,7 +1244,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
         children: [
           Row(
             children: [
-              Icon(categoryIcon(habit.category), color: color, size: 17),
+              HealthyAdaptive.isCosmos
+                  ? CosmosOrbitingIcon(
+                      icon: categoryIcon(habit.category), size: 19)
+                  : Icon(categoryIcon(habit.category), color: color, size: 17),
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
