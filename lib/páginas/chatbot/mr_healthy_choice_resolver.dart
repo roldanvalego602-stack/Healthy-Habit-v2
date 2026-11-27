@@ -9,16 +9,11 @@ class MrHealthyChoiceResolver {
   static String _normalize(String raw) =>
       HealthyKnowledgeIndex.normalize(raw);
 
-  static final RegExp _negative = RegExp(
-    r'^(no me gusta|no quiero esa|no me convence|otra opcion|'
-    r'prefiero otra|no esa|no me sirve|otra alternativa)\\b',
-  );
-
   static final RegExp _sensitive = RegExp(
-    r'\\b(embaraz\\w*|alergia\\w*|diabetes|intoxic\\w*|'
-    r'atragant\\w*|asfixia|desmay\\w*|medicamento\\w*|'
-    r'dosis|autolesion|suicid\\w*|calorias exactas|'
-    r'cuantas calorias|cuanto debo|mi saldo|mi contrasena)\\b',
+    r'\b(embaraz\w*|alergia\w*|diabetes|intoxic\w*|'
+    r'atragant\w*|asfixia|desmay\w*|medicamento\w*|'
+    r'dosis|autolesion|suicid\w*|calorias exactas|'
+    r'cuantas calorias|cuanto debo|mi saldo|mi contrasena)\b',
   );
 
   /// Solo existen menús para preguntas ya documentadas y verificables.
@@ -244,7 +239,7 @@ class MrHealthyChoiceResolver {
 
     if (option == null && RegExp(
         r'^(no me gusta|no quiero esa|no me convence|'
-        r'otra opcion|prefiero otra|no esa|otra alternativa)\\b'
+        r'otra opcion|prefiero otra|no esa|otra alternativa)\b'
       ).hasMatch(q)) {
       // Do not assume what "esa" refers to when multiple alternatives exist.
       return HealthyAssistantReply(
@@ -258,7 +253,7 @@ class MrHealthyChoiceResolver {
     final text = responses[topicId]?[option];
     if (text == null) return null;
     return HealthyAssistantReply(
-      '$text\\n\\n¿Quieres otra opción o prefieres cambiar de tema?',
+      '$text\n\n¿Quieres otra opción o prefieres cambiar de tema?',
       card: 'topic', actionArgument: topicId, knowledgeId: topicId,
     );
   }
