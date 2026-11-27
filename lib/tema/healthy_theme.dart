@@ -156,6 +156,13 @@ class HealthyThemes {
     );
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: HealthyRouteTransitions(),
+        TargetPlatform.iOS: HealthyRouteTransitions(),
+        TargetPlatform.linux: HealthyRouteTransitions(),
+        TargetPlatform.windows: HealthyRouteTransitions(),
+        TargetPlatform.macOS: HealthyRouteTransitions(),
+      }),
       fontFamily: 'Inter',
       brightness: Brightness.dark,
       colorScheme: scheme,
