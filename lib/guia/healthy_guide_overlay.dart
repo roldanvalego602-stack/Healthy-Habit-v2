@@ -207,7 +207,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       targetRect = measured;
       resolving = false;
     });
-    if (widget.steps[index].extract && targetRender is RenderRepaintBoundary) {
+    // No ampliar pantallas completas ni contenedores de gran tamaño:
+    // ocultan al personaje y dificultan reconocer el control señalado.
+    final canExtract = measured.width <= 420 && measured.height <= 220;
+    if (widget.steps[index].extract && canExtract &&
+        targetRender is RenderRepaintBoundary) {
       await _capture(targetRender, measured, index);
     }
   }
@@ -281,7 +285,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final reduceMotion = !HealthyVisualEffects.enabled(context);
     final fx = GuideFxTheme.current();
     final accent = fx.accent;
-    final cardWidth = screen.width > 480 ? 420.0 : screen.width - 32;
+    final cardWidth = screen.width > 480 ? 390.0 : screen.width - 32;
     // La tarjeta mantiene un tamaño predecible para la coreografía,
     // pero el contenido se puede desplazar en móviles compactos.
     final cardHeight = math.min(286.0,
@@ -304,9 +308,17 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
       safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
       explanation: cardBounds,
     );
+    // Las áreas demasiado grandes se destacan mediante un recorte visible,
+    // no con un contorno que cubra toda la pantalla.
+    final baseTarget = targetRect;
+    final focusedTarget = baseTarget == null ? null : Rect.fromCenter(
+      center: baseTarget.center,
+      width: math.min(baseTarget.width, screen.width - 32),
+      height: math.min(baseTarget.height, 205),
+    );
     final highlightedRect = _previewExpanded &&
             _previewPng != null && extractedDestination != null
-        ? extractedDestination : targetRect;
+        ? extractedDestination : focusedTarget;
     final pose = GuideCharacterPose.resolve(
       viewport: screen,
       safeArea: EdgeInsets.fromLTRB(0, safeTop, 0, safeBottom),
@@ -394,14 +406,6 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
             ),
           ),
         ),
-        AssistantGuideCharacter(
-          pose: pose,
-          motion: !reduceMotion,
-          phase: pulse,
-          stepIndex: controller.index,
-          gesture: guideGesture,
-          accent: accent,
-        ),
         if (_previewPng != null && _previewSource != null &&
             extractedDestination != null)
           GuideExtraction(
@@ -412,6 +416,15 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
             motion: !reduceMotion,
             accent: accent,
           ),
+        // Mantener al personaje por encima de la ampliación.
+        AssistantGuideCharacter(
+          pose: pose,
+          motion: !reduceMotion,
+          phase: pulse,
+          stepIndex: controller.index,
+          gesture: guideGesture,
+          accent: accent,
+        ),
         AnimatedPositioned(
           duration: reduceMotion
               ? Duration.zero : const Duration(milliseconds: 420),
