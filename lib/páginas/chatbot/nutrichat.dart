@@ -782,7 +782,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   final isSameTopic =
                       _lastEditorialTopic == editorial.knowledgeId;
                   _editorialTurnIndex = isSameTopic
-                      ? (_editorialTurnIndex + 1).clamp(0, 99) : 0;
+                      ? (_editorialTurnIndex + 1) % 100 : 0;
                   _lastEditorialTopic = editorial.knowledgeId;
                   intent = editorial;
                   response = editorial.text;
