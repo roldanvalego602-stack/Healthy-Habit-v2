@@ -280,7 +280,10 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
     final fx = GuideFxTheme.current();
     final accent = fx.accent;
     final cardWidth = screen.width > 480 ? 420.0 : screen.width - 32;
-    final cardHeight = 260.0;
+    // La tarjeta mantiene un tamaño predecible para la coreografía,
+    // pero el contenido se puede desplazar en móviles compactos.
+    final cardHeight = math.min(286.0,
+        math.max(144.0, screen.height - safeTop - safeBottom - 28));
     final belowTarget = targetRect == null ||
         targetRect!.center.dy < screen.height * .47;
     final top = belowTarget
@@ -428,9 +431,11 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                     blurRadius: 28, spreadRadius: 1),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(mainAxisSize: MainAxisSize.min,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: cardHeight),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(18),
+                child: Column(mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   CircleAvatar(
@@ -490,6 +495,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                     child: Text(controller.isLast ? 'Finalizar' : 'Siguiente')),
                 ]),
               ]),
+              ),
             ),
           ),
         ),
