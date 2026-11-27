@@ -107,6 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         };
         loading = false;
       });
+      HealthyRetroSoundService.setEnabled(settings['sonidosApp'] != false);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -612,50 +613,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _openSoundLibrary() {
     const options = <(String, String, IconData)>[
-      ('tap', 'Navegación y botones', Icons.touch_app_outlined),
-      ('open', 'Abrir catálogo', Icons.menu_book_outlined),
-      ('guide', 'Ayuda mágica', Icons.auto_awesome_rounded),
-      ('talk', 'Mr. Healthy', Icons.chat_bubble_outline),
-      ('habit', 'Hábito completado', Icons.check_circle_outline),
-      ('reward', 'Recompensa', Icons.redeem_outlined),
-      ('purchase', 'Compra en tienda', Icons.shopping_bag_outlined),
-      ('equip', 'Equipar accesorio', Icons.checkroom_outlined),
-      ('achievement', 'Subir de nivel', Icons.emoji_events_outlined),
-      ('friend', 'Amistad', Icons.people_outline),
-      ('error', 'Acción inválida', Icons.error_outline),
+      ('tap', 'Navegación · madera suave', Icons.touch_app_outlined),
+      ('open', 'Catálogo · apertura aérea', Icons.menu_book_outlined),
+      ('guide', 'Guía mágica · cristales', Icons.auto_awesome_rounded),
+      ('talk', 'Mr. Healthy · voz digital', Icons.chat_bubble_outline),
+      ('habit', 'Completar hábito · éxito', Icons.check_circle_outline),
+      ('reward', 'Recompensa · destello', Icons.redeem_outlined),
+      ('purchase', 'Tienda · compra confirmada', Icons.shopping_bag_outlined),
+      ('equip', 'Armario · objeto equipado', Icons.checkroom_outlined),
+      ('achievement', 'Nivel · celebración', Icons.emoji_events_outlined),
+      ('friend', 'Amistad · conexión', Icons.people_outline),
+      ('error', 'Error · aviso discreto', Icons.error_outline),
     ];
+    var playing = false;
+    String? diagnostic;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Sonidos de Healthy Habit',
-              style: Theme.of(sheetContext).textTheme.titleLarge),
-            const SizedBox(height: 4),
-            const Text(
-              'Efectos propios sintetizados. Ajusta el volumen multimedia del dispositivo.'),
-            const SizedBox(height: 14),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  for (final (kind, title, icon) in options)
-                    ListTile(
-                      leading: Icon(icon),
-                      title: Text(title),
-                      trailing: const Icon(Icons.play_arrow_rounded),
-                      enabled: _bool('sonidosApp'),
-                      onTap: () => HealthyRetroSoundService.play(kind),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Identidad sonora · Healthy Habit',
+                style: Theme.of(sheetContext).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              const Text(
+                'Once sonidos originales. Prueba con el volumen multimedia '
+                'del teléfono activado.'),
+              const SizedBox(height: 9),
+              if (diagnostic != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: SelectableText(
+                    diagnostic!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                     ),
-                ],
+                  ),
+                ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final (kind, title, icon) in options)
+                      ListTile(
+                        leading: Icon(icon),
+                        title: Text(title),
+                        trailing: playing
+                            ? const Icon(Icons.hourglass_top_rounded)
+                            : const Icon(Icons.play_arrow_rounded),
+                        enabled: !playing && _bool('sonidosApp'),
+                        onTap: () async {
+                          setSheetState(() {
+                            playing = true;
+                            diagnostic = 'Reproduciendo $title...';
+                          });
+                          final result = await HealthyRetroSoundService.preview(kind);
+                          if (!sheetContext.mounted) return;
+                          setSheetState(() {
+                            playing = false;
+                            diagnostic = result;
+                          });
+                        },
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              const Text(
+                'Si Android confirma la reproducción pero no escuchas nada, '
+                'verifica el volumen multimedia o la salida Bluetooth.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ),
     );
