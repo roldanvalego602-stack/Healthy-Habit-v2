@@ -177,7 +177,15 @@ class HealthyMagicGuide {
       await HealthyGuideOverlay.show(context,
         sectionTitle: 'Hábitos',
         steps: [
-          for (var i = 0; i < steps.length; i++)
+          HealthySpotlightStep(
+            title: 'Conoce tus hábitos',
+            description: 'Mr. Healthy te mostrará las herramientas '
+                'de esta pantalla. Durante el recorrido no se '
+                'realizarán registros ni cambios en tu cuenta.',
+            icon: Icons.auto_awesome_rounded,
+            targetKey: HealthyGuideTargets.habitsHeader,
+          ),
+          for (final i in const [1, 3, 0, 2])
             HealthySpotlightStep(
               title: steps[i].title,
               description: steps[i].description,
