@@ -43,6 +43,16 @@ void main() {
     }
   });
 
+  test('reconoce artículos naturales en preguntas frecuentes', () {
+    expect(bank.answer('¿Qué es la tienda?')?.knowledgeId, 'app_tienda');
+    expect(bank.answer('¿Qué es el planeta rojo?')?.knowledgeId,
+        'random_marte');
+    expect(bank.answer('¿Qué sabes de una caminata?')?.knowledgeId,
+        'ex_caminar');
+    expect(bank.answer('Cuéntame sobre las fases lunares')?.knowledgeId,
+        'random_luna');
+  });
+
   test('seguimiento retiene tema y ofrece detalle diferente', () {
     final first = bank.answer('Háblame de desayuno saludable');
     expect(first?.knowledgeId, 'food_desayuno');
