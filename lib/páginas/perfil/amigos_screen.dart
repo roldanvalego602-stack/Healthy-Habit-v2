@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 import '../../tema/healthy_magic_guide.dart';
 import '../../tema/healthy_theme.dart';
 import 'amigos_servicio.dart';
@@ -59,6 +60,7 @@ class _AmigosScreenState extends State<AmigosScreen> {
           break;
         case 'accept':
           await AmigosServicio.aceptarSolicitud(uid);
+          HealthyRetroSoundService.play('friend');
           _notify('Ahora $name es tu amigo.');
           break;
         case 'reject':
