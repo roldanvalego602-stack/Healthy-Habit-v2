@@ -922,85 +922,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: _background,
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: _background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 70,
-        leadingWidth: 54,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: _chatHeaderAction(
-            icon: Icons.arrow_back_rounded,
-            tooltip: 'Regresar',
-            onPressed: () => Navigator.maybePop(context),
-          ),
-        ),
-        titleSpacing: 6,
-        title: Container(
-          height: 46,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            color: HealthyAdaptive.surface,
-            borderRadius: BorderRadius.circular(19),
-            border: Border.all(color: HealthyAdaptive.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.auto_awesome_rounded, size: 17,
-                color: _green),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Mr. Healthy',
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(color: _navy,
-                        fontSize: 14.5, fontWeight: FontWeight.w800)),
-                    Text('Tu asistente',
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(color: _muted, fontSize: 10)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          _chatHeaderAction(
-            key: const Key('healthy-chat-audio-toggle'),
-            icon: _readAloud
-                ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-            tooltip: _readAloud
-                ? 'Silenciar voz retro de Mr. Healthy'
-                : 'Activar voz retro de Mr. Healthy',
-            onPressed: _toggleReadAloud,
-          ),
-          const SizedBox(width: 5),
-          _chatHeaderAction(
-            key: const Key('healthy-chat-history-button'),
-            icon: Icons.history_rounded,
-            tooltip: 'Historial de conversaciones',
-            onPressed: isTyping || _historyLoading
-                ? null : _showChatHistory,
-          ),
-          const SizedBox(width: 5),
-          _chatHeaderAction(
-            key: const Key('healthy-chat-new-button'),
-            icon: Icons.add_comment_outlined,
-            tooltip: 'Nueva conversación',
-            onPressed: isTyping ? null : _newConversation,
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
+          children: [
+            Column(
           children: [
             if (_historyLoading)
               const LinearProgressIndicator(minHeight: 2),
@@ -1052,7 +977,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                // Reserve the first message's space; while scrolling, content
+                // remains visible behind the floating header.
+                padding: const EdgeInsets.fromLTRB(12, 76, 12, 12),
                 itemCount:
                     1 +
                     messages.length +
@@ -1091,7 +1018,86 @@ class _NutriChatPageState extends State<NutriChatPage> {
             _buildComposer(keyboardVisible),
           ],
         ),
+            Positioned(
+              top: 8,
+              left: 10,
+              right: 10,
+              child: _buildFloatingChatHeader(),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Controles flotantes dibujados sobre el chat, sin AppBar opaco.
+  Widget _buildFloatingChatHeader() {
+    return Row(
+      children: [
+        _chatHeaderAction(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Regresar',
+          onPressed: () => Navigator.maybePop(context),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 9),
+            decoration: BoxDecoration(
+              color: HealthyAdaptive.surface.withValues(alpha: .93),
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: HealthyAdaptive.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded, size: 16, color: _green),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Mr. Healthy', maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _navy, fontSize: 13,
+                          fontWeight: FontWeight.w800)),
+                      Text('Tu asistente', maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _muted, fontSize: 9)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        _chatHeaderAction(
+          key: const Key('healthy-chat-audio-toggle'),
+          icon: _readAloud
+              ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+          tooltip: _readAloud
+              ? 'Silenciar voz retro de Mr. Healthy'
+              : 'Activar voz retro de Mr. Healthy',
+          onPressed: _toggleReadAloud,
+        ),
+        const SizedBox(width: 5),
+        _chatHeaderAction(
+          key: const Key('healthy-chat-history-button'),
+          icon: Icons.history_rounded,
+          tooltip: 'Historial de conversaciones',
+          onPressed: isTyping || _historyLoading
+              ? null : _showChatHistory,
+        ),
+        const SizedBox(width: 5),
+        _chatHeaderAction(
+          key: const Key('healthy-chat-new-button'),
+          icon: Icons.add_comment_outlined,
+          tooltip: 'Nueva conversación',
+          onPressed: isTyping ? null : _newConversation,
+        ),
+      ],
     );
   }
 
@@ -1103,10 +1109,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
     required VoidCallback? onPressed,
   }) {
     return Container(
-      width: 38,
+      width: 36,
       height: 40,
       decoration: BoxDecoration(
-        color: HealthyAdaptive.surface,
+        color: HealthyAdaptive.surface.withValues(alpha: .93),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: HealthyAdaptive.border),
       ),
@@ -1115,7 +1121,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         onPressed: onPressed,
         tooltip: tooltip,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 38, height: 40),
+        constraints: const BoxConstraints.tightFor(width: 36, height: 40),
         icon: Icon(icon, size: 19, color: onPressed == null
             ? _muted : _navy),
       ),
