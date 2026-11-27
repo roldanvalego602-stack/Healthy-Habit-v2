@@ -265,3 +265,25 @@ flutter test test/mr_healthy_topic_service_test.dart
 ```
 
 La funcionalidad se encuentra en GitHub; **la ejecución de Flutter y las pruebas en Linux/Android sigue pendiente**.
+
+## Fase de pruebas de conversaciones largas
+
+Se agregó `test/mr_healthy_long_conversation_test.dart`. Una simulación de 20 mensajes recorre desayuno sin lácteos → alternativa más económica → rechazo → selección ordinal → corrección del usuario → reinicio de preferencias → cambio a fuerza sin equipo → ejercicio en casa → corrección de actividad → historia con dos ramas → consulta clínica → cambio a tienda. Una segunda simulación de 12 mensajes intercala cena, cardio, seguridad alimentaria, colaciones y navegación. También se prueba el aislamiento de sesiones y la variedad de propuestas.
+
+El simulador reproduce la **capa editorial** (banco, selector, corrector y memoria) en el orden en que la utiliza `nutrichat.dart`. No ejecuta realmente la interfaz, Firestore, motor de acciones, modelos de voz, ni garantiza la experiencia completa del usuario. Las pruebas comprueban identificadores de tema, ausencia de acciones, respuesta al cambio de contexto, exclusión de preguntas clínicas y reducción de respuestas repetidas. Se agregó alternancia controlada en el texto de rechazo de una alternativa.
+
+Para ejecutar:
+
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_long_conversation_test.dart
+flutter test test/mr_healthy_corrections_test.dart
+flutter test test/mr_healthy_preference_memory_test.dart
+flutter test test/mr_healthy_combined_preferences_test.dart
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_variety_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+flutter test test/mr_healthy_topic_service_test.dart
+```
+
+**Estado:** cambios comprometidos en GitHub, sin ejecución local de Flutter desde este entorno. La batería aún requiere la validación en Linux y, posteriormente, una ronda manual en Android con conversaciones reales.
