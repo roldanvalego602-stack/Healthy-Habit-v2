@@ -48,6 +48,19 @@ void main() {
     expect(rejected?.action, isEmpty);
   });
 
+  test('elige por sinónimos en propuestas de actividad física', () {
+    final initial = bank.answer('¿Qué es empezar ejercicio?')!;
+    expect(initial.knowledgeId, 'ex_principiante');
+    final home = bank.answer('prefiero hacerlo en casa',
+      previousTopicId: initial.knowledgeId,
+      previousAssistantText: initial.text);
+    expect(home?.text, contains('marcha suave'));
+    final walk = bank.answer('la segunda',
+      previousTopicId: initial.knowledgeId,
+      previousAssistantText: initial.text);
+    expect(walk?.text, contains('caminata breve'));
+  });
+
   test('historias ofrecen ramas diferentes', () {
     final initial = bank.answer('Cuéntame sobre un cuento corto')!;
     final mystery = bank.answer('misterio',
