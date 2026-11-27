@@ -311,6 +311,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
             _lastTopic = const [
               'habit_add','habit_remove','profile','shop_item',
             ].contains(record.card) ? record.card : '';
+            if (record.card == 'topic' &&
+                record.actionArgument.startsWith(RegExp(
+                    r'^(app|food|ex|risk|random)_'))) {
+              _lastEditorialTopic = record.actionArgument;
+              _editorialFollowUps = 0;
+            }
             break;
           }
         }
