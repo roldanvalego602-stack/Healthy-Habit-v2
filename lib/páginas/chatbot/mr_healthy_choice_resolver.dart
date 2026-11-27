@@ -214,7 +214,6 @@ class MrHealthyChoiceResolver {
     final q = _normalize(input);
     if (q.isEmpty || _sensitive.hasMatch(q)) return null;
 
-    final previous = _normalize(previousAssistantText);
     final eligible = _offered(previousAssistantText, options);
     if (!eligible) return null;
 
