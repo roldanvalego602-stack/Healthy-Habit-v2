@@ -1427,12 +1427,17 @@ class _HabitsScreenState extends State<HabitsScreen> {
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: LinearProgressIndicator(
-            value: target > 0 ? (progress / target).clamp(0.0, 1.0) : 0,
-            minHeight: 7,
-            backgroundColor: HealthyAdaptive.surface,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
+          child: HealthyAdaptive.isCosmos
+              ? CosmosEnergyBar(
+                  value: target > 0 ? progress / target : 0,
+                  height: 7,
+                )
+              : LinearProgressIndicator(
+                  value: target > 0 ? (progress / target).clamp(0.0, 1.0) : 0,
+                  minHeight: 7,
+                  backgroundColor: HealthyAdaptive.surface,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
         ),
       ],
     );
