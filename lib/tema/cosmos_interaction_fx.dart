@@ -106,7 +106,7 @@ class _CosmosBurstPainter extends CustomPainter {
     final maximumRadius = (fullScreen ? scale * .40 : scale * .55);
     final count = fullScreen ? 48 : 19;
     final easeOut = 1 - math.pow(1 - progress, 3).toDouble();
-    final opacity = (1 - progress).clamp(0.0, 1.0);
+    final opacity = (1 - progress).clamp(0.0, 1.0).toDouble();
     final palette = switch (effect) {
       CosmosEffect.habit => [CosmosPalette.cyan, Colors.white,
         const Color(0xFFB1FFC9)],
