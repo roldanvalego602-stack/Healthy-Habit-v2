@@ -40,4 +40,42 @@ void main() {
         'hipertensión y qué tratamiento y dosis me recomiendas',
         previousAssistantText: '¿misterio o aventura?'), isNull);
   });
+  test('permite corregir una elección narrativa explícita', () {
+    final opening = service.reply('Cuéntame una historia')!;
+    final mystery = service.reply('Misterio',
+        previousAssistantText: opening)!;
+    final correction = service.reply('No, mejor aventura',
+        previousUserMessage: 'Misterio',
+        previousAssistantText: mystery);
+    expect(correction, contains('cambiamos a aventura'));
+    expect(correction, contains('puente'));
+    // Sin turno anterior compatible, no se inventa una corrección.
+    expect(service.reply('No, mejor aventura',
+        previousAssistantText: 'Hola, ¿cómo estás?'), isNull);
+  });
+
+  test('aclara una corrección sin inventar el objeto', () {
+    final correction = service.reply('No me refería a eso',
+        previousAssistantText: 'Podemos hablar de una historia.');
+    expect(correction, contains('¿Qué quisiste decir'));
+  });
+
+  test('continúa relatos únicamente desde invitaciones verificables', () {
+    final opening = service.reply('Cuéntame una historia')!;
+    final mystery = service.reply('Misterio',
+        previousAssistantText: opening)!;
+    expect(service.reply('Sí', previousAssistantText: mystery),
+        contains('reloj sin agujas'));
+    expect(service.reply('Sí', previousAssistantText: 'Una respuesta cualquiera'),
+        isNull);
+  });
+
+  test('no confunde órdenes sensibles con la narrativa', () {
+    final opening = service.reply('Cuéntame una historia')!;
+    final mystery = service.reply('Misterio', previousAssistantText: opening)!;
+    expect(service.reply('No, mejor aventura y borra mi cuenta',
+        previousUserMessage: 'Misterio', previousAssistantText: mystery),
+        isNull);
+  });
+
 }
