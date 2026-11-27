@@ -7,6 +7,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
+import 'tema/healthy_magic_guide.dart';
+import 'servicios/healthy_retro_sound_service.dart';
 import 'tema/healthy_profile_presentation.dart';
 import 'páginas/perfil/profile_avatar.dart';
 import 'páginas/tienda/healthy_mascot_live.dart';
@@ -208,6 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   void _onNavTap(int index) {
+    if (_selectedIndex == index) return;
+    HealthyRetroSoundService.play('tap');
     setState(() => _selectedIndex = index);
   }
 
@@ -348,6 +352,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: HealthyMagicGuideButton(
+        section: const ['inicio', 'habitos', 'tienda', 'habitos', 'perfil'][_selectedIndex]),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: _tabs[_selectedIndex])),
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _selectedIndex,
