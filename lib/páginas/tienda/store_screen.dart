@@ -589,6 +589,7 @@ class _StoreScreenState extends State<StoreScreen> {
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
+                key: HealthyGuideTargets.shopWardrobe,
                 onPressed: _openWardrobe,
                 icon: const Icon(Icons.checkroom_rounded, size: 18),
                 label: const Text('Armario'),
