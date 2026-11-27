@@ -1,10 +1,11 @@
 package com.example.healthy_habit
 
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-/** Puente Flutter/Android para sonidos procedimentales originales. */
+/** Android sound engine bridge and explicit preview diagnostic. */
 class MainActivity : FlutterActivity() {
     private val channel = "healthy_habit/retro_sounds"
 
@@ -13,15 +14,22 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "play" -> {
+                    "play", "preview" -> {
                         val kind = call.argument<String>("kind") ?: "tap"
                         if (kind !in HealthySoundEngine.supported) {
                             result.error("invalid-argument", "Unknown sound kind", null)
                         } else {
                             Thread {
-                                HealthySoundEngine.play(kind)
+                                val status = HealthySoundEngine.play(kind)
+                                Log.i("HealthyHabitAudio", status)
+                                runOnUiThread {
+                                    if (call.method == "preview") {
+                                        result.success(status)
+                                    } else {
+                                        result.success(null)
+                                    }
+                                }
                             }.start()
-                            result.success(null)
                         }
                     }
                     else -> result.notImplemented()
