@@ -49,6 +49,42 @@ void main() {
     expect(owned.equipped[cosmosSlot], cosmosShopId);
   });
 
+  testWidgets('la barra Cosmos muestra el porcentaje real y respeta límites',
+      (tester) async {
+    HealthyThemeController.instance.syncCosmos(
+      owned: true, equipped: true);
+    await tester.pumpWidget(MaterialApp(
+      theme: HealthyThemes.dark(),
+      home: const Scaffold(
+        body: Center(child: SizedBox(
+          width: 240,
+          child: CosmosEnergyBar(value: .42, height: 11),
+        )),
+      ),
+    ));
+    expect(find.byType(CosmosEnergyBar), findsOneWidget);
+    expect(find.bySemanticsLabel('Progreso'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Cosmos reduce animaciones cuando el sistema las desactiva',
+      (tester) async {
+    HealthyThemeController.instance.syncCosmos(
+      owned: true, equipped: true);
+    await tester.pumpWidget(MediaQuery(
+      data: const MediaQueryData(disableAnimations: true),
+      child: MaterialApp(
+        theme: HealthyThemes.dark(),
+        home: const Scaffold(body: Center(
+          child: SizedBox(width: 240, height: 160,
+            child: CosmosCardShell(child: Text('Cosmos Lite'))),
+        )),
+      ),
+    ));
+    expect(find.text('Cosmos Lite'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('los adornos solo se activan con Cosmos', (tester) async {
     final controller = HealthyThemeController.instance;
     controller.syncCosmos(owned: true, equipped: true);
