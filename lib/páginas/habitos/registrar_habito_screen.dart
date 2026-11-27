@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
@@ -546,6 +547,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
           );
         }
+        HealthyRetroSoundService.play(completed ? 'habit' : 'tap');
         // Registro oficial confirmado: cancelar avisos obsoletos.
         await HealthyRemindersService.instance.refreshForCurrentUser();
         if (!mounted) return;
@@ -796,6 +798,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           icon: Icons.check_circle_rounded,
         );
       }
+      HealthyRetroSoundService.play(resultado.completado ? 'habit' : 'tap');
       // Registro habitual confirmado en Firestore: reconstruir la agenda.
       await HealthyRemindersService.instance.refreshForCurrentUser();
       if (!mounted) return;
