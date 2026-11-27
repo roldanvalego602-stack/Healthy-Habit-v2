@@ -52,6 +52,17 @@ void main() {
       previousTopicId: first.knowledgeId, followUpDepth: 3), isNull);
   });
 
+  test('mantiene el contexto en respuestas elípticas', () {
+    final main = bank.answer('Háblame de bebidas energéticas');
+    final continued = bank.answer('¿Y si la tomo en la noche?',
+      previousTopicId: main!.knowledgeId);
+    expect(continued?.knowledgeId, 'risk_energetica');
+    expect(continued?.text, contains('Seguimos hablando'));
+    final choice = bank.answer('Una económica',
+      previousTopicId: 'food_desayuno');
+    expect(choice?.text, contains('avena'));
+  });
+
   test('no inventa recomendaciones clínicas ni cantidades exactas', () {
     for (final input in [
       '¿Cuántas calorías tiene la avena por porción?',
