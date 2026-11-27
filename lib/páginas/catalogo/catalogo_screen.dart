@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
 import 'catalogo_media.dart';
 import '../../tema/healthy_theme.dart';
+import '../../tema/cosmos_theme.dart';
 import 'datos/catalogo_datos.dart';
 import 'datos/bebidas_catalogo.dart';
 import 'catalogo_selector_bienestar.dart';
@@ -88,7 +89,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
     final imagenes = _vista == VistaCatalogo.imagenes;
     final detalles = _vista == VistaCatalogo.detalles;
     final marcado = _comparar.contains(item.id);
-    return Material(
+    return CosmosCardShell(child: Material(
       color: HealthyAdaptive.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -160,7 +161,7 @@ class _CatalogoScreenState extends State<CatalogoScreen>
                 ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _botonComparar(CatalogoItem item, bool marcado) => TextButton.icon(
