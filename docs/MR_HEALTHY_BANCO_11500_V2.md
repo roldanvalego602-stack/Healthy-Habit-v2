@@ -89,3 +89,23 @@ Verifica manualmente consultas como:
 - «¿Cuántas Habit Coins tengo?» → verificar datos reales, no responder con el banco editorial.
 
 **Pendiente:** ejecutar Flutter/tests en el equipo, inspeccionar una muestra aleatoria del JSONL y evaluar comprensión con preguntas auténticas de beta. El número de plantillas no equivale a una tasa de acierto probada.
+
+## Fase de calidad conversacional — pruebas de regresión
+
+Se añadió `test/mr_healthy_dialogue_regression_test.dart` con preguntas de los cinco dominios, preguntas habituales con artículos («¿qué es la tienda?»), continuidad del tema, preguntas elípticas, cambio de tema, rechazo de órdenes que no corresponden al banco y consultas médicas o privadas que no deben tratarse con una ficha genérica.
+
+Se endureció `MrHealthyResponseBank` para:
+- Priorizar las preguntas explícitas y descartar continuaciones cuando el usuario cambia de asunto.
+- Aplicar exclusiones a preguntas de dosis, diagnósticos, intoxicaciones y datos personales.
+- Reducir coincidencias de alias incidentales dentro de preguntas largas.
+- Entender algunos artículos de preguntas naturales sin ampliar indiscriminadamente la búsqueda.
+
+Estos controles no transforman el banco en un LLM y tampoco demuestran comprensión lingüística general. **Las preguntas reales aún deben probarse con usuarios, sin registrar datos sensibles en informes públicos.**
+
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_topic_service_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+```
+
+No se ejecutaron estas pruebas desde el editor remoto del repositorio: **pendiente validar el resultado local**.
