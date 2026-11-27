@@ -204,3 +204,35 @@ flutter test test/mr_healthy_topic_service_test.dart
 ```
 
 **Limitación:** esto es una matriz finita de combinaciones revisadas, no razonamiento lingüístico generativo. Las combinaciones no incluidas pueden pedir aclaración o continuar por el sistema anterior. La implementación aún requiere validación con Flutter en el equipo de desarrollo.
+
+## Fase: memoria de preferencias entre mensajes
+
+Nuevo módulo `lib/páginas/chatbot/mr_healthy_preference_memory.dart`. Mantiene **hasta dos condiciones explícitas por tema** durante el diálogo actual, sin almacenarlas en Firestore ni tratar de deducir necesidades médicas. Se integra con `nutrichat.dart` para combinar la preferencia anterior con una nueva, pero **solo después de que el asistente haya producido una respuesta editorial válida**. Si se cambia de tema, se inicia un chat nuevo, se resuelve una acción de cuenta o se desvía la consulta al motor especializado, se reinicia el contexto.
+
+Ejemplo:
+```text
+Usuario: Háblame de desayuno saludable.
+Mr. Healthy: ... rápida, económica o sin lácteos.
+Usuario: Sin lácteos.
+Mr. Healthy: ... avena con agua y fruta ... [sin lácteos]
+Usuario: Ahora algo más barato.
+Mr. Healthy: ... una opción económica y sin lácteos ...
+```
+
+La memoria se limita a los nueve temas que tienen combinaciones editoriales verificadas: desayuno, cena, almuerzo, fibra, colaciones, ejercicio inicial, fuerza, cardio y motivación. Si aparecen tres restricciones simultáneas, no crea una receta ni decide arbitrariamente cuál descartar. Tampoco guarda contraseñas, diagnósticos, medicamentos ni datos personales en este módulo.
+
+**Límites:** la memoria es efímera del estado del chat, no un perfil persistente del usuario ni una memoria semántica global; al reabrir un historial antiguo no se reconstruyen las condiciones de mensajes anteriores. Se conservan las otras capas de conocimiento y el enrutador original de acciones.
+
+Pruebas: `test/mr_healthy_preference_memory_test.dart`, incluyendo continuación entre turnos, reinicio, cambio de tema, negación de preferencias, exclusión de consultas clínicas/financieras y prevención de combinaciones de tres criterios.
+
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_preference_memory_test.dart
+flutter test test/mr_healthy_combined_preferences_test.dart
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_variety_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+flutter test test/mr_healthy_topic_service_test.dart
+```
+
+**Pendiente:** ejecutar análisis y pruebas en Linux Mint y validar conversaciones reales en Android antes de considerar cerrada esta fase.
