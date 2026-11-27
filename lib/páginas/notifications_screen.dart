@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 
 import '../tema/healthy_theme.dart';
 import '../servicios/healthy_reminders_service.dart';
@@ -128,6 +129,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final theme = Theme.of(context);
     final ref = _userRef;
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'notificaciones'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         title: const Text('Notificaciones'),
