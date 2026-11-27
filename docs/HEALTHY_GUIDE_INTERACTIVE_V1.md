@@ -178,3 +178,36 @@ Esta modificación no altera la lógica de la Fase 3 ni la animación normal de 
 La prueba de reducción de movimiento ya verificaba correctamente `disableAnimations: true`, pero su `MediaQueryData` local no incluía dimensiones de pantalla y el botón `Finalizar` se situaba fuera de los límites reales del test (`800 × 600`). En el overlay raíz, se toma ahora **el tamaño del `MediaQuery` del overlay** y se combina con las preferencias de accesibilidad del origen. De este modo, la guía mantiene `disableAnimations` y coloca la tarjeta dentro del viewport efectivo.
 
 La prueba de Fase 4 también comprueba el tamaño heredado, los límites del botón y que se pueda pulsar realmente. No se ocultó la advertencia `tap()` ni se desactivaron las comprobaciones de hit testing. Verificar con `flutter analyze --no-fatal-infos lib` y `flutter test test/healthy_guide_phase4_test.dart`.
+
+## Fase 5 — Integración de la guía en las cinco pestañas principales
+
+El recorrido interactivo ya estaba disponible en Hábitos. Ahora se habilita también en **Inicio, Tienda, Catálogo y Perfil** desde el mismo botón flotante de la barra principal. Los apartados secundarios como Registro, Chatbot, Amigos, Notificaciones, Armario e Imágenes conservan la guía en hoja inferior hasta su migración específica.
+
+### Recorridos principales
+
+| Sección | Objetivos reales | Extracción |
+|---|---|---|
+| Inicio | cabecera y accesos, tarjeta de nivel/XP, Habit Coins, barra inferior | tarjeta de nivel |
+| Hábitos | cabecera, categorías, rutinas, hábitos activos y primera tarjeta | categorías y tarjeta de hábito |
+| Tienda | cabecera y saldo, filtros, encabezado de recompensas, botón Armario | filtros, nunca acciones de compra |
+| Catálogo | pestañas, campo de búsqueda, filtros y opciones de orden/vista | ninguna en esta fase |
+| Perfil | identidad, cabecera, comunidad y configuración | ninguna, por privacidad |
+
+El contenido de los cuatro nuevos recorridos está centralizado en `lib/guia/guide_screen_routes.dart`, separado de la UI para poder probarlo. Los `GlobalKey` estables se registran en `lib/guia/guide_target.dart`. Se anclaron los widgets en `lib/páginas/inicio.dart`, `lib/páginas/tienda/store_screen.dart`, `lib/páginas/catalogo/catalogo_screen.dart` y `lib/páginas/perfil/profile_screen.dart`.
+
+La guía mantiene el bloqueo de las acciones reales y utiliza los efectos de las Fases 1–4, incluidas las variantes Cosmos únicamente cuando la cuenta ya tiene el tema equipado. Si un objetivo depende de datos todavía no cargados o de un sliver que no está construido, se presenta la descripción sin enfocar un control inexistente. Los objetivos disponibles en el árbol de widgets pueden desplazarse al área visible mediante `Scrollable.ensureVisible`.
+
+Se ajustó la tarjeta explicativa a la altura disponible y se añadió desplazamiento interno para evitar que textos o botones queden inaccesibles en dispositivos compactos.
+
+### Verificación
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase1_test.dart test/healthy_guide_phase2_test.dart test/healthy_guide_phase3_test.dart test/healthy_guide_phase4_test.dart test/healthy_guide_phase5_test.dart
+```
+
+En Android recorrer las cinco pestañas, con y sin conexión, probar Inicio cargando datos, Tienda sin artículos, Catálogo sin resultados y Perfil sin sesión. Comprobar también modo Lite, Cosmos, tema oscuro, Android con texto grande y teléfonos compactos. Durante la guía no debe activarse ninguna acción de los controles del fondo.
+
+**Alcance de las pruebas:** los widget tests de la Fase 5 verifican los recorridos declarados, su carácter no operativo y la adaptación del overlay. La integración con Firebase y las capturas GPU reales requiere validación en el dispositivo. Este entorno remoto no ejecuta Flutter, por lo que los resultados de compilación/test deben confirmarse en Linux.
