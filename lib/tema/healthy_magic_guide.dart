@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../guia/healthy_ufo_visual.dart';
 import 'cosmos_theme.dart';
 import 'healthy_theme.dart';
@@ -386,7 +387,10 @@ class _GuideWalkthroughState extends State<_GuideWalkthrough> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.auto_awesome_rounded, color: Color(0xFF7547D7)),
+            Image.asset(HealthyUfoVisual.asset, width: 36, height: 36,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.auto_awesome_rounded, color: Color(0xFF7547D7))),
             const SizedBox(width: 9),
             Expanded(child: Text('Guía mágica · ${widget.title}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
