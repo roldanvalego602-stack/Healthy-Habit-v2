@@ -35,7 +35,19 @@ class _CosmosBackgroundState extends State<CosmosBackground>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      vsync: this, duration: const Duration(seconds: 24))..repeat();
+      vsync: this, duration: const Duration(seconds: 24));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final animate = !HealthyVisualController.instance.isLite &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (animate && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!animate && _controller.isAnimating) {
+      _controller.stop();
+    }
   }
 
   @override
@@ -92,7 +104,7 @@ class _CosmosPainter extends CustomPainter {
       final y = random.nextDouble() * size.height;
       final radius = .45 + random.nextDouble() * 1.45;
       final phase = random.nextDouble() * math.pi * 2;
-      final alpha = (.36 + .32 * math.sin(t + phase)).clamp(.12, .75);
+      final alpha = (.36 + .32 * math.sin(t + phase)).clamp(.12, .75).toDouble();
       canvas.drawCircle(Offset(x, y + 6 * math.sin(t + phase)),
         radius, Paint()..color = Colors.white.withValues(alpha: alpha));
     }
