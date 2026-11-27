@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'healthy_visual_mode.dart';
 import 'healthy_theme.dart';
 import 'cosmos_theme.dart';
+import 'cosmos_interaction_fx.dart';
 
 /// Feedback exclusivamente visual: jamás concede XP, monedas ni desbloqueos.
 class HealthyCelebration {
@@ -13,7 +14,9 @@ class HealthyCelebration {
     required String subtitle,
     IconData icon = Icons.auto_awesome_rounded,
     Color? color,
+    CosmosEffect effect = CosmosEffect.reward,
   }) {
+    if (effect == CosmosEffect.level) CosmosLevelOverlay.show(context);
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(SnackBar(
@@ -26,6 +29,7 @@ class HealthyCelebration {
         side: BorderSide(color: color ?? Theme.of(context).colorScheme.primary),
       ),
       content: HealthyCelebrationBanner(
+        effect: effect,
         title: title,
         subtitle: subtitle,
         icon: icon,
@@ -42,12 +46,14 @@ class HealthyCelebrationBanner extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     this.color,
+    this.effect = CosmosEffect.reward,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final Color? color;
+  final CosmosEffect effect;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +78,19 @@ class HealthyCelebrationBanner extends StatelessWidget {
       ],
     );
 
-    if (!HealthyVisualEffects.enabled(context)) return body;
+    final decorated = HealthyAdaptive.isCosmos
+        ? SizedBox(
+            height: 75,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CosmosParticleBurst(effect: effect),
+                Align(alignment: Alignment.centerLeft, child: body),
+              ],
+            ),
+          )
+        : body;
+    if (!HealthyVisualEffects.enabled(context)) return decorated;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 420),
@@ -85,7 +103,7 @@ class HealthyCelebrationBanner extends StatelessWidget {
           child: child,
         ),
       ),
-      child: body,
+      child: decorated,
     );
   }
 }
