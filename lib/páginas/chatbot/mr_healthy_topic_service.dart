@@ -141,10 +141,10 @@ class MrHealthyResponseBank {
 
   // Safety and privacy-sensitive questions require specialized handling.
   static final RegExp _sensitiveQuestion = RegExp(
-    r'\b(embaraz|lactancia|diabetes|diagnostic|'
-    r'cancer|enfermedad|medicamento|dosis|alergia|'
-    r'atragant|asfixia|intoxic|veneno|autolesion|suicid|'
-    r'dolor de pecho|dolor fuerte|desmay|vomitar|'
+    r'\b(embaraz\w*|lactancia|diabetes|diagnostic\w*|'
+    r'cancer|enfermedad\w*|medicamento\w*|dosis|alergia\w*|'
+    r'atragant\w*|asfixia|intoxic\w*|veneno|autolesion|suicid\w*|'
+    r'dolor de pecho|dolor fuerte|desmay\w*|vomitar|'
     r'laxantes|cuantas calorias|cuantos gramos|cuantos mg|'
     r'cuanta proteina|cuanto debo|cantidad exacta|'
     r'cura|curarme|tratame|debo tomar|'
