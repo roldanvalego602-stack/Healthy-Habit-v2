@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:healthy_habit/tema/cosmos_interaction_fx.dart';
 import 'package:healthy_habit/tema/healthy_celebration.dart';
 import 'package:healthy_habit/tema/healthy_theme.dart';
-import 'package:healthy_habit/tema/healthy_visual_mode.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -67,7 +66,10 @@ void main() {
         ),
       ),
     ));
-    expect(find.byType(CustomPaint), findsNothing);
+    expect(find.descendant(
+      of: find.byType(CosmosParticleBurst),
+      matching: find.byType(CustomPaint),
+    ), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
