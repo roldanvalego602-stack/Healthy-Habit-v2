@@ -925,6 +925,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                       text,
                       name: _primerNombre,
                       previousUserMessage: lastUserPrompt,
+                      previousAssistantText: previousAssistantText,
                     );
                     response = conversational == null
                         ? _respuestas.responder(
