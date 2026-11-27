@@ -164,3 +164,11 @@ flutter test test/healthy_guide_phase2_test.dart
 flutter test test/healthy_guide_phase3_test.dart
 flutter test test/healthy_guide_phase4_test.dart
 ```
+
+## Corrección de accesibilidad del overlay raíz
+
+Después de que las fases 1, 2 y 3 pasaran y el análisis quedara sin advertencias, la prueba `reducir movimiento desactiva transiciones del texto` de la fase 4 detectó una pérdida de contexto: el overlay se monta con `rootOverlay: true` y puede quedar **por encima del `MediaQuery` de la ruta de origen**, por lo que no veía `disableAnimations: true`.
+
+`HealthyGuideOverlay.show` ahora toma `MediaQuery.of(context)` desde la pantalla que solicitó el recorrido y envuelve la escena en ese `MediaQuery` al insertarla en el overlay raíz. Así conserva la configuración de reducción de movimiento, el tamaño, la escala de texto y los márgenes de la pantalla que abrió la guía. La prueba `healthy_guide_phase4_test.dart` comprueba explícitamente que la escena recibe `disableAnimations: true` y que `AnimatedSwitcher.duration` es cero.
+
+Esta modificación no altera la lógica de la Fase 3 ni la animación normal de quien no solicitó movimiento reducido. La ejecución real de Flutter está pendiente en el equipo del proyecto.
