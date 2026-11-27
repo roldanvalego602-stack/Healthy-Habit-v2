@@ -21,6 +21,7 @@ class HealthyGuideTargets {
   static final GlobalKey shopFeatured = GlobalKey(debugLabel: 'guide-shop-featured');
   static final GlobalKey shopCategories = GlobalKey(debugLabel: 'guide-shop-categories');
   static final GlobalKey shopRewards = GlobalKey(debugLabel: 'guide-shop-rewards');
+  static final GlobalKey shopWardrobe = GlobalKey(debugLabel: 'guide-shop-wardrobe');
 
   static final GlobalKey catalogTabs = GlobalKey(debugLabel: 'guide-catalog-tabs');
   static final GlobalKey catalogSearch = GlobalKey(debugLabel: 'guide-catalog-search');
@@ -35,7 +36,7 @@ class HealthyGuideTargets {
   static GlobalKey? forSectionStep(String section, int index) {
     final keys = switch (section) {
       'inicio' => <GlobalKey>[homeHeader, homeLevel, homeCoins, mainNavigation],
-      'tienda' => <GlobalKey>[shopHeader, shopCategories, shopRewards, shopFeatured],
+      'tienda' => <GlobalKey>[shopHeader, shopCategories, shopRewards, shopWardrobe],
       'catalogo' => <GlobalKey>[catalogTabs, catalogSearch, catalogFilters, catalogOptions],
       'perfil' => <GlobalKey>[profileIdentity, profileHeader, profileFriends, profileSettings],
       _ => <GlobalKey>[],
