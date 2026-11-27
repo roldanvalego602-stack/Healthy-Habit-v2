@@ -36,13 +36,13 @@ class _CosmosBackgroundState extends State<CosmosBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this, duration: const Duration(seconds: 24));
+    HealthyVisualController.instance.addListener(_syncMotion);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _syncMotion() {
+    if (!mounted) return;
     final animate = !HealthyVisualController.instance.isLite &&
-        !MediaQuery.disableAnimationsOf(context);
+        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false);
     if (animate && !_controller.isAnimating) {
       _controller.repeat();
     } else if (!animate && _controller.isAnimating) {
@@ -51,7 +51,14 @@ class _CosmosBackgroundState extends State<CosmosBackground>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  @override
   void dispose() {
+    HealthyVisualController.instance.removeListener(_syncMotion);
     _controller.dispose();
     super.dispose();
   }
@@ -165,14 +172,14 @@ class _CosmosCardShellState extends State<CosmosCardShell>
     super.initState();
     _pulse = AnimationController(
       vsync: this, duration: const Duration(seconds: 5));
+    HealthyVisualController.instance.addListener(_syncMotion);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _syncMotion() {
+    if (!mounted) return;
     final animate = HealthyAdaptive.isCosmos &&
         !HealthyVisualController.instance.isLite &&
-        !MediaQuery.disableAnimationsOf(context);
+        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false);
     if (animate && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
     } else if (!animate && _pulse.isAnimating) {
@@ -181,7 +188,14 @@ class _CosmosCardShellState extends State<CosmosCardShell>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  @override
   void dispose() {
+    HealthyVisualController.instance.removeListener(_syncMotion);
     _pulse.dispose();
     super.dispose();
   }
@@ -248,14 +262,14 @@ class _CosmosOrbitingIconState extends State<CosmosOrbitingIcon>
     super.initState();
     _orbit = AnimationController(
       vsync: this, duration: const Duration(seconds: 7));
+    HealthyVisualController.instance.addListener(_syncMotion);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _syncMotion() {
+    if (!mounted) return;
     final animate = HealthyAdaptive.isCosmos &&
         !HealthyVisualController.instance.isLite &&
-        !MediaQuery.disableAnimationsOf(context);
+        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false);
     if (animate && !_orbit.isAnimating) {
       _orbit.repeat();
     } else if (!animate && _orbit.isAnimating) {
@@ -264,7 +278,14 @@ class _CosmosOrbitingIconState extends State<CosmosOrbitingIcon>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  @override
   void dispose() {
+    HealthyVisualController.instance.removeListener(_syncMotion);
     _orbit.dispose();
     super.dispose();
   }
