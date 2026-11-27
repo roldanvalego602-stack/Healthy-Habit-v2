@@ -62,3 +62,30 @@ El motor de sonido modifica código Kotlin; no basta Hot Reload para instalar lo
 Se verificó por inspección de `main` que el catálogo de Flutter y el catálogo autorizado del servidor contienen 63 artículos y comparten exactamente los mismos IDs y precios; Cosmos figura a 1,800 Habit Coins y su ranura en el backend es `app_theme`.
 
 **No se ha ejecutado Flutter ni compilado Android desde el entorno de edición.** Los resultados de pruebas de Node y Flutter deben comprobarse en el equipo del desarrollador antes de declarar que la funcionalidad está lista para beta.
+
+## Fase 2 — Integración visual (26 de noviembre de 2026)
+
+Se extendió Cosmos para que la transformación visual llegue a los módulos y no se limite a un fondo global:
+
+- **Inicio:** pestaña seleccionada de la barra inferior con halo holográfico, tarjeta de nivel galáctica y progreso de XP como flujo de energía.
+- **Hábitos:** colores propios para Alimentación, Hidratación, Energía y Bienestar que conservan contraste sobre fondos oscuros; iconos orbitales y barra de avance energética.
+- **Tienda:** paletas cósmicas para las tarjetas de sus distintas categorías, filtros con colores legibles en seleccionados y bordes de contraste.
+- **Perfil:** nivel y barra de XP espaciales, borde del perfil y módulo de amistades con identidad holográfica.
+- **Catálogo:** envolturas reutilizables con brillos de esquinas y bordes estelares.
+- **Desafíos:** cabecera de temporada espacial, barras de progreso energéticas y contornos de tarjetas adaptados al estado.
+- **Rendimiento:** los controladores de órbita, fondo y brillo se pausan cuando se activa `Lite` o la preferencia del sistema de reducir animaciones.
+
+**Importante:** las paletas heredadas de ciertas subpantallas pueden seguir mostrando colores de la experiencia original; corregirlas requiere revisar en dispositivo los flujos restantes, sin degradar la legibilidad.
+
+### Validación específica
+
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/cosmos_theme_test.dart
+flutter test test/healthy_emerald_christmas_theme_test.dart
+flutter run -t lib/main.dart
+```
+
+En el dispositivo, probar la barra inferior, tarjetas de hábitos de las cuatro categorías, progreso en Perfil y Desafíos, fichas de Catálogo y filtros de la Tienda. Cambiar a modo Lite mientras Cosmos está equipado; la animación debe detenerse y los contenidos deben permanecer visibles.
+
+No afirmar que esta fase está certificada para beta hasta realizar pruebas reales de navegación y contraste, pruebas Flutter y verificación de compra/equipamiento con backend desplegado.
