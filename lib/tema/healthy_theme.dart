@@ -18,6 +18,18 @@ class HealthyThemeController extends ChangeNotifier {
   static const preferenceKey = 'healthy_habit_theme_v1';
   static const stylePreferenceKey = 'healthy_habit_style_v1';
 
+  // Propiedad confirmada por Firestore; nunca confiar en un booleano local
+  // para activar cosméticos de pago.
+  bool _ownsCosmos = false;
+  bool _equippedCosmos = false;
+  bool get cosmosActive => _ownsCosmos && _equippedCosmos;
+  void syncCosmos({required bool owned, required bool equipped}) {
+    if (_ownsCosmos == owned && _equippedCosmos == equipped) return;
+    _ownsCosmos = owned;
+    _equippedCosmos = equipped;
+    notifyListeners();
+  }
+
   HealthyThemeStyle _style = HealthyThemeStyle.original;
   HealthyThemeStyle get style => _style;
 
@@ -80,6 +92,7 @@ class HealthyThemeController extends ChangeNotifier {
 class HealthyThemes {
   static const _green = Color(0xFF00C88C);
   static ThemeData light() {
+    if (HealthyThemeController.instance.cosmosActive) return _cosmos();
     if (HealthyThemeController.instance.style ==
         HealthyThemeStyle.emeraldChristmas) {
       return _christmas(Brightness.light);
@@ -108,6 +121,7 @@ class HealthyThemes {
   }
 
   static ThemeData dark() {
+    if (HealthyThemeController.instance.cosmosActive) return _cosmos();
     if (HealthyThemeController.instance.style ==
         HealthyThemeStyle.emeraldChristmas) {
       return _christmas(Brightness.dark);
@@ -127,6 +141,42 @@ class HealthyThemes {
       foregroundColor: Color(0xFFF1F5F6),
     ),
   );
+  }
+
+  static ThemeData _cosmos() {
+    const surface = Color(0xFF141E3A);
+    const background = Color(0xFF060816);
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF85CCFF),
+      brightness: Brightness.dark,
+      primary: const Color(0xFF85CCFF),
+      secondary: const Color(0xFFC59FFF),
+      tertiary: const Color(0xFF57E5FF),
+      surface: surface,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Inter',
+      brightness: Brightness.dark,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: background.withValues(alpha: .68),
+      cardColor: surface.withValues(alpha: .88),
+      appBarTheme: AppBarTheme(
+        backgroundColor: background.withValues(alpha: .8),
+        foregroundColor: const Color(0xFFF4F7FF),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF141E3A),
+        indicatorColor: const Color(0xFF263D70),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF85CCFF),
+          foregroundColor: const Color(0xFF081426),
+        ),
+      ),
+      dividerColor: const Color(0xFF526391),
+    );
   }
 
   static ThemeData _christmas(Brightness brightness) {
@@ -184,10 +234,12 @@ class HealthyThemes {
 /// Tokens compartidos para migrar pantallas que antes tenían colores fijos.
 /// La instancia global reconstruye MaterialApp al cambiar la preferencia.
 class HealthyAdaptive {
+  static bool get isCosmos => HealthyThemeController.instance.cosmosActive;
   static bool get isChristmas =>
       HealthyThemeController.instance.style ==
       HealthyThemeStyle.emeraldChristmas;
   static bool get isDark {
+    if (isCosmos) return true;
     final mode = HealthyThemeController.instance.mode;
     if (mode == ThemeMode.dark) return true;
     if (mode == ThemeMode.light) return false;
@@ -196,30 +248,42 @@ class HealthyAdaptive {
   }
 
   static Color get background =>
+      isCosmos ? const Color(0xB8060816) :
       isChristmas ? (isDark ? const Color(0xFF101E1C) : const Color(0xFFF7FAF6)) : (isDark ? const Color(0xFF101923) : const Color(0xFFF7F9F8));
   static Color get surface =>
+      isCosmos ? const Color(0xE6141E3A) :
       isChristmas ? (isDark ? const Color(0xFF1C302B) : Colors.white) : (isDark ? const Color(0xFF1B2935) : Colors.white);
   static Color get surfaceAlt =>
+      isCosmos ? const Color(0xE61C2850) :
       isChristmas ? (isDark ? const Color(0xFF294B3E) : const Color(0xFFE8F4EC)) : (isDark ? const Color(0xFF263947) : const Color(0xFFEAF3EF));
   static Color get text =>
+      isCosmos ? const Color(0xFFF4F7FF) :
       isChristmas ? (isDark ? const Color(0xFFF2F8F3) : const Color(0xFF12372F)) : (isDark ? const Color(0xFFF1F5F6) : const Color(0xFF193344));
   static Color get muted =>
+      isCosmos ? const Color(0xFFB6C8E3) :
       isChristmas ? (isDark ? const Color(0xFFB8D0C3) : const Color(0xFF627E70)) : (isDark ? const Color(0xFFB4C1CB) : const Color(0xFF71879A));
   static Color get border =>
+      isCosmos ? const Color(0xFF647BB9) :
       isChristmas ? (isDark ? const Color(0xFF36574D) : const Color(0xFFD8E8DF)) : (isDark ? const Color(0xFF344A57) : const Color(0xFFE0EAE6));
   static Color get accent =>
+      isCosmos ? const Color(0xFF85CCFF) :
       isChristmas ? (isDark ? const Color(0xFF75D9AE) : const Color(0xFF087B58)) : (isDark ? const Color(0xFF6CD3A1) : const Color(0xFF078765));
 
   /// Tarjetas de categorías conservan su identidad cromática, sin
   /// dejar texto oscuro sobre un panel oscuro.
   static Color get water =>
+      isCosmos ? const Color(0xFF183A65) :
       isDark ? const Color(0xFF183E4F) : const Color(0xFFE8F6FC);
   static Color get waterInk =>
+      isCosmos ? const Color(0xFF9EEBFF) :
       isDark ? const Color(0xFF8FC9FF) : const Color(0xFF2B7FD1);
   static Color get lavender =>
+      isCosmos ? const Color(0xFF392858) :
       isDark ? const Color(0xFF35294A) : const Color(0xFFF0EBFC);
   static Color get mint =>
+      isCosmos ? const Color(0xFF143C53) :
       isDark ? const Color(0xFF1D463A) : const Color(0xFFE2F7ED);
   static Color get yellow =>
+      isCosmos ? const Color(0xFF47405E) :
       isDark ? const Color(0xFF4B3A20) : const Color(0xFFFDE89D);
 }
