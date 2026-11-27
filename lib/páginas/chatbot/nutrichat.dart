@@ -696,7 +696,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
           final generalQuestion = RegExp(
             r'^(que es|que son|como funciona|para que sirve|'
             r'habla(me)? de|explicame|dime sobre|quiero saber de|'
-            r'que sabes de|como se usa|me interesa|informacion sobre)\\b',
+            r'que sabes de|como se usa|me interesa|informacion sobre)\b',
           ).hasMatch(normalizedQuestion);
           final requiresProfile = HealthyIntentRouter.asksForCoinBalance(text) ||
               (!generalQuestion && (
