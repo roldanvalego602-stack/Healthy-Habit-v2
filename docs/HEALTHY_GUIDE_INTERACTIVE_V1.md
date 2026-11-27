@@ -226,3 +226,29 @@ flutter test test/healthy_guide_phase5_test.dart
 ```
 
 No se ejecutó Flutter desde el entorno remoto; la corrección requiere confirmación en Linux.
+
+## Etapa 6 — Gestos expresivos de Mr. Healthy (después de Fase 5)
+
+Se incorporó un repertorio de seis gestos visuales: `greet` (saludo), `present` (presentación), `point` (señalamiento), `inspect` (inspección), `celebrate` (celebración) y `farewell` (despedida).
+
+- `lib/guia/guide_gesture.dart`: enum y motor matemático puro `HealthyGuideMotion.at` con variaciones controladas de traslación vertical, inclinación, escala y emblema.
+- `lib/guia/guide_step.dart`: cada paso puede declarar un gesto específico con `gesture:`; si no se especifica, la guía selecciona saludo inicial, inspección para extracciones, señalamiento para pasos intermedios y despedida final.
+- `lib/guia/assistant_guide_character.dart`: el personaje combina su sprite real con un símbolo animado de gesto, poses corporales diferenciadas y etiquetado accesible. Sigue siendo un componente no interactivo (`IgnorePointer`).
+- `lib/guia/healthy_guide_overlay.dart`: envía el gesto efectivo al personaje, conservando la coreografía, los señaladores y la extracción existentes.
+- `lib/guia/guide_screen_routes.dart`: la tarjeta de XP usa gesto de celebración y los filtros de Tienda usan inspección.
+- `test/healthy_guide_gestures_test.dart`: pruebas de elección automática, sobreescritura explícita, poses deterministas, modo estático, accesibilidad y cambio de paso.
+
+**Límite gráfico:** el recurso `assets/mascot/healthy.png` es una imagen plana; se animan el conjunto del sprite y elementos expresivos superpuestos. No existen por ahora brazos, ojos o boca articulados ni sprites de poses separados. Para alcanzar gestos de extremidades verdaderamente animadas habría que proporcionar una hoja de sprites o un rig Rive/Flare adecuado.
+
+Los movimientos decorativos siguen subordinados a `HealthyVisualEffects.enabled`, que respeta Lite, los ajustes de la app y la reducción de movimiento.
+
+### Validación
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase*_test.dart test/healthy_guide_gestures_test.dart
+```
+
+Inspeccionar en Android el saludo al abrir el recorrido, la inclinación al señalar, el cambio de emblema al ampliar componentes, la celebración de nivel en Inicio y la pose final de despedida; comprobar Lite y tamaños compactos. El entorno remoto confirmó los cambios en GitHub, **no ejecutó la compilación ni los tests Flutter**.
