@@ -79,6 +79,8 @@ void main() {
       sectionTitle: 'Perfil',
       steps: HealthyGuideScreenRoutes.forSection('perfil'));
     await tester.pump();
+    // La prueba debe fallar si algún RenderFlex produce overflow.
+    expect(tester.takeException(), isNull);
     final button = find.byTooltip('Cerrar guía');
     expect(tester.getRect(button).bottom, lessThanOrEqualTo(470));
     await tester.tap(button);
