@@ -719,9 +719,18 @@ class _HomeContent extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F3832), Color(0xFF1E4D44)],
-        ),
+        gradient: HealthyAdaptive.isCosmos
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF263F89), Color(0xFF4A2668), Color(0xFF10162E)],
+              )
+            : const LinearGradient(
+                colors: [Color(0xFF0F3832), Color(0xFF1E4D44)],
+              ),
+        border: HealthyAdaptive.isCosmos
+            ? Border.all(color: const Color(0xFF79DFF8).withValues(alpha: .65))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
