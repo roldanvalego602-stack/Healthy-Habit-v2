@@ -212,6 +212,7 @@ class MrHealthyResponseBank {
     String previousTopicId = '',
     int followUpDepth = 0,
     String previousAssistantText = '',
+    int turnIndex = 0,
   }) {
     final q = normalize(input);
     if (q.isEmpty || _shouldDeferToSpecialist(q) ||
@@ -224,6 +225,7 @@ class MrHealthyResponseBank {
         input,
         topicId: previousTopicId,
         previousAssistantText: previousAssistantText,
+        turnIndex: turnIndex,
       );
       if (selected != null) return selected;
       // Do not reinterpret an ordinal as generic detail when there was
@@ -315,12 +317,14 @@ class MrHealthyTopicService {
     String previousTopicId = '',
     int followUpDepth = 0,
     String previousAssistantText = '',
+    int turnIndex = 0,
   }) async {
     try {
       final bank = _bank ?? await load();
       return bank.answer(input, previousTopicId: previousTopicId,
           followUpDepth: followUpDepth,
-          previousAssistantText: previousAssistantText);
+          previousAssistantText: previousAssistantText,
+          turnIndex: turnIndex);
     } catch (_) {
       // Preserve legacy knowledge and natural conversation on asset failures.
       return null;
