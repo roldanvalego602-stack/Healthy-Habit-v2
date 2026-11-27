@@ -151,3 +151,32 @@ flutter test test/mr_healthy_dialogue_regression_test.dart
 ```
 
 Estado: **cambios guardados en GitHub; no compilados en Android ni ejecutados localmente desde este entorno**.
+
+## Fase de variedad y mayor cobertura de preferencias
+
+La capa conversacional ahora incluye **30 menús editoriales** (los 14 anteriores más 16 nuevos). Se añadieron menús para Inicio, Hábitos, registros, Catálogo, Misiones, plato equilibrado, colaciones, carbohidratos, verduras, frutas, cardio, ejercicios sin equipo, planchas, estiramientos, planetas y Luna.
+
+El motor también dispone de respuestas alternativas redactadas para distintas preferencias frecuentes. El índice de turno se conserva **solo en la conversación actual y mientras el tema no cambie**, con lo que una preferencia repetida puede recibir otra opción apropiada. Los textos no se crean con IA generativa y no se inventan cambios de saldo, XP ni tratamientos.
+
+Reglas:
+- La última intervención del asistente debe mostrar **al menos dos opciones identificables**: mencionar incidentalmente un alimento o una actividad no constituye un menú.
+- Las elecciones ordinales utilizan el orden de las opciones de la **última propuesta**, no palabras que aparezcan antes en la explicación.
+- No se repite exactamente el mismo cierre en cada turno; se alternan tres fórmulas de seguimiento.
+- Preguntas médicas sensibles, comandos que requieren confirmación y cambios de tema continúan fuera del selector editorial.
+- El contador de variedad vuelve a cero al cambiar de asunto, comenzar una nueva conversación o resolver una acción de la cuenta.
+
+Se agregó `test/mr_healthy_variety_test.dart` para comprobar cobertura de opciones, orden, cambios de tema, ausencia de menús falsos, seguridad y variedad por turno.
+
+Validación recomendada:
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_topic_service_test.dart
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+flutter test test/mr_healthy_variety_test.dart
+```
+
+**Estado:** revisión estática de catálogos y de opciones completada desde GitHub, con 30 menús y al menos dos opciones verificables en cada propuesta. No se ejecutaron pruebas de Flutter desde el editor remoto; es obligatorio confirmarlas en el entorno de desarrollo antes de asegurar que la versión compila.
