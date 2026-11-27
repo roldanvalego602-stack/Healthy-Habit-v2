@@ -253,7 +253,8 @@ class MrHealthyChoiceResolver {
     final text = responses[topicId]?[option];
     if (text == null) return null;
     return HealthyAssistantReply(
-      '$text\n\n¿Quieres otra opción o prefieres cambiar de tema?',
+      '$text\n\nPuedes elegir otra opción: '
+      '${options.join(', ')}. ¿Cuál prefieres?',
       card: 'topic', actionArgument: topicId, knowledgeId: topicId,
     );
   }
