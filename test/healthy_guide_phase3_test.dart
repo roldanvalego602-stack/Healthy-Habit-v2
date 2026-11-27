@@ -1,8 +1,22 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:healthy_habit/guia/guide_extraction.dart';
 import 'package:healthy_habit/guia/guide_step.dart';
 import 'package:healthy_habit/guia/healthy_guide_overlay.dart';
+
+// PNG válida y pequeña: evita depender del backend gráfico de pruebas.
+// La ruta productiva sigue capturando mediante RepaintBoundary.toImage().
+final _previewForTest = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAIAAADZSiLo'
+  'AAAAF0lEQVR4nGNU2lHNwMDAwMDAxAADCBYAJWsBW5KYPuMAAAAASUVORK5CYII=');
+
+Future<void> _pumpUntil(WidgetTester tester, Finder finder) async {
+  for (var i = 0; i < 14 && finder.evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+  expect(finder, findsOneWidget);
+}
 
 void main() {
   test('la vista ampliada evita la tarjeta informativa', () {
@@ -49,7 +63,9 @@ void main() {
       )),
     ));
     final context = tester.element(find.byType(Scaffold));
-    final done = HealthyGuideOverlay.show(context, steps: [
+    final done = HealthyGuideOverlay.show(context,
+      capture: (_) async => _previewForTest,
+      steps: [
       HealthySpotlightStep(
         title: 'Detalle seguro',
         description: 'Imagen visual sin tocar el botón.',
@@ -61,7 +77,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 650));
-    expect(find.byType(GuideExtraction), findsOneWidget);
+    await _pumpUntil(tester, find.byType(GuideExtraction));
     expect(find.text('Acción original'), findsOneWidget);
     expect(taps, 0);
     await tester.tap(find.text('Finalizar'));
@@ -111,7 +127,9 @@ void main() {
       )),
     ));
     final context = tester.element(find.byType(Scaffold));
-    final done = HealthyGuideOverlay.show(context, steps: [
+    final done = HealthyGuideOverlay.show(context,
+      capture: (_) async => _previewForTest,
+      steps: [
       HealthySpotlightStep(
         title: 'Ampliar', description: 'Vista temporal.',
         icon: Icons.zoom_in, targetKey: key, extract: true),
@@ -122,7 +140,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.byType(GuideExtraction), findsOneWidget);
+    await _pumpUntil(tester, find.byType(GuideExtraction));
     await tester.tap(find.text('Siguiente'));
     await tester.pump(const Duration(milliseconds: 620));
     expect(find.text('Continuar'), findsOneWidget);
