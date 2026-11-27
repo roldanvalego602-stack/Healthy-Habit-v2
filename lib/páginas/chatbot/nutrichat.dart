@@ -624,6 +624,12 @@ class _NutriChatPageState extends State<NutriChatPage> {
         .toList();
     final lastUserPrompt = previousUserMessage.isEmpty
         ? '' : previousUserMessage.last;
+    final priorAssistantMessages = messages
+        .where((message) => !message.isUser)
+        .map((message) => message.text)
+        .toList();
+    final previousAssistantText =
+        priorAssistantMessages.isEmpty ? '' : priorAssistantMessages.last;
     final userMessage = ChatMessage(
       text: text, isUser: true, time: _timeNow());
 
@@ -757,6 +763,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   text,
                   previousTopicId: _lastEditorialTopic,
                   followUpDepth: _editorialFollowUps,
+                  previousAssistantText: previousAssistantText,
                 );
                 if (editorial != null) {
                   final isFollowUp = MrHealthyResponseBank.normalize(text);
