@@ -4,6 +4,7 @@
 // lib/páginas/tienda/shop_service.dart. Sin red ni precios del cliente.
 // La prueba de paridad detecta cambios de precios o IDs en Flutter.
 const SHOP_PRICES = Object.freeze({
+  "theme_cosmos": 1800,
   "avatar_frame": 120,
   "banner": 120,
   "streak_guard": 300,
