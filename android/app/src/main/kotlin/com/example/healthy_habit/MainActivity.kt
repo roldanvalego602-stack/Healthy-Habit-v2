@@ -20,7 +20,7 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "play" -> {
                         val kind = call.argument<String>("kind") ?: "talk"
-                        if (kind !in setOf("talk", "purchase", "reward", "achievement", "friend")) {
+                        if (kind !in setOf("talk", "purchase", "reward", "achievement", "friend", "tap", "guide", "open")) {
                             result.error("invalid-argument", "Unknown sound kind", null)
                         } else {
                             Thread { playBleeps(kind) }.start()
@@ -39,9 +39,18 @@ class MainActivity : FlutterActivity() {
             "reward" -> intArrayOf(620, 830, 1240, 1480)
             "achievement" -> intArrayOf(660, 880, 990, 1320)
             "friend" -> intArrayOf(680, 920, 680, 1020)
+            "tap" -> intArrayOf(680)
+            "open" -> intArrayOf(590, 790)
+            "guide" -> intArrayOf(700, 880, 1120)
             else -> intArrayOf(470, 560, 490, 620, 520)
         }
-        val noteMs = if (kind == "talk") 42 else 80
+        val noteMs = when (kind) {
+            "talk" -> 42
+            "tap" -> 28
+            "open" -> 55
+            "guide" -> 62
+            else -> 80
+        }
         val gapMs = 16
         val samplesPerNote = rate * noteMs / 1000
         val samplesGap = rate * gapMs / 1000
