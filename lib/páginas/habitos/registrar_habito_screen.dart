@@ -827,8 +827,6 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Widget build(BuildContext context) {
     if (_cargando) {
       return Scaffold(
-        floatingActionButton: const HealthyMagicGuideButton(section: 'registro'),
-        floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
         backgroundColor: HealthyAdaptive.background,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -842,6 +840,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       );
     }
     return Scaffold(
+      floatingActionButton: const HealthyMagicGuideButton(section: 'registro'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
