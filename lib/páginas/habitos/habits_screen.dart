@@ -923,8 +923,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             ),
                           ),
                           const SizedBox(height: 18),
-                          KeyedSubtree(key: HealthyGuideTargets.habitsCategories,
-                            child: _categoryGrid()),
+                          RepaintBoundary(
+                            key: HealthyGuideTargets.habitsCategories,
+                            child: _categoryGrid(),
+                          ),
                           const SizedBox(height: 18),
                           _difficultyFilter(),
                           const SizedBox(height: 28),
@@ -941,10 +943,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
                               'esta categoría. ¡Elige uno para comenzar!',
                             )
                           else
-                            ...visibleActive.map(
-                              (entry) => Padding(
+                            ...visibleActive.asMap().entries.map(
+                              (item) => Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
-                                child: _activeCard(entry),
+                                child: item.key == 0
+                                    ? RepaintBoundary(
+                                        key: HealthyGuideTargets.habitsCard,
+                                        child: _activeCard(item.value),
+                                      )
+                                    : _activeCard(item.value),
                               ),
                             ),
                           const SizedBox(height: 14),
