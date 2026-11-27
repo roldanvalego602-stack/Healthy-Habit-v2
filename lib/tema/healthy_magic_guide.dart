@@ -370,8 +370,10 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton>
                     ? 'Explícame esta pantalla'
                     : 'Desplegar mini radar de Mr. Healthy',
                 child: SizedBox(
-                  width: _diameter,
-                  height: _diameter,
+                  // El área táctil también se contrae: evita obstaculizar
+                  // controles que quedan junto al radar en reposo.
+                  width: _expanded ? _diameter : _radarDiameter,
+                  height: _expanded ? _diameter : _radarDiameter,
                   child: Align(
                     alignment: Alignment.center,
                     child: AnimatedSwitcher(
