@@ -23,6 +23,11 @@ void main() {
     ));
     // El OverlayPortal del OVNI se activa después del primer fotograma.
     await tester.pump();
+    expect(find.byTooltip('Desplegar mini radar de Mr. Healthy'),
+        findsOneWidget);
+    await tester.tap(find.byTooltip('Desplegar mini radar de Mr. Healthy'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byTooltip('Explícame esta pantalla'), findsOneWidget);
     await tester.tap(find.byTooltip('Explícame esta pantalla'));
     // La animación de flotación es infinita: evitar pumpAndSettle.
@@ -30,6 +35,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     // La tienda usa el recorrido spotlight, no el bottom sheet antiguo.
     expect(find.text('MR. HEALTHY · TIENDA'), findsOneWidget);
+    expect(find.byKey(const ValueKey('healthy-ufo-expanded')), findsNothing);
     expect(find.text('Saldo y tienda'), findsOneWidget);
     await tester.tap(find.text('Siguiente'));
     // La animación de flotación es infinita: evitar pumpAndSettle.
@@ -46,5 +52,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('MR. HEALTHY · TIENDA'), findsNothing);
+    await tester.pump();
+    expect(find.byTooltip('Desplegar mini radar de Mr. Healthy'), findsOneWidget);
   });
 }
