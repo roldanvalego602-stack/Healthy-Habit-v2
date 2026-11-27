@@ -314,7 +314,7 @@ class _HealthyMagicGuideButtonState extends State<HealthyMagicGuideButton> {
               },
               onTap: () => HealthyMagicGuide.open(context, widget.section),
               child: Tooltip(
-                message: 'Explícame esta pantalla (arrastra para mover)',
+                message: 'Explícame esta pantalla',
                 child: SizedBox(
                   width: _diameter,
                   height: _diameter,
