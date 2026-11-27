@@ -277,13 +277,33 @@ class _HomeScreen2State extends State<HomeScreen2>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          icons[i],
-                          color:
-                              i == _selectedIndex
-                                  ? AppColors.primaryGreen
-                                  : AppColors.textGrey,
-                          size: 23,
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 230),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: HealthyAdaptive.isCosmos &&
+                                    i == _selectedIndex
+                                ? const LinearGradient(colors: [
+                                    Color(0x884266C5), Color(0x775D368E),
+                                  ])
+                                : null,
+                            border: HealthyAdaptive.isCosmos &&
+                                    i == _selectedIndex
+                                ? Border.all(
+                                    color: CosmosPalette.cyan.withValues(
+                                      alpha: .55))
+                                : null,
+                          ),
+                          child: Icon(
+                            icons[i],
+                            color: i == _selectedIndex
+                                ? AppColors.primaryGreen
+                                : AppColors.textGrey,
+                            size: 23,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         Text(
