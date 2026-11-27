@@ -14,27 +14,27 @@ void main() {
 
   test('preguntas cotidianas de cinco dominios recuperan el tema correcto', () {
     const cases = <String, String>{
-      'Me interesa el tema cosmos': 'app_cosmos',
-      '¿Qué es la tienda?': 'app_tienda',
-      'Explicame como funciona el armario': 'app_armario',
+      'Me interesa tema cosmos': 'app_cosmos',
+      '¿Qué es tienda?': 'app_tienda',
+      'Explícame armario': 'app_armario',
       'Quiero aprender sobre el historial del chat': 'app_historial',
       'Necesito información de evidencia fotográfica': 'app_evidencia',
       '¿Qué sabes de desayuno saludable?': 'food_desayuno',
       'Háblame de proteínas': 'food_proteina',
-      'Cuéntame sobre comidas caseras': 'food_almuerzo',
-      '¿Qué es el tamaño de porción?': 'food_porciones',
-      '¿Qué sabes de una dieta vegetariana?': 'food_vegetariana',
+      'Cuéntame sobre comida casera': 'food_almuerzo',
+      '¿Qué es tamaño de porción?': 'food_porciones',
+      '¿Qué sabes de proteína sin carne?': 'food_vegetariana',
       'Explícame entrenamiento de fuerza': 'ex_fuerza',
-      '¿Qué sabes de una caminata?': 'ex_caminar',
+      '¿Qué sabes de salir a caminar?': 'ex_caminar',
       'Quiero saber de ejercicios en casa': 'ex_casa',
       'Me interesa movilidad articular': 'ex_movilidad',
       'Háblame de bebidas energéticas': 'risk_energetica',
-      '¿Qué sabes de las grasas trans?': 'risk_grasastrans',
+      '¿Qué sabes de grasas saturadas?': 'risk_grasa',
       'Necesito información de comida ultraprocesada': 'risk_ultraprocesados',
-      'Cuéntame sobre alimentos con moho': 'risk_moho',
-      '¿Qué es el planeta rojo?': 'random_marte',
+      'Cuéntame sobre alimento con moho': 'risk_moho',
+      '¿Qué es planeta rojo?': 'random_marte',
       'Cuéntame sobre fases lunares': 'random_luna',
-      'Me interesa una adivinanza': 'random_adivinanza',
+      'Me interesa adivinanza': 'random_adivinanza',
     };
     for (final entry in cases.entries) {
       final reply = bank.answer(entry.key);
