@@ -123,8 +123,17 @@ class MrHealthyResponseBank {
     r'para principiantes|con ejemplos|paso a paso|'
     r'una rapida|rapida|la primera|la segunda)\??
 
-  static bool isFollowUpPhrase(String input) =>
-      _continuation.hasMatch(normalize(input));
+  static final RegExp _referentialFollowUp = RegExp(
+    r'^(y si |y con |y cuando |y en caso de |'
+    r'le pongo |le agrego |y eso |y lo |'
+    r'se puede combinar |puedo combinarlo |'
+    r'y que pasa si |y de noche )',
+  );
+
+  static bool isFollowUpPhrase(String input) {
+    final q = normalize(input);
+    return _continuation.hasMatch(q) || _referentialFollowUp.hasMatch(q);
+  }
 
   static final RegExp _riskTerms = RegExp(
     r'\b(alergia|asfixia|intoxicacion|envenenamiento|'
@@ -169,6 +178,15 @@ class MrHealthyResponseBank {
     if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
       final previous = _topicsById[previousTopicId];
       if (previous == null || followUpDepth >= 3) return null;
+      if (_referentialFollowUp.hasMatch(q)) {
+        return HealthyAssistantReply(
+          'Seguimos hablando de ${previous.terms.first}. '
+          'Tu pregunta añade un detalle nuevo y no quiero asumir '
+          'cantidades, ingredientes o condiciones. '
+          '${previous.detail} ¿Puedes concretar a qué te refieres?',
+          card: 'topic', knowledgeId: previous.id,
+        );
+      }
       return HealthyAssistantReply(
         followUpDepth == 0
             ? '${previous.detail}\n\n${previous.followUp}'
