@@ -115,6 +115,9 @@ void main() {
         icon: Icons.accessibility, targetKey: key),
     ]);
     await tester.pump();
+    // Comprueba que el overlay raíz reciba el MediaQuery de la ruta.
+    final guideContext = tester.element(find.text('Sin movimiento'));
+    expect(MediaQuery.of(guideContext).disableAnimations, isTrue);
     final switches = tester.widgetList<AnimatedSwitcher>(
         find.byType(AnimatedSwitcher));
     expect(switches.any((w) => w.duration == Duration.zero), isTrue);
