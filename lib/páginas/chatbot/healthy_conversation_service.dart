@@ -8,6 +8,67 @@ import 'nutri_respuestas_service.dart';
 class HealthyConversationService {
   const HealthyConversationService();
 
+  /// Continúa solo elecciones explícitamente ofrecidas en el turno anterior.
+  /// No intenta resolver órdenes, diagnósticos ni información de cuenta.
+  static String? _continueLastChoice(String input, String assistant) {
+    final clean = input.trim();
+    if (clean.length > 65 || assistant.isEmpty) return null;
+    final q = clean.replaceAll(RegExp(r'[¿?!¡.,;:]'), '').trim();
+
+    final storyOffered = assistant.contains('misterio o aventura');
+    if (storyOffered && (q == 'misterio' || q == 'aventura' ||
+        q == 'la primera' || q == 'la segunda')) {
+      if (q == 'misterio' || q == 'la primera') {
+        return 'La semilla abrió el libro y encontró una página en blanco. '
+            'Al tocarla, apareció un mapa con una huella que se movía sola. '
+            'El rastro terminaba detrás de una puerta que nadie recordaba haber construido. '
+            '¿Quieres que investiguemos la puerta?';
+      }
+      return 'La semilla siguió un sendero de luciérnagas hasta un puente '
+          'sobre el río de las nubes. Allí encontró una brújula que '
+          'señalaba los lugares donde aún quedaban historias por contar. '
+          '¿Continuamos el viaje?';
+    }
+
+    final offeredActivities = assistant.contains('un acertijo') &&
+        assistant.contains('historia') && assistant.contains('juego de palabras');
+    if (offeredActivities && (q == 'acertijo' || q == 'historia' ||
+        q == 'juego de palabras')) {
+      if (q == 'acertijo') {
+        return 'Aquí tienes uno: cuanto más me quitas, más grande me hago. '
+            '¿Qué soy? (Pista: puedes encontrarme en el suelo).';
+      }
+      if (q == 'historia') {
+        return 'Un día, una pequeña semilla encontró una llave bajo la lluvia. '
+            'La probó en una puerta diminuta entre las raíces y descubrió '
+            'una biblioteca de árboles. ¿Misterio o aventura?';
+      }
+      return 'Juguemos a encadenar palabras: yo digo «semilla». '
+          'Responde con una palabra que empiece por la última letra: «a».';
+    }
+
+    final offeredRiddle = assistant.contains('cuanto mas me quitas') &&
+        assistant.contains('pista');
+    if (offeredRiddle && const {
+      'me rindo', 'dame la respuesta', 'cual es la respuesta', 'no se',
+      'no lo se', 'un agujero', 'agujero',
+    }.contains(q)) {
+      if (q == 'agujero' || q == 'un agujero') {
+        return '¡Correcto! Es un agujero. ¿Quieres intentar otro acertijo?';
+      }
+      return 'La respuesta es un agujero: cuanto más tierra sacas, '
+          'más grande se vuelve. ¿Quieres otro acertijo?';
+    }
+
+    final offeredEmotion = assistant.contains('que ocurrio') &&
+        assistant.contains('distraerte un rato');
+    if (offeredEmotion && (q == 'distraerme' || q == 'distraerme un rato')) {
+      return 'Podemos cambiar de ritmo. ¿Prefieres un acertijo, '
+          'una historia breve o un juego de palabras?';
+    }
+    return null;
+  }
+
   static bool _has(String input, List<String> phrases) =>
       NutriRespuestasService.contiene(input, phrases);
 
@@ -15,14 +76,21 @@ class HealthyConversationService {
     String input, {
     String name = '',
     String previousUserMessage = '',
+    String previousAssistantText = '',
   }) {
     final t = NutriRespuestasService.normalizar(input)
         .replaceAll(RegExp(r'[¿?!¡.,;:]'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     final previous = NutriRespuestasService.normalizar(previousUserMessage);
+    final assistant = NutriRespuestasService.normalizar(previousAssistantText);
     if (t.isEmpty) return null;
     final greeting = name.trim().isEmpty ? '' : ', ${name.trim()}';
+    // Continuaciones inequívocas: exige una invitación concreta en la
+    // respuesta anterior, no infiere temas de conversaciones remotas.
+    final continuation = _continueLastChoice(t, assistant);
+    if (continuation != null) return continuation;
+
 
     // Identidad, fantasía y preguntas juguetonas: responder sin adjudicar
     // identidades personales que la app no puede conocer.
