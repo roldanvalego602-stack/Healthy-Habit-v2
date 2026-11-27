@@ -4,6 +4,7 @@ const {RegistrationPolicyError} = require("./habit_registration_policy");
 const {SHOP_PRICES} = require("./official_shop_catalog");
 
 const SHOP_SLOTS = Object.freeze({
+  "theme_cosmos": "app_theme",
   "avatar_frame": "perfil_marco",
   "banner": "perfil_banner",
   "achievement_display": "perfil_expositor",
