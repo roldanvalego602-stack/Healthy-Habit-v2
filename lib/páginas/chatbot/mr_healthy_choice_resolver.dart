@@ -526,11 +526,17 @@ class MrHealthyChoiceResolver {
 
   static int? _ordinal(String q) {
     if (RegExp(r'^(la |el |opcion |prefiero la )?(primera|primero|1)$')
-        .hasMatch(q)) return 0;
+        .hasMatch(q)) {
+      return 0;
+    }
     if (RegExp(r'^(la |el |opcion |prefiero la )?(segunda|segundo|2)$')
-        .hasMatch(q)) return 1;
+        .hasMatch(q)) {
+      return 1;
+    }
     if (RegExp(r'^(la |el |opcion |prefiero la )?(tercera|tercero|3)$')
-        .hasMatch(q)) return 2;
+        .hasMatch(q)) {
+      return 2;
+    }
     return null;
   }
 
