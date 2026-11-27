@@ -108,7 +108,8 @@ void main() {
   test('para llevar no significa necesariamente sin refrigeración', () {
     final reply = question('food_colacion',
         'Algo económico para llevar');
-    expect(reply?.text, isNot(contains('sin refrigeración')));
+    expect(reply, isNull,
+        reason: 'Para llevar no implica no necesitar refrigeración');
   });
 
   test('tres restricciones simultáneas piden priorización', () {
