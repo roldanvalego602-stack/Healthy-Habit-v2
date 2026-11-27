@@ -288,3 +288,65 @@ class _CosmosOrbitingIconState extends State<CosmosOrbitingIcon>
     );
   }
 }
+
+/// Barra de progreso del tema Cosmos: energía luminosa con valores reales.
+/// Es puramente presentacional, no altera XP ni porcentajes.
+class CosmosEnergyBar extends StatelessWidget {
+  const CosmosEnergyBar({
+    super.key, required this.value, this.height = 9,
+    this.color = CosmosPalette.cyan,
+  });
+  final double value;
+  final double height;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
+    if (!HealthyAdaptive.isCosmos) {
+      return LinearProgressIndicator(
+        value: progress,
+        minHeight: height,
+        backgroundColor: HealthyAdaptive.surfaceAlt,
+        valueColor: AlwaysStoppedAnimation<Color>(color),
+      );
+    }
+    return Semantics(
+      label: 'Progreso',
+      value: '${(progress * 100).round()} por ciento',
+      child: ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(height),
+          child: SizedBox(
+            height: height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const ColoredBox(color: Color(0xFF17284E)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: progress,
+                    heightFactor: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [
+                          CosmosPalette.secondary, color,
+                          const Color(0xFFE5F9FF),
+                        ]),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x6657E5FF),
+                            blurRadius: 7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
