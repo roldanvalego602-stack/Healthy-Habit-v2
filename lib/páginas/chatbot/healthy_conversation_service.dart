@@ -95,6 +95,13 @@ class HealthyConversationService {
     String input, String previousUser, String assistant,
   ) {
     if (input.length > 75 || assistant.isEmpty) return null;
+    // Una corrección mezclada con instrucciones operativas o clínicas
+    // debe pasar a los módulos especializados, nunca a una historia.
+    if (RegExp(
+      r'\b(borra|borrar|elimina|eliminar|compra|comprar|'
+      r'cuenta|perfil|saldo|monedas|habito|habitos|'
+      r'dosis|medicamento|diagnostico|tratamiento)\b',
+    ).hasMatch(input)) return null;
     final q = input.replaceAll(RegExp(r'[¿?!¡.,;:]'), '').trim();
     final correction = RegExp(
       r'^(no|mejor|perdon|perdon me referia a|no queria|'
