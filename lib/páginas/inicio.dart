@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../tema/healthy_theme.dart';
 import '../tema/cosmos_theme_sync.dart';
+import '../tema/cosmos_theme.dart';
 import '../tema/healthy_magic_guide.dart';
 import '../servicios/healthy_retro_sound_service.dart';
 import '../tema/healthy_coin.dart';
@@ -747,7 +748,10 @@ class _HomeContent extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(current.icon, color: current.accentColor, size: 22),
+                    HealthyAdaptive.isCosmos
+                        ? CosmosOrbitingIcon(icon: current.icon, size: 24)
+                        : Icon(current.icon,
+                            color: current.accentColor, size: 22),
                     Text(
                       '${current.number}',
                       style: const TextStyle(
