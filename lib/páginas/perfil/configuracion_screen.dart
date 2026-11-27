@@ -656,9 +656,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-              Flexible(
+              SizedBox(
+                height: MediaQuery.sizeOf(sheetContext).height * 0.48,
                 child: ListView(
-                  shrinkWrap: true,
                   children: [
                     for (final (kind, title, icon) in options)
                       ListTile(
