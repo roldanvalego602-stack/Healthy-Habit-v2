@@ -1388,8 +1388,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
             ],
           ),
         ),
-        if (!keyboardVisible && _displayMode != HealthyChatDisplayMode.compact) ...[
-          const SizedBox(height: 8),
+        if (!keyboardVisible) ...[
+          SizedBox(height: _displayMode == HealthyChatDisplayMode.compact ? 3 : 8),
           const Text(
             'Healthy Habit no realiza diagnósticos ni sustituye atención médica profesional.',
             textAlign: TextAlign.center,
