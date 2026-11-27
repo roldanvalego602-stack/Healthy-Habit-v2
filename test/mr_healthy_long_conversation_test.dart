@@ -129,6 +129,23 @@ void main() {
     expect(chat.memory.conditions, isEmpty);
   });
 
+  test('rechazos repetidos no producen siempre la misma frase', () {
+    final initial = bank.answer('Háblame de desayuno saludable')!;
+    final first = bank.answer('No me gusta esa opción',
+      previousTopicId: initial.knowledgeId,
+      previousAssistantText: initial.text,
+      turnIndex: 0);
+    final second = bank.answer('No me gusta esa opción',
+      previousTopicId: initial.knowledgeId,
+      previousAssistantText: initial.text,
+      turnIndex: 1);
+    expect(first?.knowledgeId, 'food_desayuno');
+    expect(second?.knowledgeId, 'food_desayuno');
+    expect(first?.text, isNot(second?.text));
+    expect(first?.action, isEmpty);
+    expect(second?.action, isEmpty);
+  });
+
   test('el contexto no se filtra a una nueva sesión', () {
     final chat = _Dialogue(bank);
     chat.send('Háblame de desayuno saludable');
