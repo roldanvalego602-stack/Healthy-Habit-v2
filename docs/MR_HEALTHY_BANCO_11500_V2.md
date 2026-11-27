@@ -180,3 +180,27 @@ flutter test test/mr_healthy_variety_test.dart
 ```
 
 **Estado:** revisión estática de catálogos y de opciones completada desde GitHub, con 30 menús y al menos dos opciones verificables en cada propuesta. No se ejecutaron pruebas de Flutter desde el editor remoto; es obligatorio confirmarlas en el entorno de desarrollo antes de asegurar que la versión compila.
+
+## Fase de preferencias combinadas — 26 de noviembre de 2026
+
+Se añadió soporte para **12 combinaciones de dos condiciones**, distribuidas en nueve temas de alimentación y ejercicio. El selector conserva prioridad para operaciones verificables, preguntas clínicas sensibles y cambios de tema. Solo funciona cuando hay un tema reciente y una propuesta real de Mr. Healthy, sin crear acciones ni consultar datos privados.
+
+Combinaciones cubiertas: desayuno rápido sin lácteos; desayuno barato sin lácteos; desayuno rápido y barato; cena vegetariana económica; comida o fibra económica para llevar; colación económica sin refrigeración; ejercicio en casa sin equipo; caminar sin equipo; fuerza en casa sin equipo; cardio caminando con poco tiempo; y ejercicio suave ante cansancio y falta de tiempo.
+
+El motor usa respuestas editoriales completas para cada par; **no concatena automáticamente dos respuestas** que podrían contradecirse. Si la frase activa varias combinaciones a la vez (por ejemplo, rápido, barato y sin leche), pide que el usuario indique cuáles son imprescindibles. No se equipara «para llevar» con «sin refrigeración», ni una preferencia negada con una afirmación.
+
+Archivo de implementación: `lib/páginas/chatbot/mr_healthy_choice_resolver.dart`.
+Pruebas: `test/mr_healthy_combined_preferences_test.dart`.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_combined_preferences_test.dart
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_variety_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+flutter test test/mr_healthy_topic_service_test.dart
+```
+
+**Limitación:** esto es una matriz finita de combinaciones revisadas, no razonamiento lingüístico generativo. Las combinaciones no incluidas pueden pedir aclaración o continuar por el sistema anterior. La implementación aún requiere validación con Flutter en el equipo de desarrollo.
