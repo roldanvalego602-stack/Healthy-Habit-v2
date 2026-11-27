@@ -119,6 +119,9 @@ class MrHealthyResponseBank {
     r'que recomiendas|y si|otro ejemplo)\??$',
   );
 
+  static bool isFollowUpPhrase(String input) =>
+      _continuation.hasMatch(normalize(input));
+
   static final RegExp _riskTerms = RegExp(
     r'\b(alergia|asfixia|intoxicacion|envenenamiento|'
     r'dolor fuerte|pecho|desmayo|embaraz|lactancia|'
@@ -159,7 +162,7 @@ class MrHealthyResponseBank {
     final q = normalize(input);
     if (q.isEmpty || _shouldDeferToSpecialist(q)) return null;
 
-    if (_continuation.hasMatch(q) && previousTopicId.isNotEmpty) {
+    if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
       final previous = _topicsById[previousTopicId];
       if (previous == null || followUpDepth >= 3) return null;
       return HealthyAssistantReply(
