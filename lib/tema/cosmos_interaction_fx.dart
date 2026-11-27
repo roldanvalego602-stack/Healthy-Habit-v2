@@ -148,12 +148,16 @@ class _CosmosBurstPainter extends CustomPainter {
         canvas.drawLine(
           position + Offset(-particleRadius * 2, 0),
           position + Offset(particleRadius * 2, 0),
-          Paint()..color = color..strokeWidth = .9,
+          Paint()
+            ..color = color
+            ..strokeWidth = .9,
         );
         canvas.drawLine(
           position + Offset(0, -particleRadius * 2),
           position + Offset(0, particleRadius * 2),
-          Paint()..color = color..strokeWidth = .9,
+          Paint()
+            ..color = color
+            ..strokeWidth = .9,
         );
       }
     }
