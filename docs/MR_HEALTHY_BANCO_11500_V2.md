@@ -65,7 +65,7 @@ Usuario: ¿Y si la tomo en la noche?
 Mr. Healthy: [continúa el tema y pide aclaración sin suponer dosis]
 ```
 
-La memoria temática es temporal y se borra al comenzar otro chat; no es un perfil psicológico ni usa datos privados de otros usuarios. Las preguntas sobre historial o acciones de cuenta se rigen por el motor existente. No hay contexto multi-turno de tipo generativo; algunas conversaciones abiertas seguirán necesitando aclaraciones.
+El identificador del último tema se guarda con el mensaje en el historial para permitir retomar **esa misma conversación** cuando se reabre. Al comenzar un chat nuevo se reinicia el contexto. No se conserva un perfil psicológico ni se usan datos privados de otros usuarios. Las preguntas sobre historial o acciones de cuenta se rigen por el motor existente. No hay contexto multi-turno de tipo generativo; algunas conversaciones abiertas seguirán necesitando aclaraciones.
 
 ## Validar en Flutter
 
