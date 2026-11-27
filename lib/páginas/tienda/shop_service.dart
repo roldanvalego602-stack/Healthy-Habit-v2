@@ -436,7 +436,8 @@ class ShopService {
       final doc = await transaction.get(ref);
       if (!doc.exists) throw const ShopException('No se encontró tu perfil.');
       final equipped = ShopState.fromMap(doc.data() ?? {}).equipped;
-      equipped.removeWhere((slot, _) => !slot.startsWith('perfil_'));
+      equipped.removeWhere((slot, _) =>
+          !slot.startsWith('perfil_') && slot != 'app_theme');
       transaction.update(ref, {'shopEquipped': equipped});
     });
   }
