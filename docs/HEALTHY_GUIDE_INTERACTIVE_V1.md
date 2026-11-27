@@ -144,3 +144,23 @@ flutter test test/healthy_guide_phase4_test.dart
 En Android comprobar paso adelante/atrás, aparición del halo, comportamiento de Cosmos solo cuando está equipado, retorno de tarjetas y ausencia de animaciones en Lite. También revisar teléfonos pequeños, accesibilidad y cierres durante las transiciones.
 
 **Estado:** los cambios están en GitHub. La ejecución de Flutter y la validación visual siguen siendo necesarias desde el equipo de desarrollo.
+
+## Corrección de incidencias detectadas en pruebas — noviembre de 2026
+
+A partir del registro de Flutter proporcionado se corrigió:
+
+1. **Error de compilación de Fase 4:** el icono de cabecera tenía `const Icon(... color: accent)` aunque `accent` depende del tema en tiempo de ejecución. Se retiró `const`.
+2. **Lint de Fase 4:** se encerró en llaves el `if` del filtro de partículas de `guide_choreography.dart`.
+3. **Pruebas de Fase 3:** las pruebas visuales utilizaban directamente la rasterización asíncrona `RepaintBoundary.toImage()`, una dependencia inestable para comprobar la lógica del overlay en widget tests. Se agregó el parámetro opcional `HealthyGuideCapture capture` a `HealthyGuideOverlay.show`, que permite suministrar una imagen PNG de prueba reproducible. En producción, sin ese parámetro, **continúa utilizándose la captura real del widget**. Las pruebas de extracción, retorno y bloqueo ahora inyectan una pequeña imagen válida y esperan con varios `pump` hasta que aparezca la representación.
+
+Importante: las pruebas de Fase 3 con captura simulada verifican el flujo de la interfaz, **no la fidelidad de una captura GPU real**. Se mantiene como comprobación manual en Android la ampliación de una tarjeta auténtica. Los fallos posteriores de «Modo alternativo» en el registro probablemente fueron consecuencia de que una prueba previa interrumpió su ejecución sin cerrar el overlay global; se debe repetir la batería completa para confirmar el resultado.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase1_test.dart
+flutter test test/healthy_guide_phase2_test.dart
+flutter test test/healthy_guide_phase3_test.dart
+flutter test test/healthy_guide_phase4_test.dart
+```
