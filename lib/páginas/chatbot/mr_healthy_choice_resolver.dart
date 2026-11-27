@@ -460,7 +460,8 @@ class MrHealthyChoiceResolver {
   static bool _mentions(String input, String condition) {
     final terms = <String>{
       condition,
-      ...?synonyms[condition],
+      // "Para llevar" no implica "sin refrigeración".
+      if (condition != 'sin refrigeracion') ...?synonyms[condition],
       ...?_extraConditions[condition],
     };
     return terms.any((term) =>
@@ -546,6 +547,17 @@ class MrHealthyChoiceResolver {
 
     final eligible = _offered(previousAssistantText, options);
     if (!eligible) return null;
+
+    // Negar una preferencia no equivale a seleccionarla.
+    // Una aclaración es más segura que recomendar lo rechazado.
+    if (RegExp(r'^(no quiero|no prefiero|descarta|evita)\\b'
+        .replaceAll(r'\\b', r'\b')).hasMatch(q)) {
+      return HealthyAssistantReply(
+        'Entiendo que quieres descartar una alternativa. '
+        '¿Cuál de estas opciones sí te sirve: ${options.join(', ')}?',
+        card: 'topic', actionArgument: topicId, knowledgeId: topicId,
+      );
+    }
 
     final combined = _combinedAnswer(q, topicId, options);
     if (combined != null) return combined;
