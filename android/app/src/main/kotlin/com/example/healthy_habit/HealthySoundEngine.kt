@@ -28,10 +28,11 @@ internal object HealthySoundEngine {
         val tone: Tone = Tone.SOFT,
     )
 
-    val supported = setOf(
+    private val baseEvents = setOf(
         "tap", "open", "guide", "talk", "purchase", "reward",
         "achievement", "friend", "habit", "equip", "error",
     )
+    val supported = baseEvents + baseEvents.map { "cosmos_$it" }
 
     private fun score(kind: String): List<Note> = when (kind) {
         // Quiet woody tick: navigation shouldn't overwhelm.
@@ -108,9 +109,54 @@ internal object HealthySoundEngine {
         else -> emptyList()
     }
 
+    // La estética Cosmos utiliza timbres electrónicos y campanas inarmónicas:
+    // no basta con alterar el pitch de los sonidos base.
+    private fun cosmosScore(kind: String): List<Note> = when (kind) {
+        "tap" -> listOf(Note(0, 50, 960.0, 620.0, .28, Tone.DIGITAL))
+        "open" -> listOf(
+            Note(0, 150, 480.0, 1000.0, .25, Tone.AIR),
+            Note(75, 175, 1240.0, 1390.0, .25, Tone.GLASS))
+        "guide" -> listOf(
+            Note(0, 220, 880.0, 1090.0, .28, Tone.GLASS),
+            Note(115, 260, 1320.0, 1600.0, .26, Tone.GLASS),
+            Note(245, 360, 1940.0, 2110.0, .22, Tone.BELL))
+        "talk" -> listOf(
+            Note(0, 72, 730.0, 1050.0, .27, Tone.DIGITAL),
+            Note(70, 86, 1180.0, 800.0, .22, Tone.DIGITAL))
+        "purchase" -> listOf(
+            Note(0, 95, 330.0, 490.0, .40, Tone.BASS),
+            Note(78, 110, 680.0, 920.0, .30, Tone.DIGITAL),
+            Note(170, 240, 1350.0, 1550.0, .27, Tone.BELL))
+        "reward" -> listOf(
+            Note(0, 130, 690.0, 880.0, .35, Tone.GLASS),
+            Note(120, 155, 1040.0, 1240.0, .30, Tone.GLASS),
+            Note(255, 290, 1640.0, 1770.0, .26, Tone.BELL))
+        "achievement" -> listOf(
+            Note(0, 190, 270.0, 410.0, .42, Tone.BASS),
+            Note(150, 220, 680.0, 910.0, .30, Tone.GLASS),
+            Note(300, 260, 1050.0, 1340.0, .29, Tone.GLASS),
+            Note(445, 455, 1750.0, 1880.0, .32, Tone.BELL))
+        "friend" -> listOf(
+            Note(0, 175, 780.0, 925.0, .29, Tone.AIR),
+            Note(90, 205, 1070.0, 1030.0, .27, Tone.GLASS),
+            Note(195, 225, 1320.0, 1390.0, .24, Tone.GLASS))
+        "habit" -> listOf(
+            Note(0, 105, 550.0, 740.0, .34, Tone.DIGITAL),
+            Note(80, 185, 910.0, 1180.0, .31, Tone.GLASS),
+            Note(220, 330, 1510.0, 1690.0, .30, Tone.BELL))
+        "equip" -> listOf(
+            Note(0, 52, 1420.0, 470.0, .33, Tone.DIGITAL),
+            Note(50, 145, 610.0, 830.0, .28, Tone.GLASS))
+        "error" -> listOf(
+            Note(0, 130, 560.0, 385.0, .24, Tone.DIGITAL),
+            Note(123, 150, 420.0, 315.0, .22, Tone.DIGITAL))
+        else -> emptyList()
+    }
+
     /** Returns a human-readable result for the in-app diagnostic panel. */
     fun play(kind: String): String {
-        val notes = score(kind)
+        val notes = if (kind.startsWith("cosmos_"))
+            cosmosScore(kind.removePrefix("cosmos_")) else score(kind)
         if (notes.isEmpty()) return "Efecto desconocido: $kind"
         val durationMs = notes.maxOf { it.at + it.ms } + 35
         val count = RATE * durationMs / 1000
