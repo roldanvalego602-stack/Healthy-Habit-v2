@@ -9,6 +9,7 @@ class HealthyGuideTargets {
   static final GlobalKey habitsRoutines = GlobalKey(debugLabel: 'guide-habits-routines');
   static final GlobalKey habitsCategories = GlobalKey(debugLabel: 'guide-habits-categories');
   static final GlobalKey habitsActive = GlobalKey(debugLabel: 'guide-habits-active');
+  static final GlobalKey habitsCard = GlobalKey(debugLabel: 'guide-habits-first-card');
 
   static GlobalKey? forHabitsStep(int index) {
     switch (index) {
