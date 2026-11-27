@@ -335,6 +335,9 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(28),
+        border: HealthyAdaptive.isCosmos
+            ? Border.all(color: CosmosPalette.secondary.withValues(alpha: .65))
+            : null,
         boxShadow: [
           BoxShadow(
             color: navy.withValues(alpha: 0.05),
@@ -565,6 +568,9 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: HealthyAdaptive.surface,
         borderRadius: BorderRadius.circular(25),
+        border: HealthyAdaptive.isCosmos
+            ? Border.all(color: CosmosPalette.cyan.withValues(alpha: .45))
+            : null,
         boxShadow: [
           BoxShadow(
             color: navy.withValues(alpha: 0.05),
