@@ -8,10 +8,13 @@ class HealthySpotlightStep {
     required this.description,
     required this.icon,
     required this.targetKey,
+    this.extract = false,
   });
 
   final String title;
   final String description;
   final IconData icon;
   final GlobalKey? targetKey;
+  /// Captura visual temporal; nunca habilita los botones originales.
+  final bool extract;
 }
