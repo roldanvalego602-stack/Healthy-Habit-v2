@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../tema/healthy_theme.dart';
 
 /// Sonidos originales sintetizados en Android: sin voz humana ni audios
 /// tomados de videojuegos. No altera datos, XP, saldos ni registros.
@@ -30,7 +31,7 @@ class HealthyRetroSoundService {
     }
     try {
       final result = await _channel.invokeMethod<String>(
-        'preview', {'kind': kind});
+        'preview', {'kind': HealthyAdaptive.isCosmos ? 'cosmos_$kind' : kind});
       return result ?? 'Android no devolvió un diagnóstico de audio.';
     } on MissingPluginException {
       return 'Canal de audio no disponible. Cierra y recompila la app.';
@@ -79,7 +80,8 @@ class HealthyRetroSoundService {
         }
       }
       if (_soundEnabled == false) return;
-      await _channel.invokeMethod<void>('play', {'kind': kind});
+      final sound = HealthyAdaptive.isCosmos ? 'cosmos_$kind' : kind;
+      await _channel.invokeMethod<void>('play', {'kind': sound});
     } on MissingPluginException {
       // Demo y pruebas de widgets sin Android: silencio intencional.
     } on PlatformException {
