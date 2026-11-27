@@ -806,12 +806,14 @@ class _HomeContent extends StatelessWidget {
 
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: Colors.white24,
-              valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
-            ),
+            child: HealthyAdaptive.isCosmos
+                ? CosmosEnergyBar(value: progress, height: 8)
+                : LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation(AppColors.primaryGreen),
+                  ),
           ),
 
           const SizedBox(height: 9),
