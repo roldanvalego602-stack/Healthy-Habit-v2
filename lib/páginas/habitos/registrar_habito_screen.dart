@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import '../../tema/healthy_magic_guide.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../tema/healthy_theme.dart';
 import '../tienda/healthy_mascot_live.dart';
@@ -826,6 +827,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   Widget build(BuildContext context) {
     if (_cargando) {
       return Scaffold(
+        floatingActionButton: const HealthyMagicGuideButton(section: 'registro'),
+        floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
         backgroundColor: HealthyAdaptive.background,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
