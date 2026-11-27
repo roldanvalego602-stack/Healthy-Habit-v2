@@ -236,3 +236,32 @@ flutter test test/mr_healthy_topic_service_test.dart
 ```
 
 **Pendiente:** ejecutar análisis y pruebas en Linux Mint y validar conversaciones reales en Android antes de considerar cerrada esta fase.
+
+## Fase: correcciones conversacionales
+
+Se añadió el método `MrHealthyPreferenceMemory.correct(...)` para responder a correcciones explícitas del usuario sin tratarlas como acciones sobre la cuenta ni añadir restricciones no expresadas.
+
+Casos implementados:
+- «No, me refería a otra cosa»: solicita precisar el error de interpretación y limpia las preferencias del tema para evitar arrastrar un supuesto.
+- «Mantén el presupuesto, pero cambia el alimento»: conserva la preferencia económica si se expresó previamente. Ofrece alternativas editoriales para desayuno, cena y comida, o pide aclaración si no hay información suficiente. No afirma conservar un precio en pesos sin datos reales.
+- «Cambia solamente el ejercicio»: propone otra actividad segura dentro del tema de ejercicio activo, conservando las restricciones disponibles como «sin equipo». No altera hábitos guardados ni registros.
+- Las correcciones fuera de contexto, con temas distintos, con datos de salud sensibles o que intentan operaciones de cuenta quedan fuera de este módulo.
+
+El corrector se evalúa **después** de las acciones y controles de privacidad existentes de `nutrichat.dart`, y **antes** de la búsqueda editorial general. La corrección no aumenta el contexto de preferencias ni activa ninguna acción.
+
+Pruebas: `test/mr_healthy_corrections_test.dart`.
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_corrections_test.dart
+flutter test test/mr_healthy_preference_memory_test.dart
+flutter test test/mr_healthy_combined_preferences_test.dart
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_variety_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+flutter test test/mr_healthy_topic_service_test.dart
+```
+
+La funcionalidad se encuentra en GitHub; **la ejecución de Flutter y las pruebas en Linux/Android sigue pendiente**.
