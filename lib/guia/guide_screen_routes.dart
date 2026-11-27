@@ -100,6 +100,7 @@ class HealthyGuideScreenRoutes {
                 'un beneficio o un objetivo para buscar en las fichas.',
             icon: Icons.search_rounded,
             targetKey: HealthyGuideTargets.catalogSearch,
+            gesture: HealthyGuideGesture.present,
           ),
           HealthySpotlightStep(
             title: 'Filtra por etiquetas',
