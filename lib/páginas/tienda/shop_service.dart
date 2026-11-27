@@ -23,6 +23,16 @@ class ShopItem {
 
 const shopCatalog = <ShopItem>[
   ShopItem(
+    'theme_cosmos',
+    'Cosmos · Tema espacial',
+    'Temas',
+    'Transforma Healthy Habit con nebulosas animadas, constelaciones, '
+        'tarjetas holográficas y sonidos espaciales exclusivos.',
+    1800,
+    emoji: '🪐',
+    slot: 'app_theme',
+  ),
+  ShopItem(
     'avatar_frame',
     'Marco de avatar',
     'Avatares',
