@@ -43,7 +43,7 @@ void main() {
     expect(rect, isNull);
   });
 
-  testWidgets('captura un componente real y muestra copia no interactiva',
+  testWidgets('presenta copia inerte con captura simulada del componente',
       (tester) async {
     final key = GlobalKey();
     var taps = 0;
@@ -114,7 +114,7 @@ void main() {
     await done;
   });
 
-  testWidgets('al cambiar de paso devuelve la captura y la retira',
+  testWidgets('al cambiar de paso retorna una captura simulada y la retira',
       (tester) async {
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
