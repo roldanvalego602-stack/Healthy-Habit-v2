@@ -13,7 +13,8 @@
         "resumen inicial"
       ],
       "answer": "Inicio reúne accesos y un resumen de tu progreso. Las tarjetas pueden variar según tu actividad. Usa las pestañas inferiores para explorar.",
-      "followUp": "¿Quieres revisar hábitos, progreso o tienda?"
+      "followUp": "¿Quieres revisar hábitos, progreso o tienda?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_habitos",
@@ -25,7 +26,8 @@
         "lista de habitos"
       ],
       "answer": "En Hábitos puedes explorar actividades, activar las que te interesan y registrar avances. Las opciones dependen de cada hábito y de las reglas de la cuenta.",
-      "followUp": "¿Quieres saber cómo agregar uno o cómo registrar una sesión?"
+      "followUp": "¿Quieres saber cómo agregar uno o cómo registrar una sesión?",
+      "detail": "Por ejemplo, puedes elegir una actividad sencilla y revisar cuántas sesiones exige antes de activarla. Si no sabes cuál elegir, empieza por la que mejor encaje en tu rutina."
     },
     {
       "id": "app_agregar",
@@ -37,7 +39,8 @@
         "empezar una actividad"
       ],
       "answer": "En Hábitos abre el catálogo, revisa las metas y requisitos de una actividad y confirma su activación. Mr. Healthy puede orientarte, pero no activa actividades sin tu confirmación.",
-      "followUp": "¿Qué tipo de hábito te interesa: alimentación, movimiento o descanso?"
+      "followUp": "¿Qué tipo de hábito te interesa: alimentación, movimiento o descanso?",
+      "detail": "Un primer paso práctico: abre Hábitos, revisa el catálogo de actividades, toca una ficha y lee sus requisitos antes de confirmar."
     },
     {
       "id": "app_registrar",
@@ -49,7 +52,8 @@
         "completar actividad"
       ],
       "answer": "Abre un hábito activo, elige su herramienta de registro y confirma la actividad. La app conserva el progreso y aplica recompensas según el flujo válido.",
-      "followUp": "¿Quieres que te explique el contador, el temporizador o las fotografías?"
+      "followUp": "¿Quieres que te explique el contador, el temporizador o las fotografías?",
+      "detail": "Por ejemplo, si activaste una caminata, abre ese hábito y utiliza el método de registro disponible. Guarda solamente actividades que sí realizaste."
     },
     {
       "id": "app_evidencia",
@@ -61,7 +65,8 @@
         "imagen de evidencia"
       ],
       "answer": "Una foto puede acompañar un registro. El reconocimiento visual identifica objetos aproximados, pero no demuestra que hayas comido o realizado una actividad.",
-      "followUp": "¿Quieres entender cómo tomar la foto o cómo se interpreta el resultado?"
+      "followUp": "¿Quieres entender cómo tomar la foto o cómo se interpreta el resultado?",
+      "detail": "Haz la foto en un lugar bien iluminado y enfoca el objeto relevante. Una etiqueta de reconocimiento visual es una pista, no una certificación de consumo."
     },
     {
       "id": "app_mlkit",
@@ -73,7 +78,8 @@
         "analizar alimento"
       ],
       "answer": "La función visual utiliza clasificación de imágenes para encontrar posibles objetos. Puede equivocarse: no equivale a una prueba clínica ni a una verificación automática de consumo.",
-      "followUp": "¿Quieres consejos para obtener una fotografía clara?"
+      "followUp": "¿Quieres consejos para obtener una fotografía clara?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_xp",
@@ -85,7 +91,8 @@
         "ganar experiencia"
       ],
       "answer": "El XP es progreso de gamificación. Lo consigues al completar acciones elegibles según sus reglas; no se compra con dinero real ni lo modifico desde una conversación.",
-      "followUp": "¿Quieres consultar tu nivel o conocer las formas de progresar?"
+      "followUp": "¿Quieres consultar tu nivel o conocer las formas de progresar?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_niveles",
@@ -97,7 +104,8 @@
         "camino de niveles"
       ],
       "answer": "El nivel resume tu progreso de XP. Consulta la tarjeta de nivel o el camino de niveles para ver tu avance y el siguiente objetivo.",
-      "followUp": "¿Quieres saber dónde está el camino de niveles?"
+      "followUp": "¿Quieres saber dónde está el camino de niveles?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_monedas",
@@ -109,7 +117,8 @@
         "saldo de monedas"
       ],
       "answer": "Habit Coins es la moneda virtual de Healthy Habit y sirve para canjear recompensas. No es dinero real. El saldo personal se consulta en tu cuenta.",
-      "followUp": "¿Quieres conocer la tienda o cómo se obtienen monedas?"
+      "followUp": "¿Quieres conocer la tienda o cómo se obtienen monedas?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_tienda",
@@ -121,7 +130,8 @@
         "compras virtuales"
       ],
       "answer": "En Tienda revisa el precio y la descripción de cada artículo. La compra descuenta Habit Coins solo cuando se confirma en el sistema autorizado.",
-      "followUp": "¿Buscas un accesorio, un tema o información sobre tu inventario?"
+      "followUp": "¿Buscas un accesorio, un tema o información sobre tu inventario?",
+      "detail": "Antes de comprar, revisa tu saldo y compara el precio con las recompensas que realmente utilizarías. No necesitas gastar monedas para completar hábitos."
     },
     {
       "id": "app_armario",
@@ -133,7 +143,8 @@
         "usar accesorio"
       ],
       "answer": "El Armario muestra accesorios adquiridos y opciones de equipamiento. Algunos artículos pueden moverse, girarse o ajustarse sobre la mascota.",
-      "followUp": "¿Quieres equipar un objeto o personalizar su posición?"
+      "followUp": "¿Quieres equipar un objeto o personalizar su posición?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_cosmos",
@@ -145,7 +156,8 @@
         "skin galaxia"
       ],
       "answer": "Cosmos es un tema premium que cambia la apariencia y añade animaciones y sonidos especiales. Aparece en Tienda; para usarlo debes comprarlo y equiparlo.",
-      "followUp": "¿Quieres saber cómo comprar Cosmos o cómo volver al estilo anterior?"
+      "followUp": "¿Quieres saber cómo comprar Cosmos o cómo volver al estilo anterior?",
+      "detail": "Después de comprar Cosmos en Tienda, el botón cambia a «Equipar Cosmos». Si lo retiras, el artículo sigue en tu inventario."
     },
     {
       "id": "app_temas",
@@ -157,7 +169,8 @@
         "colores de la app"
       ],
       "answer": "Healthy Habit ofrece preferencias visuales y un sistema de temas. Los temas premium requieren estar en tu inventario y equiparse; cambiar el aspecto no modifica tu progreso.",
-      "followUp": "¿Buscas un tema claro, oscuro o una personalización premium?"
+      "followUp": "¿Buscas un tema claro, oscuro o una personalización premium?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_amigos",
@@ -169,7 +182,8 @@
         "buscar usuarios"
       ],
       "answer": "Desde la comunidad puedes buscar usuarios y gestionar solicitudes. El vínculo de amistad se confirma al aceptar; no envío solicitudes sin tu acción.",
-      "followUp": "¿Quieres buscar a alguien o revisar una solicitud recibida?"
+      "followUp": "¿Quieres buscar a alguien o revisar una solicitud recibida?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_seguir",
@@ -181,7 +195,8 @@
         "seguir amigos"
       ],
       "answer": "Las funciones sociales disponibles dependen de la pantalla y de los permisos de cada cuenta. Busca el perfil de la persona y revisa los botones habilitados antes de interactuar.",
-      "followUp": "¿Quieres encontrar un perfil o entender la diferencia entre solicitud y seguimiento?"
+      "followUp": "¿Quieres encontrar un perfil o entender la diferencia entre solicitud y seguimiento?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_notificaciones",
@@ -193,7 +208,8 @@
         "alertas de la app"
       ],
       "answer": "Las notificaciones agrupan recordatorios y actividad social. Para recibir avisos locales, revisa los permisos de Android, las preferencias y la batería.",
-      "followUp": "¿Quieres revisar permisos o configurar horarios?"
+      "followUp": "¿Quieres revisar permisos o configurar horarios?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_rachas",
@@ -205,7 +221,8 @@
         "racha de habitos"
       ],
       "answer": "Las rachas reflejan continuidad bajo reglas específicas. Su objetivo es ayudarte a mantener constancia; perder una racha no borra los aprendizajes logrados.",
-      "followUp": "¿Quieres conocer cómo consultar tu historial de rachas?"
+      "followUp": "¿Quieres conocer cómo consultar tu historial de rachas?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_misiones",
@@ -217,7 +234,8 @@
         "objetivos semanales"
       ],
       "answer": "Los desafíos y misiones ofrecen objetivos de gamificación. Revisa la condición, el periodo y el estado de cada uno antes de reclamar recompensas.",
-      "followUp": "¿Te interesan misiones diarias o desafíos de temporada?"
+      "followUp": "¿Te interesan misiones diarias o desafíos de temporada?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_logros",
@@ -229,7 +247,8 @@
         "trofeos"
       ],
       "answer": "Los logros reconocen hitos definidos en la aplicación. Consulta Logros para ver condiciones y cuáles has conseguido.",
-      "followUp": "¿Quieres revisar tus logros o las metas pendientes?"
+      "followUp": "¿Quieres revisar tus logros o las metas pendientes?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_catalogo",
@@ -241,7 +260,8 @@
         "catalogo de ejercicios"
       ],
       "answer": "El Catálogo ofrece información orientativa sobre alimentos, ejercicio y bienestar. Puedes buscar, filtrar y consultar detalles; no sustituye asesoría individual.",
-      "followUp": "¿Buscas una ficha alimentaria o de actividad física?"
+      "followUp": "¿Buscas una ficha alimentaria o de actividad física?",
+      "detail": "Prueba escribir un alimento en el buscador del Catálogo y luego cambia entre las vistas disponibles para consultar su descripción."
     },
     {
       "id": "app_comparar",
@@ -253,7 +273,8 @@
         "comparacion de fichas"
       ],
       "answer": "Si la vista del Catálogo lo permite, selecciona las fichas compatibles y abre su comparación. Comprueba las unidades y el origen de los datos antes de interpretar diferencias.",
-      "followUp": "¿Qué dos productos quieres comparar?"
+      "followUp": "¿Qué dos productos quieres comparar?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_chat",
@@ -265,7 +286,8 @@
         "asistente de la app"
       ],
       "answer": "Soy Mr. Healthy, un asistente de reglas y conocimiento local. Puedo explicar funciones, conversar y orientar hacia pantallas. No soy un modelo de IA generativa que conozca todo.",
-      "followUp": "¿Quieres ayuda con la app o un tema de bienestar?"
+      "followUp": "¿Quieres ayuda con la app o un tema de bienestar?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_historial",
@@ -277,7 +299,8 @@
         "recuperar conversacion"
       ],
       "answer": "El historial de conversaciones puede consultarse desde el icono correspondiente cuando la cuenta y los permisos lo permiten. Una conversación nueva empieza sin contexto anterior.",
-      "followUp": "¿Quieres abrir un chat anterior o comenzar desde cero?"
+      "followUp": "¿Quieres abrir un chat anterior o comenzar desde cero?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_voz",
@@ -289,7 +312,8 @@
         "escuchar respuestas"
       ],
       "answer": "El reconocimiento de voz depende de Android, los permisos y los servicios instalados. También puedes escribir directamente; las respuestas habladas dependen de la configuración.",
-      "followUp": "¿Quieres revisar el permiso del micrófono?"
+      "followUp": "¿Quieres revisar el permiso del micrófono?",
+      "detail": "Si el micrófono no responde, revisa permisos de Android y prueba escribir el mensaje. El reconocimiento de voz puede requerir servicios del dispositivo."
     },
     {
       "id": "app_config",
@@ -301,7 +325,8 @@
         "cambiar ajustes"
       ],
       "answer": "En Configuración puedes revisar apariencia, recordatorios, audio y otras preferencias disponibles. Algunos cambios dependen de tu sesión.",
-      "followUp": "¿Qué ajuste quieres modificar?"
+      "followUp": "¿Qué ajuste quieres modificar?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_sonidos",
@@ -313,7 +338,8 @@
         "sonidos originales"
       ],
       "answer": "Los efectos cortos pueden activarse o desactivarse desde Configuración. La biblioteca sonora permite previsualizar varios efectos en dispositivos Android.",
-      "followUp": "¿Quieres escuchar los sonidos o desactivarlos?"
+      "followUp": "¿Quieres escuchar los sonidos o desactivarlos?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_lite",
@@ -325,7 +351,8 @@
         "reducir efectos"
       ],
       "answer": "El modo Lite reduce decoraciones y animaciones para priorizar fluidez y batería. No elimina hábitos ni modifica recompensas.",
-      "followUp": "¿Quieres localizar el ajuste de rendimiento?"
+      "followUp": "¿Quieres localizar el ajuste de rendimiento?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_privacidad",
@@ -337,7 +364,8 @@
         "quien ve mi informacion"
       ],
       "answer": "Revisa los ajustes de privacidad y los permisos de cada función. No compartas contraseñas ni datos clínicos sensibles en el chat. El historial puede quedar asociado a tu cuenta.",
-      "followUp": "¿Quieres revisar los permisos o el historial?"
+      "followUp": "¿Quieres revisar los permisos o el historial?",
+      "detail": "Puedes mantener tu consulta general sin compartir diagnósticos, contraseñas, correos ni información que identifique a otras personas."
     },
     {
       "id": "app_eliminar",
@@ -349,7 +377,8 @@
         "darme de baja"
       ],
       "answer": "Eliminar la cuenta es una operación sensible. No puedo hacerlo desde una respuesta del chatbot; consulta la sección de configuración y las funciones disponibles.",
-      "followUp": "¿Quieres saber qué información conserva la aplicación?"
+      "followUp": "¿Quieres saber qué información conserva la aplicación?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "app_fallas",
@@ -361,7 +390,8 @@
         "se cierra la app"
       ],
       "answer": "Comprueba conexión, versión de la app y permisos. Anota qué pantalla falla y qué estabas haciendo; no envíes contraseñas ni códigos privados.",
-      "followUp": "¿En qué pantalla aparece el problema?"
+      "followUp": "¿En qué pantalla aparece el problema?",
+      "detail": "Si necesitas usar esa función, puedo orientarte sobre la pantalla apropiada y los pasos disponibles, pero no actuaré en tu cuenta sin confirmación."
     },
     {
       "id": "food_plato",
@@ -373,7 +403,8 @@
         "comer variado"
       ],
       "answer": "Una comida variada puede combinar verduras, fuentes de proteína, alimentos ricos en fibra y agua. Las cantidades adecuadas dependen de tus necesidades y contexto.",
-      "followUp": "¿Quieres una idea de desayuno, comida o cena?"
+      "followUp": "¿Quieres una idea de desayuno, comida o cena?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_desayuno",
@@ -385,7 +416,8 @@
         "desayuno rapido"
       ],
       "answer": "Una opción sencilla puede combinar avena, fruta y yogur sin azúcar, o huevo bien cocido con verduras y tortilla. Ajusta a tus gustos y posibilidades.",
-      "followUp": "¿Prefieres una opción rápida, económica o sin lácteos?"
+      "followUp": "¿Prefieres una opción rápida, económica o sin lácteos?",
+      "detail": "Ejemplo económico: avena preparada con agua o leche y una fruta. Otra opción es un huevo bien cocido con tortilla y verduras."
     },
     {
       "id": "food_cena",
@@ -397,7 +429,8 @@
         "cena rapida"
       ],
       "answer": "Una cena puede incluir verduras, leguminosas, huevo bien cocido o alguna otra proteína con un acompañamiento que te satisfaga. No existe una cena universal.",
-      "followUp": "¿Prefieres una idea económica o vegetariana?"
+      "followUp": "¿Prefieres una idea económica o vegetariana?",
+      "detail": "Ejemplo: lentejas cocidas con verduras y una tortilla, o una ensalada con garbanzos. Ajusta cantidades a tu apetito y necesidades."
     },
     {
       "id": "food_almuerzo",
@@ -409,7 +442,8 @@
         "comida para llevar"
       ],
       "answer": "Una comida casera puede incluir frijoles o lentejas, arroz y verduras, o una proteína disponible con tortilla y ensalada. Refrigera los alimentos perecederos.",
-      "followUp": "¿Quieres ideas para llevar o cocinar en casa?"
+      "followUp": "¿Quieres ideas para llevar o cocinar en casa?",
+      "detail": "Ejemplo para llevar: arroz con frijoles y verduras cocidas, mantenidos a una temperatura segura hasta comerlos."
     },
     {
       "id": "food_colacion",
@@ -421,7 +455,8 @@
         "comer entre comidas"
       ],
       "answer": "Si tienes hambre entre comidas, fruta, yogur natural, nueces o verduras pueden ser opciones, según alergias y necesidades. No es obligatorio comer colaciones.",
-      "followUp": "¿Buscas algo que no requiera refrigeración?"
+      "followUp": "¿Buscas algo que no requiera refrigeración?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_proteina",
@@ -433,7 +468,8 @@
         "proteina en comidas"
       ],
       "answer": "Las proteínas participan en el mantenimiento de tejidos. Hay fuentes animales y vegetales como huevo, leguminosas y tofu; las necesidades varían.",
-      "followUp": "¿Quieres ejemplos económicos o vegetarianos?"
+      "followUp": "¿Quieres ejemplos económicos o vegetarianos?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_carbo",
@@ -445,7 +481,8 @@
         "pan arroz papa"
       ],
       "answer": "Los carbohidratos aportan energía. Frutas, legumbres, cereales y tubérculos pueden formar parte de una alimentación equilibrada; importa el conjunto de la dieta.",
-      "followUp": "¿Quieres comparar integrales con refinados?"
+      "followUp": "¿Quieres comparar integrales con refinados?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_grasas",
@@ -457,7 +494,8 @@
         "comer grasa"
       ],
       "answer": "Las grasas cumplen funciones importantes. Prefiere con frecuencia fuentes de grasas insaturadas, como nueces o aceites vegetales, y modera las grasas trans industriales.",
-      "followUp": "¿Quieres aprender a identificarlas en una etiqueta?"
+      "followUp": "¿Quieres aprender a identificarlas en una etiqueta?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_fibra",
@@ -469,7 +507,8 @@
         "fibra dieta"
       ],
       "answer": "Frutas, verduras, legumbres y cereales integrales aportan fibra. Incrementarla gradualmente y acompañarla de líquidos suele mejorar tolerancia.",
-      "followUp": "¿Te interesan alimentos con fibra que sean económicos?"
+      "followUp": "¿Te interesan alimentos con fibra que sean económicos?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_agua",
@@ -481,7 +520,8 @@
         "que beber"
       ],
       "answer": "El agua es una opción habitual para hidratarse. Las necesidades cambian con clima, actividad, alimentos y salud; evita asumir una cantidad única para todos.",
-      "followUp": "¿Quieres ideas para recordar beber agua?"
+      "followUp": "¿Quieres ideas para recordar beber agua?",
+      "detail": "Una idea práctica es tener agua disponible y beber durante el día según sed y actividad. No conviertas un número fijo en obligación universal."
     },
     {
       "id": "food_verduras",
@@ -493,7 +533,8 @@
         "mas verduras"
       ],
       "answer": "Las verduras aportan distintos nutrientes y fibra. Puedes alternar colores, variedades y preparaciones; congeladas o de temporada también pueden servir.",
-      "followUp": "¿Quieres ideas para integrarlas a una comida?"
+      "followUp": "¿Quieres ideas para integrarlas a una comida?",
+      "detail": "Por ejemplo, añade zanahoria rallada a un guiso, jitomate a una tortilla o verduras congeladas a una sopa."
     },
     {
       "id": "food_frutas",
@@ -505,7 +546,8 @@
         "frutas de temporada"
       ],
       "answer": "La fruta entera aporta agua, fibra y nutrientes. Varía las opciones y procura no reemplazar siempre la fruta por jugo.",
-      "followUp": "¿Quieres opciones accesibles de temporada?"
+      "followUp": "¿Quieres opciones accesibles de temporada?",
+      "detail": "Puedes variar entre una fruta entera al desayuno y otra de temporada como colación, sin necesitar jugos embotellados."
     },
     {
       "id": "food_legumbres",
@@ -517,7 +559,8 @@
         "leguminosas"
       ],
       "answer": "Las leguminosas aportan fibra y proteína vegetal. Se pueden usar en sopas, ensaladas y guisados; cuécelas correctamente.",
-      "followUp": "¿Quieres una receta económica con frijoles o lentejas?"
+      "followUp": "¿Quieres una receta económica con frijoles o lentejas?",
+      "detail": "Por ejemplo, prepara frijoles cocidos con verduras o lentejas en sopa. Guarda las sobras refrigeradas adecuadamente."
     },
     {
       "id": "food_huevo",
@@ -529,7 +572,8 @@
         "huevo cocido"
       ],
       "answer": "El huevo aporta proteína y otros nutrientes. Cocínalo suficientemente y manipúlalo con higiene; para recomendaciones individuales importan alergias y condiciones de salud.",
-      "followUp": "¿Quieres una preparación segura o ideas para combinarlo?"
+      "followUp": "¿Quieres una preparación segura o ideas para combinarlo?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_lacteos",
@@ -541,7 +585,8 @@
         "queso"
       ],
       "answer": "Los lácteos pueden aportar proteínas y calcio. Algunas personas requieren alternativas por intolerancia o alergia; revisa azúcar añadido en productos saborizados.",
-      "followUp": "¿Buscas opciones sin lactosa o sin lácteos?"
+      "followUp": "¿Buscas opciones sin lactosa o sin lácteos?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_vegetariana",
@@ -553,7 +598,8 @@
         "proteina sin carne"
       ],
       "answer": "Una alimentación vegetariana variada puede incluir leguminosas, tofu, semillas y cereales. En dietas veganas es especialmente importante asegurar vitamina B12.",
-      "followUp": "¿Quieres un ejemplo de menú sin carne?"
+      "followUp": "¿Quieres un ejemplo de menú sin carne?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_barata",
@@ -565,7 +611,8 @@
         "poco presupuesto"
       ],
       "answer": "Planear con productos de temporada, leguminosas, avena, huevo y verduras locales puede ayudar a cuidar el presupuesto. Comprar lo necesario suele evitar desperdicio.",
-      "followUp": "¿Quieres ideas para preparar varios días?"
+      "followUp": "¿Quieres ideas para preparar varios días?",
+      "detail": "Elige dos leguminosas, uno o dos cereales y verduras de temporada para planear comidas distintas sin acumular ingredientes caros."
     },
     {
       "id": "food_etiqueta",
@@ -577,7 +624,8 @@
         "tabla de alimento"
       ],
       "answer": "Revisa tamaño de porción, ingredientes, sodio, azúcares añadidos y grasas. Compara productos en unidades equivalentes; una afirmación frontal no cuenta toda la historia.",
-      "followUp": "¿Qué dato de una etiqueta te confunde?"
+      "followUp": "¿Qué dato de una etiqueta te confunde?",
+      "detail": "Compara dos productos usando la misma cantidad de referencia. Empieza por tamaño de porción y revisa sodio, azúcares añadidos e ingredientes."
     },
     {
       "id": "food_porciones",
@@ -589,7 +637,8 @@
         "tamaño de porcion"
       ],
       "answer": "Una porción depende del alimento y del etiquetado; la cantidad apropiada para ti varía. Evita usar una medida universal para juzgar cuánto deberías comer.",
-      "followUp": "¿Preguntas por una etiqueta concreta o por tus comidas?"
+      "followUp": "¿Preguntas por una etiqueta concreta o por tus comidas?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_sal",
@@ -601,7 +650,8 @@
         "comida salada"
       ],
       "answer": "Consumir exceso de sodio de forma habitual puede elevar el riesgo cardiovascular. Prueba hierbas, especias y alimentos menos procesados para moderar su consumo.",
-      "followUp": "¿Quieres aprender a comparar sodio en etiquetas?"
+      "followUp": "¿Quieres aprender a comparar sodio en etiquetas?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_azucar",
@@ -613,7 +663,8 @@
         "consumo de azucar"
       ],
       "answer": "Conviene moderar los azúcares libres o añadidos. No son equivalentes a toda la fruta entera; revisa bebidas y productos con azúcares añadidos.",
-      "followUp": "¿Quieres ejemplos de bebidas con menos azúcar?"
+      "followUp": "¿Quieres ejemplos de bebidas con menos azúcar?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_desperdicio",
@@ -625,7 +676,8 @@
         "sobras"
       ],
       "answer": "Refrigera pronto los alimentos perecederos, separa crudos de listos para comer y recalienta adecuadamente cuando corresponda. Ante olores o conservación dudosa, no arriesgues.",
-      "followUp": "¿Qué alimento necesitas almacenar?"
+      "followUp": "¿Qué alimento necesitas almacenar?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_alergias",
@@ -637,7 +689,8 @@
         "reaccion a comida"
       ],
       "answer": "Una alergia alimentaria puede ser grave. Revisa ingredientes y contaminación cruzada. Si hay dificultad para respirar o hinchazón de garganta, busca emergencias de inmediato.",
-      "followUp": "¿Quieres entender cómo leer la lista de alérgenos?"
+      "followUp": "¿Quieres entender cómo leer la lista de alérgenos?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_calorias",
@@ -649,7 +702,8 @@
         "cuantas calorias"
       ],
       "answer": "Las calorías dependen de la porción, marca y preparación. No invento cifras exactas sin una fuente nutricional y cantidades verificadas.",
-      "followUp": "¿Tienes una etiqueta con datos de porción?"
+      "followUp": "¿Tienes una etiqueta con datos de porción?",
+      "detail": "Si compartes el tamaño de porción y la tabla nutricional, puedo ayudarte a interpretar lo que dice la etiqueta, sin inventar valores."
     },
     {
       "id": "food_ayuno",
@@ -661,7 +715,8 @@
         "comer en ventana"
       ],
       "answer": "El ayuno no es necesario para desarrollar hábitos saludables y puede no ser adecuado para ciertas personas. Evita restricciones extremas y consulta a un profesional ante problemas de salud.",
-      "followUp": "¿Quieres explorar horarios sostenibles sin pasar hambre?"
+      "followUp": "¿Quieres explorar horarios sostenibles sin pasar hambre?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_suplementos",
@@ -673,7 +728,8 @@
         "polvos nutricionales"
       ],
       "answer": "Un suplemento no sustituye una alimentación variada. Algunos interactúan con medicamentos o aportan dosis innecesarias; revisa ingredientes y consulta a un profesional si tienes dudas.",
-      "followUp": "¿Te interesa una vitamina específica o cómo evaluar etiquetas?"
+      "followUp": "¿Te interesa una vitamina específica o cómo evaluar etiquetas?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_hierro",
@@ -685,7 +741,8 @@
         "fuentes de hierro"
       ],
       "answer": "Legumbres, carnes y algunos alimentos fortificados aportan hierro. La necesidad y absorción varían; si sospechas anemia, conviene una evaluación profesional.",
-      "followUp": "¿Quieres opciones vegetales de hierro?"
+      "followUp": "¿Quieres opciones vegetales de hierro?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_calcio",
@@ -697,7 +754,8 @@
         "fuentes de calcio"
       ],
       "answer": "El calcio participa en la salud ósea. Puede encontrarse en lácteos y algunos alimentos fortificados o vegetales, según su preparación.",
-      "followUp": "¿Buscas opciones sin lácteos?"
+      "followUp": "¿Buscas opciones sin lácteos?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_grasastrans",
@@ -709,7 +767,8 @@
         "grasas parcialmente hidrogenadas"
       ],
       "answer": "Las grasas trans industriales se asocian con riesgo cardiovascular y es recomendable evitarlas. Revisa ingredientes como aceites parcialmente hidrogenados cuando aparezcan.",
-      "followUp": "¿Quieres comparar dos etiquetas?"
+      "followUp": "¿Quieres comparar dos etiquetas?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "food_variedad",
@@ -721,7 +780,8 @@
         "dieta monotona"
       ],
       "answer": "Repetir algún plato no necesariamente es un problema, pero variar grupos y alimentos ayuda a cubrir diferentes nutrientes. Ajusta según presupuesto y preferencias.",
-      "followUp": "¿Quieres convertir una comida repetida en tres variantes?"
+      "followUp": "¿Quieres convertir una comida repetida en tres variantes?",
+      "detail": "Puedes observar cómo encaja este tema en una comida variada y consultar una etiqueta concreta si la tienes. Las necesidades individuales pueden cambiar."
     },
     {
       "id": "ex_caminar",
@@ -733,7 +793,8 @@
         "caminar diario"
       ],
       "answer": "Caminar puede mejorar la actividad diaria y es una forma accesible de empezar. Elige un ritmo cómodo y aumenta la duración gradualmente.",
-      "followUp": "¿Quieres planificar una caminata corta?"
+      "followUp": "¿Quieres planificar una caminata corta?",
+      "detail": "Para empezar, elige una ruta segura y un tiempo que puedas sostener. Observa cómo te sientes durante y después."
     },
     {
       "id": "ex_fuerza",
@@ -745,7 +806,8 @@
         "pesas"
       ],
       "answer": "El entrenamiento de fuerza puede ayudar al músculo y las actividades diarias. Empieza con técnica correcta, cargas apropiadas y recuperación suficiente.",
-      "followUp": "¿Tienes equipo o prefieres usar tu peso corporal?"
+      "followUp": "¿Tienes equipo o prefieres usar tu peso corporal?",
+      "detail": "Puedes empezar con una sentadilla asistida y una flexión contra pared. Usa movimientos controlados y deja tiempo de recuperación."
     },
     {
       "id": "ex_cardio",
@@ -757,7 +819,8 @@
         "mejorar condicion"
       ],
       "answer": "La actividad aeróbica eleva la respiración y el pulso. Puedes empezar con caminatas, bicicleta o baile y ajustar la intensidad según tu condición.",
-      "followUp": "¿Qué actividad disfrutas más?"
+      "followUp": "¿Qué actividad disfrutas más?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_sentadilla",
@@ -769,7 +832,8 @@
         "sentadilla corporal"
       ],
       "answer": "En sentadillas, mantén apoyo estable y un rango cómodo de movimiento. Evita forzar articulaciones; si hay dolor persistente, detén el ejercicio.",
-      "followUp": "¿Quieres una explicación paso a paso?"
+      "followUp": "¿Quieres una explicación paso a paso?",
+      "detail": "Prueba sentarte y levantarte de una silla estable con apoyo si lo necesitas. Si hay dolor, reduce el esfuerzo o detente."
     },
     {
       "id": "ex_flexion",
@@ -781,7 +845,8 @@
         "ejercicio pecho"
       ],
       "answer": "Para iniciar flexiones puedes apoyar las manos en una pared o superficie elevada y progresar gradualmente. Prioriza una postura controlada.",
-      "followUp": "¿Quieres una variante de principiante?"
+      "followUp": "¿Quieres una variante de principiante?",
+      "detail": "Empieza de pie frente a una pared: apoya las manos, flexiona los codos con control y vuelve a extender sin dolor."
     },
     {
       "id": "ex_plancha",
@@ -793,7 +858,8 @@
         "ejercicio de abdomen"
       ],
       "answer": "La plancha trabaja la estabilidad del tronco. Mantén una postura alineada, respira y comienza con intervalos breves sin aguantar el dolor.",
-      "followUp": "¿Prefieres una versión sobre rodillas o contra pared?"
+      "followUp": "¿Prefieres una versión sobre rodillas o contra pared?",
+      "detail": "Empieza con una versión apoyada en pared o rodillas durante un tiempo corto, respirando con normalidad."
     },
     {
       "id": "ex_calentar",
@@ -805,7 +871,8 @@
         "antes de entrenar"
       ],
       "answer": "Un calentamiento progresivo puede preparar músculos y articulaciones. Empieza con movimientos suaves relacionados con la actividad que harás.",
-      "followUp": "¿Qué ejercicio vas a realizar?"
+      "followUp": "¿Qué ejercicio vas a realizar?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_estirar",
@@ -817,7 +884,8 @@
         "estirar despues"
       ],
       "answer": "Estirar suavemente puede mejorar comodidad y movilidad. Evita rebotes dolorosos y no fuerces el rango articular.",
-      "followUp": "¿Buscas movilidad antes de entrenar o relajarte después?"
+      "followUp": "¿Buscas movilidad antes de entrenar o relajarte después?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_descanso",
@@ -829,7 +897,8 @@
         "descansar despues"
       ],
       "answer": "La recuperación forma parte del entrenamiento: sueño, alimentación y descansos adecuados ayudan a sostener la práctica. Dolor fuerte no es un objetivo.",
-      "followUp": "¿Te sientes cansado o buscas organizar la semana?"
+      "followUp": "¿Te sientes cansado o buscas organizar la semana?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_principiante",
@@ -841,7 +910,8 @@
         "empezar a entrenar"
       ],
       "answer": "Si comienzas, elige una actividad sencilla y un horario realista. La consistencia importa más que la intensidad máxima del primer día.",
-      "followUp": "¿Prefieres una rutina breve de casa o caminata?"
+      "followUp": "¿Prefieres una rutina breve de casa o caminata?",
+      "detail": "Una opción inicial es caminar unos minutos a ritmo cómodo y realizar movimientos suaves. Añade tiempo gradualmente si te encuentras bien."
     },
     {
       "id": "ex_casa",
@@ -853,7 +923,8 @@
         "rutina casera"
       ],
       "answer": "Puedes entrenar en casa con sentadillas asistidas, empujes contra pared y caminatas en el sitio. Adapta a tu espacio y condición.",
-      "followUp": "¿Tienes una silla estable o espacio para caminar?"
+      "followUp": "¿Tienes una silla estable o espacio para caminar?",
+      "detail": "Un circuito suave puede incluir marcha en el sitio, sentarse y levantarse de una silla estable y movilidad de hombros."
     },
     {
       "id": "ex_sin_equipo",
@@ -865,7 +936,8 @@
         "ejercicios gratis"
       ],
       "answer": "El peso corporal permite progresiones de fuerza y movilidad. Usa superficies seguras y evita movimientos que causen dolor.",
-      "followUp": "¿Quieres trabajar piernas, brazos o movilidad?"
+      "followUp": "¿Quieres trabajar piernas, brazos o movilidad?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_actividad",
@@ -877,7 +949,8 @@
         "frecuencia ejercicio"
       ],
       "answer": "Las recomendaciones generales de actividad física son objetivos orientativos, no obligaciones idénticas para todos. Incluso moverse un poco más que antes aporta valor.",
-      "followUp": "¿Quieres un plan inicial compatible con tu tiempo?"
+      "followUp": "¿Quieres un plan inicial compatible con tu tiempo?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_dolor",
@@ -889,7 +962,8 @@
         "ejercicio con dolor"
       ],
       "answer": "Si un movimiento provoca dolor agudo, intenso o inusual, detente. Dolor de pecho, desmayo o falta de aire importante requiere atención médica urgente.",
-      "followUp": "¿El dolor apareció durante un ejercicio concreto?"
+      "followUp": "¿El dolor apareció durante un ejercicio concreto?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_hidratacion",
@@ -901,7 +975,8 @@
         "sed ejercicio"
       ],
       "answer": "Durante el ejercicio, bebe líquidos según sed, intensidad y condiciones ambientales. El calor o esfuerzos prolongados requieren mayor atención.",
-      "followUp": "¿Entrenas en interiores o al aire libre?"
+      "followUp": "¿Entrenas en interiores o al aire libre?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_calor",
@@ -913,7 +988,8 @@
         "calor extremo"
       ],
       "answer": "Con calor, baja intensidad, procura sombra y descansos, y vigila síntomas como mareo o confusión. Un golpe de calor es una emergencia.",
-      "followUp": "¿Estás planeando caminar o hacer ejercicio intenso?"
+      "followUp": "¿Estás planeando caminar o hacer ejercicio intenso?",
+      "detail": "Con temperaturas altas, considera entrenar a una hora más fresca y reducir intensidad. Mareo o confusión son señales de alarma."
     },
     {
       "id": "ex_motivacion",
@@ -925,7 +1001,8 @@
         "procrastino ejercicio"
       ],
       "answer": "Para construir constancia, reduce la barrera inicial: prepara ropa y elige cinco minutos de actividad alcanzable. Una sesión corta también cuenta.",
-      "followUp": "¿Qué obstáculo aparece más: tiempo, cansancio o aburrimiento?"
+      "followUp": "¿Qué obstáculo aparece más: tiempo, cansancio o aburrimiento?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_progreso",
@@ -937,7 +1014,8 @@
         "progreso fisico"
       ],
       "answer": "Puedes observar continuidad, comodidad y mejoras de técnica o resistencia. No todo progreso se refleja en la báscula.",
-      "followUp": "¿Quieres registrar sesiones o comparar sensaciones?"
+      "followUp": "¿Quieres registrar sesiones o comparar sensaciones?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_equilibrio",
@@ -949,7 +1027,8 @@
         "ejercicios equilibrio"
       ],
       "answer": "Ejercicios de equilibrio sencillos pueden ayudar a la estabilidad. Practícalos cerca de un apoyo firme y adapta la dificultad.",
-      "followUp": "¿Quieres una opción segura junto a una silla?"
+      "followUp": "¿Quieres una opción segura junto a una silla?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "ex_movilidad",
@@ -961,7 +1040,8 @@
         "pausas activas"
       ],
       "answer": "Pausas de movimiento suaves pueden reducir periodos prolongados sentado. Cambia de postura y realiza rangos cómodos.",
-      "followUp": "¿Pasas mucho tiempo sentado frente a una pantalla?"
+      "followUp": "¿Pasas mucho tiempo sentado frente a una pantalla?",
+      "detail": "Prueba empezar con una variante cómoda y aumenta gradualmente cuando tengas buena técnica. Dolor intenso o síntomas inusuales son motivo para detenerte."
     },
     {
       "id": "risk_refresco",
@@ -973,7 +1053,8 @@
         "bebida con gas azucar"
       ],
       "answer": "Los refrescos con azúcar pueden contribuir a un consumo elevado de azúcares libres si se toman con frecuencia. Moderarlos y alternar con agua es una opción.",
-      "followUp": "¿Quieres revisar azúcar en la etiqueta de uno?"
+      "followUp": "¿Quieres revisar azúcar en la etiqueta de uno?",
+      "detail": "Una estrategia gradual es alternar un refresco con agua natural y revisar cuánta azúcar añadida indica la etiqueta."
     },
     {
       "id": "risk_energetica",
@@ -985,7 +1066,8 @@
         "energizante"
       ],
       "answer": "Las bebidas energéticas pueden contener cafeína y otros estimulantes; en niños y adolescentes no se recomiendan. Personas sensibles o con ciertas afecciones deben extremar precauciones.",
-      "followUp": "¿Quieres distinguir una bebida energética de una deportiva?"
+      "followUp": "¿Quieres distinguir una bebida energética de una deportiva?",
+      "detail": "Una bebida deportiva repone líquidos y, a veces, electrolitos; una energética suele buscar estimulación mediante cafeína. Revisa los ingredientes, no solo el nombre."
     },
     {
       "id": "risk_alcohol",
@@ -997,7 +1079,8 @@
         "bebida alcoholica"
       ],
       "answer": "El alcohol implica riesgos de salud y no es necesario para una dieta saludable. Si decides no consumirlo, no estás perdiéndote un nutriente esencial.",
-      "followUp": "¿Te interesa saber cómo leer una bebida mezclada?"
+      "followUp": "¿Te interesa saber cómo leer una bebida mezclada?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_ultraprocesados",
@@ -1009,7 +1092,8 @@
         "snack empaquetado"
       ],
       "answer": "Un producto muy procesado puede aportar exceso de sal, azúcar o grasas, pero es mejor revisar ingredientes y frecuencia que clasificar toda comida en buena o mala.",
-      "followUp": "¿Quieres evaluar un alimento específico por su etiqueta?"
+      "followUp": "¿Quieres evaluar un alimento específico por su etiqueta?",
+      "detail": "Toma un producto concreto y compara porciones, sodio, azúcar e ingredientes. No hay que declarar dañino cada alimento de una categoría."
     },
     {
       "id": "risk_embutidos",
@@ -1021,7 +1105,8 @@
         "embutidos"
       ],
       "answer": "El consumo frecuente de carnes procesadas se relaciona con ciertos riesgos de salud. Puedes alternarlas con frijoles, huevo bien cocido u otras fuentes de proteína.",
-      "followUp": "¿Quieres ideas de sustituciones económicas?"
+      "followUp": "¿Quieres ideas de sustituciones económicas?",
+      "detail": "En un sándwich, podrías alternar un embutido con frijoles, huevo bien cocido u otra proteína que te guste."
     },
     {
       "id": "risk_frituras",
@@ -1033,7 +1118,8 @@
         "chips empaquetadas"
       ],
       "answer": "Las botanas fritas pueden contener bastante sodio y energía por porción. No hace falta catalogarlas como veneno; revisar frecuencia y cantidades ayuda.",
-      "followUp": "¿Quieres una alternativa crujiente?"
+      "followUp": "¿Quieres una alternativa crujiente?",
+      "detail": "Si te gustan las botanas crujientes, prueba verduras frescas, palomitas sin exceso de sal o frutos secos según alergias."
     },
     {
       "id": "risk_cafeina",
@@ -1045,7 +1131,8 @@
         "cafeina tarde"
       ],
       "answer": "La cafeína puede alterar el sueño y causar palpitaciones en algunas personas. La sensibilidad varía; ante síntomas importantes busca orientación médica.",
-      "followUp": "¿Te interesa reducir cafeína por las tardes?"
+      "followUp": "¿Te interesa reducir cafeína por las tardes?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_endulzantes",
@@ -1057,7 +1144,8 @@
         "refresco sin azucar"
       ],
       "answer": "Los edulcorantes no sustituyen una alimentación variada. Evalúa el conjunto de hábitos y evita asumir que un producto es saludable solo por no llevar azúcar.",
-      "followUp": "¿Quieres comparar ingredientes de dos bebidas?"
+      "followUp": "¿Quieres comparar ingredientes de dos bebidas?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_colorantes",
@@ -1069,7 +1157,8 @@
         "saborizantes"
       ],
       "answer": "No todos los aditivos son dañinos por definición; su seguridad depende de la sustancia, uso y regulación. Si hay alergia o reacción, revisa ingredientes y consulta a un profesional.",
-      "followUp": "¿Tienes el nombre de un ingrediente?"
+      "followUp": "¿Tienes el nombre de un ingrediente?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_crudo",
@@ -1081,7 +1170,8 @@
         "comer crudo"
       ],
       "answer": "Alimentos como pollo y huevo crudos o poco cocidos pueden aumentar el riesgo de infecciones alimentarias. Cocina adecuadamente y evita contaminación cruzada.",
-      "followUp": "¿Quieres consejos de higiene al preparar alimentos?"
+      "followUp": "¿Quieres consejos de higiene al preparar alimentos?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_caducidad",
@@ -1093,7 +1183,8 @@
         "producto vencido"
       ],
       "answer": "Las fechas del envase no siempre significan lo mismo. Ante un alimento perecedero mal conservado o sospecha de descomposición, es más seguro no consumirlo.",
-      "followUp": "¿Qué tipo de producto es?"
+      "followUp": "¿Qué tipo de producto es?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_moho",
@@ -1105,7 +1196,8 @@
         "hongos en comida"
       ],
       "answer": "El moho visible puede indicar contaminación más extensa. En alimentos blandos, no basta con quitar la parte visible para asumir que están seguros.",
-      "followUp": "¿Qué alimento presentó moho?"
+      "followUp": "¿Qué alimento presentó moho?",
+      "detail": "En alimentos blandos con moho visible, lo prudente es desecharlos; cortar solo la parte visible no garantiza seguridad."
     },
     {
       "id": "risk_mercurio",
@@ -1117,7 +1209,8 @@
         "metales en pescado"
       ],
       "answer": "Algunos pescados pueden contener más mercurio que otros. Las recomendaciones dependen de especie y del grupo de población, especialmente durante embarazo.",
-      "followUp": "¿Quieres consultar guías oficiales para elegir pescados?"
+      "followUp": "¿Quieres consultar guías oficiales para elegir pescados?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_sodio",
@@ -1129,7 +1222,8 @@
         "sopa instantanea"
       ],
       "answer": "Los productos muy altos en sodio pueden dificultar moderar su consumo habitual. Compara etiquetas por porción y considera opciones bajas en sodio.",
-      "followUp": "¿Tienes dos marcas para comparar?"
+      "followUp": "¿Tienes dos marcas para comparar?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_grasa",
@@ -1141,7 +1235,8 @@
         "exceso grasa"
       ],
       "answer": "El consumo frecuente de grasas saturadas puede desplazar fuentes de grasas insaturadas. Considera la frecuencia y el conjunto de la dieta.",
-      "followUp": "¿Quieres aprender a encontrarlas en etiquetas?"
+      "followUp": "¿Quieres aprender a encontrarlas en etiquetas?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_caramelos",
@@ -1153,7 +1248,8 @@
         "azucar de dulces"
       ],
       "answer": "Los dulces pueden aportar mucha azúcar y poco valor nutricional. Disfrutarlos ocasionalmente no define tu salud; importa la frecuencia y la higiene dental.",
-      "followUp": "¿Quieres ideas para una colación diferente?"
+      "followUp": "¿Quieres ideas para una colación diferente?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_cereal",
@@ -1165,7 +1261,8 @@
         "desayuno industrial"
       ],
       "answer": "Algunos cereales y granolas tienen azúcares añadidos. Compara fibra, ingredientes y tamaño de porción en lugar de basarte solo en el empaque.",
-      "followUp": "¿Tienes una etiqueta de cereal?"
+      "followUp": "¿Tienes una etiqueta de cereal?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_jugos",
@@ -1177,7 +1274,8 @@
         "bebida sabor fruta"
       ],
       "answer": "Los jugos y néctares pueden concentrar azúcares libres y tener menos fibra que la fruta entera. Revisa la lista de ingredientes y el tamaño de porción.",
-      "followUp": "¿Quieres distinguir jugo, néctar y bebida saborizada?"
+      "followUp": "¿Quieres distinguir jugo, néctar y bebida saborizada?",
+      "detail": "Una fruta entera aporta fibra que suele perderse al exprimirla. Revisa si la botella dice jugo, néctar o bebida saborizada."
     },
     {
       "id": "risk_salsas",
@@ -1189,7 +1287,8 @@
         "mayonesa industrial"
       ],
       "answer": "Salsas y aderezos varían mucho en sodio, azúcares y grasas. Una porción pequeña puede tener composiciones distintas según la marca.",
-      "followUp": "¿Qué tipo de salsa quieres comparar?"
+      "followUp": "¿Qué tipo de salsa quieres comparar?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "risk_detox",
@@ -1201,7 +1300,8 @@
         "limpieza del cuerpo"
       ],
       "answer": "Las dietas detox no son necesarias para que hígado y riñones cumplan sus funciones. Evita productos que prometen curas o pérdida rápida de peso.",
-      "followUp": "¿Quieres alternativas sostenibles para sentirte con más energía?"
+      "followUp": "¿Quieres alternativas sostenibles para sentirte con más energía?",
+      "detail": "Para evaluar un producto, mira ingredientes, porción y frecuencia de consumo. Evita decidir solamente por mensajes publicitarios."
     },
     {
       "id": "random_hola",
@@ -1213,7 +1313,8 @@
         "buenas noches"
       ],
       "answer": "¡Hola! Soy Mr. Healthy 🌱. Podemos hablar de hábitos, alimentación, movimiento o curiosidades. ¿Por dónde empezamos?",
-      "followUp": "¿Quieres conversar o resolver una duda?"
+      "followUp": "¿Quieres conversar o resolver una duda?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_identidad",
@@ -1225,7 +1326,8 @@
         "como funcionas"
       ],
       "answer": "Soy un asistente de Healthy Habit basado en reglas, conocimiento local y funciones de la app. No soy humano y no tengo experiencias personales.",
-      "followUp": "¿Te enseño lo que puedo hacer?"
+      "followUp": "¿Te enseño lo que puedo hacer?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_chiste",
@@ -1237,7 +1339,8 @@
         "algo gracioso"
       ],
       "answer": "¿Por qué la zanahoria fue al gimnasio? ¡Porque quería estar en forma de raíz! 🥕",
-      "followUp": "¿Quieres otro chiste o un acertijo?"
+      "followUp": "¿Quieres otro chiste o un acertijo?",
+      "detail": "Otro chiste: ¿Qué dijo el brócoli al salir a caminar? «¡Hoy sí voy con todo el tallo!»"
     },
     {
       "id": "random_adivinanza",
@@ -1249,7 +1352,8 @@
         "ponme un acertijo"
       ],
       "answer": "Aquí va una: cuanto más me quitas, más grande me hago. ¿Qué soy?",
-      "followUp": "Si necesitas una pista, dímelo."
+      "followUp": "Si necesitas una pista, dímelo.",
+      "detail": "Pista: no soy un objeto que puedas recoger; aparezco cuando retiras tierra. La respuesta es un agujero."
     },
     {
       "id": "random_historia",
@@ -1261,7 +1365,8 @@
         "cuentame un cuento"
       ],
       "answer": "Una noche, Mr. Healthy siguió una constelación que parecía una hoja. Al llegar, encontró un jardín en una estación espacial donde cada semilla representaba un hábito pequeño.",
-      "followUp": "¿Prefieres que continúe con misterio o aventura?"
+      "followUp": "¿Prefieres que continúe con misterio o aventura?",
+      "detail": "La semilla espacial encontró una puerta de luz azul. Del otro lado había un jardín donde los astronautas cultivaban sus pequeños logros."
     },
     {
       "id": "random_color",
@@ -1273,7 +1378,8 @@
         "color de mr healthy"
       ],
       "answer": "No tengo preferencias personales, pero el verde esmeralda combina con mi diseño y el tema Cosmos se inspira en el espacio.",
-      "followUp": "¿Cuál color te gusta a ti?"
+      "followUp": "¿Cuál color te gusta a ti?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_aburrido",
@@ -1285,7 +1391,8 @@
         "no se que hacer"
       ],
       "answer": "Podemos jugar a una adivinanza, inventar una historia breve o elegir un mini-reto creativo sin presión.",
-      "followUp": "¿Qué te apetece?"
+      "followUp": "¿Qué te apetece?",
+      "detail": "Mini-reto creativo: inventa el nombre de un planeta donde cada ciudad tenga una comida diferente. ¿Cómo se llamaría?"
     },
     {
       "id": "random_estres",
@@ -1297,7 +1404,8 @@
         "estres por estudios"
       ],
       "answer": "Cuando tienes estrés, puede ayudar hacer una pausa breve, respirar con comodidad y ordenar una tarea pequeña. Si es intenso o persistente, buscar apoyo es válido.",
-      "followUp": "¿Quieres contarme qué te preocupa o prefieres distraerte?"
+      "followUp": "¿Quieres contarme qué te preocupa o prefieres distraerte?",
+      "detail": "Una idea concreta es escribir la tarea pendiente más pequeña y dedicarle unos minutos sin exigirte completar todo a la vez."
     },
     {
       "id": "random_triste",
@@ -1309,7 +1417,8 @@
         "estoy desanimado"
       ],
       "answer": "Podemos conversar sin convertirlo todo en una meta. Si te sientes mal, hablar con alguien de confianza puede ayudarte.",
-      "followUp": "¿Quieres contarme qué ocurrió?"
+      "followUp": "¿Quieres contarme qué ocurrió?",
+      "detail": "Si te resulta útil, puedes describir qué ocurrió con una frase. No tienes que convertirlo en una solución inmediata."
     },
     {
       "id": "random_feliz",
@@ -1321,7 +1430,8 @@
         "estoy contento"
       ],
       "answer": "¡Qué buena noticia! Me gustaría escuchar qué pasó, si te apetece contarlo.",
-      "followUp": "¿Qué fue lo mejor de tu día?"
+      "followUp": "¿Qué fue lo mejor de tu día?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_gracias",
@@ -1333,7 +1443,8 @@
         "gracias healthy"
       ],
       "answer": "De nada 🌱. Cuando lo necesites, podemos seguir con este tema o explorar otra cosa.",
-      "followUp": "¿Qué te gustaría hacer ahora?"
+      "followUp": "¿Qué te gustaría hacer ahora?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_planeta",
@@ -1345,7 +1456,8 @@
         "galaxias"
       ],
       "answer": "Nuestro sistema solar incluye ocho planetas reconocidos. Una galaxia es una estructura enorme que contiene estrellas, gas y otros componentes.",
-      "followUp": "¿Quieres un dato curioso de Marte o de la Luna?"
+      "followUp": "¿Quieres un dato curioso de Marte o de la Luna?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_luna",
@@ -1357,7 +1469,8 @@
         "luna terrestre"
       ],
       "answer": "La Luna es el satélite natural de la Tierra. Sus fases dependen de la geometría entre el Sol, la Tierra y la Luna.",
-      "followUp": "¿Te interesan las fases o las exploraciones espaciales?"
+      "followUp": "¿Te interesan las fases o las exploraciones espaciales?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     },
     {
       "id": "random_marte",
@@ -1369,7 +1482,8 @@
         "explorar marte"
       ],
       "answer": "Marte es un planeta rocoso con atmósfera muy tenue y condiciones difíciles para humanos. Estudiarlo ayuda a comprender otros ambientes planetarios.",
-      "followUp": "¿Quieres saber sobre rovers o sobre el paisaje marciano?"
+      "followUp": "¿Quieres saber sobre rovers o sobre el paisaje marciano?",
+      "detail": "Una curiosidad: en Marte se encuentran enormes volcanes y antiguos cauces que ayudan a estudiar la historia del agua."
     },
     {
       "id": "random_musica",
@@ -1381,7 +1495,8 @@
         "canciones para concentrarse"
       ],
       "answer": "La música instrumental suave puede ayudar a algunas personas a concentrarse, aunque otras prefieren silencio. Prueba ambos y observa qué te funciona.",
-      "followUp": "¿Estás estudiando o quieres relajarte?"
+      "followUp": "¿Estás estudiando o quieres relajarte?",
+      "detail": "Podemos seguir conversando sobre este asunto o cambiar de tema; si me dices qué parte te interesa, responderé con mayor precisión."
     }
   ]
 }
