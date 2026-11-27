@@ -226,6 +226,9 @@ class MrHealthyResponseBank {
         previousAssistantText: previousAssistantText,
       );
       if (selected != null) return selected;
+      // Do not reinterpret an ordinal as generic detail when there was
+      // no clearly presented list of choices in the previous message.
+      if (MrHealthyChoiceResolver.isOrdinalSelection(q)) return null;
     }
 
     if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
