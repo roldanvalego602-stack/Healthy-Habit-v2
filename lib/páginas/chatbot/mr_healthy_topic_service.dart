@@ -74,7 +74,7 @@ class MrHealthyResponseBank {
   /// This covers natural queries like «qué es la tienda» without treating
   /// unrelated longer sentences as exact known questions.
   static String _dropQuestionArticle(String question) {
-    return question.replaceFirst(
+    return question.replaceFirstMapped(
       RegExp(
         r'^(que es|que significa|que sabes de|cuentame sobre|'
         r'hablame de|quiero saber de|'
@@ -82,7 +82,7 @@ class MrHealthyResponseBank {
         r'necesito informacion de|informacion sobre|'
         r'quiero aprender sobre) (un|una|unos|unas|el|la|los|las) ',
       ),
-      r'$1 ',
+      (match) => '${match.group(1)} ',
     );
   }
 
@@ -191,7 +191,7 @@ class MrHealthyResponseBank {
   static final RegExp _operationalCommands = RegExp(
     r'^(agrega|agregar|anade|anadir|elimina|eliminar|'
     r'quita|quitar|compra|comprar|cancela|cancelar|'
-    r'borra|borrar|abre|abrir|pon|activa|desactiva)\b',
+    r'borra|borrar|abre|abrir|pon|activar|activa|desactivar|desactiva)\b',
   );
 
   static bool _shouldDeferToSpecialist(String query) {
