@@ -117,7 +117,7 @@ class _CosmosPainter extends CustomPainter {
         size.height * (.12 + .30 * progress),
       );
       final tail = head + Offset(size.width * .18, -size.height * .055);
-      final opacity = (math.sin(progress * math.pi) * .78).clamp(0.0, .78);
+      final opacity = (math.sin(progress * math.pi) * .78).clamp(0.0, .78).toDouble();
       canvas.drawLine(tail, head,
         Paint()..color = CosmosPalette.cyan.withValues(alpha: opacity)
           ..strokeWidth = 1.9
