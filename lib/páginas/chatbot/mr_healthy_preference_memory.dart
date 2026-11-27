@@ -174,7 +174,7 @@ class MrHealthyPreferenceMemory {
       final dairyFree = _conditions.contains('sin lacteos');
       return HealthyAssistantReply(
         'Mantengo la preferencia de bajo costo'
-        '\${dairyFree ? " y sin lácteos" : ""}. '
+        '${dairyFree ? " y sin lácteos" : ""}. '
         '$suggestion Los precios dependen de dónde compres. '
         '¿Qué ingrediente prefieres evitar?',
         card: 'topic', actionArgument: previousTopicId,
@@ -194,9 +194,9 @@ class MrHealthyPreferenceMemory {
       return HealthyAssistantReply(
         'Cambiaré solo la sugerencia de ejercicio; no modificaré '
         'tus hábitos registrados. Puedes probar '
-        '\${noEquipment || home ? "movilidad suave de hombros y caminar en el sitio" : "una caminata breve a ritmo cómodo"}, '
+        '${noEquipment || home ? "movilidad suave de hombros y caminar en el sitio" : "una caminata breve a ritmo cómodo"}, '
         'adaptando la intensidad y deteniéndote ante dolor. '
-        '\${noEquipment ? "Mantengo la preferencia de no usar equipo. " : ""}'
+        '${noEquipment ? "Mantengo la preferencia de no usar equipo. " : ""}'
         '¿Te interesa otra variante de movimiento?',
         card: 'topic', actionArgument: previousTopicId,
         knowledgeId: previousTopicId,
