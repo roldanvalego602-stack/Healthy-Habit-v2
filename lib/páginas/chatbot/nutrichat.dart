@@ -88,6 +88,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
   final MrHealthyTopicService _topicService = MrHealthyTopicService();
   String _lastEditorialTopic = '';
   int _editorialFollowUps = 0;
+  int _editorialTurnIndex = 0;
   final HealthyConversationService _conversation =
       const HealthyConversationService();
   final HealthyAssistantEngine _engine = const HealthyAssistantEngine();
@@ -290,6 +291,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         _chatContext.reset();
         _lastEditorialTopic = '';
         _editorialFollowUps = 0;
+        _editorialTurnIndex = 0;
         _lastHabitTitle = '';
         _lastShopItemId = '';
         for (final record in records.reversed) {
@@ -341,6 +343,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       _chatContext.reset();
       _lastEditorialTopic = '';
       _editorialFollowUps = 0;
+      _editorialTurnIndex = 0;
       _lastHabitTitle = '';
       _lastShopItemId = '';
       _hasSentMessage = false;
@@ -664,6 +667,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
       ])) {
         _lastEditorialTopic = '';
         _editorialFollowUps = 0;
+        _editorialTurnIndex = 0;
         response = 'Esto puede ser una urgencia médica. Busca atención '
             'presencial inmediata o llama al servicio de emergencias de '
             'tu zona. No intentes provocarte el vómito ni retrases la '
@@ -764,12 +768,17 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   previousTopicId: _lastEditorialTopic,
                   followUpDepth: _editorialFollowUps,
                   previousAssistantText: previousAssistantText,
+                  turnIndex: _editorialTurnIndex,
                 );
                 if (editorial != null) {
                   final isFollowUp = MrHealthyResponseBank.normalize(text);
                   final continues = _lastEditorialTopic == editorial.knowledgeId &&
                       MrHealthyResponseBank.isFollowUpPhrase(isFollowUp);
                   _editorialFollowUps = continues ? _editorialFollowUps + 1 : 0;
+                  final isSameTopic =
+                      _lastEditorialTopic == editorial.knowledgeId;
+                  _editorialTurnIndex = isSameTopic
+                      ? (_editorialTurnIndex + 1).clamp(0, 99) : 0;
                   _lastEditorialTopic = editorial.knowledgeId;
                   intent = editorial;
                   response = editorial.text;
@@ -777,6 +786,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 } else {
                   _lastEditorialTopic = '';
                   _editorialFollowUps = 0;
+                  _editorialTurnIndex = 0;
                   final previousKnowledge = _chatContext.referenceFor(text);
                   final educational = await _hybridKnowledge.answer(
                     text, operational: intent,
