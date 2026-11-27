@@ -110,3 +110,37 @@ flutter test test/healthy_guide_phase3_test.dart
 Verificar visualmente en Android: llegada de la captura al primer plano, zoom y retorno, bloqueo de botones bajo la máscara, ausencia de desbordamiento en teléfonos pequeños, experiencia con y sin hábitos y reducción de movimiento. La extracción aún no está habilitada en otras pantallas.
 
 **Estado:** archivos integrados en GitHub; el análisis y los widget tests todavía deben ejecutarse en el equipo con Flutter.
+
+## Fase 4 — Coreografía, partículas y temas visuales
+
+Se añadieron efectos coordinados al recorrido de Hábitos, sin cambiar sus operaciones ni permisos.
+
+### Componentes nuevos
+- `lib/guia/guide_fx_theme.dart`: selecciona la paleta de la guía a partir del tema ya equipado. Healthy utiliza verdes; Navidad Esmeralda introduce un acento cálido; Cosmos utiliza cian y violeta de `CosmosPalette`. La guía **no desbloquea** Cosmos ni modifica inventarios.
+- `lib/guia/guide_choreography.dart`: un único `CustomPainter` dibuja halo radial, anillo de llegada y un número fijo de partículas decorativas alrededor del objetivo. Cosmos usa destellos en cruz, sin imágenes, timers individuales ni widgets por partícula.
+- `lib/guia/healthy_guide_overlay.dart`: incorpora una animación corta de llegada a cada paso, cambia dinámicamente la paleta, desplaza de manera coordinada el inicio de la línea curva con Mr. Healthy y realiza la transición de texto mediante `AnimatedSwitcher`.
+- `lib/guia/guide_extraction.dart`: añade una inclinación muy discreta durante la ampliación, reversible al regresar al elemento original.
+- `test/healthy_guide_phase4_test.dart`: cubre paletas, cambio de paso, dibujo con y sin objetivo y reducción de movimiento.
+
+### Seguridad, rendimiento y accesibilidad
+- Los efectos usan la misma animación de pulso existente y un controlador corto de llegada. No se crean partículas interactivas ni se consultan datos nuevos.
+- En modo Lite, si se desactivan las animaciones de la app o si el sistema pide reducir movimiento, las transiciones decorativas se detienen o pasan a duración cero y se conserva el contenido educativo.
+- `IgnorePointer` y el bloqueo modal continúan impidiendo activar registros, compras u otras acciones detrás de la guía.
+- La mascota continúa siendo un sprite plano; el brazo articulado, las expresiones faciales y las poses dibujadas individualmente requerirían materiales gráficos específicos.
+- Esta fase permanece limitada a **Hábitos**. El resto de las pantallas conserva la guía anterior.
+
+### Comprobación
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase1_test.dart
+flutter test test/healthy_guide_phase2_test.dart
+flutter test test/healthy_guide_phase3_test.dart
+flutter test test/healthy_guide_phase4_test.dart
+```
+
+En Android comprobar paso adelante/atrás, aparición del halo, comportamiento de Cosmos solo cuando está equipado, retorno de tarjetas y ausencia de animaciones en Lite. También revisar teléfonos pequeños, accesibilidad y cierres durante las transiciones.
+
+**Estado:** los cambios están en GitHub. La ejecución de Flutter y la validación visual siguen siendo necesarias desde el equipo de desarrollo.
