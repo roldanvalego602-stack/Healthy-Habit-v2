@@ -149,7 +149,7 @@ class MrHealthyChoiceResolver {
     'sin lacteos': ['sin lacteos', 'sin leche'],
     'vegetariana': ['vegetariana', 'vegetariano', 'sin carne'],
     'para llevar': ['para llevar', 'llevar al trabajo'],
-    'en casa': ['en casa', 'desde casa', 'casera'],
+    'en casa': ['en casa', 'de casa', 'desde casa', 'casera'],
     'recordatorios': ['recordatorios', 'recordar', 'olvido'],
     'sabor': ['sabor', 'saborizada', 'darle sabor'],
     'caminar': ['caminar', 'caminata', 'a pie'],
@@ -172,12 +172,23 @@ class MrHealthyChoiceResolver {
       'desequipar', 'quitar tema'],
   };
 
+  static int _offeredPosition(String priorReply, String choice) {
+    final reply = _normalize(priorReply);
+    final candidates = synonyms[choice] ?? [choice];
+    var position = -1;
+    for (final candidate in candidates) {
+      final index = (' $reply ').indexOf(' ${_normalize(candidate)} ');
+      if (index >= 0 && (position < 0 || index < position)) {
+        position = index;
+      }
+    }
+    return position;
+  }
+
   static bool _offered(String priorReply, List<String> available) {
     if (priorReply.trim().isEmpty) return false;
-    final reply = _normalize(priorReply);
-    return available.any((choice) {
-      return (' $reply ').contains(' ${_normalize(choice)} ');
-    });
+    return available.any((choice) =>
+        _offeredPosition(priorReply, choice) >= 0);
   }
 
   static bool isOrdinalSelection(String text) =>
@@ -213,7 +224,7 @@ class MrHealthyChoiceResolver {
       // An ordinal is valid only if the previous reply enumerated options
       // in the same order; do not invent an implicit list.
       final positions = options.map((choice) =>
-          previous.indexOf(_normalize(choice))).toList();
+          _offeredPosition(previousAssistantText, choice)).toList();
       if (positions.every((position) => position >= 0) &&
           positions.length > ordinal &&
           positions.toSet().length == positions.length) {
