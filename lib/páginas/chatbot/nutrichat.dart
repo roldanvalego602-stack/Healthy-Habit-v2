@@ -1487,6 +1487,38 @@ class _NutriChatPageState extends State<NutriChatPage> {
     ),
   );
 
+  /// Separa párrafos y viñetas sin alterar el texto original del mensaje.
+  /// La selección de texto permanece disponible en los tres modos.
+  Widget _buildReadableMessageText(ChatMessage message) {
+    final color = message.isUser ? Colors.white : HealthyAdaptive.text;
+    final style = TextStyle(
+      color: color,
+      fontSize: _displayMode.messageFontSize,
+      height: _displayMode.messageLineHeight,
+    );
+    final lines = message.text.split('\n');
+    if (lines.length <= 1) {
+      return SelectableText(message.text, style: style);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < lines.length; index++) ...[
+          if (lines[index].trim().isNotEmpty)
+            SelectableText(
+              lines[index],
+              style: style.copyWith(
+                fontWeight: RegExp(r'^#{1,3} ').hasMatch(lines[index])
+                    ? FontWeight.w700 : null,
+              ),
+            ),
+          if (index < lines.length - 1)
+            SizedBox(height: lines[index].trim().isEmpty ? 8 : 3),
+        ],
+      ],
+    );
+  }
+
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
     return Align(
@@ -1508,7 +1540,10 @@ class _NutriChatPageState extends State<NutriChatPage> {
             ),
           ),
         ),
-        child: Container(
+        child: AnimatedContainer(
+        duration: HealthyVisualEffects.duration(
+          context, const Duration(milliseconds: 200)),
+        curve: Curves.easeOutCubic,
         margin: EdgeInsets.only(bottom: _displayMode.messageGap),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * _displayMode.messageWidth,
@@ -1530,14 +1565,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              message.text,
-              style: TextStyle(
-                color: isUser ? Colors.white : HealthyAdaptive.text,
-                fontSize: _displayMode.messageFontSize,
-                height: _displayMode.messageLineHeight,
-              ),
-            ),
+            _buildReadableMessageText(message),
             if (!isUser &&
                 (message.card == 'habit_add' ||
                  message.card == 'habit_remove') &&
