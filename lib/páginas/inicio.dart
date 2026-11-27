@@ -10,6 +10,7 @@ import '../tema/healthy_theme.dart';
 import '../tema/cosmos_theme_sync.dart';
 import '../tema/cosmos_theme.dart';
 import '../tema/healthy_magic_guide.dart';
+import '../guia/guide_target.dart';
 import '../servicios/healthy_retro_sound_service.dart';
 import '../tema/healthy_coin.dart';
 import '../tema/healthy_motion.dart';
@@ -254,7 +255,9 @@ class _HomeScreen2State extends State<HomeScreen2>
         section: const ['inicio', 'habitos', 'tienda', 'catalogo', 'perfil'][_selectedIndex]),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
       body: SafeArea(child: HealthyPageSwitch(index: _selectedIndex, child: screens[_selectedIndex])),
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: KeyedSubtree(
+        key: HealthyGuideTargets.mainNavigation,
+        child: SafeArea(
         top: false,
         child: Container(
           decoration: BoxDecoration(
@@ -328,6 +331,7 @@ class _HomeScreen2State extends State<HomeScreen2>
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -493,7 +497,9 @@ class _HomeContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ENCABEZADO
-          Row(
+          KeyedSubtree(
+            key: HealthyGuideTargets.homeHeader,
+            child: Row(
             children: [
               Image.asset(
                 'assets/logo/logo.png',
@@ -539,6 +545,7 @@ class _HomeContent extends StatelessWidget {
               ),
             ],
           ),
+          ),
 
           const SizedBox(height: 18),
 
@@ -559,7 +566,9 @@ class _HomeContent extends StatelessWidget {
           const SizedBox(height: 14),
 
           // HABIT COINS
-          Align(
+          KeyedSubtree(
+            key: HealthyGuideTargets.homeCoins,
+            child: Align(
             alignment: Alignment.centerLeft,
             child: ActionChip(
               avatar: const HealthyCoinIcon(size: 23),
@@ -567,11 +576,15 @@ class _HomeContent extends StatelessWidget {
               onPressed: onStore,
             ),
           ),
+          ),
 
           const SizedBox(height: 14),
 
           // NIVEL CALCULADO DESDE XP
-          _levelCard(),
+          RepaintBoundary(
+            key: HealthyGuideTargets.homeLevel,
+            child: _levelCard(),
+          ),
 
           const SizedBox(height: 12),
 
