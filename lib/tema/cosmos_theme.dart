@@ -108,6 +108,23 @@ class _CosmosPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y + 6 * math.sin(t + phase)),
         radius, Paint()..color = Colors.white.withValues(alpha: alpha));
     }
+    // Una estrella fugaz por ciclo, con cola translucida.
+    final cycle = motion?.value ?? 0.0;
+    if (cycle > .43 && cycle < .62) {
+      final progress = (cycle - .43) / .19;
+      final head = Offset(
+        size.width * (1.16 - 1.22 * progress),
+        size.height * (.12 + .30 * progress),
+      );
+      final tail = head + Offset(size.width * .18, -size.height * .055);
+      final opacity = (math.sin(progress * math.pi) * .78).clamp(0.0, .78);
+      canvas.drawLine(tail, head,
+        Paint()..color = CosmosPalette.cyan.withValues(alpha: opacity)
+          ..strokeWidth = 1.9
+          ..strokeCap = StrokeCap.round);
+      canvas.drawCircle(head, 2.4,
+        Paint()..color = Colors.white.withValues(alpha: opacity));
+    }
     final moon = Offset(size.width * .83, size.height * .23);
     canvas.drawCircle(moon, 28,
       Paint()..color = const Color(0xFF7C98DD).withValues(alpha: .17));
