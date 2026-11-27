@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'guide_controller.dart';
 import 'guide_spotlight_painter.dart';
 import 'guide_step.dart';
-import 'guide_gesture.dart';
 import 'guide_character_pose.dart';
 import 'assistant_guide_character.dart';
 import 'guide_pointer.dart';
