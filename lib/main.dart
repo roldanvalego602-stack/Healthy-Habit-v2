@@ -7,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'tema/healthy_theme.dart';
+import 'tema/cosmos_theme_sync.dart';
 import 'tema/healthy_magic_guide.dart';
 import 'servicios/healthy_retro_sound_service.dart';
 import 'tema/healthy_profile_presentation.dart';
@@ -169,7 +170,11 @@ class HabitTrackerApp extends StatelessWidget {
               data: MediaQuery.of(context).copyWith(
                 textScaler: TextScaler.linear(baseScale * textScale),
               ),
-              child: child ?? const SizedBox.shrink(),
+              child: CosmosThemeSync(
+                child: CosmosAppScene(
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
             );
           },
         ),
