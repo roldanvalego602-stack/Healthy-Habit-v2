@@ -227,6 +227,97 @@ class MrHealthyChoiceResolver {
     },
   };
 
+  /// Variantes editoriales para evitar repetir la misma recomendación.
+  /// Se eligen de manera determinista por turno; no son contenido generado.
+  static const Map<String, Map<String, String>> alternateResponses = {
+    'food_desayuno': {
+      'rapida': 'Otra variante rápida: pan integral con frijoles '
+          'y fruta entera, según tus preferencias y disponibilidad.',
+      'economica': 'Otra opción económica puede ser huevo bien cocido '
+          'con tortilla y jitomate, si consumes huevo.',
+      'sin lacteos': 'También puedes preparar una tortilla con '
+          'frijoles y verduras, sin añadir leche ni queso.',
+    },
+    'food_cena': {
+      'economica': 'Una segunda idea económica es arroz con '
+          'frijoles cocidos y verduras disponibles.',
+      'vegetariana': 'Otra alternativa vegetariana: verduras '
+          'salteadas con tofu o lentejas bien cocidas.',
+    },
+    'food_almuerzo': {
+      'para llevar': 'Otra opción para llevar son lentejas '
+          'con arroz, bien refrigeradas hasta consumirlas.',
+      'en casa': 'Prueba verduras de temporada con '
+          'garbanzos y tortilla, según tu apetito.',
+    },
+    'food_plato': {
+      'desayuno': 'Otra idea de desayuno: tostada con '
+          'frijoles y verduras más una fruta de temporada.',
+      'comida': 'Una segunda combinación es arroz, '
+          'garbanzos cocidos y ensalada de verduras.',
+      'cena': 'Una alternativa es sopa de verduras '
+          'con lentejas y un acompañamiento sencillo.',
+    },
+    'ex_principiante': {
+      'en casa': 'También puedes hacer movilidad suave '
+          'de hombros y caminar en el sitio durante unos minutos.',
+      'caminar': 'Otra posibilidad es dividir una caminata '
+          'cómoda en dos recorridos cortos durante el día.',
+    },
+    'ex_fuerza': {
+      'con equipo': 'Otra idea es practicar primero el '
+          'movimiento sin carga y añadir una carga ligera '
+          'cuando lo controles bien.',
+      'sin equipo': 'Puedes alternar empujes contra pared '
+          'con levantarte de una silla estable, sin dolor.',
+    },
+    'ex_cardio': {
+      'caminar': 'También puedes caminar acompañado o '
+          'cambiar de ruta para mantener el interés.',
+      'bicicleta': 'En bicicleta, prueba un trayecto '
+          'seguro y tranquilo antes de aumentar intensidad.',
+      'baile': 'Prueba una sesión breve de baile '
+          'a ritmo cómodo y descansa cuando lo necesites.',
+    },
+    'ex_sin_equipo': {
+      'piernas': 'Puedes añadir pasos laterales suaves '
+          'cerca de un apoyo firme.',
+      'brazos': 'Otra variante es empujar suavemente '
+          'contra una pared a ritmo controlado.',
+      'movilidad': 'También puedes hacer círculos suaves '
+          'de hombros y pausas frecuentes.',
+    },
+    'random_historia': {
+      'misterio': 'El robot halló una segunda nota: '
+          '«La clave está en la constelación apagada». '
+          'Una sombra cruzó el invernadero.',
+      'aventura': 'Desde el cohete divisaron una ciudad '
+          'sobre las nubes. Una señal invitaba a aterrizar.',
+    },
+    'random_aburrido': {
+      'adivinanza': 'Otra adivinanza: tengo agujas, '
+          'pero no coso. ¿Qué soy?',
+      'historia': 'Otra historia: un pequeño planeta '
+          'cambió de color cuando llegó su primera lluvia.',
+      'reto creativo': 'Otro reto: diseña una mascota '
+          'para un planeta acuático y dale un nombre.',
+    },
+    'app_tienda': {
+      'tema': 'Para cambiar de aspecto, revisa primero '
+          'qué temas aparecen como adquiridos y cuáles siguen '
+          'disponibles en Tienda.',
+      'inventario': 'Abre tu Armario y revisa qué objetos '
+          'puedes equipar sin volver a comprarlos.',
+    },
+    'app_cosmos': {
+      'comprar': 'Otra forma de localizarlo es buscar '
+          'la categoría Temas en la Tienda. La compra '
+          'requiere saldo y confirmación.',
+      'volver al anterior': 'Puedes quitar Cosmos sin '
+          'borrar la compra y equiparlo de nuevo más adelante.',
+    },
+  };
+
   static const Map<String, List<String>> synonyms = {
     'rapida': ['rapida', 'rapido', 'facil', 'sencilla', 'sencillo'],
     'economica': ['economica', 'economico', 'barata', 'barato',
@@ -325,6 +416,7 @@ class MrHealthyChoiceResolver {
     String input, {
     required String topicId,
     required String previousAssistantText,
+    int turnIndex = 0,
   }) {
     final options = choices[topicId];
     if (options == null || previousAssistantText.trim().isEmpty) return null;
@@ -380,11 +472,21 @@ class MrHealthyChoiceResolver {
     }
 
     if (option == null) return null;
-    final text = responses[topicId]?[option];
-    if (text == null) return null;
+    final primary = responses[topicId]?[option];
+    if (primary == null) return null;
+    final alternative = alternateResponses[topicId]?[option];
+    final text = turnIndex.isOdd && alternative != null
+        ? alternative : primary;
+    final closing = turnIndex % 3 == 2
+        ? '¿Te gustaría probar una alternativa diferente? '
+            'Opciones: ${options.join(', ')}.'
+        : turnIndex % 3 == 1
+            ? 'Si quieres, seguimos con ${options.join(', ')}. '
+                '¿Cuál te interesa?'
+            : 'Puedes elegir otra opción: '
+                '${options.join(', ')}. ¿Cuál prefieres?';
     return HealthyAssistantReply(
-      '$text\n\nPuedes elegir otra opción: '
-      '${options.join(', ')}. ¿Cuál prefieres?',
+      '$text\n\n$closing',
       card: 'topic', actionArgument: topicId, knowledgeId: topicId,
     );
   }
