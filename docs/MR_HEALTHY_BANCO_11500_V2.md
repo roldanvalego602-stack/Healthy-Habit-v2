@@ -109,3 +109,45 @@ flutter test test/mr_healthy_dialogue_regression_test.dart
 ```
 
 No se ejecutaron estas pruebas desde el editor remoto del repositorio: **pendiente validar el resultado local**.
+
+## Fase siguiente — Preferencias y selección de alternativas
+
+El chatbot ahora consulta la **última respuesta real de Mr. Healthy** antes de interpretar elecciones. Se creó `lib/páginas/chatbot/mr_healthy_choice_resolver.dart`, un componente determinista que distingue:
+
+- **Elección ordinal:** «la primera», «la segunda», «la tercera». Solo selecciona si la respuesta anterior contiene una secuencia reconocible de alternativas.
+- **Preferencias explícitas:** «prefiero algo barato», «sin lácteos», «en casa», «sin equipo», «misterio» o «aventura».
+- **Rechazo:** «no me gusta esa opción», «prefiero otra», sin presumir cuál alternativa desea el usuario.
+- **Cambio de tema y preguntas sensibles:** se mantiene la prioridad del detector de seguridad, el motor de operaciones y las consultas verificables de la cuenta.
+
+El alcance inicial abarca **14 menús editoriales**: desayunos, cenas, almuerzos, proteínas, fibra, agua, ejercicio inicial, ejercicios en casa, fuerza, motivación, historias, entretenimiento, tienda y Cosmos. Los demás temas conservan el seguimiento general desarrollado anteriormente. No se inventan recomendaciones personalizadas ni se realizan compras desde el selector.
+
+La integración usa `previousAssistantText` únicamente del chat actual (el último mensaje recibido del bot). Así no basta con que una palabra aparezca en el historial: debe existir una propuesta reciente coherente. Al reabrir una conversación, la última respuesta guardada aporta ese contexto si sigue siendo pertinente.
+
+### Ejemplos de regresión
+
+```text
+Usuario: Háblame de desayuno saludable.
+Mr. Healthy: ... ¿Prefieres una opción rápida, económica o sin lácteos?
+Usuario: La segunda.
+Mr. Healthy: Para un desayuno económico, puedes preparar...
+Usuario: No me gusta esa opción.
+Mr. Healthy: ¿Quieres probar otra alternativa: rápida, económica, sin lácteos?
+
+Usuario: ¿Qué es empezar ejercicio?
+Mr. Healthy: ... ¿Prefieres una rutina breve de casa o caminata?
+Usuario: Prefiero hacerlo en casa.
+Mr. Healthy: Para empezar en casa, prueba marcha suave...
+```
+
+**Limitación:** esto sigue siendo un sistema de opciones guionizadas, no comprensión libre de lenguaje natural. Los menús no detectados deben pedir aclaración, no asumir decisiones.
+
+Pruebas incluidas en `test/mr_healthy_choices_test.dart`:
+
+```bash
+flutter analyze --no-fatal-infos lib
+flutter test test/mr_healthy_choices_test.dart
+flutter test test/mr_healthy_topic_service_test.dart
+flutter test test/mr_healthy_dialogue_regression_test.dart
+```
+
+Estado: **cambios guardados en GitHub; no compilados en Android ni ejecutados localmente desde este entorno**.
