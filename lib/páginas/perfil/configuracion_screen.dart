@@ -10,6 +10,7 @@ import '../sesion/sobre_nosotros_screen.dart';
 import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../../servicios/healthy_reminders_service.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -596,6 +597,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         activeTrackColor: green,
         onChanged: saving ? null : (v) async {
           await _save(key, v);
+          if (key == 'sonidosApp' && mounted && settings[key] == v) {
+            HealthyRetroSoundService.setEnabled(v);
+          }
           // Comprobación inmediata y perceptible del ajuste en Android.
           if (key == 'vibracionHaptica' && v && mounted &&
               settings[key] == true) {
@@ -605,6 +609,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         },
       );
+
+  void _openSoundLibrary() {
+    const options = <(String, String, IconData)>[
+      ('tap', 'Navegación y botones', Icons.touch_app_outlined),
+      ('open', 'Abrir catálogo', Icons.menu_book_outlined),
+      ('guide', 'Ayuda mágica', Icons.auto_awesome_rounded),
+      ('talk', 'Mr. Healthy', Icons.chat_bubble_outline),
+      ('habit', 'Hábito completado', Icons.check_circle_outline),
+      ('reward', 'Recompensa', Icons.redeem_outlined),
+      ('purchase', 'Compra en tienda', Icons.shopping_bag_outlined),
+      ('equip', 'Equipar accesorio', Icons.checkroom_outlined),
+      ('achievement', 'Subir de nivel', Icons.emoji_events_outlined),
+      ('friend', 'Amistad', Icons.people_outline),
+      ('error', 'Acción inválida', Icons.error_outline),
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Sonidos de Healthy Habit',
+              style: Theme.of(sheetContext).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            const Text(
+              'Efectos propios sintetizados. Ajusta el volumen multimedia del dispositivo.'),
+            const SizedBox(height: 14),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final (kind, title, icon) in options)
+                    ListTile(
+                      leading: Icon(icon),
+                      title: Text(title),
+                      trailing: const Icon(Icons.play_arrow_rounded),
+                      enabled: _bool('sonidosApp'),
+                      onTap: () => HealthyRetroSoundService.play(kind),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -756,6 +811,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Lite reduce animaciones y efectos sin quitar funciones',
             ),
             _toggle('sonidosApp', 'Sonidos de la app'),
+            _action(
+              'Escuchar sonidos originales',
+              () => _openSoundLibrary(),
+              subtitle: 'Prueba once efectos propios de Healthy Habit',
+            ),
             _toggle('vibracionHaptica', 'Vibración háptica'),
             _toggle('animacionesDivertidas', 'Animaciones divertidas',
               subtitle: 'Reduce animaciones compatibles con HealthyVisualEffects en toda la app.'),
