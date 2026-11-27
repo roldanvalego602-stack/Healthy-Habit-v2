@@ -323,7 +323,7 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
         Positioned(
           top: safeTop + 12, left: 16, right: 16,
           child: Row(children: [
-            const Icon(Icons.auto_awesome_rounded, color: accent, size: 19),
+            Icon(Icons.auto_awesome_rounded, color: accent, size: 19),
             const SizedBox(width: 9),
             Expanded(child: Text('MR. HEALTHY · ${widget.sectionTitle.toUpperCase()}',
               style: const TextStyle(color: Colors.white,
