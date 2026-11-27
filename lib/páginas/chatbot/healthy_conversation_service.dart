@@ -98,12 +98,12 @@ class HealthyConversationService {
     final q = input.replaceAll(RegExp(r'[¿?!¡.,;:]'), '').trim();
     final correction = RegExp(
       r'^(no|mejor|perdon|perdon me referia a|no queria|'
-      r'no me referia a|queria decir)\\b',
+      r'no me referia a|queria decir)\b',
     ).hasMatch(q);
     if (!correction) return null;
 
-    final wantsAdventure = RegExp(r'\\baventura\\b').hasMatch(q);
-    final wantsMystery = RegExp(r'\\bmisterio\\b').hasMatch(q);
+    final wantsAdventure = RegExp(r'\baventura\b').hasMatch(q);
+    final wantsMystery = RegExp(r'\bmisterio\b').hasMatch(q);
     final mysteryScene = assistant.contains('huella que se movia sola');
     final adventureScene = assistant.contains('rio de las nubes');
 
@@ -149,7 +149,7 @@ class HealthyConversationService {
     final previous = NutriRespuestasService.normalizar(previousUserMessage);
     final assistant = NutriRespuestasService.normalizar(previousAssistantText)
         .replaceAll(RegExp(r'[¿?!¡.,;:]'), ' ')
-        .replaceAll(RegExp(r'\\s+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (t.isEmpty) return null;
     final greeting = name.trim().isEmpty ? '' : ', ${name.trim()}';
