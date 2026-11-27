@@ -50,3 +50,30 @@ Abrir la app en Android, entrar a **Hábitos** y pulsar **Explícame esta pantal
 Sin errores de análisis, suite de widget tests aprobada y revisión en Android sin bloqueos, objetivos duplicados, desbordamientos ni toques a acciones reales.
 
 **Secuencia inicial:** introducción enfocada en la cabecera y cuatro pasos editoriales (explorar, rutinas, hábitos activos y registro). Cuando un elemento de la lista aún no está construido, la explicación continúa sin recorte y sin forzar una operación.
+
+## Fase 2 — Personaje presentador y orientación animada
+
+El motor de Hábitos ahora incorpora a **Mr. Healthy como personaje independiente de la tarjeta**. Utiliza el recurso original `assets/mascot/healthy.png` en primer plano, con animaciones de llegada (escala y opacidad), flotación, inclinación hacia el objetivo, orientación de su indicador y transición de posición entre pasos.
+
+Se añadieron tres módulos:
+- `lib/guia/guide_character_pose.dart`: algoritmo de geometría que evalúa ubicaciones alrededor del objetivo y penaliza superposiciones con la tarjeta o el objetivo. Mantiene límites de área segura y configura la orientación.
+- `lib/guia/assistant_guide_character.dart`: sprite de Mr. Healthy con entrada por paso, balanceo suave, flotación y aura bajo el personaje. Usa `RepaintBoundary` y `IgnorePointer`; no intercepta interacciones ni modifica el estado de la cuenta.
+- `lib/guia/guide_pointer.dart`: línea curva decorativa con brillo tenue, punta de flecha e indicador sobre el objetivo, dibujada por `CustomPainter`.
+
+El overlay `lib/guia/healthy_guide_overlay.dart` integra estos componentes, manteniendo el bloqueo modal del fondo, la tarjeta informativa y la localización del elemento. **Se respeta la configuración de animaciones** mediante `HealthyVisualEffects.enabled(context)`: en modo Lite o con movimiento reducido se detiene el ticker y las transiciones se vuelven inmediatas.
+
+La mascota existente es una imagen/sprite plano, no un personaje esquelético con articulaciones. Por ello, en esta fase **se simulan movimientos de cuerpo completo** y se dibuja un señalador externo; no se afirma que exista un brazo animado o seguimiento ocular real. La animación articulada requeriría sprites por pose o recursos Rive adecuados, que no están incluidos.
+
+### Validación
+
+```bash
+git fetch origin main
+git merge --ff-only origin/main
+flutter analyze --no-fatal-infos lib
+flutter test test/healthy_guide_phase1_test.dart
+flutter test test/healthy_guide_phase2_test.dart
+```
+
+En Android: abrir Hábitos, activar la guía, revisar el desplazamiento de Mr. Healthy al avanzar/retroceder, la línea indicadora y la ausencia de superposición con la tarjeta en pantallas pequeñas. Revisar también modo Lite y la preferencia de movimiento reducido.
+
+**Pendiente:** validar compilación y pruebas en la instalación de Flutter del proyecto. Esta fase no incluye extracción/ampliación de widgets ni nuevos recursos gráficos articulados. 
