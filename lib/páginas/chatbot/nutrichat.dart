@@ -744,6 +744,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
                   'Indica qué hábito o cuenta y qué deseas hacer. '
                   'No realizaré cambios sin confirmación.';
               _chatContext.reset();
+              _lastEditorialTopic = '';
+              _editorialFollowUps = 0;
+              _editorialTurnIndex = 0;
               _lastTopic = '';
               _lastHabitTitle = '';
               _lastShopItemId = '';
@@ -759,6 +762,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 response = intent.text;
                 _lastEditorialTopic = '';
                 _editorialFollowUps = 0;
+                _editorialTurnIndex = 0;
               } else {
                 // Capas seguras: acciones > banco revisable de 10k+
                 // formulaciones > fichas educativas > conversación.
