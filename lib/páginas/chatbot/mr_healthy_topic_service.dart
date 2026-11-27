@@ -70,6 +70,22 @@ class MrHealthyResponseBank {
   static String normalize(String text) =>
       HealthyKnowledgeIndex.normalize(text);
 
+  /// Remove an optional determiner only after a recognized question prefix.
+  /// This covers natural queries like «qué es la tienda» without treating
+  /// unrelated longer sentences as exact known questions.
+  static String _dropQuestionArticle(String question) {
+    return question.replaceFirst(
+      RegExp(
+        r'^(que es|que significa|que sabes de|cuentame sobre|'
+        r'hablame de|quiero saber de|'
+        r'dime sobre|explicame|me interesa|'
+        r'necesito informacion de|informacion sobre|'
+        r'quiero aprender sobre) (un|una|unos|unas|el|la|los|las) ',
+      ),
+      r'$1 ',
+    );
+  }
+
   /// Cuenta únicamente expresiones distintas que tienen un tema inequívoco.
   int get recognizedPhrasings => _exactIndex.length;
 
@@ -231,7 +247,7 @@ class MrHealthyResponseBank {
       );
     }
 
-    var match = _exactIndex[q];
+    var match = _exactIndex[q] ?? _exactIndex[_dropQuestionArticle(q)];
     if (match == null && q.length > 8 &&
         !_referentialFollowUp.hasMatch(q)) {
       // Only accept a unique, sufficiently specific alias as a whole phrase.
