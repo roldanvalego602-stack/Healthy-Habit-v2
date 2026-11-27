@@ -169,7 +169,7 @@ class MrHealthyResponseBank {
       if (previous == null || followUpDepth >= 3) return null;
       return HealthyAssistantReply(
         followUpDepth == 0
-            ? '${previous.detail}\\n\\n${previous.followUp}'
+            ? '${previous.detail}\n\n${previous.followUp}'
             : followUpDepth == 1
                 ? 'Para orientarte mejor sobre ${previous.terms.first}, '
                     'dime qué parte quieres aplicar a tu situación. '
