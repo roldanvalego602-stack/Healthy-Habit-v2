@@ -7,6 +7,7 @@ import '../../tema/cosmos_theme.dart';
 import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_motion.dart';
 import '../../tema/healthy_visual_mode.dart';
+import '../../guia/guide_target.dart';
 import 'catalogo.dart';
 import 'habit_action_service.dart';
 import '../../servicios/healthy_reminders_service.dart';
@@ -854,7 +855,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 ? Center(child: CircularProgressIndicator(color: green))
                 : Column(
                   children: [
-                    _header(),
+                    KeyedSubtree(key: HealthyGuideTargets.habitsHeader,
+                      child: _header()),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -888,7 +890,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             const SizedBox(height: 14),
                           ],
                           const SizedBox(height: 20),
-                          Row(
+                          KeyedSubtree(
+                            key: HealthyGuideTargets.habitsRoutines,
+                            child: Row(
                             children: [
                               Expanded(child: OutlinedButton.icon(
                                 key: const ValueKey('personal-routines-entry'),
@@ -916,16 +920,20 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                   maxLines: 1, overflow: TextOverflow.ellipsis),
                               )),
                             ],
+                            ),
                           ),
                           const SizedBox(height: 18),
-                          _categoryGrid(),
+                          KeyedSubtree(key: HealthyGuideTargets.habitsCategories,
+                            child: _categoryGrid()),
                           const SizedBox(height: 18),
                           _difficultyFilter(),
                           const SizedBox(height: 28),
-                          _sectionHeader(
+                          KeyedSubtree(
+                            key: HealthyGuideTargets.habitsActive,
+                            child: _sectionHeader(
                             'Mis hábitos activos',
                             '${active.length}/$habitSlots espacios',
-                          ),
+                          )),
                           const SizedBox(height: 14),
                           if (visibleActive.isEmpty)
                             _empty(
