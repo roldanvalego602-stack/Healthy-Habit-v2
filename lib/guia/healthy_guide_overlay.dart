@@ -484,16 +484,26 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
                   value: (controller.index + 1) / controller.count,
                   borderRadius: BorderRadius.circular(8), minHeight: 4),
                 const SizedBox(height: 10),
-                Row(children: [
-                  TextButton(
-                    onPressed: controller.index == 0
-                        ? null : () => _navigate(forward: false),
-                    child: const Text('Anterior')),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: () => _navigate(forward: true),
-                    child: Text(controller.isLast ? 'Finalizar' : 'Siguiente')),
-                ]),
+                // Wrap permite una segunda fila si la escala de texto
+                // o el ancho disponible impiden acomodar ambos botones.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: controller.index == 0
+                          ? null : () => _navigate(forward: false),
+                      child: const Text('Anterior'),
+                    ),
+                    FilledButton(
+                      onPressed: () => _navigate(forward: true),
+                      child: Text(
+                          controller.isLast ? 'Finalizar' : 'Siguiente'),
+                    ),
+                  ],
+                ),
               ]),
               ),
             ),
