@@ -13,13 +13,29 @@ class HealthyRetroSoundService {
       MethodChannel('healthy_habit/retro_sounds');
 
   static bool? _soundEnabled;
+  static DateTime? _lastTap;
+
+  /// Actualiza la preferencia sin esperar a que expire la caché de Firestore.
+  static void setEnabled(bool value) {
+    _soundEnabled = value;
+    _readAt = DateTime.now();
+  }
   static DateTime? _readAt;
 
   static Future<void> play(String kind) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
-    if (!const {'talk', 'purchase', 'reward', 'achievement', 'friend', 'tap', 'guide', 'open'}
+    if (!const {'talk', 'purchase', 'reward', 'achievement', 'friend', 'tap', 'guide', 'open', 'habit', 'equip', 'error'}
         .contains(kind)) {
       return;
+    }
+    // Evita acumulación de clics cuando alguien navega muy rápido.
+    if (kind == 'tap') {
+      final now = DateTime.now();
+      if (_lastTap != null &&
+          now.difference(_lastTap!) < const Duration(milliseconds: 85)) {
+        return;
+      }
+      _lastTap = now;
     }
     try {
       // Caché corta: un tap no debe consultar Firestore por cada pulsación.
