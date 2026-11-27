@@ -70,6 +70,7 @@ Se extendió Cosmos para que la transformación visual llegue a los módulos y n
 - **Inicio:** pestaña seleccionada de la barra inferior con halo holográfico, tarjeta de nivel galáctica y progreso de XP como flujo de energía.
 - **Hábitos:** colores propios para Alimentación, Hidratación, Energía y Bienestar que conservan contraste sobre fondos oscuros; iconos orbitales y barra de avance energética.
 - **Tienda:** paletas cósmicas para las tarjetas de sus distintas categorías, filtros con colores legibles en seleccionados y bordes de contraste.
+- **Componentes globales:** campos de texto, bordes de foco, chips, botones secundarios, notificaciones internas e indicadores heredan colores Cosmos cuando utilizan ThemeData.
 - **Perfil:** nivel y barra de XP espaciales, borde del perfil y módulo de amistades con identidad holográfica.
 - **Catálogo:** envolturas reutilizables con brillos de esquinas y bordes estelares.
 - **Desafíos:** cabecera de temporada espacial, barras de progreso energéticas y contornos de tarjetas adaptados al estado.
