@@ -337,14 +337,26 @@ class _HealthyGuideSceneState extends State<_HealthyGuideScene>
         ),
         Positioned.fill(
           child: IgnorePointer(
-            child: AnimatedBuilder(
-              animation: pulse,
-              builder: (_, __) => CustomPaint(
-                painter: GuidePointerPainter(
-                  pose: pose,
-                  target: highlightedRect,
-                  progress: reduceMotion ? 0 : pulse.value,
-                  accent: accent,
+            child: TweenAnimationBuilder<Offset>(
+              tween: Tween<Offset>(end: pose.position),
+              duration: reduceMotion
+                  ? Duration.zero : const Duration(milliseconds: 590),
+              curve: Curves.easeInOutCubic,
+              builder: (_, pointerPosition, __) => AnimatedBuilder(
+                animation: pulse,
+                builder: (_, __) => CustomPaint(
+                  painter: GuidePointerPainter(
+                    pose: GuideCharacterPose(
+                      position: pointerPosition,
+                      size: pose.size,
+                      leanRadians: pose.leanRadians,
+                      facesLeft: pose.facesLeft,
+                      pointsUp: pose.pointsUp,
+                    ),
+                    target: highlightedRect,
+                    progress: reduceMotion ? 0 : pulse.value,
+                    accent: accent,
+                  ),
                 ),
               ),
             ),
