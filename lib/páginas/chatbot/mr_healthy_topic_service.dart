@@ -133,6 +133,24 @@ class MrHealthyResponseBank {
     r'y que pasa si |y de noche )',
   );
 
+  // An explicit topic has priority over a short, elliptical continuation.
+  static final RegExp _topicChange = RegExp(
+    r'^(cambiando de tema|otro tema|hablame ahora de|'
+    r'ahora dime de|mejor hablemos de|dejemos eso)\b',
+  );
+
+  // Safety and privacy-sensitive questions require specialized handling.
+  static final RegExp _sensitiveQuestion = RegExp(
+    r'\b(embaraz|lactancia|diabetes|diagnostic|'
+    r'cancer|enfermedad|medicamento|dosis|alergia|'
+    r'atragant|asfixia|intoxic|veneno|autolesion|suicid|'
+    r'dolor de pecho|dolor fuerte|desmay|vomitar|'
+    r'laxantes|cuantas calorias|cuantos gramos|cuantos mg|'
+    r'cuanta proteina|cuanto debo|cantidad exacta|'
+    r'cura|curarme|tratame|debo tomar|'
+    r'mi contrasena|mi cuenta bancaria|mi saldo)\b',
+  );
+
   static bool isFollowUpPhrase(String input) {
     final q = normalize(input);
     return _continuation.hasMatch(q) || _referentialFollowUp.hasMatch(q);
@@ -178,7 +196,10 @@ class MrHealthyResponseBank {
     int followUpDepth = 0,
   }) {
     final q = normalize(input);
-    if (q.isEmpty || _shouldDeferToSpecialist(q)) return null;
+    if (q.isEmpty || _shouldDeferToSpecialist(q) ||
+        _sensitiveQuestion.hasMatch(q) || _topicChange.hasMatch(q)) {
+      return null;
+    }
 
     if (isFollowUpPhrase(q) && previousTopicId.isNotEmpty) {
       final previous = _topicsById[previousTopicId];
@@ -211,15 +232,23 @@ class MrHealthyResponseBank {
     }
 
     var match = _exactIndex[q];
-    if (match == null && q.length > 8) {
+    if (match == null && q.length > 8 &&
+        !_referentialFollowUp.hasMatch(q)) {
       // Only accept a unique, sufficiently specific alias as a whole phrase.
       // Single-word matches are too risky for arbitrary questions.
       final candidates = <MrHealthyTopic>{};
       for (final topic in topics) {
         if (topic.terms.any((term) {
           final alias = normalize(term);
-          return alias.split(' ').length >= 2 && alias.length >= 9 &&
-              (' $q ').contains(' $alias ');
+          if (alias.split(' ').length < 2 || alias.length < 9) {
+            return false;
+          }
+          // Long unrelated questions must not be classified solely because
+          // a two-word alias appears inside them.
+          final questionTerms = q.split(' ');
+          final aliasTerms = alias.split(' ');
+          final extraTerms = questionTerms.length - aliasTerms.length;
+          return extraTerms <= 9 && (' $q ').contains(' $alias ');
         })) {
           candidates.add(topic);
         }
