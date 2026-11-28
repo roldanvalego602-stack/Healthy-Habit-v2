@@ -49,12 +49,16 @@ class BetaShopPurchaseGateway {
     final Object? decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic> ||
         (decoded.keys.length != 3 && decoded.keys.length != 4) ||
+        decoded.keys.any((key) => !const {
+          'uid', 'itemId', 'operationId', 'shopDay',
+        }.contains(key)) ||
         decoded['uid'] != uid || decoded['itemId'] != itemId ||
         decoded['operationId'] is! String ||
         !_idPattern.hasMatch(decoded['operationId'] as String) ||
         (decoded.containsKey('shopDay') &&
           (decoded['shopDay'] is! String ||
-           !RegExp(r'^\d{4}-\d{2}-\d{2}
+           !RegExp(r'^\d{4}-\d{2}-\d{2}$')
+               .hasMatch(decoded['shopDay'] as String)))) {
       throw StateError('Compra pendiente dañada: no se enviará.');
     }
     return {'itemId': itemId,
@@ -109,93 +113,6 @@ class BetaShopPurchaseGateway {
         final operationId = _newOperationId();
         payload = {'itemId': itemId, 'operationId': operationId,
           if (shopDay != null) 'shopDay': shopDay};
-        // No enviar si no se pudo guardar el identificador original.
-        await prefs.setString(key, jsonEncode({
-          'uid': uid, ...payload,
-        }));
-      } else {
-        try {
-          payload = _decode(stored, uid, itemId);
-        } catch (_) {
-          throw StateError('Compra pendiente dañada; no se enviará otra.');
-        }
-      }
-      if (_uid() != uid) {
-        throw StateError('La sesión cambió; se conserva la compra pendiente.');
-      }
-      final response = await FirebaseFunctions.instanceFor(
-        app: Firebase.app(), region: 'us-central1',
-      ).httpsCallable('purchaseOfficialShopBeta').call<Map<String, dynamic>>(
-        payload,
-      );
-      if (_uid() != uid) {
-        throw StateError('La sesión cambió; se conserva la compra pendiente.');
-      }
-      final data = Map<String, dynamic>.from(response.data);
-      if (data['itemId'] != itemId ||
-          data['price'] is! int || (data['price'] as int) <= 0 ||
-          data['balanceAfter'] is! int ||
-          (data['balanceAfter'] as int) < 0) {
-        throw StateError('Respuesta de compra inválida; conserva el reintento.');
-      }
-      await prefs.remove(key);
-      return data;
-    } finally {
-      _inFlight.remove(key);
-    }
-  }
-}
-).hasMatch(decoded['shopDay'] as String)))) {
-      throw StateError('Compra pendiente dañada: no se enviará.');
-    }
-    return {'itemId': itemId,
-      'operationId': decoded['operationId'] as String};
-  }
-
-  /// Lista operaciones locales sin contactar al backend ni procesar compras.
-  Future<List<String>> listarPendientes() async {
-    final uid = _uid();
-    final prefs = SharedPreferencesAsync();
-    final prefix = '$_prefix${uid}_';
-    final keys = await prefs.getKeys();
-    final items = <String>[];
-    for (final key in keys.where((key) => key.startsWith(prefix))) {
-      final raw = await prefs.getString(key);
-      if (raw == null) continue;
-      final itemId = key.substring(prefix.length);
-      try {
-        _decode(raw, uid, itemId);
-      } catch (_) {
-        throw StateError('Hay compras pendientes dañadas; no se reenvían.');
-      }
-      items.add(itemId);
-    }
-    if (_uid() != uid) {
-      throw StateError('La sesión cambió mientras se consultaban las compras.');
-    }
-    items.sort();
-    return items;
-  }
-
-  /// Recuperación explícita: el reintento siempre conserva su operationId.
-  Future<Map<String, dynamic>> comprar(String itemId, {
-    bool soloRecuperar = false,
-  }) async {
-    final uid = _uid();
-    final key = pendingKey(uid, itemId);
-    if (!_inFlight.add(key)) {
-      throw StateError('Esta compra ya está en proceso.');
-    }
-    try {
-      final prefs = SharedPreferencesAsync();
-      final stored = await prefs.getString(key);
-      late final Map<String, String> payload;
-      if (stored == null) {
-        if (soloRecuperar) {
-          throw StateError('La compra pendiente ya no existe.');
-        }
-        final operationId = _newOperationId();
-        payload = {'itemId': itemId, 'operationId': operationId};
         // No enviar si no se pudo guardar el identificador original.
         await prefs.setString(key, jsonEncode({
           'uid': uid, ...payload,
