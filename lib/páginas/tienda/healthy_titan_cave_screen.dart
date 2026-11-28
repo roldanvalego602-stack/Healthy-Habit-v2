@@ -121,6 +121,37 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
     return Map<String, dynamic>.from(result.data);
   }
 
+  String _errorMessage(Object error) {
+    if (error is FirebaseFunctionsException) {
+      switch (error.code) {
+        case 'not-found':
+          return 'La función del santuario aún no está desplegada en '
+              'este proyecto Firebase. La escena se puede explorar, '
+              'pero el acertijo no está habilitado.';
+        case 'failed-precondition':
+          return 'El premio está restringido mientras se revisan las '
+              'reglas de seguridad y App Check. No se ha consumido '
+              'ningún intento desde esta pantalla.';
+        case 'unauthenticated':
+          return 'Debes iniciar sesión para validar el secreto.';
+        case 'permission-denied':
+          return 'No se pudo validar el acceso. Revisa App Check '
+              'y los permisos del proyecto.';
+        case 'unavailable':
+        case 'deadline-exceeded':
+          return 'No se pudo contactar con Firebase. Comprueba '
+              'tu conexión y vuelve a consultar el estado.';
+      }
+      return 'Firebase no permitió comprobar el secreto '
+          '(código: ${error.code}).';
+    }
+    if (error is StateError) {
+      return error.message.toString();
+    }
+    return 'No fue posible consultar el santuario. '
+        'Tu progreso no se ha modificado.';
+  }
+
   Future<void> _loadStatus() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -137,12 +168,12 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
             : 'La inscripción está incompleta. Tienes '
               '$_remaining intentos restantes hoy.';
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _feedback =
-          'El santuario no puede comprobar tu cuenta. '
-          'Necesitas Android con App Check autorizado, conexión '
-          'y la función Firebase de la cueva.');
+      setState(() {
+        _consulted = false;
+        _feedback = _errorMessage(error);
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -182,18 +213,11 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
       } else if (!opened) {
         unawaited(HealthyRetroSoundService.play('error'));
       }
-    } on FirebaseFunctionsException catch (error) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _feedback = error.code == 'failed-precondition'
-          ? 'El guardián no pudo verificar tu acceso. '
-            'Comprueba App Check, la sesión y el servidor.'
-          : 'No fue posible comprobar la respuesta. '
-            'No se ha confirmado ningún premio.');
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _feedback =
-          'No se pudo contactar al santuario. '
-          'Tu intento no está confirmado. Intenta actualizar el estado.');
+      setState(() => _feedback = '${_errorMessage(error)} '
+          'El premio no se ha confirmado. Consulta el estado antes '
+          'de volver a enviar la respuesta.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
