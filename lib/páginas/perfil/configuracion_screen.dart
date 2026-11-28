@@ -255,8 +255,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (ctx) => SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: RadioGroup<String>(
+                groupValue: _str(key),
+                onChanged: (value) {
+                  if (value != null) Navigator.pop(ctx, value);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -268,15 +273,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                  ...options.map(
-                    (o) => RadioListTile<String>(
-                      title: Text(o),
-                      value: o,
-                      groupValue: _str(key),
-                      onChanged: (v) => Navigator.pop(ctx, v),
+                  for (final option in options)
+                    RadioListTile<String>(
+                      title: Text(option),
+                      value: option,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
