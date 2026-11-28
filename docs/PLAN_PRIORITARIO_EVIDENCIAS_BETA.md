@@ -4,6 +4,14 @@
 **Rama:** main. **Proyecto Firebase real:** `cloud-firestore-d8c61`.  
 **Estado:** diagnóstico de código y documentación, **sin autorización de despliegue**.
 
+## Estado de implementación (27/11/2026)
+
+Se completaron en código **E1** (reserva, subida, asociación, estado, reintentos, cuota y limpieza bloqueada) y la primera versión de **E2** (análisis local por ML Kit, análisis remoto optativo de contenido mediante Vision con fuente de imagen exclusivamente servidor, comprobación de contexto y metadatos mínimos). **E3** está conectado al registro oficial y es idempotente: no añade XP por foto. Sin embargo, la validación **fuerte** del cumplimiento sigue pendiente porque ni ML Kit ni Vision pueden demostrar que se haya ingerido comida, bebido agua o cumplido tiempo de actividad.
+
+La beta **no está lista para distribuirse**: el recorrido normal todavía contiene escrituras económicas desde Flutter, las reglas reales no están auditadas y el sistema de evidencias está apagado por defecto. Se añadió un laboratorio integrado `firebase.evidence-demo.emulator.json` con tests de reserva, subida, registro, asociación, análisis simulado y limpieza. **No se ha probado todavía en Android ni ejecutado toda la suite en el equipo del desarrollador**.
+
+La guía de ejecución y los criterios de lanzamiento están en [Implementación de evidencias 27/11](IMPLEMENTACION_EVIDENCIAS_2026-11-27.md).
+
 ## Objetivo de producto
 
 Healthy Habit debe permitir registrar un hábito, adjuntar una foto opcional, mostrar qué pudo reconocer el sistema y mantener la integridad del registro y de las recompensas. Una foto, incluso clasificada correctamente, no demuestra por sí misma consumo o cumplimiento. La meta no es dar más XP por cualquier imagen, sino registrar **procedencia, incertidumbre y comprobaciones independientes**.
