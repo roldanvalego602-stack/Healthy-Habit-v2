@@ -5,6 +5,7 @@ import 'package:healthy_habit/guia/assistant_guide_character.dart';
 import 'package:healthy_habit/guia/guide_animated_limbs.dart';
 import 'package:healthy_habit/guia/guide_character_pose.dart';
 import 'package:healthy_habit/guia/guide_gesture.dart';
+import 'package:healthy_habit/guia/healthy_ufo_visual.dart';
 
 void main() {
   const accent = Color(0xFF63E6BE);
@@ -65,7 +66,9 @@ void main() {
     expect(newOrientation.shouldRepaint(initial), isTrue);
   });
 
-  testWidgets('Mr Healthy contiene un rig gráfico para brazos',
+  // La guía actual usa un UFO con señal gestual, no brazos articulados
+  // superpuestos. Conservar las pruebas del pintor como utilidad aislada.
+  testWidgets('la guía presenta un UFO con indicador de gesto',
       (tester) async {
     final phase = AnimationController(
       vsync: tester,
@@ -89,17 +92,15 @@ void main() {
         ),
       ]),
     )));
-    expect(find.byType(GuideAnimatedLimbs), findsOneWidget);
-    final limbs = tester.widget<GuideAnimatedLimbs>(
-      find.byType(GuideAnimatedLimbs));
-    expect(limbs.motion, isFalse);
-    expect(limbs.gesture, HealthyGuideGesture.greet);
-    expect(find.byKey(const ValueKey('guide-articulated-limbs')),
+    expect(find.byType(HealthyUfoVisual), findsOneWidget);
+    expect(find.byType(GuideAnimatedLimbs), findsNothing);
+    expect(find.byIcon(HealthyGuideGesture.greet.symbol), findsOneWidget);
+    expect(find.byKey(const ValueKey('healthy-guide-pose-0')),
         findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('cambiar pose actualiza manos sin recrear mascota',
+  testWidgets('cambiar el gesto cambia el símbolo sin recrear el UFO',
       (tester) async {
     final phase = AnimationController(
       vsync: tester, duration: const Duration(seconds: 1));
@@ -119,14 +120,13 @@ void main() {
       ])),
     );
     await tester.pumpWidget(app(HealthyGuideGesture.point));
-    expect(tester.widget<GuideAnimatedLimbs>(
-        find.byType(GuideAnimatedLimbs)).gesture,
-      HealthyGuideGesture.point);
+    expect(find.byType(HealthyUfoVisual), findsOneWidget);
+    expect(find.byIcon(HealthyGuideGesture.point.symbol), findsOneWidget);
     await tester.pumpWidget(app(HealthyGuideGesture.celebrate));
-    expect(tester.widget<GuideAnimatedLimbs>(
-        find.byType(GuideAnimatedLimbs)).gesture,
-      HealthyGuideGesture.celebrate);
+    expect(find.byType(HealthyUfoVisual), findsOneWidget);
+    expect(find.byIcon(HealthyGuideGesture.celebrate.symbol), findsOneWidget);
     expect(find.byType(AssistantGuideCharacter), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
 }
