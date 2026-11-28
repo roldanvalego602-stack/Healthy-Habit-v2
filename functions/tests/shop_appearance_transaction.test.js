@@ -53,6 +53,17 @@ test("el tema Cosmos solo se equipa si se compró y no se borra al restaurar mas
   }), {cabeza: "crown"});
 });
 
+test("restaurar Mr. Healthy conserva el tema y la nave del OVNI", () => {
+  const user = {
+    shopInventory: ["theme_cosmos", "ufo_carrot", "cap"],
+    shopEquipped: {app_theme: "theme_cosmos", ufo_skin: "ufo_carrot",
+      cabeza: "cap"},
+  };
+  assert.deepEqual(calculateAppearance(user, {action: "reset"}), {
+    app_theme: "theme_cosmos", ufo_skin: "ufo_carrot",
+  });
+});
+
 test("rechaza inyección de inventario, ranuras y monedas", () => {
   assert.deepEqual(validateAppearanceRequest({action: "reset"}), {action: "reset"});
   for (const data of [
