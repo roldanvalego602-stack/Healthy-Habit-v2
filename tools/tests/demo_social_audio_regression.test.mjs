@@ -7,6 +7,7 @@ const read = (path) => readFileSync(resolve(process.cwd(), path), 'utf8');
 const chat = read('lib/páginas/chatbot/nutrichat.dart');
 const sound = read('lib/servicios/healthy_retro_sound_service.dart');
 const nativeAudio = read('android/app/src/main/kotlin/com/example/healthy_habit/MainActivity.kt');
+const synth = read('android/app/src/main/kotlin/com/example/healthy_habit/HealthySoundEngine.kt');
 const pair = read('lib/páginas/habitos/habitos_en_pareja_screen.dart');
 const streak = read('lib/páginas/estadisticas/daily_streak_screen.dart');
 const dialog = read('lib/páginas/estadisticas/daily_streak_reward_dialog.dart');
@@ -18,7 +19,10 @@ test('Mr. Healthy elimina selector sin comportamiento y solo reproduce bips', ()
   assert.match(chat, /HealthyRetroSoundService\.play\('talk'\)/);
   assert.match(nativeAudio, /healthy_habit\/retro_sounds/);
   assert.match(sound, /settings\['sonidosApp'\] == false/);
-  assert.match(nativeAudio, /intArrayOf\(470, 560, 490, 620, 520\)/);
+  // El sintetizador original está separado del puente Flutter.
+  assert.match(nativeAudio, /HealthySoundEngine\.play\(kind\)/);
+  assert.match(synth, /AudioTrack\.Builder\(\)/);
+  assert.match(synth, /val supported = baseEvents/);
 });
 
 test('recompensas y precios usan imagen de moneda real', () => {
