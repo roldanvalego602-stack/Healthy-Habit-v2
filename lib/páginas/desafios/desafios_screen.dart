@@ -484,27 +484,27 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   void _mostrarFiltros() {
     showModalBottomSheet<void>(
       context: context,
-      builder:
-          (context) => SafeArea(
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                const ListTile(title: Text('Filtrar desafíos')),
-                for (final filter in _filters)
-                  RadioListTile<String>(
-                    title: Text(filter),
-                    value: filter,
-                    groupValue: _selectedFilter,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedFilter = value);
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-              ],
-            ),
+      builder: (sheetContext) => SafeArea(
+        child: RadioGroup<String>(
+          groupValue: _selectedFilter,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _selectedFilter = value);
+            Navigator.pop(sheetContext);
+          },
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(title: Text('Filtrar desafíos')),
+              for (final filter in _filters)
+                RadioListTile<String>(
+                  title: Text(filter),
+                  value: filter,
+                ),
+            ],
           ),
+        ),
+      ),
     );
   }
 }
