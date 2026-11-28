@@ -62,6 +62,37 @@ void main() {
     expect(result.isSpecific, isFalse);
   });
 
+  test('el modelo especializado reconoce sandía como clase principal', () {
+    final result =
+        HealthySpecificFoodRecognition.identifyFromSpecializedModel(const [
+      HealthyDetectedLabel('watermelon', .72),
+      HealthyDetectedLabel('carrot', .10),
+      HealthyDetectedLabel('apple_fruit', .05),
+    ]);
+    expect(result.isSpecific, isTrue);
+    expect(result.name, 'sandía');
+    expect(result.sourceLabel, 'watermelon');
+  });
+
+  test('no afirma fruta si el modelo observa otra cosa', () {
+    final result =
+        HealthySpecificFoodRecognition.identifyFromSpecializedModel(const [
+      HealthyDetectedLabel('toy', .79),
+      HealthyDetectedLabel('watermelon', .08),
+    ]);
+    expect(result.isSpecific, isFalse);
+  });
+
+  test('rechaza candidatos ambiguos del modelo de 65 categorías', () {
+    final result =
+        HealthySpecificFoodRecognition.identifyFromSpecializedModel(const [
+      HealthyDetectedLabel('watermelon', .44),
+      HealthyDetectedLabel('mango', .41),
+      HealthyDetectedLabel('grape', .10),
+    ]);
+    expect(result.isSpecific, isFalse);
+  });
+
   test('el vocabulario es explícito y no afirma verificar un hábito', () {
     expect(HealthySpecificFoodRecognition.foodNames['watermelon'], 'sandía');
     expect(HealthySpecificFoodRecognition.foodNames['carrot'], 'zanahoria');
