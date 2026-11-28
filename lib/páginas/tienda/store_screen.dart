@@ -266,6 +266,8 @@ class _StoreScreenState extends State<StoreScreen> {
                 style: TextStyle(color: HealthyAdaptive.accent,
                   fontSize: 11, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
+              ShopRarityChip(item: item),
+              const SizedBox(height: 6),
               Text(item.name,
                 style: TextStyle(color: HealthyAdaptive.text,
                   fontSize: 25, fontWeight: FontWeight.w900)),
@@ -300,14 +302,15 @@ class _StoreScreenState extends State<StoreScreen> {
                   ),
                   child: Text(owned ? 'Ya adquirido'
                       : state == null ? 'Cargando saldo'
-                      : affordable ? 'Canjear recompensa'
+                      : !available ? 'Fuera de rotación'
+                       : affordable ? 'Canjear recompensa'
                       : 'Saldo insuficiente'),
                 ),
               ),
               if (state != null && !owned && !affordable) ...[
                 const SizedBox(height: 8),
                 Center(child: Text(
-                  'Te faltan ${item.price - state.coins} Habit Coins',
+                  'Te faltan ${price - state.coins} Habit Coins',
                   style: TextStyle(color: HealthyAdaptive.muted,
                     fontSize: 12))),
               ],
@@ -826,7 +829,9 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Widget _offerCard(ShopItem item, ShopState? state) {
     final owned = state?.owns(item.id) ?? false;
-    final affordable = state != null && state.coins >= item.price;
+    final price = _currentPrice(item);
+    final discount = _offerIsAuthoritative && _rotation.isOffer(item.id);
+    final affordable = state != null && state.coins >= price;
     final waiting = _busy == item.id;
     final canBuy = state != null && !owned && affordable && _busy == null;
     final palette = _palette(item.category);
@@ -907,7 +912,10 @@ class _StoreScreenState extends State<StoreScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 9),
+                            const SizedBox(height: 7),
+                            Align(alignment: Alignment.centerLeft,
+                              child: ShopRarityChip(item: item, compact: true)),
+                            const SizedBox(height: 5),
                             Text(
                               item.name,
                               maxLines: 3,
@@ -957,13 +965,20 @@ class _StoreScreenState extends State<StoreScreen> {
                 _coinIcon(size: 25),
                 const SizedBox(width: 7),
                 Expanded(
-                  child: Text(
-                    item.price == 0 ? 'Gratis' : '${item.price} H. Coins',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      color: _ink,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (discount)
+                        Text('${item.price} Habit Coins · −20 %',
+                          style: TextStyle(fontSize: 10, color: _muted,
+                            decoration: TextDecoration.lineThrough)),
+                      Text(
+                        item.price == 0 ? 'Gratis' : '$price H. Coins',
+                        style: TextStyle(fontSize: 17,
+                          fontWeight: FontWeight.w900, color: _ink),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -1013,7 +1028,7 @@ class _StoreScreenState extends State<StoreScreen> {
               color: HealthyAdaptive.surface,
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 9),
               child: Text(
-                'Te faltan ${item.price - state.coins} H. Coins',
+                'Te faltan ${price - state.coins} H. Coins',
                 style: TextStyle(fontSize: 11, color: _muted),
               ),
             ),
