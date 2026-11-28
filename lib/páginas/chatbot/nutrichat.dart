@@ -969,7 +969,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     );
                     response = conversational == null
                         ? _respuestas.responder(
-                            text, nombre: _primerNombre, perfil: _perfil)
+                            text, nombre: _primerNombre, perfil: _perfil,
+                            previousAssistantText: previousAssistantText)
                         : MrHealthyReplyStyler.format(
                             conversational, _replyStyle);
                   }
