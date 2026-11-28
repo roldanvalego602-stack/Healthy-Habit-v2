@@ -22,6 +22,7 @@ import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/beta_habit_gateway.dart';
 import '../../servicios/beta_evidence_service.dart';
+import '../../servicios/beta_evidence_vision_service.dart';
 import '../../servicios/habit_evidence_image_preparer.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/healthy_reminders_service.dart';
@@ -54,6 +55,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
   XFile? _imagenSeleccionada;
   Uint8List? _bytesImagen;
   bool _guardando = false;
+  bool _cloudVisionConsent = false;
   bool _modoPasos = false;
   int _pasoRegistro = 0;
   bool _cargando = true;
@@ -265,6 +267,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       setState(() {
         _imagenSeleccionada = imagen;
         _bytesImagen = prepared;
+        _cloudVisionConsent = false;
         _error = null;
       });
     } catch (e) {
@@ -495,6 +498,27 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                     interaction: interaction,
                   );
         if (!mounted) return;
+        String visualSummary = '';
+        if (response['evidenceAttached'] == true &&
+            _cloudVisionConsent && BetaEvidenceVisionService.enabled) {
+          try {
+            final assessment = await const BetaEvidenceVisionService().analyze(
+              habitId: habitoRef.id,
+              attemptId: attemptRef.id,
+              operationId: response['evidenceOperationId'] as String,
+            );
+            if (!mounted) return;
+            visualSummary = assessment['status'] == 'visual_match_only'
+                ? ' · Coincidencia visual orientativa'
+                : assessment['status'] == 'unsupported_habit'
+                    ? ' · Este hábito no se valida mediante una foto'
+                    : ' · Foto inconclusa; registro declarado';
+          } catch (_) {
+            // El registro confirmado conserva su recompensa normal.
+            visualSummary = ' · Análisis opcional no disponible';
+          }
+        }
+        if (!mounted) return;
         final xp = _leerEntero(response['xpAwarded'], 0);
         final coins = _leerEntero(response['coinsAwarded'], 0);
         final progress = _leerEntero(response['progress'], 0);
@@ -544,7 +568,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             subtitle: '+$xp XP'
                 '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
                 ' · $progress/$target registros'
-                "${response['evidenceAttached'] == true ? ' · Foto vinculada (sin verificar consumo)' : ''}",
+                "${response['evidenceAttached'] == true ? ' · Foto vinculada (sin verificar consumo)' : ''}"
+                '$visualSummary',
             icon: completed
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
             effect: completed ? CosmosEffect.habit : CosmosEffect.reward,
@@ -1384,6 +1409,24 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               category: _categoria,
             ),
             const SizedBox(height: 12),
+          ],
+          if (tieneImagen && BetaEvidenceVisionService.enabled) ...[
+            CheckboxListTile(
+              key: const Key('evidencia-consentimiento-vision'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Analizar también en la nube (opcional)',
+                  style: TextStyle(fontWeight: FontWeight.w700,
+                      fontSize: 13)),
+              subtitle: const Text('Solo después de vincular la foto privada. '
+                  'Google Cloud Vision identifica objetos visibles, '
+                  'no demuestra consumo ni cumplimiento. '
+                  'Puedes continuar sin marcar esta opción.',
+                  style: TextStyle(fontSize: 11)),
+              value: _cloudVisionConsent,
+              onChanged: _guardando ? null :
+                  (value) => setState(() =>
+                      _cloudVisionConsent = value == true),
+            ),
           ],
           if (tieneImagen && HealthyVisionDebugService.enabled) ...[
             HealthyVisionPreviewPanel(
