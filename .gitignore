@@ -54,3 +54,9 @@ app.*.map.json
 
 # Reglas estrictas generadas exclusivamente para el emulador demo
 /.firebase-lockdown-preview.rules
+
+# Credenciales privadas de firma de Android (nunca incluir en commits)
+/android/key.properties
+*.jks
+*.keystore
+*.p12
