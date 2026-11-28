@@ -45,6 +45,8 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Clasificador opcional de frutas; no transmite imágenes a Internet.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 }
 
 flutter {
