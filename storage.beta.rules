@@ -1,0 +1,29 @@
+// Storage privado para la beta. NO desplegar hasta auditar reglas y App Check.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Archivos comprimidos por ProfilePhotoService.prepareJpeg().
+    // Toda escritura queda vinculada al UID autenticado.
+    match /users/{uid}/profile/{fileName} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && fileName.matches('avatar_[0-9]+[.]jpg')
+        && request.resource.size > 0
+        && request.resource.size <= 3 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+      // El cliente no debe reemplazar una imagen ya creada; cada subida
+      // utiliza un nombre único y elimina la anterior cuando sea posible.
+      allow update: if false;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Las fotografías de hábitos son gestionadas exclusivamente por Functions.
+    match /habit-evidence/{uid}/{attemptId}/{evidenceId} {
+      allow read, write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
