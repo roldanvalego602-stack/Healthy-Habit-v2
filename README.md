@@ -10,6 +10,8 @@ El documento central para consultar **todas las funcionalidades planificadas**, 
 
 El inventario distingue implementación en código, pruebas reportadas, pilotos de demostración y funciones pendientes. No debe confundirse con una certificación de producción.
 
+**Nuevos módulos (por validar en Android):** [modelo ONNX opcional de alimentos](docs/RECONOCIMIENTO_ONNX_ALIMENTOS.md) y [Entrena tu mente: Sudoku y sopa de letras](docs/ENTRENAMIENTO_MENTAL.md). Los ejercicios mentales guardan progreso local, sin acreditar XP ni monedas oficiales.
+
 **Función central:** [implementación de evidencias fotográficas y pruebas de seguridad](docs/IMPLEMENTACION_EVIDENCIAS_2026-11-27.md). Incluye reconocimiento local, fotos privadas de beta, resultados visuales orientativos y limpieza temporal. Las callables de beta siguen deshabilitadas hasta auditoría de reglas y App Check.
 
 Para las decisiones detalladas de UFO, chatbot y tienda, consultar [su hoja de ruta](docs/ROADMAP_UFO_CHATBOT_TIENDA.md).
