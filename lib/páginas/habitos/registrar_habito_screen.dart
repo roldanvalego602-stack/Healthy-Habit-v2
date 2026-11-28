@@ -1,7 +1,6 @@
 import '../niveles/levels_system.dart';
 import '../estadisticas/daily_streak_screen.dart';
 import '../estadisticas/daily_streak_reward_dialog.dart';
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -577,20 +576,9 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               TemporaryEvidenceService.maxImageBytes) {
         throw Exception('La fotografía supera el límite de 250 KB.');
       }
-      final xpGanado = tieneEvidenciaReal ? 15 : 10;
-      final evidenciaRef = _userDoc
-          .collection('temporary_habit_evidence')
-          .doc(registroRef.id);
-      final ahora = DateTime.now().toUtc();
-      final expira = ahora.add(const Duration(hours: 24));
-      final extension =
-          (_imagenSeleccionada?.name.split('.').last ?? 'jpg').toLowerCase();
-      final imagenTipo =
-          extension == 'png'
-              ? 'image/png'
-              : extension == 'webp'
-              ? 'image/webp'
-              : 'image/jpeg';
+      // No se concede XP por subir una fotografía no verificada.
+      // La vía normal no conserva imágenes Base64 en Firestore.
+      const xpGanado = 10;
 
       final resultado = await _db.runTransaction((transaction) async {
         final attemptSnapshot = await transaction.get(attemptRef);
@@ -715,19 +703,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'lastStreakDate': fechaHoy,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        if (tieneEvidenciaReal) {
-          transaction.set(evidenciaRef, {
-            'userId': uid,
-            'habitId': habitoRef.id,
-            'attemptId': attemptRef.id,
-            'logId': registroRef.id,
-            'imageBase64': base64Encode(bytesEvidencia),
-            'contentType': imagenTipo,
-            'createdAt': FieldValue.serverTimestamp(),
-            'expiresAt': Timestamp.fromDate(expira),
-          });
-        }
-
+        // Ningún archivo se escribe a Firestore desde el cliente normal.
         transaction.set(registroRef, {
           'habitId': habitoRef.id,
           'attemptId': attemptRef.id,
@@ -737,11 +713,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           'interactionType': interactionType,
           'interactionValue': interactionValue,
           'interactionUnit': interactionUnit,
-          'hasEvidence': tieneEvidenciaReal,
+          'hasEvidence': false,
           'imageUrl': null,
-          'evidenceId': tieneEvidenciaReal ? registroRef.id : null,
-          'evidenceExpiresAt':
-              tieneEvidenciaReal ? Timestamp.fromDate(expira) : null,
+          'evidenceId': null,
+          'evidenceExpiresAt': null,
           'xpEarned': xpGanado,
           'progressAfter': nuevoProgreso,
           'goal': metaSegura,
