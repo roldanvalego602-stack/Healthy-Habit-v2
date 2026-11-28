@@ -982,7 +982,7 @@ function betaEvidenceAction(operation, {withStorage = false} = {}) {
   return onCall(
     {region: "us-central1", enforceAppCheck: true,
       maxInstances: 2, concurrency: 1, memory: "512MiB",
-      timeoutSeconds: 30, maxRequestSize: "1MiB"},
+      timeoutSeconds: 30},
     async (request) => {
       try {
         const uid = requireBetaEvidenceAccess(request);
