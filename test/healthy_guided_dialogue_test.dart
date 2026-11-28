@@ -119,4 +119,68 @@ void main() {
     ), contains('Elige un plazo sencillo'));
   });
 
+  test('revisa un primer paso completado sin acreditar progreso', () {
+    const previous = 'Primer paso anotado solo en esta conversación: '
+        '«Ordenar libros». Puedes realizarlo cuando te resulte posible. '
+        'No he modificado tus hábitos ni creado un recordatorio.';
+    final response = HealthyGuidedDialogue.reply('Ya lo hice',
+      previousAssistantText: previous);
+    expect(response, contains('No he registrado'));
+    expect(response, contains('siguiente paso'));
+    final next = HealthyGuidedDialogue.reply('Siguiente paso',
+      previousAssistantText: response!);
+    expect(next, contains('¿Qué nueva acción concreta'));
+    expect(HealthyGuidedDialogue.reply('Organizar carpetas',
+      previousAssistantText: next!), contains('no he registrado progreso'));
+  });
+
+  test('adapta el paso cuando falta tiempo y no modifica rachas', () {
+    const previous = 'Primer paso anotado solo en esta conversación: '
+        '«Ordenar libros». No he modificado tus hábitos.';
+    final difficulty = HealthyGuidedDialogue.reply('No pude',
+      previousAssistantText: previous);
+    expect(difficulty, contains('¿Qué obstáculo apareció'));
+    final suggestion = HealthyGuidedDialogue.reply('Tiempo',
+      previousAssistantText: difficulty!);
+    expect(suggestion, contains('dos minutos'));
+    final revised = HealthyGuidedDialogue.reply('Separar dos libros',
+      previousAssistantText: suggestion!);
+    expect(revised, contains('Paso revisado'));
+    expect(revised, contains('No lo he guardado'));
+  });
+
+  test('corrige un primer paso sin crear registros', () {
+    const previous = 'Primer paso anotado solo en esta conversación: '
+        '«Ordenar libros». No he modificado tus hábitos.';
+    final prompt = HealthyGuidedDialogue.reply('Quiero cambiar el paso',
+      previousAssistantText: previous);
+    expect(prompt, contains('¿Qué nueva acción pequeña prefieres'));
+    expect(HealthyGuidedDialogue.reply('Vaciar una repisa',
+      previousAssistantText: prompt!), contains('Paso revisado'));
+  });
+
+  test('cancela la conversación de planificación, no los hábitos', () {
+    const previous = 'Podemos definir un plan pequeño, sin modificar tu cuenta. '
+        '¿Qué meta concreta quieres organizar?';
+    final response = HealthyGuidedDialogue.reply('Cancelar plan',
+      previousAssistantText: previous);
+    expect(response, contains('No se guardó ninguna meta'));
+    expect(HealthyGuidedDialogue.reply('Cancelar plan',
+      previousAssistantText: 'Hola'), isNull);
+  });
+
+  test('no convierte instrucciones sensibles en pasos o premios', () {
+    const previous = 'Primer paso anotado solo en esta conversación: '
+        '«Ordenar libros». No he modificado tus hábitos.';
+    for (final request in [
+      'registra mis hábitos',
+      'borra mi cuenta',
+      'dosis de medicamento',
+      'comprar artículos',
+    ]) {
+      expect(HealthyGuidedDialogue.reply(request,
+        previousAssistantText: previous), isNull, reason: request);
+    }
+  });
+
 }
