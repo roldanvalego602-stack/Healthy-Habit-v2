@@ -969,3 +969,47 @@ exports.titanSecret = onCall(
     }
   },
 );
+
+
+// Evidencias de beta: tres operaciones con identidad del servidor.
+// Deshabilitadas por defecto incluso cuando la beta de hábitos está activa.
+// Nunca permiten que Flutter suministre UID, bucket, XP o verificación.
+const {requireBetaEvidenceAccess, evidenceBucketName} =
+  require("./official_beta_evidence_access");
+const {getEvidenceStatus} = require("./habit_evidence_status");
+
+function betaEvidenceAction(operation, {withStorage = false} = {}) {
+  return onCall(
+    {region: "us-central1", enforceAppCheck: true,
+      maxInstances: 2, concurrency: 1, memory: "512MiB",
+      timeoutSeconds: 30, maxRequestSize: "1MiB"},
+    async (request) => {
+      try {
+        const uid = requireBetaEvidenceAccess(request);
+        const args = {db, uid, data: request.data};
+        if (withStorage) {
+          const {getStorage} = require("firebase-admin/storage");
+          args.bucket = getStorage().bucket(
+            evidenceBucketName(process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT));
+        }
+        return await operation(args);
+      } catch (error) {
+        if (error instanceof RegistrationPolicyError) {
+          throw new HttpsError(error.code, error.message);
+        }
+        // Nunca registrar fotografías ni parámetros de la solicitud.
+        console.error("[beta-evidence] Fallo del servicio:", {
+          code: error?.code || "internal",
+        });
+        throw new HttpsError("internal",
+          "No fue posible procesar la evidencia.");
+      }
+    }
+  );
+}
+exports.reserveHabitEvidenceBeta = betaEvidenceAction(reserveHabitEvidence);
+exports.uploadReservedEvidenceBeta =
+  betaEvidenceAction(uploadReservedEvidence, {withStorage: true});
+exports.attachHabitEvidenceBeta =
+  betaEvidenceAction(attachHabitEvidence, {withStorage: true});
+exports.getHabitEvidenceStatusBeta = betaEvidenceAction(getEvidenceStatus);
