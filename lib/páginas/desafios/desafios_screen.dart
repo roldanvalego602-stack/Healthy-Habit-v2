@@ -488,7 +488,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
         child: RadioGroup<String>(
           groupValue: _selectedFilter,
           onChanged: (value) {
-            if (value == null) return;
+            if (value == null) {
+              return;
+            }
             setState(() => _selectedFilter = value);
             Navigator.pop(sheetContext);
           },
