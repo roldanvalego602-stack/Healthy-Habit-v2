@@ -9,6 +9,7 @@ import '../../servicios/healthy_retro_sound_service.dart';
 import '../../servicios/shop_demo_bootstrap.dart';
 import '../../servicios/beta_habit_gateway.dart';
 import 'shop_purchase_gateway.dart';
+import 'wardrobe_screen.dart';
 
 /// La cueva es un secreto narrativo, no una recompensa de monedas.
 /// La respuesta se envía a Firebase, que determina y persiste el premio.
@@ -284,9 +285,13 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
                     color: Color(0xFF9CB4AD))),
               ] else ...[
                 FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WardrobeScreen(initialSlot: 'skin'),
+                    ),
+                  ),
                   icon: const Icon(Icons.checkroom_rounded),
-                  label: const Text('Volver y equipar desde el Armario')),
+                  label: const Text('Equipar Titán en el Armario')),
                 const SizedBox(height: 7),
                 const Text('Skin legendaria exclusiva · '
                   'Un desbloqueo por cuenta · Sin monedas',
