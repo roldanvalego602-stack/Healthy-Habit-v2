@@ -913,3 +913,51 @@ exports.searchMrHealthyEncyclopedia = onCall(
     }
   },
 );
+
+
+// Easter egg de la cueva: solo concede un cosmético; nunca Habit Coins.
+// La respuesta se valida exclusivamente aquí, con intentos diarios limitados.
+const {claimTitanSecret, DAILY_LIMIT, SECRET_ID, SKIN_ID} =
+  require("./titan_secret_reward");
+
+exports.titanSecret = onCall(
+  {region: "us-central1", enforceAppCheck: false, maxInstances: 3,
+    timeoutSeconds: 15},
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Inicia sesión para entrar.");
+    }
+    // En producción: App Check obligatorio para evitar automatizar intentos.
+    // El emulador admite sesión sin attestation para las pruebas locales.
+    if (process.env.FUNCTIONS_EMULATOR !== "true" && !request.app) {
+      throw new HttpsError("failed-precondition",
+        "Activa App Check en el dispositivo antes de reclamar el secreto.");
+    }
+    const uid = request.auth.uid;
+    if (request.data?.action === "status") {
+      const day = new Date().toISOString().slice(0, 10);
+      const [reward, attempts] = await Promise.all([
+        db.collection("healthy_secret_rewards")
+          .doc(uid + "_" + SECRET_ID).get(),
+        db.collection("healthy_secret_attempts")
+          .doc(uid + "_" + SECRET_ID + "_" + day).get(),
+      ]);
+      const owned = reward.exists;
+      const used = attempts.exists ? Number(attempts.data().count) : 0;
+      return {status: owned ? "unlocked" : "ready",
+        remaining: owned ? 0 : Math.max(0, DAILY_LIMIT - used),
+        ...(owned ? {skinId: SKIN_ID} : {})};
+    }
+    if (request.data?.action !== "solve" ||
+        typeof request.data?.answer !== "string" ||
+        Object.keys(request.data || {}).some((k) => !["action", "answer"].includes(k))) {
+      throw new HttpsError("invalid-argument", "Solicitud de acertijo inválida.");
+    }
+    try {
+      return await claimTitanSecret({db, uid, answer: request.data.answer});
+    } catch (error) {
+      throw new HttpsError("failed-precondition",
+        "No se pudo validar el acertijo. Comprueba tu sesión e inténtalo después.");
+    }
+  },
+);
