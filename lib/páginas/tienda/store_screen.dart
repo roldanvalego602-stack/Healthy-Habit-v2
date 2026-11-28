@@ -208,6 +208,55 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Future<void> _buy(ShopItem item) async {
     if (_busy != null) return;
+    final quotedDay = _shopDay;
+    final quotedPrice = _currentPrice(item);
+    if (!_rotation.contains(item.id)) {
+      _message('Este artículo no está disponible hoy.');
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirmar canje'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Vas a adquirir ${item.name} para tu colección.'),
+            const SizedBox(height: 10),
+            Semantics(
+              label: 'Costo: $quotedPrice Habit Coins',
+              child: Row(children: [
+                const HealthyCoinIcon(size: 25),
+                const SizedBox(width: 7),
+                Text('$quotedPrice Habit Coins',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            Text('La compra no se puede deshacer ni reembolsar.',
+              style: TextStyle(color: HealthyAdaptive.muted, fontSize: 12)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            key: const Key('tienda-confirmar-canje'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Confirmar canje'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    if (quotedDay != ShopDailyRotation.today().dayKey) {
+      setState(() => _shopDay = ShopDailyRotation.today().dayKey);
+      _message('La selección cambió de día. Revisa el nuevo precio.');
+      return;
+    }
     setState(() => _busy = item.id);
     try {
       await ShopService.instance.buy(item, shopDay: _shopDay);
