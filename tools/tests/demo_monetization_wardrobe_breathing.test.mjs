@@ -10,6 +10,7 @@ const wardrobe = read('lib/páginas/tienda/wardrobe_screen.dart');
 const mascot = read('lib/páginas/tienda/healthy_mascot_live.dart');
 const profile = read('lib/páginas/perfil/profile_screen.dart');
 const chatbot = read('lib/páginas/chatbot/nutrichat.dart');
+const chatAvatar = read('lib/páginas/chatbot/mr_healthy_chat_avatar.dart');
 const shelf = read('lib/páginas/tienda/healthy_achievement_display.dart');
 
 test('monetización es únicamente exhibición sin dinero ni economía real', () => {
@@ -41,7 +42,9 @@ test('vestimenta guardada se aplica a perfil y chat con animación de atención'
   assert.match(mascot, /hh_wardrobe_layout_v1_/);
   assert.match(mascot, /HealthyMascotIdle\(/);
   assert.match(chatbot, /Mr\. Healthy sigue tu mensaje/);
-  assert.match(chatbot, /HealthyMascotLive\(/);
+  assert.match(chatbot, /MrHealthyChatAvatar\(/);
+  assert.match(chatAvatar, /HealthyMascotLive\(/);
+  assert.match(chatAvatar, /Transform\.rotate\(/);
   assert.match(profile, /HealthyMascotLive\(/);
 });
 
@@ -49,7 +52,8 @@ test('armario permite cifras exactas, y títulos bloqueados no se seleccionan', 
   const titles = read('lib/páginas/perfil/profile_titles.dart');
   assert.match(wardrobe, /wardrobe-edit-size-number/);
   assert.match(wardrobe, /wardrobe-edit-rotation-number/);
-  assert.match(wardrobe, /double\.tryParse\(controller\.text\.trim\(\)\)/);
+  assert.match(wardrobe, /double\.tryParse\(draft\.trim\(\)\)/);
+  assert.match(wardrobe, /parsed < min \|\| parsed > max/);
   assert.match(wardrobe, /choice\.available\(latestLevel, verifiedBadges\)/);
   assert.match(titles, /festival_participant_2026/);
   assert.match(titles, /racha_7/);
