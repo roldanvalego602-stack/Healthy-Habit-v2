@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../servicios/healthy_local_image_recognition.dart';
 import '../../servicios/healthy_visual_match.dart';
+import '../../servicios/healthy_specific_food_recognition.dart';
 import '../../tema/healthy_theme.dart';
 
 /// Análisis local y comparación informativa con el hábito elegido.
@@ -127,6 +128,9 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
     final match = _labels == null
         ? null
         : HealthyVisualMatch.evaluate(labels: _labels!, profile: _profile);
+    final specific = _labels == null
+        ? null
+        : HealthySpecificFoodRecognition.identify(_labels!);
     final relevant = _labels == null
         ? const <HealthyDetectedLabel>[]
         : HealthyVisualMatch.relevantLabels(
@@ -252,7 +256,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                           color: HealthyAdaptive.text, fontSize: 12)),
                       if (match.isMatch) ...[
                         const SizedBox(height: 5),
-                        Text('Confianza del modelo: '
+                        Text('Confianza de la etiqueta de ML Kit: '
                             '${(match.confidence * 100).round()}%',
                           style: TextStyle(color: HealthyAdaptive.text,
                               fontWeight: FontWeight.w700, fontSize: 12)),
@@ -263,6 +267,53 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
               ),
             ),
             const SizedBox(height: 12),
+            if (_profile == 'fruit_vegetable' || _profile == 'meal') ...[
+              Container(
+                key: const ValueKey('healthy-specific-food-result'),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: HealthyAdaptive.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: HealthyAdaptive.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(specific?.isSpecific == true
+                        ? Icons.restaurant_outlined
+                        : Icons.manage_search_rounded,
+                      color: HealthyAdaptive.accent, size: 20),
+                    const SizedBox(width: 9),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Identificación de alimento',
+                          style: TextStyle(
+                            color: HealthyAdaptive.text,
+                            fontWeight: FontWeight.w700,
+                          )),
+                        const SizedBox(height: 5),
+                        Text(specific?.isSpecific == true
+                            ? 'Etiqueta concreta detectada: '
+                              '${specific!.name} '
+                              '(${(specific.confidence * 100).round()} %).'
+                            : 'Alimento específico no identificado. '
+                              'El detector general puede reconocer '
+                              '«fruta» sin distinguir cuál es.',
+                          style: TextStyle(
+                            color: HealthyAdaptive.text, fontSize: 12)),
+                        const SizedBox(height: 5),
+                        Text('No es una identificación confirmada ni '
+                            'una prueba de consumo.',
+                          style: TextStyle(
+                            color: HealthyAdaptive.muted, fontSize: 11)),
+                      ],
+                    )),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Text('Elementos relacionados con la categoría:',
               key: const ValueKey('healthy-local-vision-result'),
               style: TextStyle(color: HealthyAdaptive.text,
