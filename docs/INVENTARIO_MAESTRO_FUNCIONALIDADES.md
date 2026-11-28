@@ -1,6 +1,6 @@
 # Healthy Habit — Inventario maestro de funcionalidades y estado
 
-**Actualizado:** 27 de noviembre de 2026.  
+**Actualizado:** 27 de noviembre de 2026 (rama `feature/tienda-integral-2026-11-27`, pendiente de validar).  
 **Proyecto:** Integradora · Healthy Habit.  
 **Repositorio:** `roldanvalego602-stack/Healthy-Habit-v2` · rama `main`.  
 **Entrega prevista del proyecto:** 7 de diciembre de 2026.  
@@ -69,17 +69,17 @@
 | Armario de Mr. Healthy con capas, ranuras y skins | Implementado / validar | Posición, tamaño y rotación; transformaciones personalizadas locales |
 | Banners, marcos, accesorios, aura y títulos | Implementado / validar | Verificar estado de propiedad, raridades y visualización |
 | Pase de temporada y paquetes de moneda con precios MXN | **Solo demo** | Sin pasarela, cobros ni propiedad; los importes son ficticios |
-| Skin de UFO comprable y equipable | Diseñado / pendiente | Separar inventario/equipamiento de UFO frente a mascota |
-| Skins UFO: cosmos, neón, oro, sombrío, vegetal, glitch, lava | Diseñado / pendiente | Arte, IDs, ranuras y precios según rareza |
-| Skin UFO primitiva tipo caricatura prehistórica | Diseñado / pendiente | Concepto aprobado; arte y catálogo por crear |
-| Skin UFO de zanahoria cómica | Diseñado / pendiente | Concepto aprobado; arte y catálogo por crear |
-| Oferta del día y descuentos ocasionales | Diseñado / pendiente | Precio de referencia honesto y transacción server-side |
-| Rotación diaria de artículos | Diseñado / pendiente | Objetivo: **45 % fijos, 35 % rotativos, 20 % especiales** |
-| Rarezas común, poco común, raro, épico y legendario/secreto | Diseñado / pendiente | Definir clasificación y beneficios exclusivamente cosméticos |
-| Rebajar banners degradados y gorra básica | Diseñado / pendiente | Medir ingresos diarios en Habit Coins y sincronizar precios Flutter/backend |
-| Historial y consulta de catálogo completo sin compra | Diseñado / parcial | Los objetos comprados nunca desaparecen del inventario |
+| Skin de UFO comprable y equipable | **Implementado en rama / pendiente CI y Android** | Nueva ranura `ufo_skin` y catálogo de 9 aspectos; validar compras y la apariencia del guía en sesiones distintas |
+| Skins UFO: cosmos, neón, oro, sombrío, vegetal, glitch, lava | **Implementadas en rama / validar** | Recursos vectoriales originales, precio de servidor, inventario propio y vista previa |
+| Skin UFO primitiva tipo caricatura prehistórica | **Implementada en rama / validar** | `ufo_primitive`: dibujo vectorial, tienda y Armario |
+| Skin UFO de zanahoria cómica | **Implementada en rama / validar** | `ufo_carrot`: dibujo vectorial, tienda y Armario |
+| Oferta del día y descuentos ocasionales | **Implementado en rama / seguridad y CI pendientes** | Descuento diario fijo del 20 % solo al activar beta/demo con `shopDay`; servidor calcula costo real sin confiar en Flutter |
+| Rotación diaria de artículos | **Implementada en rama / verificar paridad y operación** | 20 puestos: 9 fijos curados, 7 rotativos y 4 especiales. Fecha UTC−06:00; cliente y servidor calculan la misma selección |
+| Rarezas común, poco común, raro, épico y legendario/secreto | **Implementadas en rama / validar accesibilidad** | Chip de rareza descriptivo y color diferenciado; sin ventajas económicas o de salud |
+| Rebajar banners degradados y gorra básica | **Precios existentes conservados / balance pendiente de datos** | Banners degradados 95–110 HC y gorra 100 HC; no alterar ingresos o precios sin medir obtención real de HC |
+| Historial y consulta de catálogo completo sin compra | **Consulta implementada en rama / historial transaccional pendiente** | Ventana de colección completa, disponibilidad diaria y rareza; objetos comprados siguen en Armario, incluso retirados |
 
-**Dato de referencia:** un informe del 25/11 registra 62 artículos (60 de pago y 2 gratuitos). Otras notas anteriores citan 59. **No fijar un total definitivo sin auditar el catálogo actual**.
+**Auditoría de la rama de tienda integral (27/11):** paridad comprobada por comparación de texto entre Flutter y catálogo oficial: **73 IDs registrados** (64 históricos + 9 OVNI). Hay **3 artículos de precio 0** (dos gratuitos y Titán secreto) y **12 retirados de venta** (incluye Titán). La lista comercial actualmente comprende **60 artículos pagados no retirados**, distribuidos cada día entre 20 puestos de compra; las cifras no implican pruebas completas ni despliegue.
 
 ## D. Mr. Healthy: asistente, chat y fuentes
 
