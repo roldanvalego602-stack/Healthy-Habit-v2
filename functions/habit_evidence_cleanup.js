@@ -4,11 +4,25 @@ const {Timestamp, FieldValue} = require("firebase-admin/firestore");
 
 // Utilidad ADMINISTRATIVA, nunca callable del cliente. Ejecutar exclusivamente
 // en emuladores o con una migración explícitamente revisada.
-async function purgeExpiredEvidence({db, bucket, now = new Date(), limit = 50}) {
-  if (process.env.GCLOUD_PROJECT !== "demo-healthy-habit" ||
-      !process.env.FIRESTORE_EMULATOR_HOST ||
-      !process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
-    throw new Error("La limpieza solo funciona en emuladores demo.");
+async function purgeExpiredEvidence({
+  db, bucket, now = new Date(), limit = 50,
+  allowProduction = false, env = process.env,
+}) {
+  const project = env.GCLOUD_PROJECT || env.GCP_PROJECT;
+  const demo = project === "demo-healthy-habit" &&
+    Boolean(env.FIRESTORE_EMULATOR_HOST) &&
+    Boolean(env.FIREBASE_STORAGE_EMULATOR_HOST);
+  const beta = allowProduction &&
+    project === "cloud-firestore-d8c61" &&
+    env.HH_BETA_HABITS_ENABLED === "true" &&
+    env.HH_BETA_RULES_VERIFIED === "true" &&
+    env.HH_BETA_EVIDENCE_ENABLED === "true" &&
+    env.HH_BETA_EVIDENCE_CLEANUP_ENABLED === "true" &&
+    !env.FIRESTORE_EMULATOR_HOST &&
+    !env.FIREBASE_STORAGE_EMULATOR_HOST;
+  if (!demo && !beta) {
+    throw new Error(
+      "La limpieza solo funciona en emuladores demo o beta auditada.");
   }
   if (!(now instanceof Date) || !Number.isFinite(now.getTime()) ||
       !Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
@@ -47,9 +61,11 @@ async function purgeExpiredEvidence({db, bucket, now = new Date(), limit = 50}) 
     const logRef = userRef.collection("user_habits")
       .doc(reservation.habitId).collection("attempts")
       .doc(reservation.attemptId).collection("logs").doc(snapshot.id);
+    const analysisRef = userRef.collection("habit_evidence_assessments")
+      .doc(snapshot.id);
     await db.runTransaction(async (tx) => {
-      const [current, log] = await Promise.all([
-        tx.get(snapshot.ref), tx.get(logRef),
+      const [current, log, analysis] = await Promise.all([
+        tx.get(snapshot.ref), tx.get(logRef), tx.get(analysisRef),
       ]);
       if (!current.exists) return;
       const currentReservation = current.data();
@@ -66,6 +82,12 @@ async function purgeExpiredEvidence({db, bucket, now = new Date(), limit = 50}) 
           evidenceSize: FieldValue.delete(),
           evidenceVerified: false,
           evidenceExpiredAt: FieldValue.serverTimestamp(),
+        });
+      }
+      if (analysis.exists) {
+        tx.update(analysisRef, {
+          imageSha256: FieldValue.delete(),
+          imageExpiredAt: FieldValue.serverTimestamp(),
         });
       }
       tx.delete(snapshot.ref);
