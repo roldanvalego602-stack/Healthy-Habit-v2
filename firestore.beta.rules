@@ -1,0 +1,758 @@
+// REGLAS DE BETA CERRADA (PROPUESTA: NO DESPLEGAR SIN PRUEBAS).
+// Solo Cloud Functions / Admin SDK puede modificar economía, hábitos,
+// medallas, títulos verificados e inventarios. Los usuarios gestionan
+// únicamente datos personales, chat y relaciones sociales autorizadas.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function authenticated() {
+      return request.auth != null;
+    }
+    function owner(uid) {
+      return authenticated() && request.auth.uid == uid;
+    }
+
+    function socialPayload() {
+      return request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.keys().hasAll(['createdAt'])
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function incomingRef(recipient, sender) {
+      return /databases/$(database)/documents/users/$(recipient)/solicitudes/$(sender);
+    }
+
+    function sentRef(sender, recipient) {
+      return /databases/$(database)/documents/users/$(sender)/solicitudes_enviadas/$(recipient);
+    }
+
+    function friendsRef(uid, otherUid) {
+      return /databases/$(database)/documents/users/$(uid)/friends/$(otherUid);
+    }
+
+    // Reacción sólo si el perfil público permite recibirlas.
+    // Ausencia de opt-out significa permitido para perfiles antiguos.
+    function receivesReactions(uid) {
+      let path = /databases/$(database)/documents/public_profiles/$(uid);
+      return !exists(path)
+        || get(path).data.get('settings', {}).get('permitirReacciones', true) == true;
+    }
+
+    // Los seis stickers de reacciones solo pueden enviarse si el
+    // emisor los posee. Se cotejan ID y emoji sin confiar en Flutter.
+    function validPurchasedSticker(sender, id, emoji) {
+      let inventory = get(
+        /databases/$(database)/documents/users/$(sender)
+      ).data.get('shopInventory', []);
+      return inventory is list
+        && (
+          (id == 'sticker:reaction_compas' && emoji == '💪'
+            && inventory.hasAny(['reaction_compas']))
+          || (id == 'sticker:reaction_celebrate' && emoji == '🎉'
+            && inventory.hasAny(['reaction_celebrate']))
+          || (id == 'sticker:reaction_love' && emoji == '❤️'
+            && inventory.hasAny(['reaction_love']))
+          || (id == 'sticker:reaction_goal' && emoji == '⭐'
+            && inventory.hasAny(['reaction_goal']))
+          || (id == 'sticker:reaction_support' && emoji == '👏'
+            && inventory.hasAny(['reaction_support']))
+          || (id == 'sticker:reaction_like' && emoji == '🔥'
+            && inventory.hasAny(['reaction_like']))
+        );
+    }
+
+    function validFriendAcceptance(uid, otherUid) {
+      let recipient = request.auth.uid;
+      let sender = recipient == uid ? otherUid : uid;
+      return authenticated()
+        && uid != otherUid
+        && (recipient == uid || recipient == otherUid)
+        && socialPayload()
+        && exists(incomingRef(recipient, sender))
+        && !existsAfter(incomingRef(recipient, sender))
+        && !existsAfter(sentRef(sender, recipient))
+        // El espejo debe crearse en ESTE lote: no basta que ya exista.
+        // Ambos documentos son validados por esta misma regla y cada
+        // createdAt debe ser request.time (socialPayload).
+        && !exists(friendsRef(otherUid, uid))
+        && existsAfter(friendsRef(otherUid, uid));
+    }
+
+    // Cualquier participante puede eliminar la amistad si las dos
+    // copias desaparecen en el mismo lote.
+    function validFriendRemoval(uid, otherUid) {
+      return authenticated()
+        && uid != otherUid
+        && (request.auth.uid == uid || request.auth.uid == otherUid)
+        && !existsAfter(friendsRef(otherUid, uid));
+    }
+
+    // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
+    function shopPrice(id) {
+      // Compatibilidad de inventario histórico, pero no nuevas ventas.
+      return id in ['crown', 'mint_aura', 'elite_avatar', 'banner',
+        'avatar_frame', 'streak_guard', 'mint_scarf', 'cape',
+        'pixel_glasses', 'cat_ears'] ? -1 : {
+
+        'theme_cosmos': 1800,
+        'ufo_cosmos': 380,
+        'ufo_neon': 340,
+        'ufo_gold': 700,
+        'ufo_shadow': 390,
+        'ufo_botanical': 330,
+        'ufo_glitch': 420,
+        'ufo_lava': 480,
+        'ufo_primitive': 290,
+        'ufo_carrot': 260,
+        'avatar_frame': 120,
+        'banner': 120,
+        'streak_guard': 300,
+        'achievement_display': 200,
+        'elite_avatar': 140,
+        'mint_scarf': 180,
+        'cap': 100,
+        'crown': 180,
+        'mint_aura': 120,
+        'leaf_aura': 180,
+        'stellar_aura': 280,
+        'golden_aura': 400,
+        'cape': 200,
+        'pixel_glasses': 80,
+        'cat_ears': 150,
+        'sports_headband': 70,
+        'leaf_headphones': 140,
+        'leaf_hoodie': 200,
+        'wellness_medal': 100,
+        'water_bottle': 90,
+        'leaf_backpack': 170,
+        'cat_headphones_pink': 190,
+        'chef_hat_green': 170,
+        'paper_sailor_hat': 120,
+        'green_gloves': 140,
+        'superhero_cape_red': 230,
+        'star_backpack_blue': 170,
+        'rock_face_mask': 230,
+        'space_helmet': 280,
+        'hero_mask_blue': 160,
+        'frame_arcane': 300,
+        'frame_emerald': 160,
+        'frame_cyber': 350,
+        'frame_nature': 210,
+        'banner_space': 260,
+        'banner_sunset': 130,
+        'banner_floral': 150,
+        'banner_ice': 190,
+        'avatar_snowman': 300,
+        'avatar_christmas': 210,
+        'avatar_gingerbread': 210,
+        'avatar_gift': 210,
+        'reaction_compas': 90,
+        'reaction_celebrate': 90,
+        'reaction_love': 90,
+        'reaction_goal': 90,
+        'reaction_support': 90,
+        'reaction_like': 90,
+        'aviator_goggles_gold': 175,
+        'leaf_glow_hat': 145,
+        'leaf_crown': 180,
+        'skin_christmas_cartoon': 420,
+        'banner_gradient_yellow_pink': 95,
+        'banner_gradient_blue_pink': 95,
+        'banner_gradient_teal_yellow': 95,
+        'banner_gradient_gold_black': 110,
+        'banner_gradient_purple_teal': 95,
+        'banner_gradient_pink_violet': 95,
+        'banner_gradient_turquoise_blue': 95,
+        'banner_gradient_black_blue': 110
+      }.get(id, -1);
+    }
+
+    // Separar la validación de tipos evita evaluar removeAll() sobre
+    // listas ausentes o valores malformados. Firestore usa cortocircuito.
+    function validInventoryChange() {
+      return request.resource.data.keys().hasAll(['shopInventory', 'habitCoins'])
+        && resource.data.keys().hasAll(['habitCoins'])
+        && request.resource.data.shopInventory is list
+        && resource.data.get('shopInventory', []) is list
+        && request.resource.data.habitCoins is int
+        && resource.data.habitCoins is int
+        && validInventoryDetails();
+    }
+
+    function validInventoryDetails() {
+      let beforeItems = resource.data.get('shopInventory', []);
+      let afterItems = request.resource.data.shopInventory;
+      let additions = afterItems.removeAll(beforeItems);
+      let price = additions.size() == 1 ? shopPrice(additions[0]) : -1;
+      return afterItems.hasAll(beforeItems)
+        && afterItems.size() == beforeItems.size() + 1
+        && additions.size() == 1
+        && price > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'shopInventory'])
+        && resource.data.habitCoins >= price
+        && request.resource.data.habitCoins == resource.data.habitCoins - price;
+    }
+
+    // El alta inicial coincide con FirebaseService.saveUserData.
+    // No se aceptan saldos ni XP iniciales determinados por el cliente.
+    function validInitialUser(uid) {
+      return owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'name', 'username', 'email', 'level', 'xp',
+          'habitCoins', 'currentStreak', 'createdAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.username is string
+        && request.resource.data.username.size() > 0
+        && request.resource.data.username.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.level == 1
+        && request.resource.data.xp == 0
+        && request.resource.data.habitCoins == 100
+        && request.resource.data.currentStreak == 0
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Validar *todas* las ranuras, no solo la que cambió. Se permiten los
+    // dos cosméticos gratuitos, sin agregarlos al inventario de pago.
+    function validEquippedSlot(look, inventory, slot, ids) {
+      return !(slot in look)
+        || (look[slot] in ids
+          && (inventory.hasAny([look[slot]])
+            || look[slot] in ['sunglasses', 'bandana']));
+    }
+
+    function validEquipped() {
+      return request.resource.data.shopEquipped is map
+        && request.resource.data.get('shopInventory', []) is list
+        && validEquippedDetails();
+    }
+
+    function validEquippedDetails() {
+      let look = request.resource.data.shopEquipped;
+      let inventory = request.resource.data.get('shopInventory', []);
+      return look.keys().hasOnly([
+          'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos', 'skin',
+          'app_theme', 'ufo_skin'
+        ])
+        && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame', 'frame_arcane', 'frame_emerald', 'frame_cyber', 'frame_nature'])
+        && validEquippedSlot(look, inventory, 'perfil_banner', ['banner', 'banner_space', 'banner_sunset', 'banner_floral', 'banner_ice', 'banner_gradient_yellow_pink', 'banner_gradient_blue_pink', 'banner_gradient_teal_yellow', 'banner_gradient_gold_black', 'banner_gradient_purple_teal', 'banner_gradient_pink_violet', 'banner_gradient_turquoise_blue', 'banner_gradient_black_blue'])
+        && validEquippedSlot(look, inventory, 'perfil_expositor', ['achievement_display'])
+        && validEquippedSlot(look, inventory, 'perfil_avatar', ['elite_avatar', 'avatar_snowman', 'avatar_christmas', 'avatar_gingerbread', 'avatar_gift'])
+        && validEquippedSlot(look, inventory, 'cuello', ['mint_scarf', 'bandana', 'wellness_medal'])
+        && validEquippedSlot(look, inventory, 'ojos', ['sunglasses', 'pixel_glasses', 'rock_face_mask', 'hero_mask_blue'])
+        && validEquippedSlot(look, inventory, 'cabeza', ['cap', 'crown', 'cat_ears', 'sports_headband', 'leaf_headphones', 'cat_headphones_pink', 'chef_hat_green', 'paper_sailor_hat', 'space_helmet', 'aviator_goggles_gold', 'leaf_glow_hat', 'leaf_crown'])
+        && validEquippedSlot(look, inventory, 'aura', ['mint_aura', 'leaf_aura', 'stellar_aura', 'golden_aura'])
+        && validEquippedSlot(look, inventory, 'espalda', ['cape', 'leaf_backpack', 'superhero_cape_red', 'star_backpack_blue'])
+        && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
+        && validEquippedSlot(look, inventory, 'mano', ['water_bottle'])
+        && validEquippedSlot(look, inventory, 'brazos', ['green_gloves'])
+        && validEquippedSlot(look, inventory, 'skin', ['skin_christmas_cartoon'])
+        && validEquippedSlot(look, inventory, 'app_theme', ['theme_cosmos'])
+        && validEquippedSlot(look, inventory, 'ufo_skin', ['ufo_cosmos', 'ufo_neon', 'ufo_gold', 'ufo_shadow', 'ufo_botanical', 'ufo_glitch', 'ufo_lava', 'ufo_primitive', 'ufo_carrot']);
+    }
+
+    // Descuento por abandono: requiere que los DOS documentos del hábito
+    // cambien en el mismo commit, y que el intento estuviera en progreso.
+    // El catálogo de la app solo penaliza hábitos de dificultad Difícil.
+    function cancellationHabitPath(uid, habitId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId);
+    }
+
+    function cancellationAttemptPath(uid, habitId, attemptId) {
+      return /databases/$(database)/documents/users/$(uid)/user_habits/$(habitId)/attempts/$(attemptId);
+    }
+
+    function validHabitCancellation(uid) {
+      let marker = request.resource.data.get('habitCancellation', {});
+      return marker is map
+        && marker.keys().hasOnly(['habitId', 'attemptId', 'version'])
+        && marker.keys().hasAll(['habitId', 'attemptId', 'version'])
+        && marker.habitId is string
+        && marker.attemptId is string
+        && marker.version is int
+        && marker.habitId.size() > 0
+        && marker.attemptId.size() > 0
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['habitCoins', 'habitMutationVersion', 'habitCancellation'])
+        && resource.data.get('habitMutationVersion', 0) is int
+        && request.resource.data.habitMutationVersion
+          == resource.data.get('habitMutationVersion', 0) + 1
+        && marker.version == request.resource.data.habitMutationVersion
+        && resource.data.habitCoins is int
+        && resource.data.habitCoins > 0
+        && validCancellationDocuments(uid, marker.habitId, marker.attemptId);
+    }
+
+    function validCancellationDocuments(uid, habitId, attemptId) {
+      let habitPath = cancellationHabitPath(uid, habitId);
+      let attemptPath = cancellationAttemptPath(uid, habitId, attemptId);
+      let habitBefore = get(habitPath).data;
+      let habitAfter = getAfter(habitPath).data;
+      let attemptBefore = get(attemptPath).data;
+      let attemptAfter = getAfter(attemptPath).data;
+      let fee = resource.data.habitCoins < 25
+        ? resource.data.habitCoins : 25;
+      return habitBefore.get('difficulty', '') == 'Difícil'
+        && habitBefore.get('lastAttemptId', '') == attemptId
+        && habitBefore.get('lastStatus', '') == 'inProgress'
+        && habitAfter.get('lastStatus', '') == 'cancelled'
+        && habitAfter.get('latestStatus', '') == 'cancelled'
+        && habitAfter.get('updatedAt', null) == request.time
+        && habitAfter.diff(habitBefore).affectedKeys()
+          .hasOnly(['lastStatus', 'latestStatus', 'updatedAt'])
+        && attemptBefore.get('status', '') == 'inProgress'
+        && attemptAfter.get('status', '') == 'cancelled'
+        && attemptAfter.get('cancelledAt', null) == request.time
+        && attemptAfter.get('cancellationPenalty', -1) == fee
+        && attemptAfter.diff(attemptBefore).affectedKeys()
+          .hasOnly(['status', 'cancelledAt', 'cancellationPenalty'])
+        && request.resource.data.habitCoins == resource.data.habitCoins - fee;
+    }
+
+    // Los campos de autoridad de juego NO son modificables por clientes.
+    // Estas preferencias no otorgan monedas, XP, logros ni inventario.
+    function validOwnerUpdate(uid) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return owner(uid)
+        && changed.hasOnly([
+          'name', 'username', 'email', 'bio', 'settings',
+          'photoUrl', 'profilePhotoPath', 'profileAvatarStyle',
+          'profileBanner', 'profileFrame', 'profileStatus',
+          'profileVisibility', 'tema', 'estiloVisual', 'modoVisual',
+          'updatedAt'
+        ])
+        && (!changed.hasAny(['email']) ||
+          request.resource.data.email == request.auth.token.email)
+        && (!changed.hasAny(['photoUrl', 'profilePhotoPath']) ||
+          (request.resource.data.get('photoUrl', '') is string
+           && request.resource.data.get('profilePhotoPath', '') is string
+           && request.resource.data.get('profilePhotoPath', '').size() <= 220
+           && (request.resource.data.get('profilePhotoPath', '') == ''
+             || request.resource.data.get('profilePhotoPath', '')
+               .matches('^users/' + uid + '/profile/avatar_[0-9]+[.]jpg$'))))
+        && (!changed.hasAny(['name']) ||
+          (request.resource.data.name is string &&
+           request.resource.data.name.size() > 0 &&
+           request.resource.data.name.size() <= 120))
+        && (!changed.hasAny(['username']) ||
+          (request.resource.data.username is string &&
+           request.resource.data.username.size() > 0 &&
+           request.resource.data.username.size() <= 120))
+        && (!changed.hasAny(['bio']) ||
+          (request.resource.data.bio is string &&
+           request.resource.data.bio.size() <= 300))
+        && (!changed.hasAny(['settings']) ||
+          request.resource.data.settings is map);
+    }
+
+    // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
+    // verificables. Una escritura del cliente no puede autenticar progreso.
+    function demoChallengeCreate() {
+      return request.resource.data.keys().hasAll([
+        'title', 'status', 'currentProgress', 'totalProgress',
+        'xpReward', 'hcReward', 'demoSeed', 'progressVerified',
+        'progressSource', 'createdAt'
+      ])
+      && request.resource.data.demoSeed == true
+      && request.resource.data.progressVerified == false
+      && request.resource.data.progressSource == 'demo'
+      && request.resource.data.status in ['available', 'locked']
+      && request.resource.data.currentProgress == 0
+      && request.resource.data.totalProgress is int
+      && request.resource.data.totalProgress > 0
+      && request.resource.data.totalProgress <= 365
+      && request.resource.data.xpReward is int
+      && request.resource.data.xpReward >= 0
+      && request.resource.data.xpReward <= 150
+      && request.resource.data.hcReward is int
+      && request.resource.data.hcReward >= 0
+      && request.resource.data.hcReward <= 50
+      && request.resource.data.createdAt == request.time;
+    }
+
+    function demoChallengeAccept() {
+      return resource.data.get('demoSeed', false) == true
+        && resource.data.get('progressVerified', false) == false
+        && resource.data.get('progressSource', '') == 'demo'
+        && resource.data.status == 'available'
+        && request.resource.data.status == 'inProgress'
+        && request.resource.data.acceptedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptedAt']);
+    }
+
+    function trustedChallengeClaim() {
+      return resource.data.get('demoSeed', true) == false
+        && resource.data.get('progressVerified', false) == true
+        && resource.data.get('progressSource', '') == 'habit_records'
+        && resource.data.status == 'completed'
+        && resource.data.currentProgress is int
+        && resource.data.totalProgress is int
+        && resource.data.totalProgress > 0
+        && resource.data.currentProgress >= resource.data.totalProgress
+        && request.resource.data.status == 'claimed'
+        && request.resource.data.claimedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'claimedAt']);
+    }
+
+    match /users/{uid} {
+      allow get: if owner(uid);
+      allow list: if false;
+      allow create: if validInitialUser(uid);
+      allow delete: if false;
+      allow update: if validOwnerUpdate(uid);
+
+      // Datos privados: sin autorización comodín sobre relaciones sociales.
+      match /user_habits/{path=**} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      // Recibos, cuotas y evaluaciones de fotos pertenecen al servidor.
+      // El cliente puede consultar su estado pero nunca crearlo ni
+      // marcar contenido verificado, incluso en su propia cuenta.
+      match /habit_evidence_reservations/{operationId} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      match /habit_evidence_assessments/{operationId} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      match /habit_evidence_daily_limits/{day} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+      match /habit_evidence_vision_limits/{day} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+      match /registration_operations/{operationId} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+      // Recibos idempotentes de tienda: escritura exclusiva de Functions.
+      match /shop_purchase_operations/{operationId} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      // Conversaciones privadas, sin privilegios económicos.
+      match /healthy_chats/{chatId} {
+        allow get, list, create, update, delete: if owner(uid);
+        match /messages/{messageId} {
+          allow get, list, create, update, delete: if owner(uid);
+        }
+      }
+
+      // Recompensas de racha: lectura propietaria, escritura EXCLUSIVA
+      // del backend. Nunca confiar en documentos diarios del cliente.
+      match /daily_streak_days/{day} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      // Evidencia temporal privada. Solo se crea una vez y se purga desde
+      // la cuenta propietaria o mediante un proceso administrativo.
+      match /temporary_habit_evidence/{evidenceId} {
+        allow read: if owner(uid);
+        // La beta usa reserva, subida y asociación mediante Functions.
+        // Las fotos heredadas pueden eliminarse, pero no crearse desde Flutter.
+        allow create, update: if false;
+        allow delete: if owner(uid);
+      }
+      match /achievements/{path=**} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      match /challenges/{challengeId} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && demoChallengeCreate();
+        allow update: if owner(uid)
+          && demoChallengeAccept();
+        allow delete: if false;
+      }
+      // Una amistad es recíproca; ninguna cuenta puede crearla sola.
+      match /friends/{friendId} {
+        allow get: if owner(uid) ||
+          (authenticated() && request.auth.uid == friendId);
+        allow list: if owner(uid);
+        allow create: if validFriendAcceptance(uid, friendId);
+        allow delete: if validFriendRemoval(uid, friendId);
+        allow update: if false;
+      }
+
+      // Solicitudes entrantes: sólo emisor crea; emisor o receptor retira.
+      match /solicitudes/{sender} {
+        allow get, list: if owner(uid);
+        allow create: if authenticated()
+          && request.auth.uid == sender && sender != uid
+          && !exists(friendsRef(sender, uid))
+          && !exists(incomingRef(sender, uid))
+          && socialPayload()
+          && getAfter(sentRef(sender, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (request.auth.uid == sender || owner(uid))
+          && !existsAfter(sentRef(sender, uid));
+      }
+
+      // Espejo en la cuenta del emisor de la solicitud.
+      match /solicitudes_enviadas/{recipient} {
+        allow get, list: if owner(uid);
+        allow create: if owner(uid) && uid != recipient
+          && !exists(friendsRef(uid, recipient))
+          && !exists(incomingRef(uid, recipient))
+          && socialPayload()
+          && getAfter(incomingRef(recipient, uid)).data == request.resource.data;
+        allow delete: if authenticated()
+          && (owner(uid) || request.auth.uid == recipient)
+          && !existsAfter(incomingRef(recipient, uid));
+      }
+
+      // Seguimientos heredados: sólo limpieza del dato propio.
+      // No se aceptan nuevas relaciones "following/followers".
+      match /following/{target} {
+        allow get, list: if owner(uid);
+        allow delete: if owner(uid);
+        allow create, update: if false;
+      }
+      match /followers/{follower} {
+        allow get, list: if owner(uid);
+        allow delete: if owner(uid);
+        allow create, update: if false;
+      }
+    }
+
+    function validPublicStats(uid) {
+      let private = get(
+        /databases/$(database)/documents/users/$(uid)
+      ).data;
+      let reveal = private.get('settings', {})
+        .get('mostrarRachaAmigos', true) != false;
+      return request.resource.data.xp == private.get('xp', 0)
+        && request.resource.data.get('currentXp', 0)
+          == private.get('currentXp', private.get('xp', 0))
+        && request.resource.data.get('level', 1)
+          == private.get('level', 1)
+        && request.resource.data.get('completedHabits', 0)
+          == private.get('completedHabits', 0)
+        && request.resource.data.get('nextLevelXp', 1000)
+          == private.get('nextLevelXp', 1000)
+        && request.resource.data.get('currentStreak', 0)
+          == (reveal ? private.get('currentStreak', 0) : 0)
+        && request.resource.data.get('streakDays', 0)
+          == (reveal ? private.get('streakDays', 0) : 0)
+        && request.resource.data.get('nextAchievementProgress', 0) == 0
+        && request.resource.data.get('nextAchievementTitle', '') == '';
+    }
+
+    // Perfiles para ranking, búsqueda y vistas públicas. Ningún dato privado.
+    // El propietario aún controla XP: esto NO certifica un ranking anti-trampas.
+    match /public_profiles/{uid} {
+      allow get, list: if authenticated();
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly([
+          'name', 'username', 'photoUrl', 'profileAvatarStyle', 'profileBanner', 'bio', 'title',
+          'healthyEquipped',
+          'xp', 'currentXp', 'level', 'currentStreak', 'streakDays',
+          'completedHabits', 'nextLevelXp', 'nextAchievementTitle',
+          'nextAchievementProgress', 'settings'
+        ])
+        && request.resource.data.keys().hasAll(['name', 'username', 'xp'])
+        && request.resource.data.name is string
+        && request.resource.data.username is string
+        && request.resource.data.get('profileBanner', 'Amanecer')
+          in ['Amanecer', 'Bosque', 'Océano', 'Atardecer']
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        // Un perfil público no puede publicarse con XP distinto al
+        // documento privado actual. No certifica la legitimidad de ese XP.
+        && validPublicStats(uid)
+        && request.resource.data.get('profileAvatarStyle', 'foto')
+          in ['foto', 'naturaleza', 'agua', 'energia']
+        && request.resource.data.get('healthyEquipped', {}) is map
+        && request.resource.data.get('healthyEquipped', {}).keys().hasOnly([
+          'cabeza', 'ojos', 'cuello', 'torso', 'espalda', 'mano', 'aura',
+          'brazos', 'skin', 'perfil_marco', 'perfil_banner', 'perfil_avatar',
+          'perfil_expositor'
+        ])
+        && request.resource.data.settings is map
+        && request.resource.data.settings.keys().hasOnly([
+          'mostrarRachaAmigos', 'visibilidadLogros',
+          'permitirReacciones'
+        ]);
+      allow delete: if owner(uid);
+
+      // Cronología oficial: solo Admin SDK puede crear eventos. Las
+      // cuentas únicamente leen eventos de amistades recíprocas.
+      match /activity_events/{eventId} {
+        allow get, list: if authenticated()
+          && (owner(uid) ||
+              (exists(friendsRef(request.auth.uid, uid))
+                && exists(friendsRef(uid, request.auth.uid))));
+        allow create, update, delete: if false;
+      }
+    }
+
+    // Reacciones entre perfiles: el emisor crea, el destinatario consulta
+    // y puede marcar leído o responder. Nunca se exponen globalmente.
+    match /interactions/{interactionId} {
+      allow get, list: if authenticated()
+        && resource.data.toUid == request.auth.uid;
+      allow create: if authenticated()
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'createdAt', 'emoji', 'estado', 'fromUid',
+          'leido', 'respondedAt', 'tipo', 'toUid'
+        ])
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid.size() > 0
+        && request.resource.data.toUid != request.auth.uid
+        && exists(friendsRef(request.auth.uid, request.resource.data.toUid))
+        && receivesReactions(request.resource.data.toUid)
+        && request.resource.data.emoji is string
+        && request.resource.data.emoji.size() <= 16
+        && request.resource.data.emoji.size() > 0
+        && request.resource.data.challengeId is string
+        && request.resource.data.challengeId.size() <= 128
+        // Toda reacción vinculada a una noticia debe apuntar a un evento
+        // oficial del destinatario y estar visible para amistades.
+        && (!request.resource.data.challengeId.matches(
+                '^(level_|completed_).*')
+            || exists(/databases/$(database)/documents/public_profiles/$(request.resource.data.toUid)/activity_events/$(request.resource.data.challengeId)))
+        // Los stickers de pago requieren posesión; las reacciones
+        // convencionales conservan challengeId vacío o de desafíos.
+        && (
+          !request.resource.data.challengeId.matches('^sticker:.*')
+          || validPurchasedSticker(
+            request.auth.uid,
+            request.resource.data.challengeId,
+            request.resource.data.emoji
+          )
+        )
+        && request.resource.data.estado == 'enviado'
+        && request.resource.data.leido == false
+        && request.resource.data.respondedAt == null
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt <= request.time
+        && request.resource.data.createdAt >= request.time - duration.value(5, 'm');
+      allow update: if authenticated()
+        && resource.data.toUid == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['leido'])
+            && request.resource.data.leido == true
+          )
+          ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['estado', 'respondedAt'])
+            && request.resource.data.estado in ['aceptado', 'rechazado']
+            && request.resource.data.respondedAt == request.time
+          )
+        );
+      allow delete: if false;
+    }
+
+
+    // Invitaciones voluntarias; sólo los participantes pueden consultar.
+    // El cliente no escribe XP ni progreso de otros usuarios aquí.
+    match /shared_habit_invites/{inviteId} {
+      function isMember(data) {
+        return authenticated()
+          && (request.auth.uid == data.senderUid ||
+              request.auth.uid == data.recipientUid);
+      }
+
+      function validInviteFields() {
+        return request.resource.data.keys().hasOnly([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderUid', 'recipientUid', 'habitId', 'habitTitle',
+            'status', 'createdAt', 'resolvedAt'
+          ])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.recipientUid is string
+          && request.resource.data.recipientUid.size() > 0
+          && request.resource.data.recipientUid != request.auth.uid
+          && request.resource.data.habitId is string
+          && request.resource.data.habitId.size() > 0
+          && request.resource.data.habitTitle is string
+          && request.resource.data.habitTitle.size() > 0
+          && request.resource.data.habitTitle.size() <= 120
+          && request.resource.data.status == 'pendiente'
+          && request.resource.data.resolvedAt == null
+          && request.resource.data.createdAt == request.time
+          && exists(friendsRef(request.auth.uid,
+              request.resource.data.recipientUid));
+      }
+
+      function validInviteTransition() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'resolvedAt'])
+          && request.resource.data.resolvedAt == request.time
+          && (
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.recipientUid
+              && request.resource.data.status in ['aceptada', 'rechazada']
+              && exists(friendsRef(request.auth.uid,
+                  resource.data.senderUid)))
+            ||
+            (resource.data.status == 'pendiente'
+              && request.auth.uid == resource.data.senderUid
+              && request.resource.data.status == 'cancelada')
+            ||
+            (resource.data.status == 'aceptada'
+              && request.resource.data.status == 'finalizada')
+          );
+      }
+
+      allow get, list: if isMember(resource.data);
+      allow create: if authenticated() && validInviteFields();
+      allow update: if isMember(resource.data) && validInviteTransition();
+      allow delete: if false;
+    }
+
+    // Solo agregados anónimos publicados por procesos con privilegios
+    // administrativos. Nunca se admiten escrituras desde un cliente.
+    // Regla CANDIDATA para probar exclusivamente en el emulador.
+    match /public_habit_popularity/{habitId} {
+      allow get, list: if authenticated();
+      allow create, update, delete: if false;
+    }
+
+    // Solo documentos de configuración de primer nivel son consultables.
+    // La jerarquía anidada contiene constancias y datos de servidor:
+    // las reglas Firestore son aditivas, no se puede bloquear una subruta
+    // si existe un permiso read heredado de un wildcard recursivo.
+    match /system/{documentId} {
+      // No exponer metadatos de atestaciones ni configuración interna.
+      allow get: if authenticated() && documentId == 'catalog';
+      allow list: if false;
+      allow write: if false;
+    }
+    match /system/{documentId}/{path=**} {
+      allow read, write: if false;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
