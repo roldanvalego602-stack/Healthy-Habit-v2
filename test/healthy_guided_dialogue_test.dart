@@ -71,4 +71,52 @@ void main() {
       expect(answer, contains('No puedo decidir'), reason: criterion);
     }
   });
+  test('construye un plan orientativo de meta sin registrar acciones', () {
+    final opening = HealthyGuidedDialogue.reply(
+      'Ayúdame a planear una meta',
+      previousAssistantText: 'Hola, ¿en qué te ayudo?',
+    );
+    expect(opening, contains('¿Qué meta concreta'));
+
+    final goal = HealthyGuidedDialogue.reply(
+      'Ordenar mi escritorio', previousAssistantText: opening!);
+    expect(goal, contains('¿En qué plazo quieres intentarla'));
+
+    final plan = HealthyGuidedDialogue.reply(
+      'Esta semana',
+      previousUserMessage: 'Ordenar mi escritorio',
+      previousAssistantText: goal!,
+    );
+    expect(plan, contains('Plan orientativo'));
+    expect(plan, contains('No he programado recordatorios'));
+
+    final action = HealthyGuidedDialogue.reply(
+      'Separar los libros',
+      previousUserMessage: 'Esta semana',
+      previousAssistantText: plan!,
+    );
+    expect(action, contains('Primer paso anotado'));
+    expect(action, contains('No he modificado tus hábitos'));
+  });
+
+  test('rechaza metas sensibles o ambiguas sin guardar nada', () {
+    final opening = HealthyGuidedDialogue.reply(
+      'Quiero organizar una meta')!;
+    expect(HealthyGuidedDialogue.reply('dosis de insulina',
+        previousAssistantText: opening), isNull);
+    expect(HealthyGuidedDialogue.reply('No sé',
+        previousAssistantText: opening), contains('meta específica'));
+    expect(HealthyGuidedDialogue.reply('Hoy',
+        previousAssistantText: 'Hola'), isNull);
+  });
+
+  test('un plazo no reconocido requiere una opción clara', () {
+    const prior = 'Meta propuesta: ordenar libros. '
+        '¿En qué plazo quieres intentarla: hoy, esta semana o este mes?';
+    expect(HealthyGuidedDialogue.reply('Algún día',
+      previousAssistantText: prior,
+      previousUserMessage: 'ordenar libros',
+    ), contains('Elige un plazo sencillo'));
+  });
+
 }
