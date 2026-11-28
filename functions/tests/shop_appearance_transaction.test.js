@@ -9,7 +9,7 @@ const {
   changeShopAppearance,
 } = require("../shop_appearance_transaction");
 
-test("catálogo de 57 accesorios y sus ranuras coincide con Flutter", () => {
+test("catálogo de 66 accesorios y sus ranuras coincide con Flutter", () => {
   const dart = fs.readFileSync(path.resolve(__dirname,
     "../../lib/páginas/tienda/shop_service.dart"), "utf8");
   const entries = [...dart.matchAll(
@@ -20,7 +20,7 @@ test("catálogo de 57 accesorios y sus ranuras coincide con Flutter", () => {
     const found = match[2].match(/slot:\s*'([^']+)'/);
     if (found) slots[match[1]] = found[1];
   }
-  assert.equal(Object.keys(slots).length, 57);
+  assert.equal(Object.keys(slots).length, 66);
   assert.deepEqual(SHOP_SLOTS, slots);
 });
 
