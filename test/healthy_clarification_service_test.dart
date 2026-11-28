@@ -21,6 +21,15 @@ void main() {
         '¿Cuál es mejor entre estas opciones?'), contains('alternativas'));
   });
 
+  test('una respuesta breve conserva la petición de aclaración', () {
+    final response = HealthyClarificationService.respond(
+      'Una explicación',
+      previousAssistantText: '¿Quieres una definición, una idea práctica '
+          'o ayuda con alguna función de Healthy Habit?',
+    );
+    expect(response, contains('¿Sobre qué tema'));
+  });
+
   test('las preguntas sanitarias no generan diagnósticos', () {
     final response = HealthyClarificationService.respond(
         'Me duele mucho la cabeza y no sé qué hacer');
