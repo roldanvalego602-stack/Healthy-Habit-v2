@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'beta_evidence_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -70,6 +73,7 @@ class BetaHabitPendingEntry {
     this.maxPenalty,
     this.note = '',
     this.interaction,
+    this.conEvidencia = false,
   });
 
   final String action;
@@ -79,6 +83,7 @@ class BetaHabitPendingEntry {
   final int? maxPenalty;
   final String note;
   final Map<String, dynamic>? interaction;
+  final bool conEvidencia;
 }
 
 /// Solicitudes únicas y recuperables. El operationId se conserva en disco
@@ -145,11 +150,13 @@ class PendingBetaHabitOperations {
         note is! String || note.length > 500 ||
         RegExp(r'[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]').hasMatch(note) ||
         (note.isNotEmpty && action != 'registrar') ||
+        (data['withEvidence'] != null && data['withEvidence'] is! bool) ||
+        (data['withEvidence'] == true && action != 'registrar') ||
         (interaction != null && action == 'cancelar') ||
         (interaction != null && interaction is! Map) ||
         data.keys.any((field) => !const {
           'habitId', 'attemptId', 'operationId', 'maxPenalty',
-          'note', 'interaction',
+          'note', 'interaction', 'withEvidence',
         }.contains(field)) ||
         keyFor(uid: uid, action: action, habitId: habitId,
           attemptId: attemptId) != key) {
@@ -172,6 +179,7 @@ class PendingBetaHabitOperations {
       maxPenalty: penalty is int ? penalty : null,
       note: note,
       interaction: savedInteraction,
+      conEvidencia: data['withEvidence'] == true,
     );
   }
 
@@ -240,8 +248,79 @@ class PendingBetaHabitOperations {
       maxPenalty: original.maxPenalty,
       note: original.note,
       interaction: original.interaction,
+      withEvidence: original.conEvidencia,
       recoveryOnly: true,
     );
+  }
+
+  /// Flujo recuperable: reserva → subida → registro oficial → vínculo.
+  /// La fotografía es opcional y NO agrega XP ni verifica consumo.
+  /// No almacenar bytes en SharedPreferences.
+  Future<Map<String, dynamic>> _registerWithEvidence({
+    required BetaHabitGateway gateway,
+    required Map<String, dynamic> payload,
+    Uint8List? imageBytes,
+  }) async {
+    const evidence = BetaEvidenceService();
+    final habitId = payload['habitId'] as String;
+    final attemptId = payload['attemptId'] as String;
+    final operationId = payload['operationId'] as String;
+    final identity = (habitId: habitId,
+        attemptId: attemptId, operationId: operationId);
+    final status = await evidence.status(
+      habitId: identity.habitId,
+      attemptId: identity.attemptId,
+      operationId: identity.operationId,
+    );
+    final stage = status['status'];
+    if (stage == 'expired') {
+      throw StateError('La reserva temporal venció. '
+          'No se enviará un registro sin fotografía. '
+          'Consulta el estado pendiente para recuperar la operación.');
+    }
+    if (stage == 'not_reserved') {
+      if (imageBytes == null) {
+        throw StateError('Selecciona de nuevo la fotografía original '
+            'para recuperar este registro pendiente.');
+      }
+      await evidence.reserve(
+        habitId: identity.habitId,
+        attemptId: identity.attemptId,
+        operationId: identity.operationId,
+      );
+    } else if (stage != 'uploaded' && stage != 'attached' &&
+        stage != 'pending' && stage != 'uploading' &&
+        stage != 'recovering') {
+      throw StateError('Estado de evidencia desconocido; no se enviará.');
+    }
+    if (stage != 'uploaded' && stage != 'attached') {
+      if (imageBytes == null) {
+        throw StateError('Necesitas la fotografía original para recuperar '
+            'esta subida; no se degradará a registro sin evidencia.');
+      }
+      await evidence.upload(
+        habitId: identity.habitId,
+        attemptId: identity.attemptId,
+        operationId: identity.operationId,
+        jpeg: imageBytes,
+      );
+    }
+    // Reintentar este mismo registro es idempotente en el backend.
+    final result = await gateway.send('registrar', payload);
+    final linked = stage == 'attached'
+        ? status
+        : await evidence.attach(
+            habitId: identity.habitId,
+            attemptId: identity.attemptId,
+            operationId: identity.operationId,
+          );
+    if (linked['attached'] != true) {
+      throw StateError('El registro existe, pero no se pudo '
+          'confirmar el vínculo de la fotografía. '
+          'Conservamos el identificador para recuperarlo.');
+    }
+    return {...result, 'evidenceAttached': true,
+      'evidenceVerified': false, 'evidenceStatus': 'attached'};
   }
 
   Future<Map<String, dynamic>> execute({
@@ -252,12 +331,22 @@ class PendingBetaHabitOperations {
     String note = '',
     Map<String, dynamic>? interaction,
     bool recoveryOnly = false,
+    bool withEvidence = false,
+    Uint8List? evidenceBytes,
   }) async {
     const gateway = BetaHabitGateway();
     // Fail-closed antes de crear una operación pendiente.
     if (!BetaHabitGateway.enabled ||
         Firebase.app().options.projectId != BetaHabitGateway.projectId) {
       throw StateError('La beta no está habilitada para este proyecto.');
+    }
+    if ((withEvidence && (action != 'registrar' ||
+            !BetaEvidenceService.enabled)) ||
+        (!withEvidence && evidenceBytes != null) ||
+        (evidenceBytes != null &&
+            (evidenceBytes.isEmpty ||
+             evidenceBytes.lengthInBytes > BetaEvidenceService.maxBytes))) {
+      throw StateError('La fotografía no está autorizada para esta operación.');
     }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || uid.isEmpty) {
@@ -295,6 +384,7 @@ class PendingBetaHabitOperations {
           'habitId': habitId,
           'attemptId': attemptId ?? gateway.newOperationId(),
           'operationId': gateway.newOperationId(),
+          if (withEvidence) 'withEvidence': true,
           if (action == 'cancelar') 'maxPenalty': maxPenalty,
           if (action == 'registrar' && note.isNotEmpty) 'note': note,
           if (action != 'cancelar' && interaction != null)
@@ -310,6 +400,7 @@ class PendingBetaHabitOperations {
             decoded['operationId'] is! String ||
             !_id.hasMatch(decoded['operationId'] as String) ||
             (action != 'activar' && decoded['attemptId'] != attemptId) ||
+            (decoded['withEvidence'] == true) != withEvidence ||
             (action == 'cancelar' && decoded['maxPenalty'] != maxPenalty) ||
             (action == 'registrar' &&
                 (decoded['note'] ?? '') != note) ||
@@ -322,7 +413,17 @@ class PendingBetaHabitOperations {
       if (FirebaseAuth.instance.currentUser?.uid != uid) {
         throw StateError('Cambió la sesión; la operación queda pendiente.');
       }
-      final result = await gateway.send(action, data);
+      // «withEvidence» existe solo en el diario local: el motor de
+      // registro oficial no acepta atributos visuales del cliente.
+      final payload = Map<String, dynamic>.from(data)
+        ..remove('withEvidence');
+      final result = withEvidence
+          ? await _registerWithEvidence(
+              gateway: gateway,
+              payload: payload,
+              imageBytes: evidenceBytes,
+            )
+          : await gateway.send(action, payload);
       await prefs.remove(key);
       return result;
     } finally {
