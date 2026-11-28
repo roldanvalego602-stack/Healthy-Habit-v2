@@ -1,0 +1,9 @@
+{
+  "firestore": {
+    "database": "default",
+    "rules": "firestore.beta.rules"
+  },
+  "storage": {
+    "rules": "storage.beta.rules"
+  }
+}
