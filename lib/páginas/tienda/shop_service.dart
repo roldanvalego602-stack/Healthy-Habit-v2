@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'shop_purchase_gateway.dart';
+import 'shop_daily_rotation.dart';
 import 'beta_shop_purchase_gateway.dart';
 import '../../servicios/beta_habit_gateway.dart';
 
@@ -372,24 +373,34 @@ class ShopService {
   Stream<ShopState> watch() =>
       _userRef.snapshots().map((doc) => ShopState.fromMap(doc.data() ?? {}));
 
-  Future<void> buy(ShopItem item) async {
+  Future<void> buy(ShopItem item, {String? shopDay}) async {
     if (item.id == 'skin_titan_secret') {
       throw const ShopException('Titán se desbloquea en la cueva, no se compra.');
     }
-    if (shopItemById(item.id) == null) {
+    if (shopItemById(item.id) == null || !isShopItemVisible(item.id)) {
       throw const ShopException('Objeto desconocido.');
+    }
+    final daily = ShopDailyRotation.today();
+    final requestedDay = shopDay ?? daily.dayKey;
+    if (requestedDay != daily.dayKey) {
+      throw const ShopException('La tienda cambió de día. Actualiza las ofertas.');
+    }
+    if (!daily.contains(item.id)) {
+      throw const ShopException('Este artículo no está disponible hoy.');
     }
     // En beta cerrada: comprar únicamente con transacción autoritativa.
     // Ante cualquier error conservar el ID y jamás volver a escribir
     // Habit Coins directamente desde Flutter.
     if (BetaHabitGateway.enabled) {
-      await const BetaShopPurchaseGateway().comprar(item.id);
+      await const BetaShopPurchaseGateway().comprar(item.id,
+        shopDay: requestedDay);
       return;
     }
     // Compilaciones normales conservan el flujo actual. La ruta demo
     // NUNCA vuelve a escribir directamente si el callable falla.
     if (DemoShopPurchaseGateway.requested) {
-      await DemoShopPurchaseGateway.purchase(item.id);
+      await DemoShopPurchaseGateway.purchase(item.id,
+        shopDay: requestedDay);
       return;
     }
     final ref = _userRef;
