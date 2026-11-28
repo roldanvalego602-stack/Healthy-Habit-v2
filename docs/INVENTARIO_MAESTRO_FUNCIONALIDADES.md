@@ -114,11 +114,12 @@
 
 | Funcionalidad | Estado | Evidencia / próximo paso |
 |---|---|---|
-| Sala de Easter eggs | Espacio existente / revisar | La interfaz/laboratorio existe; mecánica final por integrar |
-| Lore: cueva, rejas y criatura peligrosa | Diseñado / pendiente | Escena ambiental y narración |
-| Acertijo con pistas dentro de la cueva | Diseñado / pendiente | Definir respuesta, límites de intentos y accesibilidad |
-| Skin musculosa exclusiva «Mr. Healthy Titan» | Diseñado / pendiente | Arte, inventario y desbloqueo único en servidor |
-| Anuncio y animación de liberación de la criatura | Diseñado / pendiente | Efecto sin recompensa anticipada |
+| Sala de Easter eggs | **Implementado en código / validar** | Entrada de siete toques desde Tienda, pistas en Inicio/Tienda/Chat, cueva nueva y estado por cuenta; backend sin desplegar |
+| Lore: cueva, rejas y criatura peligrosa | **Implementado en código / validar** | Escena dibujada en Flutter, barrotes, iluminación animada y pistas de piedra |
+| Acertijo con pistas dentro de la cueva | **Implementado en código / validar** | Tres pistas progresivas, validación remota, cinco intentos/día y mensajes de errores; no exponer solución en Flutter |
+| Skin musculosa exclusiva «Mr. Healthy Titan» | **Implementado en código / bloquear despliegue hasta auditar reglas** | Arte vectorial, inventario especial, equipamiento y transacción de recompensa única |
+| Anuncio y animación de liberación de la criatura | **Implementado en código / validar** | Rejas deslizantes, luz, audio original y confirmación de Firebase antes del anuncio de premio |
+| Pistas del secreto en Inicio, Tienda y Mr. Healthy | **Implementado en código / validar** | Rastro de tres puntos; la solución no se entrega automáticamente |
 | Bonificación secreta de 1000 monedas | **Solo laboratorio** | Pruebas de `secret_test_bonus.js`; no confundir con el nuevo lore |
 | Micropagos y pase de temporada real | Diseñado / bloqueado | Pagos oficiales, validación server-side, fraude y cumplimiento |
 
@@ -134,7 +135,7 @@
 | Revisión `npm audit` | Pendiente | Último reporte: 28 vulnerabilidades moderadas, sin diagnóstico individual |
 | Búsqueda Wikipedia con límites de servidor | Backend desplegado | Pruebas Android, costes, permisos y política de cuota |
 | Accesibilidad, distintos tamaños y reducir movimiento | Parcial | Pruebas manuales UI completas |
-| Suite `functions` | **173/173 reportadas como aprobadas el 27/11** | Repetir tras cambios de backend |
+| Suite `functions` | **173/173 reportadas como aprobadas antes de Titán** | Repetir tras cambios de backend; resultado de nuevas pruebas pendiente |
 | Suite Flutter y pruebas en Android | **Pendiente de confirmar para cambios recientes** | `flutter analyze`, tests y recorrido funcional |
 | Beta pública conectada a Firebase real | **No autorizada** | Cerrar seguridad, migraciones, reglas y pruebas de distribución |
 
@@ -148,7 +149,7 @@
 
 **P1 — Experiencia principal**
 1. Continuar mejorando criterios conversacionales y diálogo contextual con pruebas.
-2. Crear escena de cueva, acertijo y recompensa exclusiva de skin musculosa.
+2. Validar en Android la cueva, el acertijo y el equipamiento de Titán; auditar Firestore y App Check antes de publicar el callable.
 3. Integrar skins comprables del UFO (prehistórica y zanahoria incluidas).
 4. Rebalancear precios, rotación de la tienda y descuentos del día.
 
@@ -175,7 +176,7 @@ En cada cambio de código:
 | 27/11/2026 | Corregir jerarquía, límites de spotlight y ampliaciones | Código implementado, Android pendiente |
 | 27/11/2026 | Chat híbrido: local + consulta explícita Wikipedia con fuentes | Backend desplegado, dispositivo por validar |
 | 27/11/2026 | Chat: aclaraciones, fuente segura, comparaciones y metas guiadas | Código implementado, tests Flutter pendientes |
-| 27/11/2026 | Easter egg de cueva con acertijo y skin Titan exclusiva | Diseño aprobado |
+| 27/11/2026 | Easter egg de cueva con acertijo y skin Titán exclusiva | Implementado en código, pruebas Firebase/Flutter y despliegue pendientes |
 | 27/11/2026 | UFO primitivo y UFO zanahoria, además de otras skins | Diseño aprobado |
 | 27/11/2026 | Tienda 45/35/20, rarezas y revisión de precios | Diseño aprobado |
 | 27/11/2026 | Seguimiento de metas: avance, obstáculos y cambios de paso | Código implementado; nuevas pruebas Flutter pendientes |
