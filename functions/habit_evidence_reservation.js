@@ -9,7 +9,9 @@ const HABIT = /^(?:alim|hidr|ener|bien)_00[1-9]$/;
 const RESERVATION_MS = 60 * 60 * 1000;
 
 // Solo Admin SDK y laboratorio. NO acredita XP ni registra un hábito.
-async function reserveHabitEvidence({db, uid, data, now = new Date()}) {
+async function reserveHabitEvidence({
+  db, uid, data, now = new Date(), dailyQuota = null,
+}) {
   if (typeof uid !== "string" || !ID.test(uid)) {
     throw new RegistrationPolicyError("unauthenticated", "Sesión inválida.");
   }
@@ -28,6 +30,11 @@ async function reserveHabitEvidence({db, uid, data, now = new Date()}) {
     throw new TypeError("Fecha del servidor inválida.");
   }
 
+  if (dailyQuota !== null &&
+      (!Number.isSafeInteger(dailyQuota) || dailyQuota < 1 ||
+       dailyQuota > 30)) {
+    throw new TypeError("Cuota de fotos inválida.");
+  }
   const userRef = db.collection("users").doc(uid);
   const habitRef = userRef.collection("user_habits").doc(data.habitId);
   const attemptRef = habitRef.collection("attempts").doc(data.attemptId);
@@ -35,13 +42,18 @@ async function reserveHabitEvidence({db, uid, data, now = new Date()}) {
     .doc(data.operationId);
   const operationRef = userRef.collection("registration_operations")
     .doc(data.operationId);
+  const quotaRef = dailyQuota === null ? null :
+    userRef.collection("habit_evidence_daily_limits")
+      .doc(now.toISOString().slice(0, 10));
   const path = `habit-evidence/${uid}/${data.attemptId}/${data.operationId}`;
 
   return db.runTransaction(async (tx) => {
-    const [reservation, operation, user, habit, attempt] = await Promise.all([
-      tx.get(reservationRef), tx.get(operationRef),
-      tx.get(userRef), tx.get(habitRef), tx.get(attemptRef),
-    ]);
+    const [reservation, operation, user, habit, attempt, quotaSnap] =
+      await Promise.all([
+        tx.get(reservationRef), tx.get(operationRef),
+        tx.get(userRef), tx.get(habitRef), tx.get(attemptRef),
+        quotaRef ? tx.get(quotaRef) : Promise.resolve(null),
+      ]);
     if (reservation.exists) {
       const saved = reservation.data();
       if (saved.uid !== uid || saved.habitId !== data.habitId ||
@@ -81,6 +93,12 @@ async function reserveHabitEvidence({db, uid, data, now = new Date()}) {
         "failed-precondition", "El intento ya no está activo."
       );
     }
+    const count = quotaSnap?.exists ? quotaSnap.data().count : 0;
+    if (quotaRef && (!Number.isSafeInteger(count) ||
+        count < 0 || count >= dailyQuota)) {
+      throw new RegistrationPolicyError("resource-exhausted",
+        "Límite diario de fotos de beta alcanzado.");
+    }
     const expiresAt = Timestamp.fromMillis(now.getTime() + RESERVATION_MS);
     tx.create(reservationRef, {
       uid, habitId: data.habitId, attemptId: data.attemptId,
@@ -88,6 +106,11 @@ async function reserveHabitEvidence({db, uid, data, now = new Date()}) {
       status: "pending", createdAt: FieldValue.serverTimestamp(),
       expiresAt,
     });
+    if (quotaRef) {
+      tx.set(quotaRef, {count:count+1,
+        lastOperationId:data.operationId,
+        updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    }
     return {
       storagePath: path,
       operationId: data.operationId,
