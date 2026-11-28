@@ -9,6 +9,8 @@ test("rechaza consultas vacías, demasiado largas y operaciones", () => {
   assert.throws(() => prepareQuery("hi"), TypeError);
   assert.throws(() => prepareQuery("x".repeat(121)), TypeError);
   assert.throws(() => prepareQuery("borra mi cuenta"), RangeError);
+  assert.throws(() => prepareQuery("borrar mi cuenta"), RangeError);
+  assert.throws(() => prepareQuery("¿Cuál es mi contraseña?"), RangeError);
   assert.throws(() => prepareQuery("dosis de medicamento"), RangeError);
   assert.equal(prepareQuery("  planeta    Marte  "), "planeta Marte");
 });
