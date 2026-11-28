@@ -583,9 +583,9 @@ service cloud.firestore {
       let reveal = private.get('settings', {})
         .get('mostrarRachaAmigos', true) != false;
       return validPublicEquipped(uid)
-        && request.resource.data.get('title', 'Cultivador de constancia')
+        && request.resource.data.get('title', 'Semilla saludable')
           == private.get('profileTitle',
-             private.get('title', 'Cultivador de constancia'))
+             private.get('title', 'Semilla saludable'))
         && request.resource.data.xp == private.get('xp', 0)
         && request.resource.data.get('currentXp', 0)
           == private.get('currentXp', private.get('xp', 0))
