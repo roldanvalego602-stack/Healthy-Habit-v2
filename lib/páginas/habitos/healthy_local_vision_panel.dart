@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../servicios/healthy_local_image_recognition.dart';
 import '../../servicios/healthy_visual_match.dart';
 import '../../servicios/healthy_specific_food_recognition.dart';
+import '../../servicios/healthy_food_model_service.dart';
 import '../../tema/healthy_theme.dart';
 
 /// Análisis local y comparación informativa con el hábito elegido.
@@ -38,6 +39,10 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
   int _request = 0;
   bool _busy = false;
   bool _showTechnicalLabels = false;
+  bool _modelInstalled = false;
+  bool _installingModel = false;
+  String? _modelError;
+  List<HealthyDetectedLabel>? _specializedLabels;
   String? _error;
   String? _profile;
   List<HealthyDetectedLabel>? _labels;
@@ -45,6 +50,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
   @override
   void initState() {
     super.initState();
+    _loadModelStatus();
     _profile = widget.initialProfile ??
         HealthyVisualMatch.suggestedProfile(
           widget.habitTitle, widget.category);
@@ -64,6 +70,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _busy = false;
       _error = null;
       _labels = null;
+      _specializedLabels = null;
       _showTechnicalLabels = false;
       _profile = widget.initialProfile ??
           HealthyVisualMatch.suggestedProfile(
@@ -72,6 +79,33 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
         if (mounted) _analyze();
       });
     }
+  }
+
+  Future<void> _loadModelStatus() async {
+    final status = await const HealthyFoodModelService().status();
+    if (!mounted) return;
+    setState(() => _modelInstalled = status.installed);
+  }
+
+  Future<void> _installModel() async {
+    if (_installingModel || _busy || widget.saving) return;
+    setState(() {
+      _installingModel = true;
+      _modelError = null;
+    });
+    try {
+      await const HealthyFoodModelService().install();
+      if (!mounted) return;
+      setState(() => _modelInstalled = true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _modelError =
+          'No pudimos instalar el modelo. '
+          'Comprueba tu conexión y vuelve a intentarlo.');
+    } finally {
+      if (mounted) setState(() => _installingModel = false);
+    }
+    if (mounted && _modelInstalled) await _analyze();
   }
 
   Future<void> _analyze() async {
@@ -83,13 +117,32 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _busy = true;
       _error = null;
       _labels = null;
+      _specializedLabels = null;
       _showTechnicalLabels = false;
     });
     try {
       final result = await const HealthyLocalImageRecognition()
           .analyze(widget.image);
       if (!mounted || current != _request) return;
-      setState(() => _labels = result);
+      List<HealthyDetectedLabel>? specialized;
+      if (_modelInstalled) {
+        try {
+          final analysis = await const HealthyFoodModelService()
+              .analyze(widget.image);
+          specialized = analysis.labels;
+        } catch (error) {
+          if (mounted && current == _request) {
+            setState(() => _modelError =
+                'El modelo específico no pudo analizar esta foto. '
+                'El reconocimiento general sigue disponible.');
+          }
+        }
+      }
+      if (!mounted || current != _request) return;
+      setState(() {
+        _labels = result;
+        _specializedLabels = specialized;
+      });
     } catch (error) {
       if (!mounted || current != _request) return;
       debugPrint('ML Kit image labeling failed: $error');
@@ -130,7 +183,10 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
         : HealthyVisualMatch.evaluate(labels: _labels!, profile: _profile);
     final specific = _labels == null
         ? null
-        : HealthySpecificFoodRecognition.identify(_labels!);
+        : (_specializedLabels != null
+            ? HealthySpecificFoodRecognition.identifyFromSpecializedModel(
+                _specializedLabels!)
+            : HealthySpecificFoodRecognition.identify(_labels!));
     final relevant = _labels == null
         ? const <HealthyDetectedLabel>[]
         : HealthyVisualMatch.relevantLabels(
@@ -294,12 +350,19 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                           )),
                         const SizedBox(height: 5),
                         Text(specific?.isSpecific == true
-                            ? 'Etiqueta concreta detectada: '
-                              '${specific!.name} '
-                              '(${(specific.confidence * 100).round()} %).'
-                            : 'Alimento específico no identificado. '
-                              'El detector general puede reconocer '
-                              '«fruta» sin distinguir cuál es.',
+                            ? _specializedLabels != null
+                                ? 'Posible ${specific!.name}. '
+                                  'Puntuación del modelo especializado: '
+                                  '${(specific.confidence * 100).round()} %.'
+                                : 'Etiqueta concreta de ML Kit: '
+                                  '${specific!.name} '
+                                  '(${(specific.confidence * 100).round()} %).'
+                            : _specializedLabels == null
+                                ? 'Alimento específico no identificado. '
+                                  'El detector general puede reconocer '
+                                  '«fruta» sin distinguir cuál es.'
+                                : 'El modelo específico no encontró '
+                                  'una clase suficientemente clara.',
                           style: TextStyle(
                             color: HealthyAdaptive.text, fontSize: 12)),
                         const SizedBox(height: 5),
@@ -313,6 +376,71 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                 ),
               ),
               const SizedBox(height: 12),
+            ],
+            if (HealthyFoodModelService.supported) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.psychology_outlined,
+                            color: HealthyAdaptive.accent),
+                        const SizedBox(width: 7),
+                        Expanded(child: Text('Modelo especializado · '
+                            '65 categorías visuales',
+                          style: TextStyle(color: HealthyAdaptive.text,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700))),
+                        if (_modelInstalled)
+                          Icon(Icons.check_circle_outline_rounded,
+                              color: HealthyAdaptive.accent, size: 18),
+                      ]),
+                      const SizedBox(height: 6),
+                      Text(_modelInstalled
+                          ? 'Instalado en el dispositivo. La foto se '
+                            'analiza sin conexión y no se sube.'
+                          : 'Descarga opcional de los pesos '
+                            '(aprox. 1,3 MB). Solo se descarga el '
+                            'modelo, no se transmite tu foto.',
+                        style: TextStyle(
+                            color: HealthyAdaptive.muted, fontSize: 11)),
+                      if (!_modelInstalled) ...[
+                        const SizedBox(height: 9),
+                        OutlinedButton.icon(
+                          key: const ValueKey('healthy-install-food-model'),
+                          onPressed: _installingModel ||
+                                  _busy || widget.saving
+                              ? null : _installModel,
+                          icon: _installingModel
+                              ? const SizedBox(width: 17, height: 17,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2))
+                              : const Icon(Icons.download_rounded),
+                          label: Text(_installingModel
+                              ? 'Descargando y comprobando…'
+                              : 'Activar modelo específico'),
+                        ),
+                      ],
+                      if (_modelError != null) ...[
+                        const SizedBox(height: 6),
+                        Text(_modelError!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 11)),
+                      ],
+                      const SizedBox(height: 5),
+                      Text('SekoKuva Mobile 423K · BC Bertenex Oy · '
+                          'Apache 2.0. Puede equivocarse y no '
+                          'acredita consumo ni XP.',
+                        style: TextStyle(
+                            color: HealthyAdaptive.muted, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
             ],
             Text('Elementos relacionados con la categoría:',
               key: const ValueKey('healthy-local-vision-result'),
