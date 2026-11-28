@@ -124,7 +124,7 @@ internal object HealthyFoodModelEngine {
     }
 
     fun install(context: Context): Map<String, Any> = synchronized(lock) {
-        if (filesPresent(context)) return status(context)
+        if (filesPresent(context)) return@synchronized status(context)
         val target = modelDir(context)
         val temp = File(context.filesDir, "healthy_food_model_pending")
         temp.deleteRecursively()
@@ -161,7 +161,7 @@ internal object HealthyFoodModelEngine {
             session?.close()
             session = null
             labels = null
-            return status(context)
+            status(context)
         } finally {
             temp.deleteRecursively()
         }
@@ -273,7 +273,7 @@ internal object HealthyFoodModelEngine {
                     val best = exponential.indices
                         .sortedByDescending { exponential[it] }
                         .take(5)
-                    return mapOf(
+                    mapOf(
                         "installed" to true,
                         "model" to "SekoKuva Mobile 423K",
                         "labels" to best.map { index ->
