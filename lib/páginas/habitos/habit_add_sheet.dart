@@ -237,7 +237,7 @@ class _HabitAddSheetState extends State<HabitAddSheet> {
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       key: const ValueKey('habit-add-tool'),
-                      value: _type,
+                      initialValue: _type,
                       isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Herramienta de registro',
@@ -297,7 +297,7 @@ class _HabitAddSheetState extends State<HabitAddSheet> {
                     if (_type == 'counter') ...[
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _unit,
+                        initialValue: _unit,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Unidad',
