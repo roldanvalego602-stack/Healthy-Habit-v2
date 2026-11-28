@@ -95,10 +95,15 @@ test("reserva expirada no permite afirmar evidencia actual", async () => {
 });
 
 test("una reserva ausente no se inventa", async () => {
-  const result = await getEvidenceStatus({db:{
-    collection:()=>({doc:()=>({collection:()=>({doc:()=>({
-      get:async()=>({exists:false}),
-    })})})})}),
-  },uid:"usuario_pruebas",data:ids});
-  assert.equal(result.status,"not_reserved");
+  function emptyDoc() {
+    return {
+      collection: () => ({doc: () => emptyDoc()}),
+      get: async () => ({exists: false}),
+    };
+  }
+  const db = {collection: () => ({doc: () => emptyDoc()})};
+  const result = await getEvidenceStatus({
+    db, uid: "usuario_pruebas", data: ids,
+  });
+  assert.equal(result.status, "not_reserved");
 });
