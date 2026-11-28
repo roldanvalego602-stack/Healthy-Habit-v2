@@ -22,11 +22,13 @@ class StoreFeaturedCarousel extends StatefulWidget {
     required this.items,
     required this.onSelected,
     this.shopState,
+    this.displayPriceFor,
   });
 
   final List<ShopItem> items;
   final ShopState? shopState;
   final ValueChanged<ShopItem> onSelected;
+  final int Function(ShopItem)? displayPriceFor;
 
   @override
   State<StoreFeaturedCarousel> createState() => _StoreFeaturedCarouselState();
