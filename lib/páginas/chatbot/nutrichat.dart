@@ -1826,7 +1826,8 @@ class _NutriChatPageState extends State<NutriChatPage> {
       case 'challenges': return 'Ver desafíos';
       case 'achievements': return 'Ver logros';
       case 'edit_profile': return 'Editar mi perfil';
-      case 'source': return 'Consultar fuente oficial';
+      case 'source': return message.card == 'external_source'
+          ? 'Abrir artículo en Wikipedia' : 'Consultar fuente oficial';
       default: return 'Abrir';
     }
   }
