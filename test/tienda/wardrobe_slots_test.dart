@@ -40,11 +40,15 @@ void main() {
     for (final slot in [...mascotWardrobeSlots, ...profileWardrobeSlots]) {
       final ids = wardrobeItemsForSlot(slot.id)
           .map((item) => item.id).toSet();
-      expect(ids.intersection(retiredShopItemIds), isEmpty,
+      expect(ids.intersection(
+        retiredShopItemIds.difference({'skin_titan_secret'})), isEmpty,
           reason: slot.id);
     }
     expect(wardrobeItemsForSlot('perfil_expositor')
         .any((item) => item.id == 'achievement_display'), isTrue);
+    // Titán no se vende, pero debe aparecer en el armario de quien lo ganó.
+    expect(wardrobeItemsForSlot('skin')
+        .any((item) => item.id == 'skin_titan_secret'), isTrue);
   });
 
   test('los artículos sin ranura no se presentan como vestimenta', () {
