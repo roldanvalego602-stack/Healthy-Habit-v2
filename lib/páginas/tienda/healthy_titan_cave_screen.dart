@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -149,7 +150,9 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
 
   Future<void> _solve() async {
     if (_busy || _unlocked || !_consulted || _remaining <= 0 ||
-        _answer.text.trim().isEmpty) return;
+        _answer.text.trim().isEmpty) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     setState(() => _busy = true);
     try {
