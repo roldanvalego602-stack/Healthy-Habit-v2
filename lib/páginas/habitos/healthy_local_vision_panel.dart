@@ -239,7 +239,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             key: const ValueKey('healthy-local-vision-profile'),
-            value: _profile,
+            initialValue: _profile,
             isExpanded: true,
             decoration: InputDecoration(
               labelText: widget.habitTitle.isEmpty
