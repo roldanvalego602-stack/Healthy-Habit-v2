@@ -72,11 +72,12 @@ git fetch origin main
 git merge --ff-only origin/main
 flutter analyze --no-fatal-infos lib
 flutter test test/healthy_titan_easter_egg_test.dart
+flutter test test/healthy_titan_cave_widget_test.dart
 flutter test test/healthy_conversation_context_test.dart
 npm --prefix functions test
 ```
 
-El archivo de pruebas de Functions cubre respuesta correcta, error, límite, cuota local, usuario inválido, recompensa única y ausencia de créditos. Las pruebas de Flutter cubren invisibilidad comercial, propiedad, selección en Armario y render vectorial. **Son pruebas añadidas, no ejecutadas aquí con Flutter ni en emulador**.
+El archivo de pruebas de Functions cubre respuesta correcta, error, límite, cuota local, usuario inválido, recompensa única y ausencia de créditos. Las pruebas de Flutter cubren invisibilidad comercial, propiedad, selección en Armario, render vectorial y apertura de rejas condicionada a una confirmación de servidor simulado. **Son pruebas añadidas, no ejecutadas aquí con Flutter ni en emulador**.
 
 ### Laboratorio Firebase Emulator
 
