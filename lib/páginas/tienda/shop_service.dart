@@ -22,6 +22,12 @@ class ShopItem {
 }
 
 const shopCatalog = <ShopItem>[
+  // Premio único del acertijo de la cueva: nunca se vende ni se
+  // desbloquea por ser un objeto gratuito.
+  ShopItem('skin_titan_secret', 'Mr. Healthy · Titán', 'Skins',
+    'Skin legendaria secreta. Se obtiene resolviendo el acertijo '
+    'de la cueva, no comprando.', 0, emoji: '💪', slot: 'skin'),
+
   ShopItem(
     'theme_cosmos',
     'Cosmos · Tema espacial',
@@ -280,7 +286,8 @@ class ShopState {
   final int coins;
   final Set<String> owned;
   final Map<String, String> equipped;
-  bool owns(String id) => owned.contains(id) || (shopItemById(id)?.price == 0);
+  bool owns(String id) => owned.contains(id) ||
+      (id != 'skin_titan_secret' && shopItemById(id)?.price == 0);
   bool equippedItem(String id) => equipped.values.contains(id);
 
   factory ShopState.fromMap(Map<String, dynamic> data) {
@@ -308,6 +315,7 @@ class ShopState {
 const retiredShopItemIds = <String>{
   'crown', 'mint_aura', 'elite_avatar', 'banner', 'avatar_frame',
   'streak_guard', 'mint_scarf', 'bandana', 'cape', 'pixel_glasses', 'cat_ears',
+  'skin_titan_secret',
 };
 
 bool isShopItemVisible(String id) => !retiredShopItemIds.contains(id);
