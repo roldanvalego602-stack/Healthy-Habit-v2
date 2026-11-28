@@ -304,7 +304,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
-                value: type,
+                initialValue: type,
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Herramienta', border: OutlineInputBorder()),
@@ -340,7 +340,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               if (type == 'counter') ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: const {'vasos','pasos','repeticiones','unidades'}
+                  initialValue: const {'vasos','pasos','repeticiones','unidades'}
                       .contains(unit) ? unit : 'unidades',
                   decoration: const InputDecoration(labelText: 'Unidad'),
                   items: const [
@@ -1473,7 +1473,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
-            activeColor: HealthyAdaptive.accent,
+            activeThumbColor: HealthyAdaptive.accent,
             onChanged:
                 (_guardando ||
                     (BetaHabitGateway.enabled && !BetaEvidenceService.enabled))
