@@ -4,6 +4,7 @@ const {RegistrationPolicyError} = require("./habit_registration_policy");
 const {SHOP_PRICES} = require("./official_shop_catalog");
 
 const SHOP_SLOTS = Object.freeze({
+  "skin_titan_secret": "skin",
   "theme_cosmos": "app_theme",
   "avatar_frame": "perfil_marco",
   "banner": "perfil_banner",
@@ -98,7 +99,7 @@ function calculateAppearance(user, request) {
       Object.entries(equipped).some(([slot, id]) =>
         !ID.test(slot) || typeof id !== "string" ||
         SHOP_SLOTS[id] !== slot ||
-        !(SHOP_PRICES[id] === 0 || inventory.includes(id)))) {
+        !((SHOP_PRICES[id] === 0 && id !== "skin_titan_secret") || inventory.includes(id)))) {
     throw new RegistrationPolicyError("failed-precondition",
       "Inventario o accesorios equipados inválidos.");
   }
@@ -109,7 +110,8 @@ function calculateAppearance(user, request) {
     }
   } else {
     const {itemId, action} = request;
-    if (SHOP_PRICES[itemId] !== 0 && !inventory.includes(itemId)) {
+    if ((SHOP_PRICES[itemId] !== 0 || itemId === "skin_titan_secret") &&
+        !inventory.includes(itemId)) {
       throw new RegistrationPolicyError("failed-precondition",
         "Primero debes comprar el artículo.");
     }
