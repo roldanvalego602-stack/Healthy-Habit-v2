@@ -59,13 +59,13 @@ void main() {
   });
 
   test('reconoce los cuatro criterios y exige datos', () {
-    const previous = 'Alternativas anotadas: A y B. '
+    const previous = 'Alternativas anotadas: Avena y Cereal. '
         '¿Qué criterio quieres priorizar: costo, tiempo, facilidad '
         'o beneficio? No asumiré precios ni resultados.';
     for (final criterion in ['Costo', 'Tiempo', 'Facilidad', 'Beneficio']) {
       final answer = HealthyGuidedDialogue.reply(
         criterion,
-        previousUserMessage: 'A y B',
+        previousUserMessage: 'Avena y Cereal',
         previousAssistantText: previous,
       );
       expect(answer, contains('No puedo decidir'), reason: criterion);
