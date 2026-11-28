@@ -64,7 +64,7 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
       // Evita que el radar flotante tape los resultados y porcentajes.
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
-        title: const Text('Reconocimiento de imágenes',
+        title: const Text('Análisis de imágenes',
           maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
