@@ -44,8 +44,15 @@ class HealthyGuidedDialogue {
     final current = _normalize(input);
     final assistant = _normalize(previousAssistantText);
     final previousUser = _normalize(previousUserMessage);
-    if (current.isEmpty || current.length > 110 ||
-        _sensitive.hasMatch(current)) return null;
+    if (current.isEmpty || current.length > 110) return null;
+    // Cancelar el diálogo no es cancelar un hábito ni una compra.
+    if (assistant.contains('que meta concreta quieres organizar') &&
+        const {'cancelar plan', 'olvida el plan', 'ya no quiero planear'}
+            .contains(current)) {
+      return 'De acuerdo, dejamos esa planificación. '
+          'No se guardó ninguna meta ni se modificó tu cuenta.';
+    }
+    if (_sensitive.hasMatch(current)) return null;
 
     // El seguimiento solo responde a una invitación de esta misma
     // conversación. No marca progreso ni modifica tareas de la app.
@@ -122,11 +129,6 @@ class HealthyGuidedDialogue {
     }
 
     if (assistant.contains('que meta concreta quieres organizar')) {
-      if (const {'cancelar plan', 'olvida el plan', 'ya no quiero planear'}
-          .contains(current)) {
-        return 'De acuerdo, dejamos esa planificación. '
-            'No se guardó ninguna meta ni se modificó tu cuenta.';
-      }
       if (current.length < 8 || current.length > 90 ||
           const {'no se', 'todavia no se', 'ninguna'}.contains(current)) {
         return 'Describe una meta específica en una frase, por ejemplo '
