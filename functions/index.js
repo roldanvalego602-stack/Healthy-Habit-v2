@@ -510,7 +510,8 @@ exports.claimSecretTestBonus = onCall(
 
 // Piloto de compra de cosméticos desde Admin SDK (solo emulador demo).
 // No modifica ShopService de Flutter ni permite compras en producción.
-const {purchaseDemoShopItem} = require("./shop_purchase_transaction");
+const {purchaseDemoShopItem, validateBetaShopPurchase} =
+  require("./shop_purchase_transaction");
 
 exports.purchaseDemoShopItem = onCall(
   {region: "us-central1", enforceAppCheck: false, maxInstances: 3},
@@ -668,6 +669,7 @@ exports.purchaseOfficialShopBeta = onCall(
   async (request) => {
     try {
       const uid = requireBetaHabitAccess(request);
+      validateBetaShopPurchase(request.data);
       return await purchaseDemoShopItem({db, uid, data: request.data});
     } catch (error) {
       if (error instanceof RegistrationPolicyError) {
