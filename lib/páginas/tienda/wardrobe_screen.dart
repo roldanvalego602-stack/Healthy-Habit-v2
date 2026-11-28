@@ -56,9 +56,10 @@ const profileWardrobeSlots = <WardrobeSlot>[
 
 /// Selecciona exclusivamente artículos equipables de la ranura elegida.
 /// Las reacciones consumibles y extras sin ranura permanecen en la tienda.
-List<ShopItem> wardrobeItemsForSlot(String slot) =>
+List<ShopItem> wardrobeItemsForSlot(String slot, {ShopState? state}) =>
     shopCatalog.where((item) => item.slot == slot &&
-        (isShopItemVisible(item.id) || item.id == 'skin_titan_secret'))
+        (isShopItemVisible(item.id) || item.id == 'skin_titan_secret' ||
+          (state?.owned.contains(item.id) ?? false)))
         .toList(growable: false);
 
 /// Coordenadas del accesorio dentro del lienzo de 280×275 de Mr. Healthy.
@@ -396,7 +397,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     _layoutControls(state.equipped[_slot]!),
                   ],
                   const SizedBox(height: 10),
-                  _sectionTitle(slots),
+                  _sectionTitle(slots, state),
                   const SizedBox(height: 7),
                   _slotBar(slots),
                   const SizedBox(height: 9),
@@ -454,7 +455,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   Widget _modeSelector() {
     return Center(
-      child: Container(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
         key: const Key('armario-selector-modo'),
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
@@ -467,6 +470,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           _modeButton(true, Icons.account_circle_rounded, 'Perfil'),
           _ufoModeButton(),
         ]),
+        ),
       ),
     );
   }
@@ -883,9 +887,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     });
   }
 
-  Widget _sectionTitle(List<WardrobeSlot> slots) {
+  Widget _sectionTitle(List<WardrobeSlot> slots, ShopState? state) {
     final label = slots.firstWhere((s) => s.id == _slot).label;
-    final count = wardrobeItemsForSlot(_slot).length;
+    final count = wardrobeItemsForSlot(_slot, state: state).length;
     return Row(children: [
       Expanded(
         child: Text('Personalizar · $label', style: TextStyle(
@@ -957,7 +961,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         ]),
       ));
     }
-    final items = wardrobeItemsForSlot(_slot);
+    final items = wardrobeItemsForSlot(_slot, state: state);
     if (items.isEmpty) {
       return Center(
         child: Padding(
