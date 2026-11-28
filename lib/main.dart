@@ -38,6 +38,14 @@ late final FirebaseFirestore firestoreDb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Un APK release sin modo beta se conectaría al flujo legado de
+  // transacciones económicas de Flutter. Evitar distribuirlo por error.
+  if (kReleaseMode && !BetaHabitGateway.enabled) {
+    throw StateError(
+      'Release bloqueado: compila la beta únicamente con '
+      '--dart-define=HH_BETA_HABITS_CLIENT=true. '
+      'No distribuyas el cliente legado.');
+  }
   await HealthyThemeController.instance.load();
   await HealthyVisualController.instance.load();
 
