@@ -123,6 +123,10 @@ async function assessAttachedEvidence({
     throw new EvidenceAssessmentError("permission-denied",
       "La foto no pertenece a este registro.");
   }
+  if (saved.visionConsent !== true) {
+    throw new EvidenceAssessmentError("permission-denied",
+      "La fotografía no tiene autorización para análisis en nube.");
+  }
   const old = await assessmentRef.get();
   if (old.exists && old.data().state === "done") {
     return {...old.data().result, cached: true};
