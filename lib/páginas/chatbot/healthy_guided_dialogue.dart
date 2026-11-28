@@ -45,7 +45,64 @@ class HealthyGuidedDialogue {
     final assistant = _normalize(previousAssistantText);
     final previousUser = _normalize(previousUserMessage);
     if (current.isEmpty || current.length > 110 ||
-        assistant.isEmpty || _sensitive.hasMatch(current)) return null;
+        _sensitive.hasMatch(current)) return null;
+
+    // Planificación orientativa en tres pasos. No crea registros de hábitos,
+    // tareas ni recordatorios. Se limita a metas personales no clínicas.
+    if (const {
+      'ayudame a planear una meta', 'quiero planear una meta',
+      'quiero organizar una meta', 'quiero organizar un objetivo',
+      'ayudame a organizar un objetivo',
+    }.contains(current)) {
+      return 'Podemos definir un plan pequeño, sin modificar tu cuenta. '
+          '¿Qué meta concreta quieres organizar?';
+    }
+
+    if (assistant.contains('que meta concreta quieres organizar')) {
+      if (current.length < 8 || current.length > 90 ||
+          const {'no se', 'todavia no se', 'ninguna'}.contains(current)) {
+        return 'Describe una meta específica en una frase, por ejemplo '
+            '«leer veinte páginas» o «ordenar mi escritorio».';
+      }
+      return 'Meta propuesta: ${input.trim()}. '
+          '¿En qué plazo quieres intentarla: hoy, esta semana o este mes?';
+    }
+
+    if (assistant.contains('en que plazo quieres intentarla') &&
+        assistant.contains('hoy esta semana o este mes')) {
+      if (previousUser.isEmpty || previousUser.length > 90 ||
+          _sensitive.hasMatch(previousUser)) return null;
+      final deadline = switch (current) {
+        'hoy' => 'hoy',
+        'esta semana' || 'semana' => 'esta semana',
+        'este mes' || 'mes' => 'este mes',
+        _ => '',
+      };
+      if (deadline.isEmpty) {
+        return 'Elige un plazo sencillo: hoy, esta semana o este mes. '
+            'Si necesitas otro, podemos formular una meta más concreta.';
+      }
+      return 'Plan orientativo para «${previousUserMessage.trim()}» '
+          '($deadline): 1) Define una primera acción de unos minutos. '
+          '2) Reserva un momento disponible. '
+          '3) Comprueba si la realizaste y ajusta la dificultad. '
+          'No he programado recordatorios ni registrado progreso. '
+          '¿Cuál será tu primer paso?';
+    }
+
+    if (assistant.contains('cual sera tu primer paso') &&
+        assistant.contains('no he programado recordatorios')) {
+      if (current.length < 4 || current.length > 90) {
+        return 'Dime una primera acción específica y pequeña, '
+            'sin datos personales ni información médica.';
+      }
+      return 'Primer paso anotado solo en esta conversación: '
+          '«${input.trim()}». Puedes realizarlo cuando te resulte '
+          'posible y después contarme cómo te fue. '
+          'No he modificado tus hábitos ni creado un recordatorio.';
+    }
+
+    if (assistant.isEmpty) return null;
 
     if (assistant.contains(
         'que alternativas estas considerando') &&
