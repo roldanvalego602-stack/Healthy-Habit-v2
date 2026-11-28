@@ -12,6 +12,17 @@ on:
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/beta_quality_gate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'vision-functions/**'
+      - 'lib/**'
+      - 'test/**'
+      - 'tools/tests/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/beta_quality_gate.yml'
   workflow_dispatch:
 
 # Evitar ejecutar múltiples compilaciones costosas de la misma rama.
