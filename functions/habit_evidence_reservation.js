@@ -17,7 +17,10 @@ async function reserveHabitEvidence({
   }
   if (!data || typeof data !== "object" || Array.isArray(data) ||
       Object.keys(data).some((key) =>
-        !["habitId", "attemptId", "operationId"].includes(key)) ||
+        !["habitId", "attemptId", "operationId", "visionConsent"]
+          .includes(key)) ||
+      (data.visionConsent !== undefined &&
+       typeof data.visionConsent !== "boolean") ||
       typeof data.habitId !== "string" || !HABIT.test(data.habitId) ||
       !Object.hasOwn(SERVER_CATALOG, data.habitId) ||
       typeof data.attemptId !== "string" || !ID.test(data.attemptId) ||
@@ -58,7 +61,9 @@ async function reserveHabitEvidence({
       const saved = reservation.data();
       if (saved.uid !== uid || saved.habitId !== data.habitId ||
           saved.attemptId !== data.attemptId ||
-          saved.operationId !== data.operationId || saved.storagePath !== path) {
+          saved.operationId !== data.operationId || saved.storagePath !== path ||
+          (saved.visionConsent === true) !==
+            (data.visionConsent === true)) {
         throw new RegistrationPolicyError(
           "already-exists", "La reserva pertenece a otra operación."
         );
@@ -103,6 +108,8 @@ async function reserveHabitEvidence({
     tx.create(reservationRef, {
       uid, habitId: data.habitId, attemptId: data.attemptId,
       operationId: data.operationId, storagePath: path,
+      // Consentimiento expreso, inmutable para esta operación.
+      visionConsent: data.visionConsent === true,
       status: "pending", createdAt: FieldValue.serverTimestamp(),
       expiresAt,
     });
