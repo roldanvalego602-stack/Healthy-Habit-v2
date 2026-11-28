@@ -147,3 +147,67 @@ exports.analyzeEvidencePreviewLive = onCall({
         "Vision no pudo analizar la imagen. Intenta más tarde.");
   }
 });
+
+
+// Análisis DE UN OBJETO YA ASOCIADO en Storage privado. El cliente no
+// envía etiquetas, porcentajes, rutas, imágenes ni valores de XP.
+// Publicación independiente, cerrada por defecto y limitada a testers.
+const {
+  assessAttachedEvidence, EvidenceAssessmentError,
+} = require("./evidence_assessment");
+
+exports.analyzeAttachedHabitEvidenceBeta = onCall({
+  region: "us-central1",
+  memory: "512MiB",
+  timeoutSeconds: 40,
+  maxInstances: 1,
+  concurrency: 1,
+  enforceAppCheck: true,
+}, async (request) => {
+  const env = process.env;
+  if ((env.GCLOUD_PROJECT || env.GCP_PROJECT) !== "cloud-firestore-d8c61" ||
+      env.HH_BETA_HABITS_ENABLED !== "true" ||
+      env.HH_BETA_RULES_VERIFIED !== "true" ||
+      env.HH_BETA_EVIDENCE_ENABLED !== "true" ||
+      env.HH_BETA_VISUAL_ANALYSIS_ENABLED !== "true") {
+    throw new HttpsError("failed-precondition",
+      "El análisis de imágenes no está habilitado para esta beta.");
+  }
+  const uid = request.auth?.uid;
+  if (typeof uid !== "string" || uid.length < 1 ||
+      uid.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(uid)) {
+    throw new HttpsError("unauthenticated", "Inicia sesión.");
+  }
+  if (!request.app?.appId) {
+    throw new HttpsError("permission-denied",
+      "La aplicación no pasó la comprobación de App Check.");
+  }
+  const allowed = (env.HH_BETA_TEST_UIDS || "").split(",")
+    .map((value) => value.trim()).filter(Boolean);
+  if (!allowed.includes(uid)) {
+    throw new HttpsError("permission-denied",
+      "Cuenta no autorizada para la beta cerrada.");
+  }
+  try {
+    const {getStorage} = require("firebase-admin/storage");
+    const database = getPilotDb();
+    return await assessAttachedEvidence({
+      db: database,
+      bucket: getStorage().bucket(
+        "cloud-firestore-d8c61.firebasestorage.app"),
+      vision: getVisionClient(),
+      uid, data: request.data,
+      fieldValue,
+    });
+  } catch (error) {
+    if (error instanceof EvidenceAssessmentError) {
+      throw new HttpsError(error.code, error.message);
+    }
+    // Nunca registrar contenido, etiquetas, foto ni UID en logs de errores.
+    console.error("[vision-evidence-beta]", {
+      code: Number(error?.code) || "internal",
+    });
+    throw new HttpsError("internal",
+      "No se pudo analizar la evidencia.");
+  }
+});
