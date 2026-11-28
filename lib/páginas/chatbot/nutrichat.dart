@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_chat_display_mode.dart';
 import 'healthy_web_search_service.dart';
 import 'healthy_source_router.dart';
+import 'healthy_guided_dialogue.dart';
 import 'mr_healthy_reply_style.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
@@ -961,7 +962,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
                     );
                   } else {
                     _chatContext.reset();
-                    final conversational = _conversation.reply(
+                    // Solo continuar diálogos verificables de la misma
+                    // sesión. Este módulo nunca solicita datos privados.
+                    final guided = HealthyGuidedDialogue.reply(
+                      text,
+                      previousUserMessage: lastUserPrompt,
+                      previousAssistantText: previousAssistantText,
+                    );
+                    final conversational = guided ?? _conversation.reply(
                       text,
                       name: _primerNombre,
                       previousUserMessage: lastUserPrompt,
