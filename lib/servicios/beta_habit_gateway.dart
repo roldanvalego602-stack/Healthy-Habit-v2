@@ -74,6 +74,7 @@ class BetaHabitPendingEntry {
     this.note = '',
     this.interaction,
     this.conEvidencia = false,
+    this.consentimientoVision = false,
   });
 
   final String action;
@@ -84,6 +85,7 @@ class BetaHabitPendingEntry {
   final String note;
   final Map<String, dynamic>? interaction;
   final bool conEvidencia;
+  final bool consentimientoVision;
 }
 
 /// Solicitudes únicas y recuperables. El operationId se conserva en disco
@@ -152,11 +154,14 @@ class PendingBetaHabitOperations {
         (note.isNotEmpty && action != 'registrar') ||
         (data['withEvidence'] != null && data['withEvidence'] is! bool) ||
         (data['withEvidence'] == true && action != 'registrar') ||
+        (data['visionConsent'] != null && data['visionConsent'] is! bool) ||
+        (data['visionConsent'] == true &&
+          data['withEvidence'] != true) ||
         (interaction != null && action == 'cancelar') ||
         (interaction != null && interaction is! Map) ||
         data.keys.any((field) => !const {
           'habitId', 'attemptId', 'operationId', 'maxPenalty',
-          'note', 'interaction', 'withEvidence',
+          'note', 'interaction', 'withEvidence', 'visionConsent',
         }.contains(field)) ||
         keyFor(uid: uid, action: action, habitId: habitId,
           attemptId: attemptId) != key) {
@@ -180,6 +185,7 @@ class PendingBetaHabitOperations {
       note: note,
       interaction: savedInteraction,
       conEvidencia: data['withEvidence'] == true,
+      consentimientoVision: data['visionConsent'] == true,
     );
   }
 
@@ -237,7 +243,8 @@ class PendingBetaHabitOperations {
         original.maxPenalty != item.maxPenalty ||
         original.note != item.note ||
         jsonEncode(original.interaction) != jsonEncode(item.interaction) ||
-        original.conEvidencia != item.conEvidencia) {
+        original.conEvidencia != item.conEvidencia ||
+        original.consentimientoVision != item.consentimientoVision) {
       throw StateError('La solicitud cambió desde que fue consultada.');
     }
     if (_currentUserId() != uid) {
@@ -251,6 +258,7 @@ class PendingBetaHabitOperations {
       note: original.note,
       interaction: original.interaction,
       withEvidence: original.conEvidencia,
+      withVisionConsent: original.consentimientoVision,
       evidenceBytes: evidenceBytes,
       recoveryOnly: true,
     );
@@ -263,6 +271,7 @@ class PendingBetaHabitOperations {
     required BetaHabitGateway gateway,
     required Map<String, dynamic> payload,
     Uint8List? imageBytes,
+    bool visionConsent = false,
   }) async {
     const evidence = BetaEvidenceService();
     final habitId = payload['habitId'] as String;
@@ -289,6 +298,7 @@ class PendingBetaHabitOperations {
         habitId: identity.habitId,
         attemptId: identity.attemptId,
         operationId: identity.operationId,
+        visionConsent: visionConsent,
       );
     } else if (stage != 'uploaded' && stage != 'attached' &&
         stage != 'pending' && stage != 'uploading' &&
@@ -334,6 +344,7 @@ class PendingBetaHabitOperations {
     Map<String, dynamic>? interaction,
     bool recoveryOnly = false,
     bool withEvidence = false,
+    bool withVisionConsent = false,
     Uint8List? evidenceBytes,
   }) async {
     const gateway = BetaHabitGateway();
@@ -344,6 +355,7 @@ class PendingBetaHabitOperations {
     }
     if ((withEvidence && (action != 'registrar' ||
             !BetaEvidenceService.enabled)) ||
+        (withVisionConsent && !withEvidence) ||
         (!withEvidence && evidenceBytes != null) ||
         (evidenceBytes != null &&
             (evidenceBytes.isEmpty ||
@@ -387,6 +399,7 @@ class PendingBetaHabitOperations {
           'attemptId': attemptId ?? gateway.newOperationId(),
           'operationId': gateway.newOperationId(),
           if (withEvidence) 'withEvidence': true,
+          if (withVisionConsent) 'visionConsent': true,
           if (action == 'cancelar') 'maxPenalty': maxPenalty,
           if (action == 'registrar' && note.isNotEmpty) 'note': note,
           if (action != 'cancelar' && interaction != null)
@@ -403,6 +416,7 @@ class PendingBetaHabitOperations {
             !_id.hasMatch(decoded['operationId'] as String) ||
             (action != 'activar' && decoded['attemptId'] != attemptId) ||
             (decoded['withEvidence'] == true) != withEvidence ||
+            (decoded['visionConsent'] == true) != withVisionConsent ||
             (action == 'cancelar' && decoded['maxPenalty'] != maxPenalty) ||
             (action == 'registrar' &&
                 (decoded['note'] ?? '') != note) ||
@@ -418,12 +432,14 @@ class PendingBetaHabitOperations {
       // «withEvidence» existe solo en el diario local: el motor de
       // registro oficial no acepta atributos visuales del cliente.
       final payload = Map<String, dynamic>.from(data)
-        ..remove('withEvidence');
+        ..remove('withEvidence')
+        ..remove('visionConsent');
       final result = withEvidence
           ? await _registerWithEvidence(
               gateway: gateway,
               payload: payload,
               imageBytes: evidenceBytes,
+              visionConsent: withVisionConsent,
             )
           : await gateway.send(action, payload);
       await prefs.remove(key);
