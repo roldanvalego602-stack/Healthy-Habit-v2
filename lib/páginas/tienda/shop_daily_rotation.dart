@@ -16,6 +16,18 @@ class ShopDailyRotation {
   static const int specialSlots = 4; // 20 %
   static const int discountPercent = 20;
 
+  static const fixedIds = <String>[
+    'cap',
+    'sports_headband',
+    'water_bottle',
+    'wellness_medal',
+    'reaction_like',
+    'banner_gradient_yellow_pink',
+    'banner_gradient_blue_pink',
+    'paper_sailor_hat',
+    'frame_emerald',
+  ];
+
   static const _special = <String>{
     'theme_cosmos', 'skin_christmas_cartoon', 'golden_aura',
     'stellar_aura', 'avatar_snowman', 'frame_arcane', 'frame_cyber',
@@ -52,11 +64,10 @@ class ShopDailyRotation {
     final all = (catalog ?? shopCatalog)
         .where((item) => item.price > 0 && isShopItemVisible(item.id))
         .toList();
-    final fixed = all.where((item) =>
-        !_isSpecial(item) && item.price <= 150).toList()
-      ..sort((a, b) => a.id.compareTo(b.id));
+    final fixed = [for (final id in fixedIds)
+      ...all.where((item) => item.id == id)];
     final rotating = all.where((item) =>
-        !_isSpecial(item) && item.price > 150).toList();
+        !_isSpecial(item) && !fixedIds.contains(item.id)).toList();
     final special = all.where(_isSpecial).toList();
 
     final regular = _rotate(rotating, day).take(rotatingSlots).toList();
