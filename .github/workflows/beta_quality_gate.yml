@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'functions/**'
+      - 'vision-functions/**'
       - 'lib/**'
       - 'test/**'
       - 'tools/tests/**'
@@ -36,6 +37,10 @@ jobs:
           node --check functions/index.js
       - name: Ejecutar pruebas unitarias
         run: npm --prefix functions test
+      - name: Instalar dependencias del clasificador de imágenes
+        run: npm ci --prefix vision-functions
+      - name: Probar clasificación y evaluación privada de Vision
+        run: npm --prefix vision-functions test
       - name: Comprobar auditoría preventiva de Firebase
         run: node --test tools/tests/beta_security_gate.test.cjs
       - name: Comprobar regresiones sociales y audio
