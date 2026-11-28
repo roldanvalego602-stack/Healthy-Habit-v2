@@ -862,3 +862,33 @@ exports.analyzeEvidencePreview = onCall(
   },
 );
 
+
+
+// Consulta enciclopédica explícita: sin datos de perfil y sin operaciones.
+const {searchEncyclopedia} = require("./mr_healthy_web_search");
+exports.searchMrHealthyEncyclopedia = onCall(
+  {
+    region: "us-central1",
+    enforceAppCheck: false, // Activar tras registrar todos los clientes.
+    maxInstances: 3,
+    timeoutSeconds: 12,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated",
+        "Inicia sesión para consultar fuentes externas.");
+    }
+    try {
+      return await searchEncyclopedia(request.data?.query);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new HttpsError("invalid-argument", error.message);
+      }
+      if (error instanceof RangeError) {
+        throw new HttpsError("failed-precondition", error.message);
+      }
+      throw new HttpsError("unavailable",
+        "No fue posible consultar Wikipedia. Prueba de nuevo más tarde.");
+    }
+  },
+);
