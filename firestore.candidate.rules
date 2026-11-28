@@ -391,6 +391,30 @@ service cloud.firestore {
       match /user_habits/{path=**} {
         allow read, write: if owner(uid);
       }
+      // Recibos, cuotas y evaluaciones de fotos pertenecen al servidor.
+      // El cliente puede consultar su estado pero nunca crearlo ni
+      // marcar contenido verificado, incluso en su propia cuenta.
+      match /habit_evidence_reservations/{operationId} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      match /habit_evidence_assessments/{operationId} {
+        allow get, list: if owner(uid);
+        allow create, update, delete: if false;
+      }
+      match /habit_evidence_daily_limits/{day} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+      match /habit_evidence_vision_limits/{day} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+      match /registration_operations/{operationId} {
+        allow get: if owner(uid);
+        allow list, create, update, delete: if false;
+      }
+
       // Recompensas de racha: lectura propietaria, escritura EXCLUSIVA
       // del backend. Nunca confiar en documentos diarios del cliente.
       match /daily_streak_days/{day} {
