@@ -55,15 +55,15 @@ test("rechaza bytes arbitrarios y tipos falsificados", () => {
 });
 
 function fakeDb({owner=uid, status="attached", supported=true,
-    hasEvidence=true, expires=Date.now()+3600000,
-    alreadyDone=null}={}) {
+    hasEvidence=true, visionConsent=true,
+    expires=Date.now()+3600000, alreadyDone=null}={}) {
   const docs=new Map();
   const reservationRef=`users/${uid}/habit_evidence_reservations/${ids.operationId}`;
   const logRef=`users/${uid}/user_habits/${ids.habitId}/attempts/${ids.attemptId}/logs/${ids.operationId}`;
   const assessmentRef=`users/${uid}/habit_evidence_assessments/${ids.operationId}`;
   docs.set(reservationRef,{
     uid:owner, ...ids, storagePath:path, status,
-    expiresAt:{toMillis:()=>expires},
+    visionConsent, expiresAt:{toMillis:()=>expires},
   });
   docs.set(logRef,{userId:uid,evidencePath:path,
     hasEvidence,evidenceSize:90});
@@ -91,6 +91,16 @@ test("sin vínculo del servidor no lee ni analiza fotografías", async () => {
   await assert.rejects(assessAttachedEvidence({
     db:f.db,bucket,vision:{},uid,data:ids,fieldValue:testField,
   }), e=>e.code==="permission-denied");
+  assert.equal(reads,0);
+});
+
+test("sin consentimiento en la reserva el proveedor jamás accede a la foto", async () => {
+  const f=fakeDb({visionConsent:false});
+  let reads=0;
+  await assert.rejects(assessAttachedEvidence({
+    db:f.db,bucket:{file:()=>{reads++;throw Error("NO");}},
+    vision:{},uid,data:ids,fieldValue:testField,
+  }),e=>e.code==="permission-denied");
   assert.equal(reads,0);
 });
 
