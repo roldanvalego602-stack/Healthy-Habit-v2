@@ -8,6 +8,17 @@ const RETIRED_SHOP_IDS = new Set([
   "streak_guard", "mint_scarf", "bandana", "cape", "pixel_glasses",
   "cat_ears", "skin_titan_secret",
 ]);
+const FIXED = Object.freeze([
+  "cap",
+  "sports_headband",
+  "water_bottle",
+  "wellness_medal",
+  "reaction_like",
+  "banner_gradient_yellow_pink",
+  "banner_gradient_blue_pink",
+  "paper_sailor_hat",
+  "frame_emerald",
+]);
 const SPECIAL = new Set([
   "theme_cosmos", "skin_christmas_cartoon", "golden_aura",
   "stellar_aura", "avatar_snowman", "frame_arcane", "frame_cyber",
@@ -41,10 +52,9 @@ function dailyShop(day) {
   const eligible = Object.keys(SHOP_PRICES).filter((id) =>
     !RETIRED_SHOP_IDS.has(id) && SHOP_PRICES[id] > 0);
   const special = (id) => id.startsWith("ufo_") || SPECIAL.has(id);
-  const fixed = eligible.filter((id) => !special(id) && SHOP_PRICES[id] <= 150)
-    .sort().slice(0, 9);
+  const fixed = FIXED.filter((id) => eligible.includes(id));
   const regular = ordered(eligible.filter((id) =>
-    !special(id) && SHOP_PRICES[id] > 150), day).slice(0, 7);
+    !special(id) && !FIXED.includes(id)), day).slice(0, 7);
   const specials = ordered(eligible.filter(special), day).slice(0, 4);
   const itemIds = [...fixed, ...regular, ...specials];
   const offerId = regular[0] || specials[0] || null;
