@@ -1016,3 +1016,32 @@ exports.uploadReservedEvidenceBeta =
 exports.attachHabitEvidenceBeta =
   betaEvidenceAction(attachHabitEvidence, {withStorage: true});
 exports.getHabitEvidenceStatusBeta = betaEvidenceAction(getEvidenceStatus);
+
+
+// Limpieza periódica de evidencias privadas. No se ejecuta realmente
+// hasta habilitarla junto con reglas auditadas y beta cerrada autorizada.
+// No es una callable de cliente.
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {betaEvidenceCleanupReady} =
+  require("./beta_evidence_schedule_policy");
+const {purgeExpiredEvidence} = require("./habit_evidence_cleanup");
+
+exports.purgeHabitEvidenceBeta = onSchedule({
+  schedule: "every 60 minutes", timeZone: "UTC",
+  region: "us-central1", maxInstances: 1,
+}, async () => {
+  if (!betaEvidenceCleanupReady()) return;
+  const {getStorage} = require("firebase-admin/storage");
+  const bucket = getStorage().bucket(
+    evidenceBucketName("cloud-firestore-d8c61"));
+  let removedTotal = 0;
+  for (let batch = 0; batch < 4; batch++) {
+    const result = await purgeExpiredEvidence({
+      db, bucket, allowProduction: true, limit: 50,
+    });
+    removedTotal += result.removed;
+    if (result.scanned < 50 || result.removed === 0) break;
+  }
+  // Reportar solo métricas, nunca UID ni rutas privadas.
+  console.log("[beta-evidence-cleanup]", {removed: removedTotal});
+});
