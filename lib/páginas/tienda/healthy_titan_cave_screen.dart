@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'healthy_titan_skin.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
+import '../../servicios/shop_demo_bootstrap.dart';
+import 'shop_purchase_gateway.dart';
 
 /// La cueva es un secreto narrativo, no una recompensa de monedas.
 /// La respuesta se envía a Firebase, que determina y persiste el premio.
@@ -51,7 +53,20 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
     super.dispose();
   }
 
+  bool get _demoMode {
+    if (!ShopDemoBootstrap.enabled) return false;
+    if (!kDebugMode || !DemoShopPurchaseGateway.requested ||
+        Firebase.app().options.projectId != ShopDemoBootstrap.demoProjectId) {
+      throw StateError('Modo demo de la cueva no autorizado.');
+    }
+    ShopDemoBootstrap.validateMode(
+      ShopDemoBootstrap.enabled, DemoShopPurchaseGateway.requested);
+    return true;
+  }
+
   Future<void> _prepareAppCheck() async {
+    // Solo el proyecto Firebase de laboratorio permite emulador sin App Check.
+    if (_demoMode) return;
     if (_appCheckPrepared) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw StateError('El santuario requiere un dispositivo Android autorizado.');
@@ -70,9 +85,19 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
     await _prepareAppCheck();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Inicia sesión para entrar a la cueva.');
-    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
-        .httpsCallable('titanSecret',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)));
+    final functions = FirebaseFunctions.instanceFor(
+      app: Firebase.app(), region: 'us-central1');
+    if (_demoMode) {
+      final host = DemoShopPurchaseGateway.emulatorHost;
+      ShopDemoBootstrap.validateHost(host);
+      if (host != ShopDemoBootstrap.host ||
+          DemoShopPurchaseGateway.emulatorPort != 5001) {
+        throw StateError('El emulador no coincide con el laboratorio.');
+      }
+      functions.useFunctionsEmulator(host, 5001);
+    }
+    final callable = functions.httpsCallable('titanSecret',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 15)));
     final result = await callable.call<Map<String, dynamic>>(data);
     if (FirebaseAuth.instance.currentUser?.uid != uid) {
       throw StateError('La sesión ha cambiado.');
