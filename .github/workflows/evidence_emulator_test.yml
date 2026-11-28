@@ -1,0 +1,48 @@
+name: Healthy Habit - Evidencias en emuladores aislados
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/habit_evidence_*.js'
+      - 'functions/tests-emulator/habit_evidence_flow.integration.js'
+      - 'functions/habit_registration_transaction.js'
+      - 'functions/official_habit_catalog.js'
+      - 'firebase.evidence-demo.emulator.json'
+      - 'storage.evidence.demo.rules'
+      - '.github/workflows/evidence_emulator_test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  evidencia_emulada:
+    name: Registro y limpieza de evidencia sin Firebase real
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GCLOUD_PROJECT: demo-healthy-habit
+      FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+      FIREBASE_STORAGE_EMULATOR_HOST: 127.0.0.1:9199
+      FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Instalar dependencias de Functions
+        run: npm ci --prefix functions
+      - name: Ejecutar emuladores y comprobar una fotografía completa
+        run: |
+          npx --yes firebase-tools@15.34.1 emulators:exec \
+            --config firebase.evidence-demo.emulator.json \
+            --only auth,firestore,functions,storage \
+            --project demo-healthy-habit \
+            "node --test functions/tests-emulator/habit_evidence_flow.integration.js"
