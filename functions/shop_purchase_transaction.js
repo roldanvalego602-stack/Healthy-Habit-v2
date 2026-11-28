@@ -41,6 +41,18 @@ function validateShopPurchase(data) {
     {itemId, operationId, shopDay};
 }
 
+// En beta cada compra nueva debe llegar desde el escaparate diario.
+// La fecha se verifica dentro de la transacción si aún no existe recibo;
+// los reintentos de operaciones antiguas conservan su idempotencia.
+function validateBetaShopPurchase(data) {
+  const validated = validateShopPurchase(data);
+  if (typeof validated.shopDay !== "string") {
+    throw new RegistrationPolicyError("invalid-argument",
+      "Actualiza la tienda: falta la fecha comercial.");
+  }
+  return validated;
+}
+
 function calculatePurchase({user, itemId, shopDay, now = new Date()}) {
   if (!user || !Object.hasOwn(SHOP_PRICES, itemId)) {
     throw new RegistrationPolicyError("not-found", "Artículo o perfil inexistente.");
@@ -134,5 +146,6 @@ async function purchaseDemoShopItem({db, uid, data}) {
 }
 
 module.exports = {
-  validateShopPurchase, calculatePurchase, purchaseDemoShopItem,
+  validateShopPurchase, validateBetaShopPurchase,
+  calculatePurchase, purchaseDemoShopItem,
 };
