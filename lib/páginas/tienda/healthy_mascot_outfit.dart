@@ -4,6 +4,7 @@ import 'shop_service.dart';
 import 'shop_item_artwork.dart';
 import 'healthy_leaf_aura.dart';
 import 'healthy_special_auras.dart';
+import 'healthy_titan_skin.dart';
 
 /// Representación compartida de Mr. Healthy: guardarropa y perfiles públicos.
 /// No consulta Firestore ni permite comprar/equipar. Dibuja exclusivamente
@@ -76,15 +77,18 @@ class HealthyMascotOutfit extends StatelessWidget {
                 Positioned(
                   left: 30, top: 7,
                   width: 220, height: 260,
-                  child: Image.asset(
-                    equipped['skin'] == 'skin_christmas_cartoon'
-                      ? 'assets/cosmeticos/mr_healthy/skins/skin cartoon.png'
-                      : 'assets/mascot/healthy.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(Icons.sentiment_satisfied,
-                          size: 170, color: const Color(0xFF198568)),
-                  ),
+                  child: equipped['skin'] == 'skin_titan_secret'
+                     ? const FittedBox(fit: BoxFit.contain,
+                         child: HealthyTitanSkin())
+                     : Image.asset(
+                         equipped['skin'] == 'skin_christmas_cartoon'
+                           ? 'assets/cosmeticos/mr_healthy/skins/skin cartoon.png'
+                           : 'assets/mascot/healthy.png',
+                         fit: BoxFit.contain,
+                         errorBuilder: (_, __, ___) =>
+                             Icon(Icons.sentiment_satisfied,
+                               size: 170, color: const Color(0xFF198568)),
+                       ),
                 ),
 
                 // Vestimenta y objetos de frente. Los ojos de la mascota
