@@ -798,6 +798,9 @@ class _NutriChatPageState extends State<NutriChatPage> {
         } on FirebaseFunctionsException catch (error) {
           response = error.code == 'unauthenticated'
               ? 'Inicia sesión para consultar Wikipedia desde Mr. Healthy.'
+              : error.code == 'resource-exhausted'
+                  ? 'Alcanzaste el límite de consultas enciclopédicas '
+                    'por hoy. Puedes seguir usando las respuestas locales.'
               : error.code == 'failed-precondition'
                   ? 'No puedo enviar esa consulta a Wikipedia. '
                     'Puedo ayudarte con información local o '
