@@ -17,6 +17,35 @@ void main() {
     expect(result.message, contains('manzana'));
   });
 
+  test('descarta ruido como Toy, Insect y Flesh en una sandía', () {
+    final labels = const [
+      HealthyDetectedLabel('Food', .70),
+      HealthyDetectedLabel('Fruit', .62),
+      HealthyDetectedLabel('Flesh', .58),
+      HealthyDetectedLabel('Cake', .50),
+      HealthyDetectedLabel('Toy', .45),
+      HealthyDetectedLabel('Insect', .40),
+    ];
+    final relevant = HealthyVisualMatch.relevantLabels(
+      labels: labels, profile: 'fruit_vegetable');
+    expect(relevant.map((label) => label.name), ['Fruit']);
+    expect(HealthyVisualMatch.evaluate(
+      labels: labels, profile: 'fruit_vegetable').isMatch, isTrue);
+    expect(HealthyVisualMatch.evaluate(
+      labels: labels, profile: 'hydration').isMatch, isFalse);
+  });
+
+  test('la comparación visual no inventa agua para un vaso sin etiqueta', () {
+    final labels = const [
+      HealthyDetectedLabel('Glass', .98),
+      HealthyDetectedLabel('Drinkware', .85),
+    ];
+    expect(HealthyVisualMatch.relevantLabels(
+      labels: labels, profile: 'hydration'), isEmpty);
+    expect(HealthyVisualMatch.evaluate(
+      labels: labels, profile: 'hydration').isMatch, isFalse);
+  });
+
   test('una etiqueta genérica Food no basta para verificar fruta', () {
     final result = HealthyVisualMatch.evaluate(
       labels: const [HealthyDetectedLabel('Food', .99)],
