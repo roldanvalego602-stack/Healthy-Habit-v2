@@ -55,6 +55,29 @@ test("doce fotos como máximo por día, idempotentes, sin premios", async () => 
   assert.equal(f.docs.get(`users/${f.uid}`).xp,50);
 });
 
+test("el consentimiento remoto no se modifica al reintentar", async () => {
+  const f=fixture();
+  const now=new Date("2026-11-27T18:00:00Z");
+  const base={habitId:f.habitId,attemptId:f.attemptId,
+    operationId:"consent_operation_123456"};
+  await reserveHabitEvidence({
+    db:f.db,uid:f.uid,data:{...base,visionConsent:false},
+    now,dailyQuota:12,
+  });
+  await assert.rejects(reserveHabitEvidence({
+    db:f.db,uid:f.uid,data:{...base,visionConsent:true},
+    now,dailyQuota:12,
+  }),error=>error.code==="already-exists");
+  assert.equal(f.docs.get(
+    `users/${f.uid}/habit_evidence_reservations/${base.operationId}`)
+    .visionConsent,false);
+  const allowed=await reserveHabitEvidence({
+    db:f.db,uid:f.uid,data:{...base,visionConsent:false},
+    now,dailyQuota:12,
+  });
+  assert.equal(allowed.alreadyReserved,true);
+});
+
 test("una foto de otro intento se rechaza antes de consumir cuota", async () => {
   const f=fixture();
   const data={habitId:f.habitId,attemptId:"intento_ajeno_123456789",
