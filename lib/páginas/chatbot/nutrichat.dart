@@ -761,6 +761,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
     try {
       // Los mensajes se guardan en orden cronológico por conversación.
       final normalized = NutriRespuestasService.normalizar(text);
+      final sourceDecision = HealthySourceRouter.decide(text);
       final danger = NutriRespuestasService.contiene(text, [
         'suicidio', 'suicidarme', 'matarme', 'hacerme daño', 'autolesion',
       ]);
@@ -783,16 +784,14 @@ class _NutriChatPageState extends State<NutriChatPage> {
             '¿Hay alguien contigo que pueda ayudarte?';
       } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
-      } else if (HealthySourceRouter.decide(text).route ==
-          HealthySourceRoute.privateData ||
-          HealthySourceRouter.decide(text).route == HealthySourceRoute.sensitive ||
-          HealthySourceRouter.decide(text).route == HealthySourceRoute.clarification) {
-        response = HealthySourceRouter.decide(text).message;
-      } else if (HealthySourceRouter.decide(text).route ==
-          HealthySourceRoute.encyclopedia) {
+      } else if (sourceDecision.route == HealthySourceRoute.privateData ||
+          sourceDecision.route == HealthySourceRoute.sensitive ||
+          sourceDecision.route == HealthySourceRoute.clarification) {
+        response = sourceDecision.message;
+      } else if (sourceDecision.route == HealthySourceRoute.encyclopedia) {
         // Búsqueda explícita, limitada a Wikipedia en español. El backend
         // valida la consulta y nunca recibe perfil, hábitos ni historial.
-        final query = HealthySourceRouter.decide(text).query;
+        final query = sourceDecision.query;
         try {
           final results = await _webSearch.search(query);
           response = HealthyWebSearchService.formatResults(results);
