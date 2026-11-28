@@ -101,7 +101,9 @@ class HealthyConversationService {
       r'\b(borra|borrar|elimina|eliminar|compra|comprar|'
       r'cuenta|perfil|saldo|monedas|habito|habitos|'
       r'dosis|medicamento|diagnostico|tratamiento)\b',
-    ).hasMatch(input)) return null;
+    ).hasMatch(input)) {
+      return null;
+    }
     final q = input.replaceAll(RegExp(r'[¿?!¡.,;:]'), '').trim();
     final correction = RegExp(
       r'^(no|mejor|perdon|perdon me referia a|no queria|'
