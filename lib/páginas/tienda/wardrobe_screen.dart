@@ -250,7 +250,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       // Las distinciones de festivales requieren certificados oficiales.
       // No permitir títulos de temporada basándose en entradas libres.
       final verifiedBadges = <String>{};
-      try {
+      if (!BetaHabitGateway.enabled) try {
         final official = await db.collection('public_profiles').doc(uid)
           .collection('activity_events')
           .where('kind', isEqualTo: 'achievement_unlocked')
