@@ -45,9 +45,9 @@
 | Temporizadores, contadores, hidratación y podómetro | Piloto / parcial | Configuración e interacciones; no acreditan XP sin registro oficial |
 | Respiración guiada y Pomodoro | Implementado / demo | Verificar cronometraje, pausas y reanudación en Android |
 | Recordatorios de hábitos locales | Parcial / beta | Revisar permisos, recurrencia, zona y notificaciones en dispositivo |
-| Evidencia fotográfica por cámara/galería | Piloto / demo | No equivale a verificación de consumo |
+| Evidencia fotográfica por cámara/galería | Piloto / demo | ML Kit local y Cloud Vision indicativos; **en beta las fotos se rechazan hasta existir endpoint seguro** |
 | Google ML Kit y laboratorio Google Cloud Vision | Piloto restringido | Etiquetas indicativas; sin validación automática de XP; costes y privacidad |
-| Verificación fiable por evidencia, confianza y borrado temporal | Diseñado / parcial | Objetivo: niveles de confianza; exige servidor, privacidad, antifraude y pruebas reales |
+| Verificación fiable por evidencia, confianza y borrado temporal | Diseñado / parcial | Prioridad E1–E3: reserva, subida privada, análisis servidor, política por hábito y purga |
 | Estadísticas, gráficas y retroalimentación | Implementado / validar | Comprobar coherencia con fuente autoritativa y estados vacíos |
 | Desafíos y misiones diarias, semanales y mensuales | Parcial | Pantallas/tarjetas disponibles; progresos y recompensas requieren auditoría |
 | Logros, insignias y estante de exhibición | Implementado / validar | Validar fuente de eventos y propiedad de elementos |
@@ -137,17 +137,18 @@
 | Accesibilidad, distintos tamaños y reducir movimiento | Parcial | Pruebas manuales UI completas |
 | Suite `functions` | **173/173 reportadas como aprobadas antes de Titán** | Repetir tras cambios de backend; resultado de nuevas pruebas pendiente |
 | Suite Flutter y pruebas en Android | **Pendiente de confirmar para cambios recientes** | `flutter analyze`, tests y recorrido funcional |
-| Beta pública conectada a Firebase real | **No autorizada** | Cerrar seguridad, migraciones, reglas y pruebas de distribución |
+| Beta pública conectada a Firebase real | **No autorizada** | Prioridad B1–B3: migrar rutas normales, reglas auditadas, App Check, testers autorizados |
 
 ## Prioridad acordada
 
-**P0 — Calidad y riesgos bloqueantes**
-1. Validar el nuevo UFO mini radar y la guía en Android.
-2. Ejecutar análisis y pruebas Flutter del chatbot; verificar búsquedas reales con cuenta autenticada.
-3. Corregir incompatibilidades de datos y revisar seguridad antes de distribuir.
-4. No habilitar compras reales ni recompensas no verificadas.
+**P0 — Evidencia real y beta cerrada (nueva prioridad)**
+1. Auditar e integrar el contrato de evidencia temporal y privada entre Flutter, Storage y Functions en Emulator.
+2. Evaluar imágenes con resultado explicable sin confundir detección con cumplimiento, y conectarlo al registro autoritativo.
+3. Migrar escrituras económicas de Flutter; validar reglas negativas y positivas, App Check, reintentos y dos cuentas.
+4. No habilitar producción, compras reales ni recompensas no verificadas.
+5. Documentar avances en [Plan prioritario de evidencias y beta](PLAN_PRIORITARIO_EVIDENCIAS_BETA.md).
 
-**P1 — Experiencia principal**
+**P1 — Experiencia principal, en pausa mientras se cierra P0**
 1. Continuar mejorando criterios conversacionales y diálogo contextual con pruebas.
 2. Validar en Android la cueva, el acertijo y el equipamiento de Titán; auditar Firestore y App Check antes de publicar el callable.
 3. Integrar skins comprables del UFO (prehistórica y zanahoria incluidas).
@@ -180,9 +181,11 @@ En cada cambio de código:
 | 27/11/2026 | UFO primitivo y UFO zanahoria, además de otras skins | Diseño aprobado |
 | 27/11/2026 | Tienda 45/35/20, rarezas y revisión de precios | Diseño aprobado |
 | 27/11/2026 | Seguimiento de metas: avance, obstáculos y cambios de paso | Código implementado; nuevas pruebas Flutter pendientes |
+| 27/11/2026 | Repriorización: reconocimiento de evidencias y beta cerrada | Diagnóstico y plan definidos; desarrollo por etapas E1–E3 y B1–B3 |
 
 ## Documentación vinculada
 
+- [Plan prioritario de evidencias y beta](PLAN_PRIORITARIO_EVIDENCIAS_BETA.md)
 - [Roadmap de UFO, chatbot y tienda](ROADMAP_UFO_CHATBOT_TIENDA.md)
 - [Estado de cierre y restricciones de beta](CIERRE_AVANCES_Y_DEMO_2026-11-25.md)
 - [Mr. Healthy 2.0](MR_HEALTHY_2_0.md)
