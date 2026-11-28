@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'beta_habit_gateway.dart';
+import '../páginas/tienda/shop_service.dart';
 
 /// Foto de perfil de usuario. Firestore (users/{uid}.photoUrl) es la
 /// fuente de verdad; Firebase Auth se sincroniza como dato secundario.
@@ -52,6 +54,21 @@ class ProfilePhotoService {
     return Uint8List.fromList(img.encodeJpg(target, quality: 82));
   }
 
+  /// En beta solo Functions puede retirar cosméticos.
+  Future<void> _clearAvatarInBeta(Map<String, dynamic>? privateData) async {
+    if (!BetaHabitGateway.enabled) return;
+    final look = privateData?['shopEquipped'];
+    if (look is! Map) return;
+    final equipped = look['perfil_avatar'];
+    if (equipped is! String) return;
+    final item = shopItemById(equipped);
+    if (item == null || item.slot != 'perfil_avatar') {
+      throw const ProfilePhotoException(
+        'El avatar equipado no es válido. No se cambió el perfil.');
+    }
+    await ShopService.instance.equip(item, remove: true);
+  }
+
   /// La foto nunca se vincula a otra cuenta si cambia la sesión durante
   /// la subida. Se usa una ruta distinta para evitar cachés obsoletas.
   /// Quita la fotografía actual; mantiene el resto del perfil sin cambios.
@@ -64,11 +81,13 @@ class ProfilePhotoService {
     try {
       final current = await doc.get();
       final oldPath = current.data()?['profilePhotoPath']?.toString() ?? '';
+      await _clearAvatarInBeta(current.data());
       await doc.update({
         'photoUrl': '',
         'profilePhotoPath': '',
         'profileAvatarStyle': 'foto',
-        'shopEquipped.perfil_avatar': FieldValue.delete(),
+        if (!BetaHabitGateway.enabled)
+          'shopEquipped.perfil_avatar': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       try {
@@ -106,9 +125,11 @@ class ProfilePhotoService {
     }
     final userRef = _db.collection('users').doc(user.uid);
     var oldPath = '';
+    Map<String, dynamic>? previousLook;
     try {
       final previous = await userRef.get();
       oldPath = previous.data()?['profilePhotoPath']?.toString() ?? '';
+      previousLook = previous.data();
     } on FirebaseException catch (error) {
       throw explainFirebaseError(error, stage: 'lectura de Firestore');
     }
@@ -162,11 +183,13 @@ class ProfilePhotoService {
       throw explainFirebaseError(error, stage: 'obtención de la URL');
     }
     try {
+      await _clearAvatarInBeta(previousLook);
       await userRef.update({
         'photoUrl': url,
         'profileAvatarStyle': 'foto',
         'profilePhotoPath': object.fullPath,
-        'shopEquipped.perfil_avatar': FieldValue.delete(),
+        if (!BetaHabitGateway.enabled)
+          'shopEquipped.perfil_avatar': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (error) {
