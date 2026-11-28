@@ -89,7 +89,8 @@
 | Aclaraciones ante preguntas no reconocidas | Implementado / validar | Preguntas específicas, sin falsificar certeza |
 | Selección de fuente: local, enciclopédica, privada o sensible | Implementado / validar | Enrutador local antes de llamar a internet |
 | Diálogo guiado de comparación (opciones, criterio, evaluación) | Implementado / validar | Varias intervenciones y rechazo de acciones sensibles |
-| Diálogo guiado de metas (meta, plazo, primer paso) | **Implementado en esta etapa / validar** | No registra hábitos ni crea recordatorios |
+| Diálogo guiado de metas (meta, plazo, primer paso) | Implementado / validar | No registra hábitos ni crea recordatorios |
+| Revisión de metas (hecho, no realizado, obstáculo, ajustar paso, cancelar plan) | **Implementado en esta etapa / validar** | Respuestas acotadas al turno previo; no registra XP, rachas ni recordatorios |
 | Consulta explícita a Wikipedia en español | Backend **desplegado** / Android por comprobar | Firebase `searchMrHealthyEncyclopedia` en `cloud-firestore-d8c61` |
 | Fuentes y enlaces verificados en respuestas externas | Implementado / validar | Hasta 3 resultados; solo `es.wikipedia.org` y HTTPS |
 | Límite de consultas y protección de datos | Backend desplegado / revisar | 25 por cuenta/día; App Check de esta callable aún no se exige |
@@ -177,6 +178,7 @@ En cada cambio de código:
 | 27/11/2026 | Easter egg de cueva con acertijo y skin Titan exclusiva | Diseño aprobado |
 | 27/11/2026 | UFO primitivo y UFO zanahoria, además de otras skins | Diseño aprobado |
 | 27/11/2026 | Tienda 45/35/20, rarezas y revisión de precios | Diseño aprobado |
+| 27/11/2026 | Seguimiento de metas: avance, obstáculos y cambios de paso | Código implementado; nuevas pruebas Flutter pendientes |
 
 ## Documentación vinculada
 
