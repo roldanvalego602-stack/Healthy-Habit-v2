@@ -279,6 +279,15 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
                 style: const TextStyle(color: Color(0xFFE7D7A5),
                   fontSize: 13, height: 1.5))),
               const SizedBox(height: 14),
+              if (!_unlocked && !_consulted) ...[
+                OutlinedButton.icon(
+                  key: const Key('titan-reintentar-conexion'),
+                  onPressed: _busy ? null : _loadStatus,
+                  icon: const Icon(Icons.sync_rounded),
+                  label: const Text('Volver a comprobar el santuario'),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (!_unlocked) ...[
                 TextField(
                   key: const Key('titan-respuesta'),
