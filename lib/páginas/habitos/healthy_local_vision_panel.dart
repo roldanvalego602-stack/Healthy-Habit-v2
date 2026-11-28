@@ -36,6 +36,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
   };
   int _request = 0;
   bool _busy = false;
+  bool _showTechnicalLabels = false;
   String? _error;
   String? _profile;
   List<HealthyDetectedLabel>? _labels;
@@ -62,6 +63,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _busy = false;
       _error = null;
       _labels = null;
+      _showTechnicalLabels = false;
       _profile = widget.initialProfile ??
           HealthyVisualMatch.suggestedProfile(
               widget.habitTitle, widget.category);
@@ -80,6 +82,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _busy = true;
       _error = null;
       _labels = null;
+      _showTechnicalLabels = false;
     });
     try {
       final result = await const HealthyLocalImageRecognition()
@@ -101,11 +104,33 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
     }
   }
 
+  Widget _labelBar(HealthyDetectedLabel label) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(children: [
+        Expanded(child: Text(
+          HealthyVisualMatch.displayName(label.name),
+          style: TextStyle(color: HealthyAdaptive.text))),
+        Text('${(label.confidence * 100).round()}%',
+          style: TextStyle(color: HealthyAdaptive.muted)),
+      ]),
+      const SizedBox(height: 3),
+      LinearProgressIndicator(
+        value: label.confidence.clamp(0.0, 1.0),
+        minHeight: 4,
+      ),
+    ]),
+  );
+
   @override
   Widget build(BuildContext context) {
     final match = _labels == null
         ? null
         : HealthyVisualMatch.evaluate(labels: _labels!, profile: _profile);
+    final relevant = _labels == null
+        ? const <HealthyDetectedLabel>[]
+        : HealthyVisualMatch.relevantLabels(
+            labels: _labels!, profile: _profile);
     final resultColor = match == null
         ? HealthyAdaptive.muted
         : match.isMatch ? HealthyAdaptive.accent
@@ -144,7 +169,9 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
             value: _profile,
             isExpanded: true,
             decoration: const InputDecoration(
-              labelText: '¿Qué debe mostrar la fotografía?',
+              labelText: widget.habitTitle.isEmpty
+                  ? 'Categoría para comparación exploratoria'
+                  : 'Comparación visual del hábito',
               border: OutlineInputBorder(),
               isDense: true,
             ),
@@ -157,6 +184,15 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
               setState(() => _profile = value);
             },
           ),
+          const SizedBox(height: 5),
+          Text(widget.habitTitle.isEmpty
+              ? 'Cambiar de categoría solo recalcula la comparación; '
+                'no identifica automáticamente una actividad.'
+              : 'La comparación está asociada al hábito '
+                '«${widget.habitTitle}». Seleccionar otra categoría '
+                'solo explora etiquetas: no verifica ese hábito.',
+              style: TextStyle(color: HealthyAdaptive.muted,
+                  fontSize: 11)),
           const SizedBox(height: 12),
           FilledButton.icon(
             key: const ValueKey('healthy-local-vision-analyze'),
@@ -227,29 +263,39 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('Lo que identificó el modelo:',
+            Text('Elementos relacionados con la categoría:',
               key: const ValueKey('healthy-local-vision-result'),
               style: TextStyle(color: HealthyAdaptive.text,
                   fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            if (_labels!.isEmpty)
-              Text('Sin etiquetas suficientemente claras.',
-                style: TextStyle(color: HealthyAdaptive.muted)),
-            for (final label in _labels!) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(children: [
-                  Expanded(child: Text(
-                    HealthyVisualMatch.displayName(label.name),
-                    style: TextStyle(color: HealthyAdaptive.text))),
-                  Text('${(label.confidence * 100).round()}%',
-                    style: TextStyle(color: HealthyAdaptive.muted)),
-                ]),
+            if (relevant.isEmpty)
+              Text('No hay etiquetas relevantes para esta categoría. '
+                  'Esto no significa que el objeto no esté en la imagen: '
+                  'el etiquetador general puede omitirlo.',
+                style: TextStyle(color: HealthyAdaptive.muted,
+                    fontSize: 12)),
+            for (final label in relevant)
+              _labelBar(label),
+            if (_labels!.length > relevant.length) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                key: const ValueKey('healthy-local-vision-technical-toggle'),
+                onPressed: () => setState(
+                    () => _showTechnicalLabels = !_showTechnicalLabels),
+                icon: Icon(_showTechnicalLabels
+                    ? Icons.expand_less : Icons.expand_more),
+                label: Text(_showTechnicalLabels
+                    ? 'Ocultar etiquetas técnicas'
+                    : 'Ver etiquetas técnicas (pueden ser incorrectas)'),
               ),
-              LinearProgressIndicator(
-                value: label.confidence.clamp(0.0, 1.0),
-                minHeight: 4,
-              ),
+            ],
+            if (_showTechnicalLabels) ...[
+              Text('Salida sin filtrar de ML Kit. Estas etiquetas '
+                  'son hipótesis del modelo, no hechos confirmados.',
+                style: TextStyle(color: HealthyAdaptive.muted,
+                    fontSize: 11)),
+              for (final label in _labels!)
+                _labelBar(label),
             ],
             const SizedBox(height: 9),
             Text('Una coincidencia indica contenido visible compatible, '
