@@ -23,7 +23,7 @@ function validateShopPurchase(data) {
       Object.keys(data).some((key) =>
         !["itemId", "operationId", "shopDay"].includes(key)) ||
       (shopDay !== undefined && (typeof shopDay !== "string" ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(shopDay)))) {
+        !/^\d{4}-\d{2}-\d{2}$/.test(shopDay)))) {
     throw new RegistrationPolicyError(
       "invalid-argument", "Identificador o campos de compra inválidos."
     );
