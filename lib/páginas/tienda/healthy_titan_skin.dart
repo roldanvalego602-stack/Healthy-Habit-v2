@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Ilustración original vectorial de Mr. Healthy Titán.
