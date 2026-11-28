@@ -16,10 +16,10 @@ test("todos los artículos y sus precios coinciden con Flutter", () => {
   const entries = [...dart.matchAll(
     /ShopItem\(\s*'([^']+)'[\s\S]*?,\s*(\d+)\s*,\s*(?:emoji:|slot:|\))/g
   )].map((match) => [match[1], Number(match[2])]);
-  assert.equal(entries.length, 63);
-  assert.equal(new Set(entries.map(([id]) => id)).size, 63);
+  assert.equal(entries.length, 64);
+  assert.equal(new Set(entries.map(([id]) => id)).size, 64);
   assert.deepEqual(SHOP_PRICES, Object.fromEntries(entries));
-  assert.equal(Object.values(SHOP_PRICES).filter((price) => price === 0).length, 2);
+  assert.equal(Object.values(SHOP_PRICES).filter((price) => price === 0).length, 3);
 });
 
 test("la solicitud solo acepta un artículo pagado y una operación segura", () => {
@@ -27,6 +27,7 @@ test("la solicitud solo acepta un artículo pagado y una operación segura", () 
   assert.deepEqual(validateShopPurchase(valid), valid);
   for (const data of [
     {...valid, itemId: "sunglasses"},
+    {...valid, itemId: "skin_titan_secret"},
     {...valid, itemId: "nonexistent"},
     {...valid, operationId: "x/y"},
     {...valid, amount: 1},
