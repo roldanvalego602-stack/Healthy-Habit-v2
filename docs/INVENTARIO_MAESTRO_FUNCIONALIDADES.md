@@ -47,8 +47,10 @@
 | Recordatorios de hábitos locales | Parcial / beta | Revisar permisos, recurrencia, zona y notificaciones en dispositivo |
 | Evidencia fotográfica por cámara/galería | Implementado / pruebas automáticas aprobadas | Captura JPEG sin EXIF; ruta beta de reserva, subida, registro y asociación; **sin desplegar al Firebase real** |
 | Google ML Kit y laboratorio Google Cloud Vision | Implementado en código / validar | ML Kit local; Vision remoto opcional para foto ya asociada con consentimiento, cuota y estado visual indicativo; no prueba consumo |
-| Identificación nominal de alimentos a partir de etiquetas específicas | **Implementado en código / Android por validar** | Vocabulario explícito (sandía, manzana, zanahoria, etc.), umbral 70 %; si ML Kit solo entrega «fruta», muestra «no identificado». **No es un modelo especializado entrenado** |
+| Identificación nominal de alimentos (ML Kit + modelo especializado) | **Modelo ONNX integrado en Android / probar en dispositivo** | Descarga opcional verificada, 65 clases con sandía/manzana/plátano/zanahoria; inferencia privada con ML Kit como respaldo; no acredita consumo ni XP |
 | Verificación fiable por evidencia, confianza y borrado temporal | Parcial / backend bloqueado | Asociación y borrado programado en código; verificación fuerte de realización no implementada; pruebas beta/precisión pendientes |
+| Entrenamiento mental: Sudoku diario | **Implementado / pruebas Android pendientes** | Cuadrícula 9×9 con pistas, validación de reglas, guardado por día, progreso local, sin recompensas económicas |
+| Entrenamiento mental: Sopa de letras | **Implementado / pruebas Android pendientes** | Cuadrícula 12×12 con siete palabras, selección bidireccional, pistas, rachas locales sin XP |
 | Eliminación del bono de XP por adjuntar cualquier imagen | **Implementado en código / validar** | Registro cliente normal asigna 10 XP declarado; no guarda fotos Base64 ni indica evidencia real |
 | Consulta de estado y recuperación de imágenes de beta | **Implementado en código / validar** | Retoma mismo operationId, permite reseleccionar foto y no crea recompensas duplicadas |
 | Control diario de solicitudes fotográficas y Vision | Backend implementado / apagado | 12 reservas al día, hasta 8 evaluaciones diarias, intervalo de 60 s para Vision |
@@ -190,10 +192,13 @@ En cada cambio de código:
 | 27/11/2026 | Repriorización: reconocimiento de evidencias y beta cerrada | Diagnóstico y plan definidos; desarrollo por etapas E1–E3 y B1–B3 |
 | 27/11/2026 | Evidencia fotográfica: fotos privadas beta, recuperación, Vision y limpieza | Implementado en código; verificación visual orientativa; suites y despliegue seguros pendientes |
 | 27/11/2026 | Identificación específica conservadora de alimentos, sin inferir desde categorías | Código y pruebas añadidas; falta modelo especializado real y validación de precisión |
+| 27/11/2026 | Reconocimiento ONNX descargable y hábitos mentales con minijuegos | Integrados en código; compilación nativa, precisión real y verificación Android pendientes |
 
 ## Documentación vinculada
 
 - [Plan prioritario de evidencias y beta](PLAN_PRIORITARIO_EVIDENCIAS_BETA.md)
+- [Modelo alimentario ONNX en Android](RECONOCIMIENTO_ONNX_ALIMENTOS.md)
+- [Entrena tu mente: Sudoku y sopa de letras](ENTRENAMIENTO_MENTAL.md)
 - [Implementación de evidencias y protocolo de pruebas](IMPLEMENTACION_EVIDENCIAS_2026-11-27.md)
 - [Roadmap de UFO, chatbot y tienda](ROADMAP_UFO_CHATBOT_TIENDA.md)
 - [Estado de cierre y restricciones de beta](CIERRE_AVANCES_Y_DEMO_2026-11-25.md)
