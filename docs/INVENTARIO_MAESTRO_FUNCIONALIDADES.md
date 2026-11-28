@@ -47,7 +47,7 @@
 | Recordatorios de hábitos locales | Parcial / beta | Revisar permisos, recurrencia, zona y notificaciones en dispositivo |
 | Evidencia fotográfica por cámara/galería | Implementado / pruebas automáticas aprobadas | Captura JPEG sin EXIF; ruta beta de reserva, subida, registro y asociación; **sin desplegar al Firebase real** |
 | Google ML Kit y laboratorio Google Cloud Vision | Implementado en código / validar | ML Kit local; Vision remoto opcional para foto ya asociada con consentimiento, cuota y estado visual indicativo; no prueba consumo |
-| Identificación nominal de alimentos (ML Kit + modelo especializado) | **Modelo ONNX integrado en Android / probar en dispositivo** | Descarga opcional verificada, 65 clases con sandía/manzana/plátano/zanahoria; inferencia privada con ML Kit como respaldo; no acredita consumo ni XP |
+| Identificación nominal de alimentos (ML Kit + modelo especializado) | **APK compilado / pruebas con fotos reales pendientes** | Modelo ONNX verificado por SHA y test de inferencia; APK debug compilado; 65 clases, procesamiento local optativo; no acredita consumo ni XP |
 | Verificación fiable por evidencia, confianza y borrado temporal | Parcial / backend bloqueado | Asociación y borrado programado en código; verificación fuerte de realización no implementada; pruebas beta/precisión pendientes |
 | Entrenamiento mental: Sudoku diario | **Implementado / pruebas Android pendientes** | Cuadrícula 9×9 con pistas, validación de reglas, guardado por día, progreso local, sin recompensas económicas |
 | Entrenamiento mental: Sopa de letras | **Implementado / pruebas Android pendientes** | Cuadrícula 12×12 con siete palabras, selección bidireccional, pistas, rachas locales sin XP |
