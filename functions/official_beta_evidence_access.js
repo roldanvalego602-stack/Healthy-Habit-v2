@@ -8,6 +8,13 @@ const {requireBetaHabitAccess, PRODUCTION_PROJECT} =
 
 function requireBetaEvidenceAccess(request, env = process.env) {
   const uid = requireBetaHabitAccess(request, env);
+  // No aceptar fotografías si el borrado administrativo no está
+  // habilitado en el servidor. La reserva caduca, pero el archivo
+  // necesita una tarea independiente para desaparecer de Storage.
+  if (env.HH_BETA_EVIDENCE_CLEANUP_ENABLED !== "true") {
+    throw new RegistrationPolicyError("failed-precondition",
+      "No se pueden aceptar fotos hasta habilitar su borrado temporal.");
+  }
   if (env.HH_BETA_EVIDENCE_ENABLED !== "true") {
     throw new RegistrationPolicyError("failed-precondition",
       "La recepción de evidencias aún no está habilitada.");
