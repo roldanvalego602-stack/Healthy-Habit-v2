@@ -18,16 +18,22 @@ const data = {
 };
 const now = new Date("2026-11-25T23:00:00Z");
 
-function setup({exists = true, savedBytes = bytes, startedMinutesAgo = 6}) {
+function setup({exists = true, savedBytes = bytes, startedMinutesAgo = 6,
+  status = "uploading"}) {
   const path = `habit-evidence/${uid}/${attemptId}/${operationId}`;
   const reservationRef = {kind: "reservation"};
   const operationRef = {kind: "operation"};
   const state = {
     uid, habitId, attemptId, operationId, storagePath: path,
-    status: "uploading",
+    status,
     expiresAt: {toMillis: () => now.getTime() + 3600000},
-    uploadStartedAt: {toMillis: () =>
-      now.getTime() - startedMinutesAgo * 60000},
+    ...(status === "recovering" ? {
+      recoveryStartedAt: {toMillis: () =>
+        now.getTime() - startedMinutesAgo * 60000},
+    } : {
+      uploadStartedAt: {toMillis: () =>
+        now.getTime() - startedMinutesAgo * 60000},
+    }),
   };
   const changes = [];
   const tx = {
@@ -114,5 +120,24 @@ test("recuperación: no interfiere con una subida reciente", async () => {
     ...fixture, uid, data, now,
   }), (error) => error.code === "aborted");
   assert.equal(fixture.state.status, "uploading");
+  assert.equal(fixture.changes.length, 0);
+});
+
+test("una recuperación abandonada puede reanudarse sin sobrescribir", async () => {
+  const fixture = setup({status:"recovering",startedMinutesAgo:7});
+  const result = await uploadReservedEvidence({
+    ...fixture, uid, data, now,
+  });
+  assert.equal(result.alreadyUploaded, true);
+  assert.equal(fixture.state.status, "uploaded");
+  assert.deepEqual(fixture.changes.map((change)=>change.status),
+    ["recovering","uploaded"]);
+});
+
+test("una recuperación reciente no puede ser adelantada por otra petición", async () => {
+  const fixture = setup({status:"recovering",startedMinutesAgo:1});
+  await assert.rejects(uploadReservedEvidence({
+    ...fixture, uid, data, now,
+  }), (error) => error.code === "aborted");
   assert.equal(fixture.changes.length, 0);
 });
