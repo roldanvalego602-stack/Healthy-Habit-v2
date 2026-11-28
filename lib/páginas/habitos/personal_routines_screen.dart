@@ -1148,7 +1148,7 @@ class _PersonalRoutineStepDialogState extends State<_PersonalRoutineStepDialog> 
               decoration: const InputDecoration(labelText: 'Actividad'),
             ),
             DropdownButtonFormField<String>(
-              value: _type,
+              initialValue: _type,
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Herramienta'),
               items: const [
