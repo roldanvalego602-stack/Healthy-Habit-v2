@@ -355,6 +355,9 @@ class ShopService {
       _userRef.snapshots().map((doc) => ShopState.fromMap(doc.data() ?? {}));
 
   Future<void> buy(ShopItem item) async {
+    if (item.id == 'skin_titan_secret') {
+      throw const ShopException('Titán se desbloquea en la cueva, no se compra.');
+    }
     if (shopItemById(item.id) == null) {
       throw const ShopException('Objeto desconocido.');
     }
