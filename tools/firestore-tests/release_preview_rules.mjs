@@ -16,6 +16,13 @@ function replaceExactlyOnce(source, from, to, label) {
 }
 
 export function releasePreviewRules() {
+  // Durante la validación de beta se usa exactamente el artefacto
+  // que podría desplegarse, no un sustituto generado en memoria.
+  if (process.env.HH_BETA_RULES === '1') {
+    return readFileSync(resolve(
+      new URL('../../firestore.beta.rules', import.meta.url).pathname,
+    ), 'utf8');
+  }
   let rules = readFileSync(candidatePath, 'utf8');
   // Se respetan las compras validadas existentes y los ajustes inocuos
   // de perfil. Los cambios monetarios arbitrarios, nivel y rachas no pasan.
