@@ -90,7 +90,11 @@ service cloud.firestore {
 
     // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
     function shopPrice(id) {
-      return {
+      // Compatibilidad de inventario histórico, pero no nuevas ventas.
+      return id in ['crown', 'mint_aura', 'elite_avatar', 'banner',
+        'avatar_frame', 'streak_guard', 'mint_scarf', 'cape',
+        'pixel_glasses', 'cat_ears'] ? -1 : {
+
         'theme_cosmos': 1800,
         'ufo_cosmos': 380,
         'ufo_neon': 340,
