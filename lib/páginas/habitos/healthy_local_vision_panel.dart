@@ -201,6 +201,11 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
         ? const <HealthyDetectedLabel>[]
         : HealthyVisualMatch.relevantLabels(
             labels: _labels!, profile: _profile);
+    final expectedHabitProfile = HealthyVisualMatch.suggestedProfile(
+      widget.habitTitle, widget.category);
+    final exploratory = widget.habitTitle.isNotEmpty &&
+        expectedHabitProfile != null &&
+        _profile != expectedHabitProfile;
     final resultColor = match == null
         ? HealthyAdaptive.muted
         : match.isMatch ? HealthyAdaptive.accent
@@ -313,13 +318,23 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(match.isMatch
-                            ? 'Coincidencia visual encontrada'
+                            ? (exploratory
+                                ? 'Coincidencia exploratoria'
+                                : 'Coincidencia visual encontrada')
                             : 'Coincidencia no confirmada',
                         style: TextStyle(color: resultColor,
                             fontWeight: FontWeight.w800)),
                       const SizedBox(height: 5),
                       Text(match.message, style: TextStyle(
                           color: HealthyAdaptive.text, fontSize: 12)),
+                      if (exploratory) ...[
+                        const SizedBox(height: 5),
+                        Text('El hábito activo espera '
+                            '«${HealthyVisualMatch.titleOf(expectedHabitProfile)}». '
+                            'Esta comparación no respalda ese hábito.',
+                          style: TextStyle(
+                              color: HealthyAdaptive.muted, fontSize: 11)),
+                      ],
                       if (match.isMatch) ...[
                         const SizedBox(height: 5),
                         Text(
