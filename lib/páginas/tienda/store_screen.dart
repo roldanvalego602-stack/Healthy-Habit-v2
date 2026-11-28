@@ -469,6 +469,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         .where((item) => state == null || !state.owns(item.id))
                         .take(5).toList(),
                     shopState: state,
+                    displayPriceFor: _currentPrice,
                     onSelected: (item) => _showFeaturedPreview(item, state),
                   ),
                 ),
