@@ -40,6 +40,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
   int _request = 0;
   bool _busy = false;
   bool _showTechnicalLabels = false;
+  bool _showSpecializedLabels = false;
   bool _modelInstalled = false;
   bool _installingModel = false;
   String? _modelError;
@@ -73,6 +74,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _labels = null;
       _specializedLabels = null;
       _showTechnicalLabels = false;
+      _showSpecializedLabels = false;
       _profile = widget.initialProfile ??
           HealthyVisualMatch.suggestedProfile(
               widget.habitTitle, widget.category);
@@ -124,6 +126,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       _labels = null;
       _specializedLabels = null;
       _showTechnicalLabels = false;
+      _showSpecializedLabels = false;
     });
     try {
       final result = await const HealthyLocalImageRecognition()
@@ -392,6 +395,40 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                 ),
               ),
               const SizedBox(height: 12),
+            ],
+            if (_specializedLabels != null &&
+                _specializedLabels!.isNotEmpty) ...[
+              TextButton.icon(
+                key: const ValueKey('healthy-food-model-technical-toggle'),
+                icon: Icon(_showSpecializedLabels
+                    ? Icons.expand_less : Icons.expand_more),
+                onPressed: () => setState(
+                    () => _showSpecializedLabels = !_showSpecializedLabels),
+                label: Text(_showSpecializedLabels
+                    ? 'Ocultar otras hipótesis del modelo específico'
+                    : 'Ver otras hipótesis del modelo específico'),
+              ),
+              if (_showSpecializedLabels) ...[
+                Text('Puntuaciones de las cinco clases más altas. '
+                    'No son probabilidades calibradas ni prueban consumo.',
+                  style: TextStyle(
+                      color: HealthyAdaptive.muted, fontSize: 11)),
+                for (final item in _specializedLabels!)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(children: [
+                      Expanded(child: Text(
+                        HealthySpecificFoodRecognition.foodNames[
+                            item.name.toLowerCase()] ??
+                            item.name.replaceAll('_', ' '),
+                        style: TextStyle(color: HealthyAdaptive.text,
+                            fontSize: 12))),
+                      Text('${(item.confidence * 100).round()} %',
+                        style: TextStyle(
+                            color: HealthyAdaptive.muted, fontSize: 12)),
+                    ]),
+                  ),
+              ],
             ],
             if (HealthyFoodModelService.supported) ...[
               Card(
