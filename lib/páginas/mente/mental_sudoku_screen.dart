@@ -56,7 +56,9 @@ class _MentalSudokuScreenState extends State<MentalSudokuScreen> {
   Future<void> _place(int digit) async {
     final index = _selected;
     if (_completed || _loading || index == null ||
-        _puzzle.isGiven(index)) return;
+        _puzzle.isGiven(index)) {
+      return;
+    }
     if (digit == 0) {
       setState(() {
         _cells[index] = 0;
@@ -92,7 +94,7 @@ class _MentalSudokuScreenState extends State<MentalSudokuScreen> {
       _selected = index;
       _cells[index] = _puzzle.solution[index];
       _hintsUsed++;
-      _notice = 'Pista ${_hintsUsed}/3: observa cómo '
+      _notice = 'Pista $_hintsUsed/3: observa cómo '
           'esta cifra se relaciona con su fila y cuadro.';
     });
     await _progress.saveSudoku(_day, _cells);
