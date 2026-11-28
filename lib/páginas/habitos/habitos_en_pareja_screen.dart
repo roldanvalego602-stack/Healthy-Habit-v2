@@ -58,7 +58,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
                 key: const ValueKey('pair-recipient'),
-                value: recipient,
+                initialValue: recipient,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Amigo'),
                 items: [
@@ -74,7 +74,7 @@ class _HabitosEnParejaScreenState extends State<HabitosEnParejaScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 key: const ValueKey('pair-habit'),
-                value: habitId,
+                initialValue: habitId,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Hábito oficial'),
                 items: [
