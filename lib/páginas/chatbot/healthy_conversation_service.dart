@@ -168,6 +168,20 @@ class HealthyConversationService {
     if (continuation != null) return continuation;
 
 
+    // Pista narrativa opcional. Nunca abre recompensas, ni revela
+    // la contraseña del santuario, ni invoca Cloud Functions.
+    if (RegExp(
+      r'\b(santuario|prisionero|titan|cueva secreta|siete latidos|'
+      r'leyenda del titan)\b',
+    ).hasMatch(t)) {
+      return 'Hay una leyenda en Healthy Habit: un guardián muy fuerte '
+          'duerme detrás de barrotes antiguos. Dicen que la entrada '
+          'está cerca del lugar donde cuentas tus monedas, '
+          'pero que ningún tesoro puede comprar la llave. '
+          'El corazón de la puerta escucha siete latidos '
+          'antes de cerrar los ojos. ¿Te atreves a investigar?';
+    }
+
     // Identidad, fantasía y preguntas juguetonas: responder sin adjudicar
     // identidades personales que la app no puede conocer.
     if (_has(t, ['soy una princesa', 'soy princesa', 'soy un principe',
