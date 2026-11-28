@@ -7,7 +7,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.0
+  # ML Kit Image Labeling 0.15.0 requiere Dart >=3.8.
+  # Flutter 3.38.0 (ver .fvmrc) es la versión validada en Android.
+  sdk: ^3.8.0
 
 dependencies:
   flutter:
