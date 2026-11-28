@@ -14,6 +14,11 @@ on:
       - '.github/workflows/beta_quality_gate.yml'
   workflow_dispatch:
 
+# Evitar ejecutar múltiples compilaciones costosas de la misma rama.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
