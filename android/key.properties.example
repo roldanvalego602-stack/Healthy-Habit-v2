@@ -1,0 +1,6 @@
+# Copiar a android/key.properties (archivo excluido del repositorio).
+# El archivo real no debe ser compartido ni subido a GitHub.
+storeFile=/ruta/absoluta/clave-healthy-habit-beta.jks
+storePassword=CAMBIAR_CONTRASENA_ALMACEN
+keyAlias=healthy_habit_beta
+keyPassword=CAMBIAR_CONTRASENA_CLAVE
