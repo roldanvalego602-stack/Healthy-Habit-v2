@@ -12,6 +12,8 @@ El inventario distingue implementación en código, pruebas reportadas, pilotos 
 
 Para las decisiones detalladas de UFO, chatbot y tienda, consultar [su hoja de ruta](docs/ROADMAP_UFO_CHATBOT_TIENDA.md).
 
+El Easter egg de la cueva está documentado en [Archivo 001: Santuario del Titán](docs/EASTER_EGG_SANTUARIO_TITAN.md), con pistas, pruebas y restricciones de despliegue.
+
 ## Desarrollo local
 
 ```bash
