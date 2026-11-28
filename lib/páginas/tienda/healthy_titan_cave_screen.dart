@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'healthy_titan_skin.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
@@ -18,6 +20,7 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
   final _answer = TextEditingController();
   late final AnimationController _ambient;
   bool _busy = false;
+  static bool _appCheckPrepared = false;
   bool _unlocked = false;
   bool _opened = false;
   bool _consulted = false;
@@ -48,7 +51,23 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
     super.dispose();
   }
 
+  Future<void> _prepareAppCheck() async {
+    if (_appCheckPrepared) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      throw StateError('El santuario requiere un dispositivo Android autorizado.');
+    }
+    const debugToken = bool.fromEnvironment('HH_TITAN_APP_CHECK_DEBUG');
+    if (debugToken && !kDebugMode) {
+      throw StateError('App Check de depuración no se admite en release.');
+    }
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: debugToken
+          ? AndroidProvider.debug : AndroidProvider.playIntegrity);
+    _appCheckPrepared = true;
+  }
+
   Future<Map<String, dynamic>> _request(Map<String, dynamic> data) async {
+    await _prepareAppCheck();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Inicia sesión para entrar a la cueva.');
     final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
@@ -81,7 +100,8 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
       if (!mounted) return;
       setState(() => _feedback =
           'El santuario no puede comprobar tu cuenta. '
-          'Necesitas conexión y la función Firebase de la cueva.');
+          'Necesitas Android con App Check autorizado, conexión '
+          'y la función Firebase de la cueva.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
