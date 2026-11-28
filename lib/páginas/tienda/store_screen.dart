@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_theme.dart';
 import '../../guia/guide_target.dart';
@@ -11,6 +12,9 @@ import '../../tema/healthy_coin.dart';
 
 import '../../servicios/healthy_feedback_service.dart';
 import 'shop_service.dart';
+import 'shop_daily_rotation.dart';
+import 'shop_rarity.dart';
+import 'shop_purchase_gateway.dart';
 import 'beta_shop_purchase_gateway.dart';
 import '../../servicios/beta_habit_gateway.dart';
 import 'shop_item_artwork.dart';
@@ -58,9 +62,19 @@ class _StoreScreenState extends State<StoreScreen> {
     'Accesorios',
     'Especiales',
     'Temas',
+    'OVNI',
   ];
 
   String _filter = 'Todos';
+  late String _shopDay;
+  Timer? _dayWatcher;
+
+  bool get _offerIsAuthoritative =>
+      BetaHabitGateway.enabled || DemoShopPurchaseGateway.requested;
+  ShopDailyRotation get _rotation =>
+      ShopDailyRotation.forDay(_shopDay);
+  int _currentPrice(ShopItem item) =>
+      _rotation.priceFor(item, authoritative: _offerIsAuthoritative);
   String? _busy;
   bool _recoveryBusy = false;
   List<String> _pendingBetaPurchases = [];
@@ -68,9 +82,20 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   void initState() {
     super.initState();
+    _shopDay = ShopDailyRotation.today().dayKey;
+    _dayWatcher = Timer.periodic(const Duration(minutes: 1), (_) {
+      final day = ShopDailyRotation.today().dayKey;
+      if (mounted && day != _shopDay) setState(() => _shopDay = day);
+    });
     if (BetaHabitGateway.enabled) {
       _loadBetaPurchases();
     }
+  }
+
+  @override
+  void dispose() {
+    _dayWatcher?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadBetaPurchases() async {
@@ -185,7 +210,7 @@ class _StoreScreenState extends State<StoreScreen> {
     if (_busy != null) return;
     setState(() => _busy = item.id);
     try {
-      await ShopService.instance.buy(item);
+      await ShopService.instance.buy(item, shopDay: _shopDay);
       await _loadBetaPurchases();
       // La compra ya fue confirmada por Firestore. Los efectos son opcionales.
       final celebrate = await HealthyFeedbackService.onReward();
@@ -213,8 +238,10 @@ class _StoreScreenState extends State<StoreScreen> {
 
   void _showFeaturedPreview(ShopItem item, ShopState? state) {
     final owned = state?.owns(item.id) ?? false;
-    final affordable = state != null && state.coins >= item.price;
-    final canBuy = state != null && !owned && affordable && _busy == null;
+    final price = _currentPrice(item);
+    final available = _rotation.contains(item.id);
+    final affordable = state != null && state.coins >= price;
+    final canBuy = state != null && !owned && available && affordable && _busy == null;
 
     showModalBottomSheet<void>(
       context: context,
@@ -523,6 +550,120 @@ class _StoreScreenState extends State<StoreScreen> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  void _showCollection(ShopState? state) {
+    final today = _rotation;
+    final items = shopCatalog.where((item) =>
+        isShopItemVisible(item.id)).toList(growable: false);
+    showModalBottomSheet<void>(
+      context: context, isScrollControlled: true,
+      backgroundColor: HealthyAdaptive.surface,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheet).height * .78,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Colección completa',
+                  style: TextStyle(color: _ink, fontSize: 21,
+                    fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text('Los artículos fuera de rotación pueden consultarse, '
+                  'pero no comprarse hoy. Lo adquirido permanece en tu inventario.',
+                  style: TextStyle(color: _muted, fontSize: 12)),
+              ]),
+            ),
+            Expanded(child: ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (_, index) {
+                final item = items[index];
+                final owned = state?.owns(item.id) ?? false;
+                final available = today.contains(item.id);
+                return ListTile(
+                  key: ValueKey('coleccion-${item.id}'),
+                  onTap: () {
+                    Navigator.of(sheet).pop();
+                    _showFeaturedPreview(item, state);
+                  },
+                  leading: SizedBox(width: 54, height: 54,
+                    child: FittedBox(fit: BoxFit.contain,
+                      child: ShopItemArtwork(item: item, size: 54))),
+                  title: Text(item.name, maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                  subtitle: Text(owned ? 'En tu colección' :
+                    available ? '${_currentPrice(item)} Habit Coins · Disponible hoy' :
+                    'Fuera de rotación · Solo vista previa'),
+                  trailing: ShopRarityChip(item: item, compact: true),
+                );
+              },
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _dailyPanel(ShopState? state) {
+    final daily = _rotation;
+    final offer = daily.offerId == null ? null : shopItemById(daily.offerId!);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 7, 18, 12),
+      child: Semantics(
+        label: 'Selección diaria: ${daily.itemIds.length} artículos, '
+          '9 fijos, 7 rotativos y 4 especiales. Fecha ${daily.dayKey}.',
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: HealthyAdaptive.surface,
+            border: Border.all(color: HealthyAdaptive.border),
+            borderRadius: BorderRadius.circular(19),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(Icons.autorenew_rounded, color: _green, size: 23),
+                const SizedBox(width: 9),
+                Expanded(child: Text('Selección del día',
+                  style: TextStyle(color: _ink, fontWeight: FontWeight.w900,
+                    fontSize: 17))),
+                Text(daily.dayKey, style: TextStyle(color: _muted,
+                  fontSize: 11)),
+              ]),
+              const SizedBox(height: 6),
+              Text('9 fijos · 7 rotativos · 4 especiales. '
+                'Se renueva a medianoche (UTC−06:00).',
+                style: TextStyle(color: _muted, fontSize: 12)),
+              if (offer != null && _offerIsAuthoritative) ...[
+                const SizedBox(height: 9),
+                Row(children: [
+                  const Icon(Icons.local_offer_rounded,
+                    size: 18, color: Color(0xFFAC7730)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Oferta del día: ${offer.name} · '
+                      '−${ShopDailyRotation.discountPercent} %',
+                    maxLines: 2, style: TextStyle(color: _ink,
+                      fontWeight: FontWeight.w800, fontSize: 12))),
+                ]),
+              ],
+              const SizedBox(height: 9),
+              Align(alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  key: const Key('tienda-coleccion-completa'),
+                  onPressed: () => _showCollection(state),
+                  icon: const Icon(Icons.collections_bookmark_outlined,
+                    size: 18),
+                  label: const Text('Ver colección completa'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
