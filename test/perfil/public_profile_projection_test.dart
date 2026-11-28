@@ -71,6 +71,13 @@ void main() {
       expect(invalid['profileAvatarStyle'], 'foto');
     });
 
+    test('el nuevo usuario empieza como Semilla saludable', () {
+      final result = HealthyPublicProfileService.project({
+        'level': 1, 'xp': 0,
+      });
+      expect(result['title'], 'Semilla saludable');
+    });
+
     test('mantiene compatibilidad con títulos guardados anteriormente', () {
       final result = HealthyPublicProfileService.project({
         'title': 'Cultivador de constancia',
