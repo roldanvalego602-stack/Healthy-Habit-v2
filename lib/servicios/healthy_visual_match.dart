@@ -55,6 +55,20 @@ class HealthyVisualMatch {
     'hamburger': 'hamburguesa', 'plate': 'plato',
   };
 
+  /// Reduce ruido visual: los resultados genéricos del etiquetador no
+  /// son diagnósticos de una fotografía ni pruebas del hábito.
+  /// Conservamos la lista íntegra solo en «Ver etiquetas técnicas».
+  static List<HealthyDetectedLabel> relevantLabels({
+    required List<HealthyDetectedLabel> labels,
+    required String? profile,
+  }) {
+    final expected = _positive[profile] ?? const <String>[];
+    return labels.where((label) =>
+      expected.contains(label.name.toLowerCase().trim()) &&
+      label.confidence >= 0.3,
+    ).toList(growable: false);
+  }
+
   static String displayName(String label) =>
       _spanish[label.toLowerCase().trim()] ?? label;
 
