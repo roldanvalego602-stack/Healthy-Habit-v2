@@ -21,9 +21,16 @@ test("purga demo: elimina objeto vencido y desvincula log sin tocar XP", async (
   const pathUpdates = [];
   let deleted = 0, reservationDeleted = 0;
   const logRef = {kind: "log"};
+  const assessmentRef = {kind: "assessment"};
   const userRef = {
     id: uid, parent: {id: "users"},
     collection(name) {
+      if (name === "habit_evidence_assessments") {
+        return {doc: (id) => {
+          assert.equal(id, operation);
+          return assessmentRef;
+        }};
+      }
       assert.equal(name, "user_habits");
       return {doc: (id) => {
         assert.equal(id, "alim_001");
@@ -64,9 +71,12 @@ test("purga demo: elimina objeto vencido y desvincula log sin tocar XP", async (
     async runTransaction(fn) {
       const tx = {
         async get(ref) {
-          return ref === reservationRef
-            ? {exists: true, data: () => reservationData}
-            : {exists: true, data: () => ({evidencePath: path, xp: 10})};
+          if (ref === reservationRef) {
+            return {exists: true, data: () => reservationData};
+          }
+          if (ref === assessmentRef) return {exists: false};
+          assert.equal(ref, logRef);
+          return {exists: true, data: () => ({evidencePath: path, xp: 10})};
         },
         update(ref, data) {
           assert.equal(ref, logRef);
