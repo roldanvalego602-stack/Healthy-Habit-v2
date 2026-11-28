@@ -14,6 +14,7 @@ import '../../tema/healthy_coin.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'nutri_calculator_service.dart';
 import '../../servicios/clima_servicio.dart';
