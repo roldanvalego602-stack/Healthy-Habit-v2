@@ -141,7 +141,9 @@ class HealthyGuidedDialogue {
     if (assistant.contains('en que plazo quieres intentarla') &&
         assistant.contains('hoy esta semana o este mes')) {
       if (previousUser.isEmpty || previousUser.length > 90 ||
-          _sensitive.hasMatch(previousUser)) return null;
+          _sensitive.hasMatch(previousUser)) {
+        return null;
+      }
       final deadline = switch (current) {
         'hoy' => 'hoy',
         'esta semana' || 'semana' => 'esta semana',
