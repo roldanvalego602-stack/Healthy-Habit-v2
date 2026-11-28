@@ -47,6 +47,69 @@ class HealthyGuidedDialogue {
     if (current.isEmpty || current.length > 110 ||
         _sensitive.hasMatch(current)) return null;
 
+    // El seguimiento solo responde a una invitación de esta misma
+    // conversación. No marca progreso ni modifica tareas de la app.
+    if (assistant.contains('primer paso anotado solo en esta conversacion') &&
+        assistant.contains('no he modificado tus habitos')) {
+      if (const {'ya lo hice', 'lo hice', 'terminado', 'lo termine',
+          'completado', 'ya termine'}.contains(current)) {
+        return 'Gracias por contarme cómo te fue. No he registrado '
+            'este avance en Healthy Habit. ¿Quieres definir un siguiente '
+            'paso pequeño o dar por terminada esta conversación?';
+      }
+      if (const {'no pude', 'no lo hice', 'no alcance',
+          'me costo', 'se me olvido'}.contains(current)) {
+        return 'Podemos reducir el esfuerzo sin tratarlo como un fracaso. '
+            '¿Qué obstáculo apareció: tiempo, energía o materiales? '
+            'No he cambiado tus hábitos ni tu racha.';
+      }
+      if (const {'quiero cambiar el paso', 'cambiar el paso',
+          'otro paso', 'prefiero otro paso'}.contains(current)) {
+        return 'De acuerdo. ¿Qué nueva acción pequeña prefieres? '
+            'Solo la comentaremos aquí, sin modificar tu cuenta.';
+      }
+    }
+
+    if (assistant.contains('que obstaculo aparecio') &&
+        assistant.contains('tiempo energia o materiales')) {
+      final suggestion = switch (current) {
+        'tiempo' => 'Prueba reservar solo dos minutos en un momento libre.',
+        'energia' => 'Considera una versión más sencilla o descansar primero.',
+        'materiales' => 'Busca una acción que no requiera esos materiales.',
+        _ => '',
+      };
+      if (suggestion.isEmpty) {
+        return 'Para ajustar el primer paso, elige un obstáculo: '
+            'tiempo, energía o materiales.';
+      }
+      return '$suggestion Es una sugerencia, no un cambio registrado. '
+          '¿Qué primer paso te resultaría más viable?';
+    }
+
+    if (assistant.contains('que nueva accion pequena prefieres') ||
+        assistant.contains('que primer paso te resultaria mas viable')) {
+      if (current.length < 5 || current.length > 90) {
+        return 'Describe una acción breve y concreta. '
+            'No se guardará como hábito automáticamente.';
+      }
+      return 'Paso revisado en esta conversación: «${input.trim()}». '
+          'No lo he guardado como hábito ni he programado avisos. '
+          '¿Quieres probarlo y contarme el resultado después?';
+    }
+
+    if (assistant.contains('quieres definir un siguiente paso pequeno') &&
+        const {'siguiente paso', 'otro paso', 'si', 'claro'}.contains(current)) {
+      return '¿Qué nueva acción concreta quieres intentar? '
+          'No he añadido actividades a tu cuenta.';
+    }
+    if (assistant.contains('que nueva accion concreta quieres intentar')) {
+      if (current.length < 5 || current.length > 90) {
+        return 'Escribe una acción breve y específica.';
+      }
+      return 'Siguiente paso propuesto: «${input.trim()}». '
+          'Solo lo hemos descrito en el chat; no he registrado progreso.';
+    }
+
     // Planificación orientativa en tres pasos. No crea registros de hábitos,
     // tareas ni recordatorios. Se limita a metas personales no clínicas.
     if (const {
@@ -59,6 +122,11 @@ class HealthyGuidedDialogue {
     }
 
     if (assistant.contains('que meta concreta quieres organizar')) {
+      if (const {'cancelar plan', 'olvida el plan', 'ya no quiero planear'}
+          .contains(current)) {
+        return 'De acuerdo, dejamos esa planificación. '
+            'No se guardó ninguna meta ni se modificó tu cuenta.';
+      }
       if (current.length < 8 || current.length > 90 ||
           const {'no se', 'todavia no se', 'ninguna'}.contains(current)) {
         return 'Describe una meta específica en una frase, por ejemplo '
