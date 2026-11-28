@@ -6,6 +6,7 @@ import 'shop_service.dart';
 import 'healthy_leaf_aura.dart';
 import 'healthy_special_auras.dart';
 import 'healthy_achievement_display.dart';
+import 'healthy_titan_skin.dart';
 
 /// Usa las imágenes reales subidas por el equipo y conserva el emoji
 /// como respaldo para los cosméticos que todavía no tienen ilustración.
@@ -17,6 +18,11 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.id == 'skin_titan_secret') {
+      return SizedBox.square(dimension: size,
+        child: FittedBox(fit: BoxFit.contain,
+          child: HealthyTitanSkin(size: size)));
+    }
     if (item.id == 'theme_cosmos') {
       return SizedBox.square(
         dimension: size,
