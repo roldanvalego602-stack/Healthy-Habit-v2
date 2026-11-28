@@ -25,6 +25,7 @@ import 'modelo/habit.dart';
 import 'registrar_habito_screen.dart';
 import 'personal_routines_screen.dart';
 import 'habitos_en_pareja_screen.dart';
+import '../mente/mental_training_screen.dart';
 import '../niveles/levels_system.dart';
 
 class HabitsScreen extends StatefulWidget {
@@ -982,6 +983,59 @@ class _HabitsScreenState extends State<HabitsScreen> {
                                   maxLines: 1, overflow: TextOverflow.ellipsis),
                               )),
                             ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Card(
+                            key: const ValueKey('mental-training-entry'),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const MentalTrainingScreen(),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(15),
+                                child: Row(children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(11),
+                                    decoration: BoxDecoration(
+                                      color: HealthyAdaptive.accent
+                                          .withValues(alpha: .12),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Icon(
+                                      Icons.psychology_alt_rounded,
+                                      size: 28,
+                                      color: HealthyAdaptive.accent,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 13),
+                                  Expanded(child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Entrena tu mente',
+                                        style: TextStyle(
+                                          color: HealthyAdaptive.text,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                        )),
+                                      const SizedBox(height: 3),
+                                      Text('Sudoku y sopa de letras · '
+                                        'reto mental diario y racha local',
+                                        style: TextStyle(
+                                          color: HealthyAdaptive.muted,
+                                          fontSize: 12,
+                                        )),
+                                    ],
+                                  )),
+                                  Icon(Icons.chevron_right_rounded,
+                                    color: HealthyAdaptive.accent),
+                                ]),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 18),
