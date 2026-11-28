@@ -1,3 +1,26 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+// La beta distribuida requiere una clave propia fuera del repositorio.
+// Nunca firmar un release con la clave de depuración.
+val releaseKeysFile = rootProject.file("key.properties")
+val releaseKeys = Properties()
+if (releaseKeysFile.exists()) {
+    FileInputStream(releaseKeysFile).use { releaseKeys.load(it) }
+}
+val requiredReleaseKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val hasReleaseSigning = releaseKeysFile.exists() &&
+    requiredReleaseKeys.all { !releaseKeys.getProperty(it).isNullOrBlank() }
+val buildingRelease = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+if (buildingRelease && !hasReleaseSigning) {
+    throw GradleException(
+        "Release bloqueado: configura android/key.properties y una clave " +
+            "de firma propia. No se permite usar la firma debug para la beta."
+    )
+}
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -35,11 +58,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                keyAlias = releaseKeys.getProperty("keyAlias")
+                keyPassword = releaseKeys.getProperty("keyPassword")
+                storeFile = file(releaseKeys.getProperty("storeFile"))
+                storePassword = releaseKeys.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Al compilar --release, el chequeo superior exige credenciales.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }
