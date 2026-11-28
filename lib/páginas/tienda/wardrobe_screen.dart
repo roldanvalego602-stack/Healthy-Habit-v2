@@ -85,7 +85,10 @@ class _AccessoryLayout {
 }
 
 class WardrobeScreen extends StatefulWidget {
-  const WardrobeScreen({super.key});
+  const WardrobeScreen({super.key, this.initialSlot = 'cabeza'});
+
+  /// Permite abrir directamente una colección, por ejemplo Skins.
+  final String initialSlot;
 
   @override
   State<WardrobeScreen> createState() => _WardrobeScreenState();
@@ -102,6 +105,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   @override
   void initState() {
     super.initState();
+    if (mascotWardrobeSlots.any((slot) => slot.id == widget.initialSlot)) {
+      _slot = widget.initialSlot;
+    }
     _loadLayouts();
   }
 
