@@ -15,6 +15,7 @@ import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/beta_habit_gateway.dart';
 import '../../servicios/beta_evidence_service.dart';
+import '../../servicios/beta_evidence_vision_service.dart';
 import '../../servicios/habit_evidence_image_preparer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'habit_add_sheet.dart';
@@ -355,9 +356,27 @@ class _HabitsScreenState extends State<HabitsScreen> {
         );
       }
       if (!mounted) return;
-      _showMessage(response['alreadyProcessed'] == true
+      var visionNote = '';
+      if (item.consentimientoVision &&
+          response['evidenceAttached'] == true &&
+          BetaEvidenceVisionService.enabled) {
+        try {
+          final summary = await const BetaEvidenceVisionService().analyze(
+            habitId: item.habitId,
+            attemptId: item.attemptId,
+            operationId: item.operationId,
+          );
+          visionNote = summary['status'] == 'visual_match_only'
+              ? ' · Foto visualmente relacionada, no verifica consumo'
+              : ' · Análisis visual inconcluso';
+        } catch (_) {
+          visionNote = ' · Análisis visual opcional no disponible';
+        }
+      }
+      if (!mounted) return;
+      _showMessage((response['alreadyProcessed'] == true
           ? 'El servidor ya había confirmado esta operación.'
-          : 'Operación recuperada y confirmada por el servidor.');
+          : 'Operación recuperada y confirmada por el servidor.') + visionNote);
       await _load();
       await _cargarPendientes();
     } catch (error) {
