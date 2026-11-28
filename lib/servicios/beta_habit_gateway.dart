@@ -321,7 +321,8 @@ class PendingBetaHabitOperations {
           'Conservamos el identificador para recuperarlo.');
     }
     return {...result, 'evidenceAttached': true,
-      'evidenceVerified': false, 'evidenceStatus': 'attached'};
+      'evidenceVerified': false, 'evidenceStatus': 'attached',
+      'evidenceOperationId': operationId};
   }
 
   Future<Map<String, dynamic>> execute({
