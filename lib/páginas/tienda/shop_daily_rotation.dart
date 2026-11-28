@@ -46,7 +46,7 @@ class ShopDailyRotation {
   static int _seed(String value) {
     var value32 = 2166136261;
     for (final unit in value.codeUnits) {
-      value32 = ((value32 ^ unit) * 16777619) & 0xffffffff;
+      value32 = ((value32 ^ unit) * 131) & 0xffffffff;
     }
     return value32 == 0 ? 1 : value32;
   }
