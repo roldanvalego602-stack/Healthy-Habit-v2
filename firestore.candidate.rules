@@ -91,6 +91,16 @@ service cloud.firestore {
     // Catálogo de precios de artículos pagados. Debe coincidir con Flutter.
     function shopPrice(id) {
       return {
+        'theme_cosmos': 1800,
+        'ufo_cosmos': 380,
+        'ufo_neon': 340,
+        'ufo_gold': 700,
+        'ufo_shadow': 390,
+        'ufo_botanical': 330,
+        'ufo_glitch': 420,
+        'ufo_lava': 480,
+        'ufo_primitive': 290,
+        'ufo_carrot': 260,
         'avatar_frame': 120,
         'banner': 120,
         'streak_guard': 300,
@@ -228,7 +238,8 @@ service cloud.firestore {
       let inventory = request.resource.data.get('shopInventory', []);
       return look.keys().hasOnly([
           'perfil_marco', 'perfil_banner', 'perfil_expositor', 'perfil_avatar',
-          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos', 'skin'
+          'cuello', 'ojos', 'cabeza', 'aura', 'espalda', 'torso', 'mano', 'brazos', 'skin',
+          'app_theme', 'ufo_skin'
         ])
         && validEquippedSlot(look, inventory, 'perfil_marco', ['avatar_frame', 'frame_arcane', 'frame_emerald', 'frame_cyber', 'frame_nature'])
         && validEquippedSlot(look, inventory, 'perfil_banner', ['banner', 'banner_space', 'banner_sunset', 'banner_floral', 'banner_ice', 'banner_gradient_yellow_pink', 'banner_gradient_blue_pink', 'banner_gradient_teal_yellow', 'banner_gradient_gold_black', 'banner_gradient_purple_teal', 'banner_gradient_pink_violet', 'banner_gradient_turquoise_blue', 'banner_gradient_black_blue'])
@@ -242,7 +253,9 @@ service cloud.firestore {
         && validEquippedSlot(look, inventory, 'torso', ['leaf_hoodie'])
         && validEquippedSlot(look, inventory, 'mano', ['water_bottle'])
         && validEquippedSlot(look, inventory, 'brazos', ['green_gloves'])
-        && validEquippedSlot(look, inventory, 'skin', ['skin_christmas_cartoon']);
+        && validEquippedSlot(look, inventory, 'skin', ['skin_christmas_cartoon'])
+        && validEquippedSlot(look, inventory, 'app_theme', ['theme_cosmos'])
+        && validEquippedSlot(look, inventory, 'ufo_skin', ['ufo_cosmos', 'ufo_neon', 'ufo_gold', 'ufo_shadow', 'ufo_botanical', 'ufo_glitch', 'ufo_lava', 'ufo_primitive', 'ufo_carrot']);
     }
 
     // Descuento por abandono: requiere que los DOS documentos del hábito
