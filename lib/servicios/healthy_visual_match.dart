@@ -129,6 +129,33 @@ class HealthyVisualMatch {
     final generic = evaluate(labels: labels, profile: profile);
     if (specializedLabels == null || profile == null) return generic;
 
+    // Ante conflicto fuerte entre motores, elegir «inconcluso».
+    // Un etiquetador general puede asignar Food a un juguete o un coche.
+    // No presentar esa discrepancia como prueba visual positiva.
+    if ((profile == 'fruit_vegetable' || profile == 'meal') &&
+        specializedLabels.length >= 2) {
+      final ranked = [...specializedLabels]
+        ..sort((a, b) => b.confidence.compareTo(a.confidence));
+      final leader = ranked[0];
+      final second = ranked[1];
+      if (leader.confidence.isFinite &&
+          second.confidence.isFinite &&
+          leader.confidence >= .75 &&
+          leader.confidence - second.confidence >= .20 &&
+          !HealthySpecificFoodRecognition.foodNames.containsKey(
+              leader.name.trim().toLowerCase())) {
+        return HealthyVisualMatch(
+          profile: profile,
+          isMatch: false,
+          confidence: 0,
+          matchedLabel: null,
+          message: 'Los dos detectores visuales no coinciden sobre '
+              'el contenido de la fotografía. El resultado es '
+              'inconcluso; puedes conservar tu registro declarado.',
+        );
+      }
+    }
+
     final specific = HealthySpecificFoodRecognition
         .identifyFromSpecializedModel(specializedLabels);
     if (!specific.isSpecific || specific.sourceLabel == null) {
