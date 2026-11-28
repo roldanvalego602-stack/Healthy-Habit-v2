@@ -15,6 +15,8 @@ import '../perfil/profile_banner.dart';
 import '../perfil/profile_titles.dart';
 import 'healthy_mascot_outfit.dart';
 import 'healthy_mascot_idle.dart';
+import '../../guia/healthy_ufo_visual.dart';
+import 'healthy_ufo_skin_art.dart';
 import 'shop_item_artwork.dart';
 import 'shop_service.dart';
 
@@ -38,6 +40,10 @@ const mascotWardrobeSlots = <WardrobeSlot>[
   WardrobeSlot('espalda', 'Espalda', Icons.backpack_rounded),
   WardrobeSlot('skin', 'Skins', Icons.palette_rounded),
   WardrobeSlot('aura', 'Aura', Icons.auto_awesome_rounded),
+];
+
+const ufoWardrobeSlots = <WardrobeSlot>[
+  WardrobeSlot('ufo_skin', 'Aspectos OVNI', Icons.rocket_launch_rounded),
 ];
 
 const profileWardrobeSlots = <WardrobeSlot>[
@@ -96,6 +102,7 @@ class WardrobeScreen extends StatefulWidget {
 
 class _WardrobeScreenState extends State<WardrobeScreen> {
   bool _profileMode = false;
+  bool _ufoMode = false;
   String _slot = 'cabeza';
   String? _busy;
   bool _layoutEditor = false;
@@ -162,7 +169,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     };
   }
 
-  bool get _editableSlot => !_profileMode &&
+  bool get _editableSlot => !_profileMode && !_ufoMode &&
       _slot != 'skin' && _slot != 'aura';
 
   void _updateLayout(ShopItem item, _AccessoryLayout layout) {
@@ -188,10 +195,21 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   void _selectMode(bool profile) {
-    if (_profileMode == profile) return;
+    if (_profileMode == profile && !_ufoMode) return;
     setState(() {
       _profileMode = profile;
+      _ufoMode = false;
       _slot = profile ? 'perfil_avatar' : 'cabeza';
+      _layoutEditor = false;
+    });
+  }
+
+  void _selectUfoMode() {
+    if (_ufoMode) return;
+    setState(() {
+      _profileMode = false;
+      _ufoMode = true;
+      _slot = 'ufo_skin';
       _layoutEditor = false;
     });
   }
@@ -325,7 +343,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final slots = _profileMode ? profileWardrobeSlots : mascotWardrobeSlots;
+    final slots = _ufoMode ? ufoWardrobeSlots :
+        (_profileMode ? profileWardrobeSlots : mascotWardrobeSlots);
     return Scaffold(
       floatingActionButton: const HealthyMagicGuideButton(section: 'armario'),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
@@ -363,9 +382,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                       ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 220),
-                        child: _profileMode
-                            ? _profileStage(state)
-                            : _mascotStage(state),
+                        child: _ufoMode
+                            ? _ufoStage(state)
+                            : _profileMode
+                                ? _profileStage(state)
+                                : _mascotStage(state),
                       ),
                     ),
                   ),
@@ -444,13 +465,14 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           _modeButton(false, Icons.emoji_emotions_rounded, 'Mr. Healthy'),
           _modeButton(true, Icons.account_circle_rounded, 'Perfil'),
+          _ufoModeButton(),
         ]),
       ),
     );
   }
 
   Widget _modeButton(bool profile, IconData icon, String label) {
-    final active = _profileMode == profile;
+    final active = _profileMode == profile && !_ufoMode;
     return InkWell(
       key: ValueKey(profile ? 'armario-modo-perfil' : 'armario-modo-mascota'),
       borderRadius: BorderRadius.circular(40),
@@ -473,6 +495,29 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       ),
     );
   }
+
+  Widget _ufoModeButton() => InkWell(
+    key: const ValueKey('armario-modo-ufo'),
+    borderRadius: BorderRadius.circular(40),
+    onTap: _selectUfoMode,
+    child: AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero : const Duration(milliseconds: 190),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      decoration: BoxDecoration(
+        color: _ufoMode ? _accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.rocket_launch_rounded, size: 17,
+          color: _ufoMode ? Colors.white : _muted),
+        const SizedBox(width: 5),
+        Text('OVNI', style: TextStyle(
+          color: _ufoMode ? Colors.white : _ink,
+          fontSize: 12, fontWeight: FontWeight.w800)),
+      ]),
+    ),
+  );
 
   Widget _mascotStage(ShopState? state) {
     return Stack(
@@ -733,6 +778,39 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         ),
       ]),
     ]);
+  }
+
+  Widget _ufoStage(ShopState? state) {
+    final equipped = state?.equipped['ufo_skin'];
+    final valid = equipped != null &&
+        HealthyUfoSkinArt.ids.contains(equipped) && state!.owns(equipped);
+    return Column(
+      key: const ValueKey('escenario-ufo'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('TU OVNI', style: TextStyle(color: _ink,
+          fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2)),
+        const SizedBox(height: 5),
+        Flexible(child: AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero : const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          child: valid
+              ? HealthyUfoSkinArt(key: ValueKey(equipped),
+                  id: equipped, size: 175)
+              : Image.asset(HealthyUfoVisual.asset,
+                  key: const ValueKey('ovnipredeterminado'),
+                  width: 175, height: 175, fit: BoxFit.contain),
+        )),
+        const SizedBox(height: 6),
+        Text(valid ? 'Aspecto equipado' : 'Aspecto original',
+          style: TextStyle(color: _muted, fontSize: 12)),
+        const SizedBox(height: 5),
+        Text('Se muestra también durante el tutorial.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _muted, fontSize: 10)),
+      ],
+    );
   }
 
   Widget _profileStage(ShopState? state) {
