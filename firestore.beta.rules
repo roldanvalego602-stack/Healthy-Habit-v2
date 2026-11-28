@@ -333,7 +333,7 @@ service cloud.firestore {
           'updatedAt'
         ])
         && (!changed.hasAny(['email']) ||
-          request.resource.data.email == request.auth.token.email)
+          request.resource.data.email == request.auth.token.get('email', ''))
         && (!changed.hasAny(['photoUrl', 'profilePhotoPath']) ||
           (request.resource.data.get('photoUrl', '') is string
            && request.resource.data.get('profilePhotoPath', '') is string
@@ -353,7 +353,22 @@ service cloud.firestore {
           (request.resource.data.bio is string &&
            request.resource.data.bio.size() <= 300))
         && (!changed.hasAny(['settings']) ||
-          request.resource.data.settings is map);
+          (
+            request.resource.data.settings is map &&
+            request.resource.data.settings.keys().hasOnly([
+              'analizarHistorialIA', 'sonidosApp', 'vibracionHaptica',
+              'animacionesDivertidas', 'mostrarRachaAmigos',
+              'permitirReacciones', 'permitirRecordatorios',
+              'recordatorioHabito', 'recordatorioRacha',
+              'recordatorioDesafios', 'descansoSemanal',
+              'mostrarXp', 'mostrarPuntos', 'mostrarNivelPerfil',
+              'mostrarRachasDiarias', 'efectosRecompensa', 'modoDiscreto',
+              'objetivoPrincipal', 'categoriasInteres', 'dificultad',
+              'frecuencia', 'tema', 'estiloVisual', 'modoVisual',
+              'tamanoTexto', 'idioma', 'visibilidadLogros',
+              'desafiosDe', 'horarioRecordatorio'
+            ])
+          ));
     }
 
     // Desafíos sembrados por Flutter: solo contenido demostrativo sin premios
@@ -532,13 +547,46 @@ service cloud.firestore {
       }
     }
 
+    // Proyección pública: ningún cliente puede anunciar cosméticos no
+    // equipados en su documento privado certificado por el servidor.
+    function validPublicSlot(view, privateLook, slot) {
+      return !(slot in view)
+        || (slot in privateLook && view[slot] == privateLook[slot]);
+    }
+
+    function validPublicEquipped(uid) {
+      let view = request.resource.data.get('healthyEquipped', {});
+      let privateLook = get(
+        /databases/$(database)/documents/users/$(uid)
+      ).data.get('shopEquipped', {});
+      return view is map && privateLook is map
+        && view.keys().hasOnly(privateLook.keys())
+        && validPublicSlot(view, privateLook, 'cabeza')
+        && validPublicSlot(view, privateLook, 'ojos')
+        && validPublicSlot(view, privateLook, 'cuello')
+        && validPublicSlot(view, privateLook, 'torso')
+        && validPublicSlot(view, privateLook, 'espalda')
+        && validPublicSlot(view, privateLook, 'mano')
+        && validPublicSlot(view, privateLook, 'aura')
+        && validPublicSlot(view, privateLook, 'brazos')
+        && validPublicSlot(view, privateLook, 'skin')
+        && validPublicSlot(view, privateLook, 'perfil_marco')
+        && validPublicSlot(view, privateLook, 'perfil_banner')
+        && validPublicSlot(view, privateLook, 'perfil_avatar')
+        && validPublicSlot(view, privateLook, 'perfil_expositor');
+    }
+
     function validPublicStats(uid) {
       let private = get(
         /databases/$(database)/documents/users/$(uid)
       ).data;
       let reveal = private.get('settings', {})
         .get('mostrarRachaAmigos', true) != false;
-      return request.resource.data.xp == private.get('xp', 0)
+      return validPublicEquipped(uid)
+        && request.resource.data.get('title', 'Cultivador de constancia')
+          == private.get('profileTitle',
+             private.get('title', 'Cultivador de constancia'))
+        && request.resource.data.xp == private.get('xp', 0)
         && request.resource.data.get('currentXp', 0)
           == private.get('currentXp', private.get('xp', 0))
         && request.resource.data.get('level', 1)
