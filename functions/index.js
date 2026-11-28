@@ -865,7 +865,9 @@ exports.analyzeEvidencePreview = onCall(
 
 
 // Consulta enciclopédica explícita: sin datos de perfil y sin operaciones.
-const {searchEncyclopedia} = require("./mr_healthy_web_search");
+const {
+  searchEncyclopedia, prepareQuery,
+} = require("./mr_healthy_web_search");
 exports.searchMrHealthyEncyclopedia = onCall(
   {
     region: "us-central1",
@@ -879,8 +881,27 @@ exports.searchMrHealthyEncyclopedia = onCall(
         "Inicia sesión para consultar fuentes externas.");
     }
     try {
-      return await searchEncyclopedia(request.data?.query);
+      const query = prepareQuery(request.data?.query);
+      // Límite diario por cuenta, atómico entre instancias. La cuota
+      // contiene solo contadores: nunca guarda consultas ni conversaciones.
+      const today = new Date().toISOString().slice(0, 10);
+      const quotaRef = db.collection("mr_healthy_search_quotas")
+        .doc(request.auth.uid + "_" + today);
+      await db.runTransaction(async (tx) => {
+        const snapshot = await tx.get(quotaRef);
+        const count = snapshot.exists
+          ? Number(snapshot.data().count || 0) : 0;
+        if (count >= 25) {
+          throw new HttpsError("resource-exhausted",
+            "Alcanzaste el límite de 25 consultas enciclopédicas por día.");
+        }
+        tx.set(quotaRef, {count: count + 1, day: today,
+          updatedAt: require("firebase-admin/firestore").FieldValue.serverTimestamp()},
+          {merge: true});
+      });
+      return await searchEncyclopedia(query);
     } catch (error) {
+      if (error instanceof HttpsError) throw error;
       if (error instanceof TypeError) {
         throw new HttpsError("invalid-argument", error.message);
       }
