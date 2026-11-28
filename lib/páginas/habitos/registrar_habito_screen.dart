@@ -21,6 +21,7 @@ import 'healthy_local_vision_panel.dart';
 import '../../servicios/healthy_vision_debug_service.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/beta_habit_gateway.dart';
+import '../../servicios/beta_evidence_service.dart';
 import '../../servicios/habit_evidence_image_preparer.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/healthy_reminders_service.dart';
@@ -238,8 +239,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
 
   Future<void> _seleccionarImagen(ImageSource origen) async {
     if (_guardando || _cargando) return;
-    if (BetaHabitGateway.enabled) {
-      _mostrarMensaje('La evidencia fotográfica no está disponible en beta.');
+    if (BetaHabitGateway.enabled && !BetaEvidenceService.enabled) {
+      _mostrarMensaje('La evidencia fotográfica de beta todavía no está habilitada.');
       return;
     }
     try {
@@ -254,9 +255,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       if (!mounted) return;
       // En modo oficial, la evidencia se vuelve a codificar como JPEG
       // de máximo 250 KB, sin metadatos EXIF del archivo original.
-      final prepared = OfficialHabitEmulatorService.enabled
-          ? const HabitEvidenceImagePreparer().prepare(bytes).bytes
-          : bytes;
+      final prepared = const HabitEvidenceImagePreparer().prepare(bytes).bytes;
       if (prepared.lengthInBytes > TemporaryEvidenceService.maxImageBytes) {
         _mostrarMensaje(
           'La imagen supera 250 KB. Selecciona otra más pequeña.',
@@ -467,12 +466,10 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             };
         const service = OfficialHabitEmulatorService();
         final photoBytes = _bytesImagen;
-        // En beta no existe endpoint de evidencias: rechazar antes de
-        // solicitar registro, sin convertir una foto en registro normal.
-        if (BetaHabitGateway.enabled && photoBytes != null) {
-          throw StateError(
-            'Las evidencias aún no están disponibles en la beta cerrada.',
-          );
+        // Nunca degradar silenciosamente una foto a registro declarado.
+        if (BetaHabitGateway.enabled && photoBytes != null &&
+            !BetaEvidenceService.enabled) {
+          throw StateError('Las evidencias aún no están habilitadas en beta.');
         }
         final response = BetaHabitGateway.enabled
             ? await const PendingBetaHabitOperations().execute(
@@ -481,6 +478,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 attemptId: attemptRef.id,
                 note: _notaController.text.trim(),
                 interaction: interaction,
+                withEvidence: photoBytes != null,
+                evidenceBytes: photoBytes,
               )
             : photoBytes == null
                 ? await const PendingOfficialHabitOperations().register(
@@ -544,7 +543,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             title: completed ? '¡Hábito completado!' : '¡Registro guardado!',
             subtitle: '+$xp XP'
                 '${coins > 0 ? ' · +$coins Habit Coins' : ''}'
-                ' · $progress/$target registros',
+                ' · $progress/$target registros'
+                "${response['evidenceAttached'] == true ? ' · Foto vinculada (sin verificar consumo)' : ''}",
             icon: completed
                 ? Icons.emoji_events_rounded : Icons.check_circle_rounded,
             effect: completed ? CosmosEffect.habit : CosmosEffect.reward,
@@ -1429,14 +1429,19 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               tieneImagen
                   ? OfficialHabitEmulatorService.enabled
                       ? 'Imagen privada y no verificada; caduca en 60 minutos.'
-                      : 'La imagen se guardará temporalmente durante 24 horas.'
+                      : BetaHabitGateway.enabled
+                            ? 'Foto privada temporal hasta 60 minutos. '
+                              'No verifica el cumplimiento.'
+                            : 'Análisis local; esta foto no se guardará '
+                              'en el servidor ni añadirá XP.'
                   : 'Selecciona una imagen para activar la evidencia.',
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
             activeColor: HealthyAdaptive.accent,
             onChanged:
-                (_guardando || BetaHabitGateway.enabled)
+                (_guardando ||
+                    (BetaHabitGateway.enabled && !BetaEvidenceService.enabled))
                     ? null
                     : (value) {
                       if (!value) {
