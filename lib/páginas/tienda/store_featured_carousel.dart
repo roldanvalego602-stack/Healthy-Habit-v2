@@ -247,7 +247,7 @@ class _StoreFeaturedCarouselState extends State<StoreFeaturedCarousel> {
                                 const SizedBox(width: 5),
                                 Expanded(child: Text(
                                   item.price == 0 ? 'Gratis'
-                                      : '${item.price} Habit Coins',
+                                      : '${widget.displayPriceFor?.call(item) ?? item.price} Habit Coins',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(color: fg, fontSize: 14,
