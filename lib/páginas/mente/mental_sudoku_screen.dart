@@ -84,14 +84,13 @@ class _MentalSudokuScreenState extends State<MentalSudokuScreen> {
 
   Future<void> _hint() async {
     if (_loading || _completed || _hintsUsed >= 3) return;
-    var index = _selected;
-    if (index == null || _cells[index] != 0) {
-      index = _cells.indexOf(0);
-    }
+    final current = _selected;
+    final index = current != null && _cells[current] == 0
+        ? current : _cells.indexOf(0);
     if (index < 0) return;
     setState(() {
       _selected = index;
-      _cells[index!] = _puzzle.solution[index];
+      _cells[index] = _puzzle.solution[index];
       _hintsUsed++;
       _notice = 'Pista ${_hintsUsed}/3: observa cómo '
           'esta cifra se relaciona con su fila y cuadro.';
