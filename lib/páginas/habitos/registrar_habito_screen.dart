@@ -888,7 +888,7 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
               ),
             ),
             Text(
-              'Añade algo que acompañe tu registro.',
+              'Registra tu avance de hoy.',
               style: TextStyle(
                 color: HealthyAdaptive.muted,
                 fontSize: 13,
