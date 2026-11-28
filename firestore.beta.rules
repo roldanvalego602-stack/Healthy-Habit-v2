@@ -423,29 +423,29 @@ service cloud.firestore {
       // El cliente puede consultar su estado pero nunca crearlo ni
       // marcar contenido verificado, incluso en su propia cuenta.
       match /habit_evidence_reservations/{operationId} {
-        allow get, list: if owner(uid);
-        allow create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       match /habit_evidence_assessments/{operationId} {
-        allow get, list: if owner(uid);
-        allow create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       match /habit_evidence_daily_limits/{day} {
-        allow get: if owner(uid);
-        allow list, create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       match /habit_evidence_vision_limits/{day} {
-        allow get: if owner(uid);
-        allow list, create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       match /registration_operations/{operationId} {
-        allow get: if owner(uid);
-        allow list, create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       // Recibos idempotentes de tienda: escritura exclusiva de Functions.
       match /shop_purchase_operations/{operationId} {
-        allow get, list: if owner(uid);
-        allow create, update, delete: if false;
+        // Solo las Cloud Functions pueden consultar o mutar este registro.
+        allow read, write: if false;
       }
       // Conversaciones privadas, sin privilegios económicos.
       match /healthy_chats/{chatId} {
