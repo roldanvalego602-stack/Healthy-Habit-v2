@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'healthy_titan_skin.dart';
+import '../../servicios/healthy_retro_sound_service.dart';
 
 /// La cueva es un secreto narrativo, no una recompensa de monedas.
 /// La respuesta se envía a Firebase, que determina y persiste el premio.
@@ -97,6 +98,12 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
       });
       if (!mounted) return;
       final opened = result['status'] == 'unlocked';
+      if (opened && result['awarded'] == true) {
+        // Recompensa confirmada por Firebase, nunca por lógica local.
+        await HealthyRetroSoundService.play('achievement');
+      } else if (!opened) {
+        await HealthyRetroSoundService.play('error');
+      }
       setState(() {
         _unlocked = opened;
         _opened = opened;
@@ -156,7 +163,7 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
             constraints: const BoxConstraints(maxWidth: 530),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              Text('ARCHIVO 001 · EL PRISIONERO DE LA CONSTANCIA',
+              Text('ARCHIVO 001 · EL PRISIONERO DEL UMBRAL',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 10, letterSpacing: 2,
                   color: _green.withValues(alpha: .8),
@@ -253,7 +260,10 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
                 height: 1.45))),
         if (_hints < _hintsText.length)
           OutlinedButton.icon(
-            onPressed: () => setState(() => _hints++),
+            onPressed: () {
+              setState(() => _hints++);
+              HealthyRetroSoundService.play('tap');
+            },
             icon: const Icon(Icons.visibility_outlined, size: 16),
             label: Text(_hints == 0 ? 'Descifrar primera pista'
                 : 'Descifrar otra pista')),
@@ -294,13 +304,15 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
                         : const Duration(milliseconds: 1200),
                     curve: Curves.easeInOutCubic,
                     offset: _opened ? const Offset(-1.1, 0) : Offset.zero,
-                    child: const CustomPaint(painter: _CagePainter(left: true)))),
+                    child: const SizedBox.expand(child:
+                      CustomPaint(painter: _CagePainter(left: true))))),
                   Expanded(child: AnimatedSlide(
                     duration: reduceMotion ? Duration.zero
                         : const Duration(milliseconds: 1200),
                     curve: Curves.easeInOutCubic,
                     offset: _opened ? const Offset(1.1, 0) : Offset.zero,
-                    child: const CustomPaint(painter: _CagePainter(left: false)))),
+                    child: const SizedBox.expand(child:
+                      CustomPaint(painter: _CagePainter(left: false))))),
                 ],
               ))),
               if (!_unlocked)
