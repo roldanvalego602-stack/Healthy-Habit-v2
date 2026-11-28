@@ -3,7 +3,7 @@
 const {FieldValue} = require("firebase-admin/firestore");
 const {RegistrationPolicyError} = require("./habit_registration_policy");
 const {SHOP_PRICES} = require("./official_shop_catalog");
-const {dailyPrice} = require("./shop_daily_rotation");
+const {dailyPrice, RETIRED_SHOP_IDS} = require("./shop_daily_rotation");
 
 const USER_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const OPERATION_ID = /^[A-Za-z0-9_-]{16,128}$/;
@@ -28,6 +28,10 @@ function validateShopPurchase(data) {
       "invalid-argument", "Identificador o campos de compra inválidos."
     );
   }
+  if (RETIRED_SHOP_IDS.has(itemId)) {
+    throw new RegistrationPolicyError(
+      "failed-precondition", "Este artículo está retirado.");
+  }
   if (!Number.isSafeInteger(SHOP_PRICES[itemId]) || SHOP_PRICES[itemId] <= 0) {
     throw new RegistrationPolicyError(
       "failed-precondition", "Los artículos gratuitos no se compran."
@@ -40,6 +44,10 @@ function validateShopPurchase(data) {
 function calculatePurchase({user, itemId, shopDay, now = new Date()}) {
   if (!user || !Object.hasOwn(SHOP_PRICES, itemId)) {
     throw new RegistrationPolicyError("not-found", "Artículo o perfil inexistente.");
+  }
+  if (RETIRED_SHOP_IDS.has(itemId)) {
+    throw new RegistrationPolicyError("failed-precondition",
+      "Este artículo está retirado.");
   }
   let cost = SHOP_PRICES[itemId];
   if (shopDay !== undefined) {
