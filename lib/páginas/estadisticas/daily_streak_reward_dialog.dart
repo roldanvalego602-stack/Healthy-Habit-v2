@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_coin.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
@@ -44,8 +45,9 @@ class _DailyStreakRewardDialogState extends State<DailyStreakRewardDialog> {
         return;
       }
       if (result['coinsAwarded'] == widget.coins) {
-        await HealthyRetroSoundService.play('reward');
-        if (!mounted) return;
+        // El sonido es decorativo: no retrasar el cierre tras confirmar
+        // el premio en servidor, ni dejar el botón cargando.
+        unawaited(HealthyRetroSoundService.play('reward'));
         Navigator.of(context).pop(StreakRewardAction.claimed);
         return;
       }
