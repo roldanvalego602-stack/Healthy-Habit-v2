@@ -110,6 +110,7 @@ class MentalWordSearchPuzzle {
     required this.words,
     required this.dayKey,
     required this.size,
+    required this.wordPaths,
   });
 
   static const side = 12;
@@ -123,12 +124,14 @@ class MentalWordSearchPuzzle {
   final List<String> words;
   final String dayKey;
   final int size;
+  final Map<String, List<int>> wordPaths;
 
   factory MentalWordSearchPuzzle.forDate(DateTime date) {
     final random = Random(MentalDailyKey.seed(date, salt: 41973));
     final board = List.filled(side * side, '');
     final candidates = [..._dictionary]..shuffle(random);
     final words = candidates.take(7).toList();
+    final positions = <String, List<int>>{};
     const directions = [
       [-1, -1], [-1, 0], [-1, 1],
       [0, -1], [0, 1],
@@ -152,10 +155,13 @@ class MentalWordSearchPuzzle {
           }
         }
         if (!fits) continue;
+        final indexes = <int>[];
         for (var i = 0; i < word.length; i++) {
           final index = (row + d[0] * i) * side + col + d[1] * i;
           board[index] = word[i];
+          indexes.add(index);
         }
+        positions[word] = List.unmodifiable(indexes);
         inserted = true;
       }
       if (!inserted) {
@@ -173,6 +179,7 @@ class MentalWordSearchPuzzle {
       words: List.unmodifiable(words),
       dayKey: MentalDailyKey.forDate(date),
       size: side,
+      wordPaths: Map.unmodifiable(positions),
     );
   }
 
