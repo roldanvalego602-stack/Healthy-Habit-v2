@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import 'package:flutter/material.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'dart:convert';
@@ -319,10 +321,19 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         _message('El título todavía no está desbloqueado.');
         return;
       }
-      await db.collection('users').doc(uid).update({
-        'profileTitle': choice.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      if (BetaHabitGateway.enabled) {
+        await FirebaseFunctions.instanceFor(
+          app: Firebase.app(), region: 'us-central1',
+        ).httpsCallable('selectProfileTitleBeta').call({'titleId': choice.id});
+        if (FirebaseAuth.instance.currentUser?.uid != uid) {
+          throw StateError('La sesión cambió durante el equipamiento.');
+        }
+      } else {
+        await db.collection('users').doc(uid).update({
+          'profileTitle': choice.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
       _message('Título equipado: ${choice.name}.');
     } catch (_) {
       _message('No se pudo consultar o guardar tu título.');
