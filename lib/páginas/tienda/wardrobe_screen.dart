@@ -52,7 +52,8 @@ const profileWardrobeSlots = <WardrobeSlot>[
 /// Las reacciones consumibles y extras sin ranura permanecen en la tienda.
 List<ShopItem> wardrobeItemsForSlot(String slot) =>
     shopCatalog.where((item) => item.slot == slot &&
-        (isShopItemVisible(item.id))).toList(growable: false);
+        (isShopItemVisible(item.id) || item.id == 'skin_titan_secret'))
+        .toList(growable: false);
 
 /// Coordenadas del accesorio dentro del lienzo de 280×275 de Mr. Healthy.
 /// Solo representa el diseño visual; no altera compras o propiedad.
