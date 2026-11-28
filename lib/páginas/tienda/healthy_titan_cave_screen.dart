@@ -13,7 +13,13 @@ import 'shop_purchase_gateway.dart';
 /// La cueva es un secreto narrativo, no una recompensa de monedas.
 /// La respuesta se envía a Firebase, que determina y persiste el premio.
 class HealthyTitanCaveScreen extends StatefulWidget {
-  const HealthyTitanCaveScreen({super.key});
+  const HealthyTitanCaveScreen({super.key, this.testRequest});
+
+  /// Solo para pruebas de UI: permite simular respuestas sin Firebase.
+  /// En la navegación real siempre es null y se valida en el servidor.
+  @visibleForTesting
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)? testRequest;
+
   @override
   State<HealthyTitanCaveScreen> createState() => _HealthyTitanCaveScreenState();
 }
@@ -86,6 +92,9 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
   }
 
   Future<Map<String, dynamic>> _request(Map<String, dynamic> data) async {
+    if (widget.testRequest != null) {
+      return widget.testRequest!(data);
+    }
     await _prepareAppCheck();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Inicia sesión para entrar a la cueva.');
