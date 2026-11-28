@@ -43,20 +43,32 @@ class ShopDailyRotation {
   static bool _isSpecial(ShopItem item) =>
       item.id.startsWith('ufo_') || _special.contains(item.id);
 
-  static int _rank(String value) {
-    var hash = 0;
+  static int _seed(String value) {
+    var value32 = 2166136261;
     for (final unit in value.codeUnits) {
-      hash = (hash * 31 + unit) & 0x7fffffff;
+      value32 = ((value32 ^ unit) * 16777619) & 0xffffffff;
     }
-    return hash;
+    return value32 == 0 ? 1 : value32;
   }
 
-  static List<ShopItem> _rotate(List<ShopItem> pool, String day) {
-    final sorted = List<ShopItem>.from(pool);
-    sorted.sort((a, b) {
-      final compare = _rank('$day:${a.id}').compareTo(_rank('$day:${b.id}'));
-      return compare != 0 ? compare : a.id.compareTo(b.id);
-    });
+  static int _next(int value32) {
+    value32 = (value32 ^ (value32 << 13)) & 0xffffffff;
+    value32 = (value32 ^ (value32 >> 17)) & 0xffffffff;
+    return (value32 ^ (value32 << 5)) & 0xffffffff;
+  }
+
+  static List<ShopItem> _rotate(
+      List<ShopItem> pool, String day, String family) {
+    final sorted = List<ShopItem>.from(pool)
+      ..sort((a, b) => a.id.compareTo(b.id));
+    var seed = _seed('$day:$family');
+    for (var i = sorted.length - 1; i > 0; i--) {
+      seed = _next(seed);
+      final j = seed % (i + 1);
+      final hold = sorted[i];
+      sorted[i] = sorted[j];
+      sorted[j] = hold;
+    }
     return sorted;
   }
 
@@ -70,8 +82,10 @@ class ShopDailyRotation {
         !_isSpecial(item) && !fixedIds.contains(item.id)).toList();
     final special = all.where(_isSpecial).toList();
 
-    final regular = _rotate(rotating, day).take(rotatingSlots).toList();
-    final specials = _rotate(special, day).take(specialSlots).toList();
+    final regular = _rotate(rotating, day, 'rotating')
+        .take(rotatingSlots).toList();
+    final specials = _rotate(special, day, 'special')
+        .take(specialSlots).toList();
     final selected = <ShopItem>[
       ...fixed.take(fixedSlots),
       ...regular,
