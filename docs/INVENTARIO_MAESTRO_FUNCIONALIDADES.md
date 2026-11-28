@@ -45,13 +45,14 @@
 | Temporizadores, contadores, hidratación y podómetro | Piloto / parcial | Configuración e interacciones; no acreditan XP sin registro oficial |
 | Respiración guiada y Pomodoro | Implementado / demo | Verificar cronometraje, pausas y reanudación en Android |
 | Recordatorios de hábitos locales | Parcial / beta | Revisar permisos, recurrencia, zona y notificaciones en dispositivo |
-| Evidencia fotográfica por cámara/galería | Implementado en código / validar | Captura y JPEG sin EXIF. Flujo beta reservado→subido→registrado→asociado, bloqueado por flags hasta auditoría |
+| Evidencia fotográfica por cámara/galería | Implementado / pruebas automáticas aprobadas | Captura JPEG sin EXIF; ruta beta de reserva, subida, registro y asociación; **sin desplegar al Firebase real** |
 | Google ML Kit y laboratorio Google Cloud Vision | Implementado en código / validar | ML Kit local; Vision remoto opcional para foto ya asociada con consentimiento, cuota y estado visual indicativo; no prueba consumo |
 | Verificación fiable por evidencia, confianza y borrado temporal | Parcial / backend bloqueado | Asociación y borrado programado en código; verificación fuerte de realización no implementada; pruebas beta/precisión pendientes |
 | Eliminación del bono de XP por adjuntar cualquier imagen | **Implementado en código / validar** | Registro cliente normal asigna 10 XP declarado; no guarda fotos Base64 ni indica evidencia real |
 | Consulta de estado y recuperación de imágenes de beta | **Implementado en código / validar** | Retoma mismo operationId, permite reseleccionar foto y no crea recompensas duplicadas |
 | Control diario de solicitudes fotográficas y Vision | Backend implementado / apagado | 12 reservas al día, hasta 8 evaluaciones diarias, intervalo de 60 s para Vision |
 | Limpieza administrativa de fotos temporales | Código preparado / no desplegado | Tarea horaria tras caducidad; habilitación requiere beta, reglas y banderas independientes |
+| Pruebas integrales de evidencias en emuladores | **1/1 aprobada en CI** | Auth, Firestore, Storage y Functions en proyecto demo; foto adjunta, reintento y borrado sin duplicar XP |
 | Estadísticas, gráficas y retroalimentación | Implementado / validar | Comprobar coherencia con fuente autoritativa y estados vacíos |
 | Desafíos y misiones diarias, semanales y mensuales | Parcial | Pantallas/tarjetas disponibles; progresos y recompensas requieren auditoría |
 | Logros, insignias y estante de exhibición | Implementado / validar | Validar fuente de eventos y propiedad de elementos |
@@ -139,8 +140,8 @@
 | Revisión `npm audit` | Pendiente | Último reporte: 28 vulnerabilidades moderadas, sin diagnóstico individual |
 | Búsqueda Wikipedia con límites de servidor | Backend desplegado | Pruebas Android, costes, permisos y política de cuota |
 | Accesibilidad, distintos tamaños y reducir movimiento | Parcial | Pruebas manuales UI completas |
-| Suite `functions` | **173/173 reportadas como aprobadas antes de Titán** | Repetir tras cambios de backend; resultado de nuevas pruebas pendiente |
-| Suite Flutter y pruebas en Android | **Pendiente de confirmar para cambios recientes** | `flutter analyze`, tests y recorrido funcional |
+| Suite `functions` | **193/193 aprobadas en CI; Vision 15/15** | Se incluyen pruebas de evidencia, consentimiento, idempotencia y privacidad; despliegue real pendiente |
+| Suite Flutter y pruebas en Android | **567 tests Flutter aprobados en CI; Android físico pendiente** | Análisis sin errores bloqueantes; validar cámara, captura, permisos y fluidez en dispositivo |
 | Beta pública conectada a Firebase real | **No autorizada** | Nuevas callables de evidencia y Vision apagadas por defecto; migrar economía Flutter, aprobar reglas y App Check antes de publicar |
 
 ## Prioridad acordada
