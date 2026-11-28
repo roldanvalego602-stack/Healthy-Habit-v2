@@ -189,7 +189,7 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
               'No se almacena ni se conceden XP o monedas.'),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _profileId,
+            initialValue: _profileId,
             decoration: const InputDecoration(
               labelText: 'Categoría visual',
               border: OutlineInputBorder(),
@@ -241,7 +241,7 @@ class _EvidenceDemoScreenState extends State<EvidenceDemoScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _objectId,
+            initialValue: _objectId,
             decoration: const InputDecoration(
               labelText: 'Objeto accesible para el desafío',
               border: OutlineInputBorder(),
