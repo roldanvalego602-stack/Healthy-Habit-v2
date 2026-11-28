@@ -73,6 +73,7 @@ test('beta: editar datos inocuos no permite alterar XP, monedas o inventario', a
     {xp: 1}, {level: 5}, {habitCoins: 121}, {currentStreak: 10},
     {shopInventory: ['ufo_gold']}, {shopEquipped: {ufo_skin: 'ufo_gold'}},
     {profileTitle: 'Campeón de temporada'},
+    {settings: {habitCoins: 500, hack: true}},
     {habitMutationVersion: 900}, {completedHabits: 100},
     {serverStreakDays: 100}, {dailyRewardClaimed: true},
   ]) {
@@ -96,6 +97,12 @@ test('beta: estadísticas públicas no se falsifican, aunque el UID sea propio',
   }));
   await assertFails(updateDoc(ref(db, 'public_profiles/alice'), {
     completedHabits: 999,
+  }));
+  await assertFails(updateDoc(ref(db, 'public_profiles/alice'), {
+    healthyEquipped: {cabeza: 'leaf_crown'},
+  }));
+  await assertFails(updateDoc(ref(db, 'public_profiles/alice'), {
+    title: 'Campeón de temporada',
   }));
   await assertFails(updateDoc(ref(as('bob'), 'public_profiles/alice'),
     {name: 'suplantación'}));
