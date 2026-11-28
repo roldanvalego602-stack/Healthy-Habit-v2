@@ -12,6 +12,7 @@ const env = {
   HH_BETA_RULES_VERIFIED: "true",
   HH_BETA_TEST_UIDS: "usuario_pruebas",
   HH_BETA_EVIDENCE_ENABLED: "true",
+  HH_BETA_EVIDENCE_CLEANUP_ENABLED: "true",
 };
 const request = {auth: {uid: "usuario_pruebas"}, app: {appId: "app_test"}};
 const ids = {
@@ -42,6 +43,7 @@ test("beta de evidencias exige cuatro barreras independientes", () => {
   assert.equal(requireBetaEvidenceAccess(request, env), "usuario_pruebas");
   for (const change of [
     {HH_BETA_EVIDENCE_ENABLED:"false"},
+    {HH_BETA_EVIDENCE_CLEANUP_ENABLED:"false"},
     {HH_BETA_HABITS_ENABLED:"false"},
     {HH_BETA_RULES_VERIFIED:"false"},
     {GCLOUD_PROJECT:"demo-healthy-habit"},
