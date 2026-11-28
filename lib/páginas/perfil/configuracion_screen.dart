@@ -258,26 +258,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: RadioGroup<String>(
                 groupValue: _str(key),
                 onChanged: (value) {
-                  if (value != null) Navigator.pop(ctx, value);
+                  if (value != null) {
+                    Navigator.pop(ctx, value);
+                  }
                 },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  for (final option in options)
-                    RadioListTile<String>(
-                      title: Text(option),
-                      value: option,
-                    ),
+                    for (final option in options)
+                      RadioListTile<String>(
+                        title: Text(option),
+                        value: option,
+                      ),
                   ],
                 ),
               ),
