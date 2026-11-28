@@ -917,7 +917,7 @@ exports.searchMrHealthyEncyclopedia = onCall(
 
 // Easter egg de la cueva: solo concede un cosmético; nunca Habit Coins.
 // La respuesta se valida exclusivamente aquí, con intentos diarios limitados.
-const {claimTitanSecret, DAILY_LIMIT, SECRET_ID, SKIN_ID} =
+const {claimTitanSecret, secretDayKey, DAILY_LIMIT, SECRET_ID, SKIN_ID} =
   require("./titan_secret_reward");
 
 exports.titanSecret = onCall(
@@ -943,7 +943,7 @@ exports.titanSecret = onCall(
     }
     const uid = request.auth.uid;
     if (request.data?.action === "status") {
-      const day = new Date().toISOString().slice(0, 10);
+      const day = secretDayKey(new Date());
       const [reward, attempts] = await Promise.all([
         db.collection("healthy_secret_rewards")
           .doc(uid + "_" + SECRET_ID).get(),
