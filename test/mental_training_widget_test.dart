@@ -52,6 +52,12 @@ void main() {
 
   testWidgets('sopa de letras marca una palabra con inicio y fin',
       (tester) async {
+    // La cuadrícula ocupa 470 px más cabecera y teclado; el viewport
+    // predeterminado de pruebas (800×600) recorta celdas seleccionables.
+    tester.view.physicalSize = const Size(1100, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       const MaterialApp(home: MentalWordSearchScreen()));
     await tester.pumpAndSettle();
