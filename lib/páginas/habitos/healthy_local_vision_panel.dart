@@ -180,7 +180,9 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
   Widget build(BuildContext context) {
     final match = _labels == null
         ? null
-        : HealthyVisualMatch.evaluate(labels: _labels!, profile: _profile);
+        : HealthyVisualMatch.evaluateCombined(
+            labels: _labels!, profile: _profile,
+            specializedLabels: _specializedLabels);
     final specific = _labels == null
         ? null
         : (_specializedLabels != null
@@ -312,8 +314,17 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
                           color: HealthyAdaptive.text, fontSize: 12)),
                       if (match.isMatch) ...[
                         const SizedBox(height: 5),
-                        Text('Confianza de la etiqueta de ML Kit: '
-                            '${(match.confidence * 100).round()}%',
+                        Text(
+                            _specializedLabels != null &&
+                                    match.matchedLabel != null &&
+                                    HealthySpecificFoodRecognition
+                                        .identifyFromSpecializedModel(
+                                            _specializedLabels!).sourceLabel ==
+                                        match.matchedLabel
+                                ? 'Puntuación del modelo específico: '
+                                  '${(match.confidence * 100).round()}%'
+                                : 'Confianza de la etiqueta de ML Kit: '
+                                  '${(match.confidence * 100).round()}%',
                           style: TextStyle(color: HealthyAdaptive.text,
                               fontWeight: FontWeight.w700, fontSize: 12)),
                       ],
