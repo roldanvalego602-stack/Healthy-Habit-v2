@@ -1362,6 +1362,17 @@ class _HomeContent extends StatelessWidget {
                   style: TextStyle(color: AppColors.textDark),
                 ),
 
+                // Fragmento de lore: la pista conduce a la tienda sin
+                // revelar la respuesta ni regalar artículos.
+                TextButton.icon(
+                  key: const Key('inicio-pista-titan'),
+                  onPressed: onStore,
+                  icon: const Icon(Icons.terrain_rounded, size: 16),
+                  label: const Text('Una fuerza duerme tras siete latidos...'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    textStyle: const TextStyle(fontSize: 11)),
+                ),
                 TextButton.icon(
                   onPressed: () {
                     Navigator.push(
