@@ -4,6 +4,9 @@ import '../../tema/healthy_theme.dart';
 import '../../tema/healthy_coin.dart';
 import '../../tema/healthy_visual_mode.dart';
 import '../tienda/shop_service.dart';
+import '../tienda/shop_daily_rotation.dart';
+import '../tienda/shop_purchase_gateway.dart';
+import '../../servicios/beta_habit_gateway.dart';
 
 /// Tienda dentro de la conversación. Todo canje/equipamiento pasa por ShopService.
 class HealthyChatStoreCard extends StatefulWidget {
@@ -63,6 +66,9 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
   }
 
   Future<void> _chooseItem() async {
+    final today = ShopDailyRotation.today();
+    final options = availableShopItems(null)
+        .where((item) => today.contains(item.id)).toList();
     final selected = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -80,9 +86,9 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                   color: HealthyAdaptive.text)),
             ),
             Expanded(child: ListView.builder(
-              itemCount: availableShopItems(null).length,
+              itemCount: options.length,
               itemBuilder: (_, index) {
-                final item = availableShopItems(null)[index];
+                final item = options[index];
                 return ListTile(
                   key: ValueKey('chat-shop-option-${item.id}'),
                   leading: Text(item.emoji, style: const TextStyle(fontSize: 27)),
@@ -113,8 +119,11 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
     if (_working) return;
     final title = purchase ? '¿Canjear ${item.name}?'
         : remove ? '¿Quitar ${item.name}?' : '¿Equipar ${item.name}?';
+    final quote = ShopDailyRotation.today().priceFor(item,
+        authoritative: BetaHabitGateway.enabled ||
+            DemoShopPurchaseGateway.requested);
     final details = purchase
-        ? 'El artículo cuesta ${item.price} Habit Coins. '
+        ? 'El artículo cuesta $quote Habit Coins. '
           'Tu saldo actual es ${state.coins}. '
           'La compra solo se hará si confirmas.'
         : remove ? 'Se quitará de tu apariencia, pero seguirá en tu colección.'
@@ -132,7 +141,7 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
             if (purchase) ...[
               const SizedBox(height: 10),
               const Text('Costo del artículo:'),
-              HealthyCoinAmount(amount: '${item.price}', size: 22,
+              HealthyCoinAmount(amount: '$quote', size: 22,
                 suffix: ' Habit Coins'),
               const SizedBox(height: 5),
               const Text('Saldo actual:'),
@@ -184,6 +193,12 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
   Widget build(BuildContext context) {
     final item = _itemId == null ? null : shopItemById(_itemId!);
     final motion = HealthyVisualEffects.enabled(context);
+    final daily = ShopDailyRotation.today();
+    final price = item == null ? 0 : daily.priceFor(item,
+        authoritative: BetaHabitGateway.enabled ||
+            DemoShopPurchaseGateway.requested);
+    final available = item != null &&
+        (daily.contains(item.id) || widget.purchaseAction != null);
     return Container(
       key: const Key('mr-healthy-shop-card'),
       margin: const EdgeInsets.only(top: 10),
@@ -254,7 +269,7 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                               Text(item.category,
                                 style: TextStyle(color: HealthyAdaptive.muted,
                                   fontSize: 11)),
-                              HealthyCoinAmount(amount: '${item.price}',
+                              HealthyCoinAmount(amount: '$price',
                                 size: 16, suffix: ' HC',
                                 style: TextStyle(
                                   color: HealthyAdaptive.text, fontSize: 11,
@@ -278,14 +293,15 @@ class _HealthyChatStoreCardState extends State<HealthyChatStoreCard> {
                             : !state.owns(item.id)
                                 ? FilledButton.icon(
                                     key: const Key('chat-shop-purchase'),
-                                    onPressed: state.coins >= item.price
+                                    onPressed: available && state.coins >= price
                                         ? () => _commit(
                                             item, state, purchase: true)
                                         : null,
                                     icon: const Icon(
                                       Icons.shopping_bag_outlined),
-                                    label: Text(state.coins >= item.price
-                                        ? 'Canjear por ${item.price} HC'
+                                    label: Text(!available ? 'Fuera de rotación' :
+                                      state.coins >= price
+                                        ? 'Canjear por $price HC'
                                         : 'Saldo insuficiente'),
                                   )
                                 : item.slot != null
