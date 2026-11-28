@@ -15,11 +15,11 @@
 - Clarificaciones y sugerencias de opciones pertinentes en lugar de respuestas genéricas repetidas.
 - No escribir datos ni disparar compras desde resultados externos.
 
-## Fase 3 · Easter egg y cosméticos — decisión de diseño, no implementada aquí
-- Sala secreta: cueva oscura, rejas metálicas, señales de criatura encerrada, acertijo justo con pistas.
-- Premio único no comercializable: skin musculosa legendaria de Mr. Healthy (nombre de trabajo «Titan»).
-- Desbloqueo verificable en backend, una sola vez por cuenta, sin conceder monedas por responder localmente.
-- Mostrar estado bloqueado / disponible / obtenido; animación de liberación accesible.
+## Fase 3 · Easter egg y cosméticos — Titán implementado, skins UFO pendientes
+- **Implementado en código:** cueva oscura, rejas metálicas animadas, criatura oculta, tres pistas, entrada de siete toques y ruta Inicio → Tienda → Santuario.
+- **Implementado en código:** skin musculosa legendaria «Mr. Healthy · Titán» (ID `skin_titan_secret`), ilustración vectorial y equipamiento en Armario.
+- **Implementado pero no desplegado:** validación por Firebase Callable y transacción de premio único sin monedas, con cinco intentos por día civil mexicano; liberación de producción bloqueada por bandera de servidor y App Check.
+- **Implementado / probar en Android:** estado bloqueado/disponible/obtenido, animación de liberación, efectos sonoros y accesibilidad básica. [Dossier del santuario](EASTER_EGG_SANTUARIO_TITAN.md).
 - Familias de aspectos del OVNI: clásico, cosmos, neón, oro, sombrío, vegetal, glitch, lava, primitivo tipo caricatura prehistórica, zanahoria cómica.
 - Separar cosméticos del OVNI de cosméticos del avatar; usar identificadores estables y equipamiento persistido.
 
