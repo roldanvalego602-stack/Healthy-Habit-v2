@@ -27,6 +27,12 @@ Se guardan en el directorio privado de la app. La foto **no se utiliza para entr
 - Si no cumple el criterio: «El modelo específico no encontró una clase suficientemente clara».
 - Si la instalación o inferencia falla: se mantiene el detector general ML Kit, sin inventar un alimento específico.
 
+## Resultados automáticos y requisitos Android
+
+- **Integridad y ONNX:** el workflow [Verificar modelo ONNX real](https://github.com/roldanvalego602-stack/Healthy-Habit-v2/actions/runs/46101683718) aprobó la descarga desde la revisión fijada, SHA-256 de los pesos, 65 clases, tensor `[1,3,224,224]` y ejecución del grafo.
+- **Compatibilidad Android:** la compilación inicial de CI detectó bibliotecas AndroidX que exigen Android Gradle Plugin 8.9.1+, por lo que se actualizó el repositorio a **Gradle 8.11.1, AGP 8.10.1 y Kotlin 2.2.20**. Se requiere **JDK 17** o superior compatible. La compilación del APK debe volver a ejecutarse tras esta actualización.
+- El workflow ONNX demuestra compatibilidad de los **pesos en Python**, no prueba todavía su exactitud con fotos reales ni su rendimiento en un móvil Android.
+
 ## Comprobación necesaria
 
 ```bash
