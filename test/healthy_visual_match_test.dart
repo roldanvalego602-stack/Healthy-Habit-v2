@@ -72,6 +72,19 @@ void main() {
     expect(result.isMatch, isFalse);
   });
 
+  test('conflicto fuerte entre modelos no acredita el hábito', () {
+    final result = HealthyVisualMatch.evaluateCombined(
+      labels: const [HealthyDetectedLabel('Food', .90)],
+      profile: 'meal',
+      specializedLabels: const [
+        HealthyDetectedLabel('car', .86),
+        HealthyDetectedLabel('bread', .09),
+      ],
+    );
+    expect(result.isMatch, isFalse);
+    expect(result.message, contains('inconcluso'));
+  });
+
   test('una clase incorrecta no genera coincidencia con un hábito', () {
     final result = HealthyVisualMatch.evaluateCombined(
       labels: const [HealthyDetectedLabel('Insect', .88)],
