@@ -482,6 +482,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
                 note: _notaController.text.trim(),
                 interaction: interaction,
                 withEvidence: photoBytes != null,
+                withVisionConsent:
+                    photoBytes != null && _cloudVisionConsent,
                 evidenceBytes: photoBytes,
               )
             : photoBytes == null
