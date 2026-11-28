@@ -1,16 +1,24 @@
-# healthy_habit
+# Healthy Habit
 
-A new Flutter project.
+Aplicación Flutter de seguimiento de hábitos saludables, gamificación y personalización, desarrollada como proyecto universitario.
 
-## Getting Started
+## Seguimiento del proyecto
 
-This project is a starting point for a Flutter application.
+El documento central para consultar **todas las funcionalidades planificadas**, su estado de desarrollo, pruebas pendientes y prioridades es:
 
-A few resources to get you started if this is your first Flutter project:
+**[Inventario maestro de funcionalidades](docs/INVENTARIO_MAESTRO_FUNCIONALIDADES.md)**.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+El inventario distingue implementación en código, pruebas reportadas, pilotos de demostración y funciones pendientes. No debe confundirse con una certificación de producción.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Para las decisiones detalladas de UFO, chatbot y tienda, consultar [su hoja de ruta](docs/ROADMAP_UFO_CHATBOT_TIENDA.md).
+
+## Desarrollo local
+
+```bash
+flutter pub get
+flutter analyze --no-fatal-infos lib
+flutter test
+flutter run
+```
+
+Antes de distribuir una beta, revisar las restricciones en [cierre de avances y demostración](docs/CIERRE_AVANCES_Y_DEMO_2026-11-25.md).
