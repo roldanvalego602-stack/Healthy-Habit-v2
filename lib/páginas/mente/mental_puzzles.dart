@@ -97,7 +97,9 @@ class SudokuPuzzle {
       ];
       for (final group in [row, col, box]) {
         if (group.toSet().length != 9 ||
-            group.any((value) => value < 1 || value > 9)) return false;
+            group.any((value) => value < 1 || value > 9)) {
+          return false;
+        }
       }
     }
     return true;
@@ -185,7 +187,9 @@ class MentalWordSearchPuzzle {
 
   List<int> pathBetween(int first, int last) {
     if (first < 0 || last < 0 ||
-        first >= size * size || last >= size * size) return [];
+        first >= size * size || last >= size * size) {
+      return [];
+    }
     final rowA = first ~/ size;
     final colA = first % size;
     final rowB = last ~/ size;
@@ -194,7 +198,9 @@ class MentalWordSearchPuzzle {
     final deltaC = colB - colA;
     if (deltaR == 0 && deltaC == 0) return [first];
     if (deltaR != 0 && deltaC != 0 &&
-        deltaR.abs() != deltaC.abs()) return [];
+        deltaR.abs() != deltaC.abs()) {
+      return [];
+    }
     final steps = max(deltaR.abs(), deltaC.abs());
     final dirR = deltaR.sign;
     final dirC = deltaC.sign;
