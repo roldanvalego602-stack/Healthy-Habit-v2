@@ -867,7 +867,9 @@ class _StoreScreenState extends State<StoreScreen> {
       child: Column(
         children: [
           SizedBox(
-            height: 174,
+            // Altura adaptable para rarezas y tamaños de texto accesibles.
+            height: (212 * MediaQuery.textScalerOf(context).scale(1))
+                .clamp(212.0, 380.0).toDouble(),
             child: Stack(
               children: [
                 Positioned(
