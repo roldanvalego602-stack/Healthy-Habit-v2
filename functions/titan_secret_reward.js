@@ -5,6 +5,17 @@ const ANSWER = "constancia";
 const SKIN_ID = "skin_titan_secret";
 const SECRET_ID = "titan_cave_v1";
 const DAILY_LIMIT = 5;
+const REWARD_TIMEZONE = "America/Mexico_City";
+
+function secretDayKey(instant) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: REWARD_TIMEZONE, year: "numeric",
+    month: "2-digit", day: "2-digit",
+  }).formatToParts(instant);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
 
 function normalizedAnswer(value) {
   if (typeof value !== "string" || value.length > 70) return "";
@@ -35,7 +46,7 @@ async function claimTitanSecret({db, uid, answer, now = new Date()}) {
       answer.length > 70) {
     throw new Error("Respuesta inválida.");
   }
-  const day = now.toISOString().slice(0, 10);
+  const day = secretDayKey(now);
   const userRef = db.collection("users").doc(uid);
   const secretRef = db.collection("healthy_secret_rewards").doc(uid + "_" + SECRET_ID);
   const attemptsRef = db.collection("healthy_secret_attempts")
@@ -86,5 +97,5 @@ async function claimTitanSecret({db, uid, answer, now = new Date()}) {
 
 module.exports = {
   SKIN_ID, SECRET_ID, DAILY_LIMIT, normalizedAnswer,
-  resolveAttempt, claimTitanSecret,
+  resolveAttempt, claimTitanSecret, secretDayKey,
 };
