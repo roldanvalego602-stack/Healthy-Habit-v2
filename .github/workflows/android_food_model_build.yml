@@ -1,0 +1,39 @@
+name: Healthy Habit - compilar Android con modelo local
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/app/**'
+      - 'lib/servicios/healthy_food_model_service.dart'
+      - 'lib/páginas/habitos/healthy_local_vision_panel.dart'
+      - '.github/workflows/android_food_model_build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Validar Gradle, Kotlin y APK debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Preparar paquetes
+        run: flutter pub get
+      - name: Compilar APK de laboratorio sin credenciales reales
+        run: flutter build apk --debug
+      - name: Confirmar artefacto generado
+        run: |
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+          ls -lh build/app/outputs/flutter-apk/app-debug.apk
