@@ -61,10 +61,20 @@ class _HealthyVisionDemoScreenState extends State<HealthyVisionDemoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: const HealthyMagicGuideButton(section: 'imagenes'),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
+      // Evita que el radar flotante tape los resultados y porcentajes.
       backgroundColor: HealthyAdaptive.background,
-      appBar: AppBar(title: const Text('Reconocimiento de imágenes')),
+      appBar: AppBar(
+        title: const Text('Reconocimiento de imágenes',
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            key: const ValueKey('vision-demo-guide'),
+            icon: const Icon(Icons.radar_rounded),
+            tooltip: 'Guía de reconocimiento',
+            onPressed: () => HealthyMagicGuide.open(context, 'imagenes'),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
         children: [
