@@ -3,6 +3,7 @@ import '../estadisticas/daily_streak_screen.dart';
 import '../estadisticas/daily_streak_reward_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
