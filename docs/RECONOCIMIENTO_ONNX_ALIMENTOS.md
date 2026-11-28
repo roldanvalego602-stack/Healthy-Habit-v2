@@ -31,6 +31,7 @@ Se guardan en el directorio privado de la app. La foto **no se utiliza para entr
 
 - **Integridad y ONNX:** el workflow [Verificar modelo ONNX real](https://github.com/roldanvalego602-stack/Healthy-Habit-v2/actions/runs/46101683718) aprobó la descarga desde la revisión fijada, SHA-256 de los pesos, 65 clases, tensor `[1,3,224,224]` y ejecución del grafo.
 - **Compatibilidad Android:** la compilación inicial de CI detectó bibliotecas AndroidX que exigen Android Gradle Plugin 8.9.1+, por lo que se actualizó el repositorio a **Gradle 8.11.1, AGP 8.10.1 y Kotlin 2.2.20**. Se requiere **JDK 17** o superior compatible. La compilación del APK debe volver a ejecutarse tras esta actualización.
+- **ML Kit general:** la dependencia antigua `google_mlkit_image_labeling 0.14.1` falló al compilar con la firma nativa `GenericModelManager.isModelDownloaded`; se actualizó a **0.15.0**, que migra el plugin a Kotlin. El detector general no se eliminó.
 - El workflow ONNX demuestra compatibilidad de los **pesos en Python**, no prueba todavía su exactitud con fotos reales ni su rendimiento en un móvil Android.
 
 ## Comprobación necesaria
