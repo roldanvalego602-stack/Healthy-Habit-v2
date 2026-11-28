@@ -70,8 +70,11 @@ class BetaEvidenceService {
   Future<Map<String, dynamic>> reserve({
     required String habitId, required String attemptId,
     required String operationId,
-  }) => _call('reserveHabitEvidenceBeta',
-    _identity(habitId, attemptId, operationId));
+    bool visionConsent = false,
+  }) => _call('reserveHabitEvidenceBeta', {
+    ..._identity(habitId, attemptId, operationId),
+    'visionConsent': visionConsent,
+  });
 
   Future<Map<String, dynamic>> upload({
     required String habitId, required String attemptId,
