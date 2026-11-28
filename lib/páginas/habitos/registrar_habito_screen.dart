@@ -858,10 +858,18 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
       );
     }
     return Scaffold(
-      floatingActionButton: const HealthyMagicGuideButton(section: 'registro'),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniStartFloat,
+      // La guía permanece accesible sin tapar textos o resultados visuales.
       backgroundColor: HealthyAdaptive.background,
       appBar: AppBar(
+        actions: [
+          IconButton(
+            key: const ValueKey('registro-guia'),
+            tooltip: 'Guía del registro',
+            icon: const Icon(Icons.radar_rounded),
+            onPressed: _guardando
+                ? null : () => HealthyMagicGuide.open(context, 'registro'),
+          ),
+        ],
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
