@@ -169,6 +169,7 @@ exports.analyzeAttachedHabitEvidenceBeta = onCall({
       env.HH_BETA_HABITS_ENABLED !== "true" ||
       env.HH_BETA_RULES_VERIFIED !== "true" ||
       env.HH_BETA_EVIDENCE_ENABLED !== "true" ||
+      env.HH_BETA_EVIDENCE_CLEANUP_ENABLED !== "true" ||
       env.HH_BETA_VISUAL_ANALYSIS_ENABLED !== "true") {
     throw new HttpsError("failed-precondition",
       "El análisis de imágenes no está habilitado para esta beta.");
