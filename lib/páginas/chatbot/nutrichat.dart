@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_chat_display_mode.dart';
 import 'healthy_web_search_service.dart';
+import 'healthy_source_router.dart';
 import 'mr_healthy_reply_style.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
@@ -782,10 +783,16 @@ class _NutriChatPageState extends State<NutriChatPage> {
             '¿Hay alguien contigo que pueda ayudarte?';
       } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
-      } else if (HealthyWebSearchService.extractQuery(text) != null) {
+      } else if (HealthySourceRouter.decide(text).route ==
+          HealthySourceRoute.privateData ||
+          HealthySourceRouter.decide(text).route == HealthySourceRoute.sensitive ||
+          HealthySourceRouter.decide(text).route == HealthySourceRoute.clarification) {
+        response = HealthySourceRouter.decide(text).message;
+      } else if (HealthySourceRouter.decide(text).route ==
+          HealthySourceRoute.encyclopedia) {
         // Búsqueda explícita, limitada a Wikipedia en español. El backend
         // valida la consulta y nunca recibe perfil, hábitos ni historial.
-        final query = HealthyWebSearchService.extractQuery(text)!;
+        final query = HealthySourceRouter.decide(text).query;
         try {
           final results = await _webSearch.search(query);
           response = HealthyWebSearchService.formatResults(results);
