@@ -27,6 +27,9 @@ jobs:
           cache: gradle
       - uses: subosito/flutter-action@v2
         with:
+          # Gradle 8.10.2 / AGP 8.7.0 pertenecen a la base Flutter 3.38.
+          # Evitar la versión 3.50+ que exige Gradle 9.3.1.
+          flutter-version: '3.38.0'
           channel: stable
           cache: true
       - name: Preparar paquetes
