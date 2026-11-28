@@ -37,7 +37,11 @@ class DemoShopPurchaseGateway {
       throw ArgumentError('Identificadores de compra inválidos.');
     }
     if (shopDay != null &&
-        !RegExp(r'^\d{4}-\d{2}-\d{2}
+        !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(shopDay)) {
+      throw ArgumentError('Fecha comercial inválida.');
+    }
+    return {'itemId': itemId, 'operationId': operationId,
+      if (shopDay != null) 'shopDay': shopDay};
   }
 
   static String _newOperationId() {
@@ -65,56 +69,6 @@ class DemoShopPurchaseGateway {
     final key = '${user.uid}:$itemId';
     final operationId = _pending.putIfAbsent(key, _newOperationId);
     final payload = purchasePayload(itemId, operationId, shopDay: shopDay);
-
-    final functions = FirebaseFunctions.instanceFor(
-      app: Firebase.app(), region: 'us-central1');
-    functions.useFunctionsEmulator(emulatorHost, emulatorPort);
-    final response = await functions
-        .httpsCallable('purchaseDemoShopItem')
-        .call<Map<String, dynamic>>(payload);
-    final result = response.data;
-    if (result['itemId'] != itemId ||
-        result['price'] is! int ||
-        result['balanceAfter'] is! int ||
-        (result['price'] as int) <= 0 ||
-        (result['balanceAfter'] as int) < 0) {
-      throw StateError('Respuesta inesperada del servidor de compras.');
-    }
-    _pending.remove(key);
-  }
-}
-).hasMatch(shopDay)) {
-      throw ArgumentError('Fecha comercial inválida.');
-    }
-    return {'itemId': itemId, 'operationId': operationId,
-      if (shopDay != null) 'shopDay': shopDay};
-  }
-
-  static String _newOperationId() {
-    final random = Random.secure();
-    final suffix = List<int>.generate(16, (_) => random.nextInt(256))
-        .map((value) => value.toRadixString(16).padLeft(2, '0')).join();
-    return 'shop_${DateTime.now().microsecondsSinceEpoch}_$suffix';
-  }
-
-  static Future<void> purchase(String itemId) async {
-    // Fallar cerrado antes de instanciar FirebaseFunctions.
-    requireDemoProject(requested, Firebase.app().options.projectId);
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('Inicia sesión de prueba para comprar artículos.');
-    }
-    ShopDemoBootstrap.validateMode(
-      ShopDemoBootstrap.enabled, requested);
-    ShopDemoBootstrap.validateHost(ShopDemoBootstrap.host);
-    ShopDemoBootstrap.validateHost(emulatorHost);
-    if (emulatorHost != ShopDemoBootstrap.host ||
-        emulatorPort != 5001) {
-      throw StateError('Host o puerto de Functions distinto del entorno demo.');
-    }
-    final key = '${user.uid}:$itemId';
-    final operationId = _pending.putIfAbsent(key, _newOperationId);
-    final payload = purchasePayload(itemId, operationId);
 
     final functions = FirebaseFunctions.instanceFor(
       app: Firebase.app(), region: 'us-central1');
