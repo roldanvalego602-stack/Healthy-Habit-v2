@@ -18,9 +18,21 @@ class HealthyUfoSkinArt extends StatelessWidget {
     'ufo_primitive', 'ufo_carrot',
   };
 
+  static const names = <String, String>{
+    'ufo_cosmos': 'Cosmos',
+    'ufo_neon': 'Neón',
+    'ufo_gold': 'Dorado',
+    'ufo_shadow': 'Sombrío',
+    'ufo_botanical': 'Vegetal',
+    'ufo_glitch': 'Glitch',
+    'ufo_lava': 'Lava',
+    'ufo_primitive': 'Prehistórico',
+    'ufo_carrot': 'Zanahoria',
+  };
+
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Aspecto de OVNI: ${id.replaceAll('ufo_', '')}',
+    label: 'Aspecto de OVNI: ${names[id] ?? 'Original'}',
     image: true,
     child: SizedBox.square(
       dimension: size,
