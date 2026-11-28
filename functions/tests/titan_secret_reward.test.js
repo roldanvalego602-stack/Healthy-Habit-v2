@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {normalizedAnswer, resolveAttempt, claimTitanSecret, SKIN_ID} =
+const {normalizedAnswer, resolveAttempt, claimTitanSecret, secretDayKey, SKIN_ID} =
   require("../titan_secret_reward");
 
 test("el acertijo acepta solo la respuesta completa y normalizada", () => {
@@ -10,6 +10,13 @@ test("el acertijo acepta solo la respuesta completa y normalizada", () => {
   assert.equal(resolveAttempt({solved:false,attempts:0,answer:"constancia"}).award,true);
   assert.equal(resolveAttempt({solved:false,attempts:0,answer:"fuerza"}).award,false);
   assert.equal(resolveAttempt({solved:false,attempts:0,answer:"con stan cia"}).award,false);
+});
+
+test("la fecha del santuario respeta la medianoche de México", () => {
+  assert.equal(secretDayKey(new Date("2026-11-28T04:00:00Z")),
+    "2026-11-27");
+  assert.equal(secretDayKey(new Date("2026-11-28T06:00:00Z")),
+    "2026-11-28");
 });
 
 test("el límite de cinco intentos no concede premios adicionales", () => {
