@@ -1347,7 +1347,8 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Adjunta una imagen para respaldar tu registro.',
+              'Puedes analizar la foto localmente. En una beta autorizada '
+              'también puedes vincularla de forma privada al registro.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: HealthyAdaptive.muted),
             ),
@@ -1440,20 +1441,25 @@ class _RegistrarHabitoScreenState extends State<RegistrarHabitoScreen> {
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text(
-              'Registrar con evidencia',
+            title: Text(
+              BetaHabitGateway.enabled || OfficialHabitEmulatorService.enabled
+                  ? 'Vincular fotografía privada al registro'
+                  : 'Analizar fotografía en este dispositivo',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ),
             subtitle: Text(
               tieneImagen
                   ? OfficialHabitEmulatorService.enabled
-                      ? 'Imagen privada y no verificada; caduca en 60 minutos.'
+                      ? 'Reserva privada durante 60 minutos. '
+                        'La limpieza del archivo puede demorarse.'
                       : BetaHabitGateway.enabled
-                            ? 'Foto privada temporal hasta 60 minutos. '
-                              'No verifica el cumplimiento.'
+                            ? 'Reserva privada durante una hora; el borrado '
+                              'programado puede demorar. '
+                              'No demuestra cumplimiento.'
                             : 'Análisis local; esta foto no se guardará '
                               'en el servidor ni añadirá XP.'
-                  : 'Selecciona una imagen para activar la evidencia.',
+                  : 'Selecciona una fotografía opcional. '
+                      'También puedes registrar sin ella.',
               style: const TextStyle(fontSize: 11),
             ),
             value: tieneImagen,
