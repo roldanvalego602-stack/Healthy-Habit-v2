@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(
       home: HealthyVisionDemoScreen(),
     ));
-    expect(find.text('Reconocimiento de imágenes'), findsOneWidget);
+    expect(find.text('Análisis de imágenes'), findsOneWidget);
     expect(find.byKey(const ValueKey('vision-demo-camera')), findsOneWidget);
     expect(find.byKey(const ValueKey('vision-demo-gallery')), findsOneWidget);
     expect(find.text('Esta demostración solo está disponible en modo debug.'),
