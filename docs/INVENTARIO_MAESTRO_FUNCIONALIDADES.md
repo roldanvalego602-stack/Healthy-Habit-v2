@@ -47,6 +47,7 @@
 | Recordatorios de hábitos locales | Parcial / beta | Revisar permisos, recurrencia, zona y notificaciones en dispositivo |
 | Evidencia fotográfica por cámara/galería | Implementado / pruebas automáticas aprobadas | Captura JPEG sin EXIF; ruta beta de reserva, subida, registro y asociación; **sin desplegar al Firebase real** |
 | Google ML Kit y laboratorio Google Cloud Vision | Implementado en código / validar | ML Kit local; Vision remoto opcional para foto ya asociada con consentimiento, cuota y estado visual indicativo; no prueba consumo |
+| Identificación nominal de alimentos a partir de etiquetas específicas | **Implementado en código / Android por validar** | Vocabulario explícito (sandía, manzana, zanahoria, etc.), umbral 70 %; si ML Kit solo entrega «fruta», muestra «no identificado». **No es un modelo especializado entrenado** |
 | Verificación fiable por evidencia, confianza y borrado temporal | Parcial / backend bloqueado | Asociación y borrado programado en código; verificación fuerte de realización no implementada; pruebas beta/precisión pendientes |
 | Eliminación del bono de XP por adjuntar cualquier imagen | **Implementado en código / validar** | Registro cliente normal asigna 10 XP declarado; no guarda fotos Base64 ni indica evidencia real |
 | Consulta de estado y recuperación de imágenes de beta | **Implementado en código / validar** | Retoma mismo operationId, permite reseleccionar foto y no crea recompensas duplicadas |
@@ -188,6 +189,7 @@ En cada cambio de código:
 | 27/11/2026 | Seguimiento de metas: avance, obstáculos y cambios de paso | Código implementado; nuevas pruebas Flutter pendientes |
 | 27/11/2026 | Repriorización: reconocimiento de evidencias y beta cerrada | Diagnóstico y plan definidos; desarrollo por etapas E1–E3 y B1–B3 |
 | 27/11/2026 | Evidencia fotográfica: fotos privadas beta, recuperación, Vision y limpieza | Implementado en código; verificación visual orientativa; suites y despliegue seguros pendientes |
+| 27/11/2026 | Identificación específica conservadora de alimentos, sin inferir desde categorías | Código y pruebas añadidas; falta modelo especializado real y validación de precisión |
 
 ## Documentación vinculada
 
