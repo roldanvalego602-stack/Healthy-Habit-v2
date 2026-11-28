@@ -105,6 +105,48 @@ test("resultado guardado se reutiliza sin volver a pagar Vision", async () => {
   assert.deepEqual(answer,{...saved,cached:true});
 });
 
+test("analiza un objeto real de Storage sin premiar ni duplicar llamadas", async () => {
+  const bytes=Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9pz7wAAAAASUVORK5CYII=",
+    "base64");
+  const f=fakeDb();
+  const logKey=`users/${uid}/user_habits/${ids.habitId}/attempts/${ids.attemptId}/logs/${ids.operationId}`;
+  f.docs.set(logKey,{...f.docs.get(logKey),evidenceSize:bytes.length});
+  const fixedNow=new Date("2026-11-27T18:00:00Z");
+  let calls=0;
+  const vision={
+    labelDetection:async()=>{calls++;return [{
+      labelAnnotations:[{description:"Apple",score:.96}],
+    }];},
+    objectLocalization:async()=>{calls++;return [{
+      localizedObjectAnnotations:[],
+    }];},
+  };
+  const bucket={file:actual=>{
+    assert.equal(actual,path);
+    return {
+      getMetadata:async()=>[{size:String(bytes.length),
+        contentType:"image/png"}],
+      download:async()=>[bytes],
+    };
+  }};
+  const first=await assessAttachedEvidence({
+    db:f.db,bucket,vision,uid,data:ids,fieldValue:testField,now:fixedNow,
+  });
+  assert.equal(first.status,"visual_match_only");
+  assert.equal(first.contentVerified,false);
+  assert.equal(first.xpAwarded,0);
+  assert.equal(first.coinsAwarded,0);
+  assert.equal(calls,2);
+  assert.equal(f.docs.get(logKey).evidenceVisualStatus,"visual_match_only");
+  assert.equal(f.docs.get(logKey).evidenceContentVerified,false);
+  const again=await assessAttachedEvidence({
+    db:f.db,bucket,vision,uid,data:ids,fieldValue:testField,now:fixedNow,
+  });
+  assert.equal(again.cached,true);
+  assert.equal(calls,2);
+});
+
 test("hábitos no compatibles no invocan Cloud Vision", async () => {
   const f=fakeDb();
   const other={...ids,habitId:"ener_001"};
