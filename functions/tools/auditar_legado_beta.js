@@ -44,7 +44,7 @@ function parseOptions(argv) {
   if (flags.project !== "cloud-firestore-d8c61" ||
       flags.database !== "default" || flags["read-only-confirm"] !== true ||
       typeof flags["cutover-utc"] !== "string" ||
-      !/^\d{4}-\d{2}-\d{2}T/.test(flags["cutover-utc"])) {
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(flags["cutover-utc"])) {
     throw new Error("Se requiere proyecto, base nombrada default, corte UTC y confirmación de solo lectura.");
   }
   const cutover = new Date(flags["cutover-utc"]);
