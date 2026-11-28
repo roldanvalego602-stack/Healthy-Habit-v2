@@ -37,8 +37,8 @@ jobs:
           node --check functions/index.js
       - name: Ejecutar pruebas unitarias
         run: npm --prefix functions test
-      - name: Instalar dependencias del clasificador de imágenes
-        run: npm ci --prefix vision-functions
+      # Las pruebas del clasificador solo utilizan Node.js nativo.
+      # No instalar paquetes sin lockfile ni acceder a Cloud Vision.
       - name: Probar clasificación y evaluación privada de Vision
         run: npm --prefix vision-functions test
       - name: Comprobar auditoría preventiva de Firebase
