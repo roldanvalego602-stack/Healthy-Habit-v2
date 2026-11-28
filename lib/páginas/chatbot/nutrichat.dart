@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'healthy_chat_display_mode.dart';
+import 'healthy_web_search_service.dart';
 import 'mr_healthy_reply_style.dart';
 import '../../tema/healthy_magic_guide.dart';
 import 'healthy_typing_indicator.dart';
@@ -176,6 +177,7 @@ class _NutriChatPageState extends State<NutriChatPage> {
 
   final FocusNode _inputFocus = FocusNode();
   final NutriCalculatorService _calculatorService = NutriCalculatorService();
+  final HealthyWebSearchService _webSearch = const HealthyWebSearchService();
   final ClimaServicio _climaServicio = ClimaServicio();
 
   final NutriRespuestasService _respuestas = NutriRespuestasService();
@@ -778,6 +780,33 @@ class _NutriChatPageState extends State<NutriChatPage> {
             '¿Hay alguien contigo que pueda ayudarte?';
       } else if (NutriRespuestasService.ataqueDiscriminatorio(text) || NutriRespuestasService.tieneGroserias(text)) {
         response = _respuestas.moderar(text, _primerNombre);
+      } else if (HealthyWebSearchService.extractQuery(text) != null) {
+        // Búsqueda explícita, limitada a Wikipedia en español. El backend
+        // valida la consulta y nunca recibe perfil, hábitos ni historial.
+        final query = HealthyWebSearchService.extractQuery(text)!;
+        try {
+          final results = await _webSearch.search(query);
+          response = HealthyWebSearchService.formatResults(results);
+          if (results.isNotEmpty) {
+            intent = HealthyAssistantReply(
+              response, card: 'external_source',
+              action: 'source', actionArgument: results.first.url,
+            );
+          }
+        } on FirebaseFunctionsException catch (error) {
+          response = error.code == 'unauthenticated'
+              ? 'Inicia sesión para consultar Wikipedia desde Mr. Healthy.'
+              : error.code == 'failed-precondition'
+                  ? 'No puedo enviar esa consulta a Wikipedia. '
+                    'Puedo ayudarte con información local o '
+                    'puedes reformularla como pregunta general.'
+                  : 'La consulta enciclopédica no está disponible '
+                    'en este momento. Verifica que la función '
+                    'searchMrHealthyEncyclopedia esté desplegada.';
+        } catch (_) {
+          response = 'No pude consultar Wikipedia. Comprueba tu conexión '
+              'o inténtalo más tarde. No voy a inventar resultados.';
+        }
       } else if (NutriRespuestasService.contiene(normalized, [
         'cancelar', 'salir del calculo', 'detener calculo',
       ]) && (_calculatorService.pasoIMC > 0 ||
@@ -1690,6 +1719,19 @@ class _NutriChatPageState extends State<NutriChatPage> {
                 itemId: message.argument,
                 onOpen: _openCatalogItem,
               ),
+            ],
+            if (!isUser && message.card == 'external_source') ...[
+              const SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.public_rounded, size: 17,
+                  color: HealthyAdaptive.accent),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  'Fuente externa · Wikipedia · consulta solicitada',
+                  style: TextStyle(fontSize: 11,
+                    color: HealthyAdaptive.muted),
+                )),
+              ]),
             ],
             if (!isUser && message.card == 'knowledge') ...[
               const SizedBox(height: 10),
