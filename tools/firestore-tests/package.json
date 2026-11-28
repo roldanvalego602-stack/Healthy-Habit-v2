@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test rules.test.mjs",
     "test:release": "node --test --test-concurrency=1 rules.test.mjs security_release_gate.test.mjs",
+    "test:beta": "HH_RELEASE_PREVIEW=1 HH_BETA_RULES=1 node --test --test-concurrency=1 security_release_gate.test.mjs release_preview_positive.test.mjs beta_rules.test.mjs",
     "test:friends": "node --test --test-name-pattern='amistad|solicitud|amigos' rules.test.mjs",
     "test:lockdown": "HH_RELEASE_PREVIEW=1 node --test --test-concurrency=1 security_release_gate.test.mjs release_preview_positive.test.mjs",
     "test:cliente-integral": "node --test --test-concurrency=1 habitos_cliente_integral.test.mjs",
