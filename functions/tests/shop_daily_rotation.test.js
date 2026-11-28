@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const {SHOP_PRICES} = require("../official_shop_catalog");
 const {shopDayFor, dailyShop, dailyPrice, RETIRED_SHOP_IDS} =
   require("../shop_daily_rotation");
-const {calculatePurchase, validateShopPurchase} =
+const {calculatePurchase, validateShopPurchase, validateBetaShopPurchase} =
   require("../shop_purchase_transaction");
 const {RegistrationPolicyError} =
   require("../habit_registration_policy");
@@ -75,4 +75,14 @@ test("no se aceptan precios, descuentos, artículos retirados ni fechas alterada
     user: {habitCoins: 100000, shopInventory: []},
     itemId: unavailable, shopDay: day, now,
   }), RegistrationPolicyError);
+});
+
+test("beta exige fecha comercial y preserva el contrato demo heredado", () => {
+  const id = dailyShop(day).offerId;
+  const payload = {itemId: id, operationId: "beta_shop_operation_0001"};
+  assert.deepEqual(validateShopPurchase(payload), payload);
+  assert.throws(() => validateBetaShopPurchase(payload),
+    RegistrationPolicyError);
+  assert.deepEqual(validateBetaShopPurchase({...payload, shopDay: day}),
+    {...payload, shopDay: day});
 });
