@@ -4,6 +4,8 @@
 **Rama de trabajo:** `main`; todos los cambios se registran mediante commits en español.  
 **Proyecto objetivo:** `cloud-firestore-d8c61`.  
 **Base Firestore utilizada por Flutter y Functions:** la base **nombrada** `default`, que NO es la base especial `(default)`.  
+**Distribución acordada:** beta Android cerrada para **15–20 participantes mediante APK firmado descargado a través de un código QR**, sin publicar la app en Google Play ni otras tiendas. El QR abre un enlace de descarga; no instala automáticamente ni concede permisos.
+
 **Decisión:** NO ejecutar despliegues a producción hasta completar los pasos de aceptación de este documento. Los archivos preparados **no cambian las reglas activas** de Firebase Console.
 
 ## 1. Vulnerabilidad confirmada de las reglas actuales
@@ -97,13 +99,26 @@ Estos pasos requieren credenciales del propietario y **no se pueden certificar m
 - [ ] **Respaldo de datos y permisos:** exportar snapshot y el ruleset ACTIVO de la base nombrada `default`; guardar la versión de Storage; habilitar registros de auditoría. No publicar secretos ni tokens.
 - [ ] **Datos históricos no confiables:** no reutilizar saldos, logros, propiedades, progreso, constancias o amistades del período de reglas abiertas. Empezar la beta con **cuentas tester nuevas creadas después del cierre**, o una migración administrativa con procedencia verificable; nunca tratar `shopInventory` o `progressVerified` antiguos como certificados.
 - [ ] **Prueba de seguridad en staging real:** probar operaciones de dos UIDs autorizados y un UID no autorizado sobre el mismo esquema y la misma base nombrada; consultar el ruleset ACTIVO tras desplegar.
-- [ ] **App Check Android:** registrar paquete, SHA-256 de la clave de beta y Play Integrity en Firebase Console; usar una distribución elegible (por ejemplo Google Play Internal Testing). Comprobar tokens válidos, rechazados y expirados en teléfono físico. El token de debug es exclusivamente local, nunca un secreto de distribución.
+- [ ] **App Check para APK externo:** registrar paquete y SHA-256 de la clave final de firma; configurar el proveedor Play Integrity para distribución **exclusivamente fuera de Google Play**: `PLAY_RECOGNIZED` **no requerido**, `LICENSED` **no requerido**, nivel mínimo **Device integrity** (`MEETS_DEVICE_INTEGRITY`). Google recomienda explícitamente estos parámetros para APK externos (https://firebase.google.com/docs/app-check/android/play-integrity-provider). Comprobar en teléfonos físicos que la atestación funciona antes de exigir App Check a todos. Registrar la aplicación/activar Play Integrity API si lo exige la configuración de Google Cloud/Play Console, pero **sin publicar** la app en una tienda. No distribuir tokens de depuración.
 - [ ] **Firma Android:** crear archivo privado `android/key.properties` desde el ejemplo y una clave propia `.jks`; registrar huella SHA en Firebase. El APK de release **no** usa la firma debug y la compilación falla sin credenciales.
 - [ ] **Privacidad y cumplimiento:** comprobar consentimiento, eliminación de fotos, retención, política de datos, tratamiento de cuentas, URLs de fotos de perfil y métricas mínimas de diagnóstico.
 - [ ] **Pruebas en Android:** inicio y cierre de sesión, 36 hábitos, registrar/cancelar, rachas, monedas, compras, Armario/UFO, perfiles, búsqueda, invitaciones, desafíos de demostración, chat, redes lentas, reconexión, reintentos y múltiples cuentas. Probar accesibilidad y escala de texto.
 - [ ] **Firebase Rules activas:** contrastar en Console (no solo CI) que la base nombrada `default` recibió las reglas restrictivas; comprobar ausencia de cualquier wildcard abierto y que `/system` no es escribible.
 - [ ] **Allowlist y activación coordinada:** solo después de verificar todo, configurar las variables backend con UIDs nuevos de tester autorizados. Todas las demás cuentas deben recibir `permission-denied`.
 - [ ] **Monitoreo:** errores `permission-denied` de accesos legítimos, fallos de Functions, retención Storage, uso Cloud Vision, presupuesto/coste y respuesta ante incidencias.
+
+### Distribución privada mediante QR (15–20 personas; sin tiendas)
+
+- [ ] Generar un **solo APK release firmado**, nunca un APK debug, con `--dart-define=HH_BETA_HABITS_CLIENT=true`; verificar su paquete y huella SHA-256.
+- [ ] Subir el APK a una ubicación **HTTPS** controlada, idealmente con descargas limitadas o accesos gestionados; comprobar que el enlace abre el binario y no una página de autenticación difícil de usar en móviles.
+- [ ] Crear un **QR que codifique la URL HTTPS del APK o de una página de instalación**. Un código QR no se crea con la ruta local del archivo; hace falta la URL definitiva. Probar el QR con las cámaras de al menos dos dispositivos.
+- [ ] En la página de instalación incluir el nombre Healthy Habit, número de versión, tamaño, huella SHA-256, responsable de la prueba, contacto de soporte e instrucciones para autorizar **solo al navegador** a instalar aplicaciones desconocidas. Recomendar desactivar esa autorización al terminar.
+- [ ] Registrar de forma privada los **15–20 UID** del grupo en la lista del servidor `HH_BETA_TEST_UIDS`. No confiar en el QR como contraseña; terceros pueden fotografiarlo, copiarlo o reenviar el enlace. La lista del servidor protege operaciones de beta; **no sustituye revisar lectura y registro de usuarios no autorizados**.
+- [ ] Validar con un tester permitido y uno no permitido: descargar, instalar, autenticarse, consultar perfil, registrar hábito, comprar, equipar cosméticos y enviar comentarios. Comprobar expresamente las rutas que quedan públicas a cualquier cuenta autenticada.
+- [ ] Conservar siempre la misma **clave de firma y applicationId** en versiones posteriores; incrementar `versionCode` para que Android permita la actualización sin desinstalar. Entregar actualizaciones mediante un QR/enlace nuevo, no mediante APK no firmado.
+- [ ] Garantizar que el enlace no sea público en buscadores y que pueda revocarse; eliminar APK antiguos y el acceso de testers cuando finalice la evaluación. Un enlace privado reduce la difusión casual pero no puede impedir completamente que alguien reenvíe el archivo.
+
+**No utilizar Google Play Internal Testing** para este piloto. La documentación de Firebase sobre Play Integrity para **instalaciones exclusivamente externas** indica `PLAY_RECOGNIZED: Not required`, `LICENSED: Not required` y nivel de dispositivo `Device integrity`: https://firebase.google.com/docs/app-check/android/play-integrity-provider. Android permite distribuir APK mediante sitios web y exige consentimiento para instalar desde el navegador: https://developer.android.com/distribute/marketing-tools/alternative-distribution.
 
 ## 5. Orden seguro de despliegue (NO EJECUTAR SIN LISTA ANTERIOR)
 
@@ -136,6 +151,6 @@ Para probar evidencia real tras certificar purga y consentimiento, añadir `--da
 
 ## 6. Límites del estado actual
 
-**Código preparado no significa beta distribuida.** La consola real y sus reglas siguen sin cambios desde este repositorio, la clave privada de firma no está disponible, App Check exige registro externo y las cuentas históricas pudieron falsificar datos. No activar variables backend ni distribuir APK de producción basándose solo en una ejecución verde del emulador.
+**El QR todavía no puede emitirse** mientras no exista una URL HTTPS verificada del APK release firmado. **Código preparado no significa beta distribuida.** La consola real y sus reglas siguen sin cambios desde este repositorio, la clave privada de firma no está disponible, App Check exige registro externo y las cuentas históricas pudieron falsificar datos. No activar variables backend ni distribuir APK de producción basándose solo en una ejecución verde del emulador.
 
 Fuentes: documentación oficial de Firebase sobre [reglas de bases nombradas](https://firebase.google.com/docs/firestore/security/rules-structure), [despliegue de reglas](https://firebase.google.com/docs/rules/manage-deploy) y [CLI](https://firebase.google.com/docs/cli).
