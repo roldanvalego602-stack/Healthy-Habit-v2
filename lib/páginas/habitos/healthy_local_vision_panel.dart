@@ -168,7 +168,7 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
             key: const ValueKey('healthy-local-vision-profile'),
             value: _profile,
             isExpanded: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: widget.habitTitle.isEmpty
                   ? 'Categoría para comparación exploratoria'
                   : 'Comparación visual del hábito',
