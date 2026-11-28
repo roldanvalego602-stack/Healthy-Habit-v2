@@ -4,7 +4,7 @@
  * buscador universal. Nunca recibe datos del perfil o del historial.
  */
 const HOST = "es.wikipedia.org";
-const BLOCKED = /\b(suicid\w*|autolesi\w*|matarme|asfixi\w*|intoxic\w*|veneno|emergencia|diagnostic\w*|recet\w*|tratamiento|dosis|medicamento|insulina|cuenta|contrasena|password|borrar|eliminar|comprar|monedas|saldo|habit coins)\b/i;
+const BLOCKED = /\b(suicid\w*|autolesi\w*|matarme|asfixi\w*|intoxic\w*|veneno|emergencia|diagnostic\w*|recet\w*|tratamiento|dosis|medicamento|insulina|cuenta|contrasena|password|borra|borrar|elimina|eliminar|compra|comprar|monedas|saldo|habit coins)\b/i;
 
 function prepareQuery(value) {
   if (typeof value !== "string") throw new TypeError("Consulta no válida.");
@@ -14,7 +14,7 @@ function prepareQuery(value) {
     throw new TypeError("Utiliza una consulta de 3 a 120 caracteres.");
   }
   const normalized = text.normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+    .replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (BLOCKED.test(normalized)) {
     throw new RangeError(
       "Esta consulta requiere orientación especializada; no se enviará a Wikipedia.");
