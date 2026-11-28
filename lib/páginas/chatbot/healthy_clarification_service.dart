@@ -27,7 +27,11 @@ class HealthyClarificationService {
     if (const {
       'explicacion', 'una explicacion', 'explicame',
       'un ejemplo', 'ejemplo', 'paso a paso', 'consejo',
-    }.contains(q) && previous.contains('buscas una explicacion')) {
+    }.contains(q) && (
+      previous.contains('buscas una explicacion') ||
+      previous.contains('quieres una definicion') ||
+      previous.contains('que fuente conviene consultar')
+    )) {
       return '¿Sobre qué tema quieres esa explicación? '
           'Escribe el concepto o una pregunta completa para '
           'que pueda comprobar si tengo información fiable.';
