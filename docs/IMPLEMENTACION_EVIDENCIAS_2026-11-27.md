@@ -1,5 +1,5 @@
 # Implementación de evidencias visuales — Healthy Habit
-**Corte:** 27/11/2026 · **Código:** `main` · **Estado:** implementado en código, pruebas Android y emuladores pendientes de ejecución local. **NO DESPLEGADO a beta real.**
+**Corte:** 27/11/2026 · **Código:** `main` · **Estado:** implementado en código; pruebas automatizadas en GitHub Actions aprobadas. Pruebas manuales Android y auditoría de producción pendientes. **NO DESPLEGADO a beta real.**
 
 ## Objetivo y criterio de verificación
 
@@ -25,7 +25,7 @@ Nunca se exigen rostro, documento, GPS o grabación continua. La foto es **opcio
 6. **Vision opcional en servidor** `analyzeAttachedHabitEvidenceBeta`: solo recibe `habitId/attemptId/operationId`, abre foto ligada a registro real, comprueba tipo/tamaño/propiedad, llama a Vision, clasifica con vocabulario explícito, guarda resultado técnico sin foto ni etiquetas personales completas. Hasta 8 evaluaciones/día/UID UTC y 60 s entre evaluaciones. Proveedor y resultado `visual_match_only/inconclusive/unsupported_habit`; siempre `imageVerified:false`, `contentVerified:false` y cero XP/monedas.
 7. **Borrado administrativo:** `purgeHabitEvidenceBeta` (cada hora cuando está realmente habilitada) elimina archivos vencidos y elimina el vínculo al archivo del log, conservando XP y progreso; la caducidad **no garantiza borrado a los 60 minutos exactos**. No habilitar aceptación de fotos sin el proceso de limpieza.
 8. **Reglas candidatas:** colecciones de reservas, evaluaciones y cuotas quedan con escrituras solo Admin SDK. **No publicadas**; las reglas actuales de la beta todavía permiten alterar economía en algunas rutas.
-9. **Pruebas unitarias/adversariales y de emulador:** nuevas suites de Functions, Vision, Flutter y prueba completa de foto contra Firestore y Storage emulados. Se encuentran en el repositorio, **todavía deben ejecutarse en el entorno real de desarrollo**.
+9. **Pruebas unitarias/adversariales y de emulador:** suites de Functions, Vision y Flutter, más prueba completa contra Firestore y Storage emulados. **Aprobadas en GitHub Actions el 28/11/2026 (UTC).** La ejecución manual en un teléfono Android aún no consta.
 
 ### Categorías soportadas por análisis visual remoto
 
@@ -48,6 +48,13 @@ Las evidencias de la beta requieren todas estas condiciones del servidor:
 Flutter requiere además `HH_BETA_HABITS_CLIENT=true`, `HH_BETA_EVIDENCE_CLIENT=true` y, para la opción en nube, `HH_BETA_VISION_CLIENT=true`. **No activar estas banderas en producción ahora.** No exponer claves privadas, tokens App Check ni UIDs reales en el repositorio.
 
 **Bloqueo mayor previo a beta:** `HabitActionService`, `RegistrarHabitoScreen` (rama de transacción normal), Tienda y otros flujos aún pueden escribir economía/progreso desde el cliente. La prueba `node tools/beta_readiness_gate.mjs` debe seguir denunciándolo. No desplegar `firestore.candidate.rules` ni habilitar beta hasta migrar toda la economía y pasar pruebas adversariales y positivas.
+
+## Verificación automática registrada
+
+El 28/11/2026 UTC, los workflows de GitHub Actions completaron:
+- [Integración de beta](https://github.com/roldanvalego602-stack/Healthy-Habit-v2/actions/runs/46097012759): análisis Flutter sin errores bloqueantes, 567 tests Flutter, 193 tests Functions, 15 tests Vision y regresiones de seguridad/funcionalidad aprobadas.
+- [Evidencias en emuladores aislados](https://github.com/roldanvalego602-stack/Healthy-Habit-v2/actions/runs/46097089170): 1/1 recorrido integral real contra Auth, Firestore y Storage Emulator, incluyendo recuperación, idempotencia y eliminación.
+- Ninguna ejecución desplegó funciones ni alteró el proyecto real. La comprobación no certifica la política de seguridad de las reglas productivas.
 
 ## C. Pruebas inmediatas en tu Linux Mint
 
@@ -102,9 +109,10 @@ Con flags de beta **apagados**, abre Inicio → Mr. Healthy → Reconocimiento d
 - [x] Consentimiento Vision ligado a una reserva inmutable; sin ese permiso el backend rechaza analizar (código)
 - [x] Límites de uso y limpieza programada bloqueada por producción (código)
 - [x] Pruebas añadidas
-- [ ] `flutter analyze` y suites Flutter ejecutadas por el desarrollador
-- [ ] Suite completa `npm --prefix functions test` y Vision ejecutadas
-- [ ] Laboratorio integral con Firestore/Storage/Functions Emulator aprobado
+- [x] Análisis Flutter y 567 pruebas Flutter aprobadas en GitHub Actions (Android físico pendiente)
+- [x] 193 pruebas de Functions y 15 de Vision aprobadas en GitHub Actions
+- [x] Laboratorio integral Auth/Firestore/Storage/Functions Emulator aprobado (1 recorrido completo)
+- [ ] Reproducción manual y pruebas con cámara en Android del desarrollador
 - [ ] Análisis de precisión con distintas fotografías reales y consentimiento
 - [ ] Auditoría de reglas reales + App Check + pruebas adversariales beta
 - [ ] Despliegue autorizado y monitorización de costes/retención
