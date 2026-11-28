@@ -8,9 +8,9 @@
 - Prioridad visual: control enfocado → personaje → tarjeta explicativa → fondo atenuado. Superponer personaje sobre capturas ampliadas.
 - Validar: tiendas, perfiles, catálogo, hábitos, teléfonos pequeños, accesibilidad/reducir animaciones, orientación y teclado.
 
-## Fase 2 · Chatbot híbrido — decisión de producto, no implementada aquí
+## Fase 2 · Chatbot híbrido — primera integración de búsqueda, pendiente de desplegar y validar
 - Prioridad estricta: seguridad/urgencias → acciones confirmables y datos internos con permisos → base editorial local y contexto → búsqueda web explícita.
-- La búsqueda web debe usar servicio backend propio, no scraping ni claves privadas en Flutter. Dominios permitidos, cuotas, timeout, caché, trazabilidad, respuestas con URL/título/fecha y aviso de información externa.
+- Implementado piloto: consulta explícita a Wikipedia en español mediante Firebase Callable `searchMrHealthyEncyclopedia`; límites de entrada, timeout, 3 resultados, autenticación, máximo 25 consultas/día por cuenta en transacción, URL fuente controlada y resultados marcados como externos. No es búsqueda global ni razonamiento generativo.\n- Pendiente para búsqueda general: proveedor autorizado mediante backend, cuotas y caché más completos, fuentes fechadas, criterios de confianza y política de privacidad antes del despliegue público.
 - Sin respuesta externa fiable: reconocer falta de información; no inventar fuentes ni usar web para diagnósticos.
 - Clarificaciones y sugerencias de opciones pertinentes en lugar de respuestas genéricas repetidas.
 - No escribir datos ni disparar compras desde resultados externos.
@@ -32,3 +32,15 @@
 - Rarezas orientativas: común (degradados básicos, gorra), poco común, raro (OVNI elaborados), épico, legendario/secretos.
 - Recalibrar precios con costo percibido y tasa real de obtención de Habit Coins antes de editar el catálogo.
 - Transacciones atómicas de saldo y propiedad; no fiarse de precios calculados por cliente.
+
+## Cómo desplegar el piloto (requiere permisos Firebase)
+1. Actualizar rama main y ejecutar `flutter analyze --no-fatal-infos lib`.
+2. Ejecutar `flutter test test/healthy_web_search_service_test.dart`.
+3. Ejecutar `cd functions && npm ci && npm test && cd ..` (el proyecto usa Node.js 24 en Cloud Functions).
+4. Verificar el proyecto Firebase seleccionado con `firebase use`. Revisar costes, IAM y si Firebase App Check está listo para exigirlo.
+5. Desplegar solo la función nueva: `firebase deploy --only functions:searchMrHealthyEncyclopedia`.
+6. En Android autenticado, escribir `Busca en Wikipedia Marte`. Debe mostrar hasta tres resultados y enlaces, nunca ejecutar acciones.
+7. Probar sin conexión, cuenta no autenticada, frase ambigua y límite diario.
+8. Si falta la función, el cliente devuelve un mensaje explicativo y mantiene la conversación local.
+
+**Aviso:** la búsqueda solo funciona en el dispositivo tras publicar el backend; un git pull o flutter run no despliegan funciones. La versión piloto no hace diagnóstico ni ofrece datos actuales generales y no está lista para presentarse como IA generativa.
