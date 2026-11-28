@@ -13,11 +13,19 @@ extension ShopRarityPresentation on ShopRarity {
   };
 
   Color get accent => switch (this) {
-    ShopRarity.comun => const Color(0xFF5C777A),
-    ShopRarity.pocoComun => const Color(0xFF168C63),
-    ShopRarity.raro => const Color(0xFF2269B4),
-    ShopRarity.epico => const Color(0xFF8454D5),
-    ShopRarity.legendario => const Color(0xFFBC8421),
+    ShopRarity.comun => const Color(0xFF465B60),
+    ShopRarity.pocoComun => const Color(0xFF12694B),
+    ShopRarity.raro => const Color(0xFF184F8D),
+    ShopRarity.epico => const Color(0xFF653B9F),
+    ShopRarity.legendario => const Color(0xFF795113),
+  };
+
+  Color get darkAccent => switch (this) {
+    ShopRarity.comun => const Color(0xFFD7E5E5),
+    ShopRarity.pocoComun => const Color(0xFF89E5B5),
+    ShopRarity.raro => const Color(0xFF9CC9FF),
+    ShopRarity.epico => const Color(0xFFD1B8FF),
+    ShopRarity.legendario => const Color(0xFFFFDF8B),
   };
 }
 
@@ -49,9 +57,11 @@ class ShopRarityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rarity = rarityFor(item);
-    final color = rarity.accent;
+    final color = Theme.of(context).brightness == Brightness.dark
+        ? rarity.darkAccent : rarity.accent;
     return Semantics(
       label: 'Rareza: ${rarity.label}',
+      excludeSemantics: true,
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: compact ? 7 : 10, vertical: compact ? 4 : 6),
