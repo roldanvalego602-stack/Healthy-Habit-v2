@@ -927,6 +927,14 @@ exports.titanSecret = onCall(
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Inicia sesión para entrar.");
     }
+    // Función preparada, pero no se publica el premio hasta auditar
+    // las reglas reales de shopInventory y activar la fase de lanzamiento.
+    // La bandera se configura solo en servidor; jamás en Flutter.
+    if (process.env.FUNCTIONS_EMULATOR !== "true" &&
+        process.env.HH_TITAN_SECRET_RELEASE !== "enabled") {
+      throw new HttpsError("failed-precondition",
+        "El santuario todavía no está habilitado para cuentas reales.");
+    }
     // En producción: App Check obligatorio para evitar automatizar intentos.
     // El emulador admite sesión sin attestation para las pruebas locales.
     if (process.env.FUNCTIONS_EMULATOR !== "true" && !request.app) {
