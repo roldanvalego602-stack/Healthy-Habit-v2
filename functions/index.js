@@ -702,6 +702,27 @@ exports.changeShopAppearanceBeta = onCall(
   }
 );
 
+// Los títulos no se aceptan desde escrituras directas del usuario.
+// Los logros especiales necesitan constancias emitidas por servidor.
+const {selectProfileTitle} = require("./profile_title_transaction");
+exports.selectProfileTitleBeta = onCall(
+  {region: "us-central1", enforceAppCheck: true, maxInstances: 3},
+  async (request) => {
+    try {
+      const uid = requireBetaHabitAccess(request);
+      return await selectProfileTitle({db, uid, data: request.data});
+    } catch (error) {
+      if (error instanceof RegistrationPolicyError) {
+        throw new HttpsError(error.code, error.message);
+      }
+      console.error("[profile-title-beta] Error inesperado:", {
+        code: error?.code ?? "internal",
+      });
+      throw new HttpsError("internal", "No se pudo equipar el título.");
+    }
+  }
+);
+
 // Adaptador preservado para operaciones demo de evidencia (reserva,
 // subida y asociación): utilizan contrato y validaciones propias.
 function officialDemoCallable(operation) {
