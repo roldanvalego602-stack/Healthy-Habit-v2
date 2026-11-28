@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -83,7 +81,9 @@ class HealthyFoodModelService {
       final label = raw['name'];
       final score = raw['score'];
       if (label is! String || score is! num ||
-          !score.isFinite || score < 0 || score > 1) continue;
+          !score.isFinite || score < 0 || score > 1) {
+        continue;
+      }
       labels.add(HealthyDetectedLabel(label, score.toDouble()));
     }
     return HealthyFoodModelAnalysis(
