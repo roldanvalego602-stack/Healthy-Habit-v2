@@ -29,22 +29,27 @@ class _TitanPainter extends CustomPainter {
     final glow = Paint()..shader = RadialGradient(colors: [
       const Color(0xAA4DF1B4), const Color(0x0031D99A),
     ]).createShader(const Rect.fromLTWH(6, 2, 208, 253));
-    if (awakened) canvas.drawOval(
-      const Rect.fromLTWH(2, 10, 216, 233), glow);
+    if (awakened) {
+      canvas.drawOval(const Rect.fromLTWH(2, 10, 216, 233), glow);
+    }
 
     void ellipse(Rect r, Color c, {Color? edge, double stroke = 0}) {
       canvas.drawOval(r, Paint()..color = c);
-      if (edge != null) canvas.drawOval(r, Paint()
-        ..style = PaintingStyle.stroke..strokeWidth = stroke..color = edge);
+      if (edge != null) {
+        canvas.drawOval(r, Paint()
+          ..style = PaintingStyle.stroke..strokeWidth = stroke..color = edge);
+      }
     }
     void path(List<Offset> points, Color color, {Color? edge}) {
       final p = Path()..moveTo(points.first.dx, points.first.dy);
       for (final point in points.skip(1)) { p.lineTo(point.dx, point.dy); }
       p.close();
       canvas.drawPath(p, Paint()..color = color);
-      if (edge != null) canvas.drawPath(p, Paint()
-        ..color = edge..strokeWidth = 3..style = PaintingStyle.stroke
-        ..strokeJoin = StrokeJoin.round);
+      if (edge != null) {
+        canvas.drawPath(p, Paint()
+          ..color = edge..strokeWidth = 3..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round);
+      }
     }
     const deep = Color(0xFF134B37);
     const dark = Color(0xFF22694A);
