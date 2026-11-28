@@ -268,6 +268,8 @@ class _StoreScreenState extends State<StoreScreen> {
               const SizedBox(height: 6),
               ShopRarityChip(item: item),
               const SizedBox(height: 6),
+              ShopRarityChip(item: item),
+              const SizedBox(height: 6),
               Text(item.name,
                 style: TextStyle(color: HealthyAdaptive.text,
                   fontSize: 25, fontWeight: FontWeight.w900)),
@@ -281,7 +283,7 @@ class _StoreScreenState extends State<StoreScreen> {
                 const SizedBox(width: 8),
                 Expanded(child: Text(
                   item.price == 0 ? 'Gratis'
-                      : '${item.price} Habit Coins',
+                      : '$price Habit Coins',
                   style: TextStyle(color: HealthyAdaptive.text,
                     fontSize: 17, fontWeight: FontWeight.w800))),
               ]),
@@ -428,16 +430,21 @@ class _StoreScreenState extends State<StoreScreen> {
             final state = snapshot.data;
             // Un artículo adquirido sale de la tienda, pero permanece
             // disponible en el armario/inventario para equiparlo.
-            final items = availableShopItems(state, category: _filter);
+            final rotation = _rotation;
+            final items = availableShopItems(state, category: _filter)
+                .where((item) => rotation.contains(item.id))
+                .toList(growable: false);
 
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: KeyedSubtree(
                   key: HealthyGuideTargets.shopHeader,
                   child: _header(state))),
-                SliverToBoxAdapter(child: KeyedSubtree(
-                  key: HealthyGuideTargets.shopFeatured,
-                  child: _cosmosThemePanel(state))),
+                if (rotation.contains(cosmosShopId) ||
+                    (state?.owns(cosmosShopId) ?? false))
+                  SliverToBoxAdapter(child: KeyedSubtree(
+                    key: HealthyGuideTargets.shopFeatured,
+                    child: _cosmosThemePanel(state))),
                 if (BetaHabitGateway.enabled &&
                     _pendingBetaPurchases.isNotEmpty)
                   SliverToBoxAdapter(child: _pendingBetaBanner()),
@@ -451,13 +458,16 @@ class _StoreScreenState extends State<StoreScreen> {
                       ),
                     ),
                   ),
+                SliverToBoxAdapter(child: _dailyPanel(state)),
                 SliverToBoxAdapter(
                   child: StoreFeaturedCarousel(
-                    items: featuredShopItemIds
-                        .map(shopItemById)
+                    items: [
+                      ...rotation.itemIds.skip(ShopDailyRotation.fixedSlots),
+                      ...rotation.itemIds.take(ShopDailyRotation.fixedSlots),
+                    ].map(shopItemById)
                         .whereType<ShopItem>()
                         .where((item) => state == null || !state.owns(item.id))
-                        .toList(),
+                        .take(5).toList(),
                     shopState: state,
                     onSelected: (item) => _showFeaturedPreview(item, state),
                   ),
@@ -1050,6 +1060,7 @@ class _StoreScreenState extends State<StoreScreen> {
         'Ropa' || 'Cabeza' => const [
           Color(0xFF392F70), Color(0xFF1C2149)],
         'Especiales' => const [Color(0xFF16465F), Color(0xFF19234D)],
+        'OVNI' => const [Color(0xFF2B3874), Color(0xFF182443)],
         'Marcos' || 'Banners' => const [
           Color(0xFF4B285B), Color(0xFF1E2351)],
         _ => const [Color(0xFF233B68), Color(0xFF171F44)],
@@ -1067,6 +1078,8 @@ class _StoreScreenState extends State<StoreScreen> {
           return const [Color(0xFF59472D), Color(0xFF352E28)];
         case 'Accesorios':
           return const [Color(0xFF59354A), Color(0xFF382A3B)];
+        case 'OVNI':
+          return const [Color(0xFF283C64), Color(0xFF1E2849)];
         case 'Especiales':
           return const [Color(0xFF28503C), Color(0xFF1D3D39)];
         default:
@@ -1084,6 +1097,8 @@ class _StoreScreenState extends State<StoreScreen> {
         return const [Color(0xFFFFE6A0), Color(0xFFFFC766)];
       case 'Accesorios':
         return const [Color(0xFFFFC4DF), Color(0xFFF59AC3)];
+      case 'OVNI':
+        return const [Color(0xFFD9E3FF), Color(0xFFA7B9EB)];
       case 'Especiales':
         return const [Color(0xFFC5F3CC), Color(0xFF8ADCB1)];
       default:
