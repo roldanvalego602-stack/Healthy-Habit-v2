@@ -15,6 +15,7 @@ void main() {
     expect(find.textContaining('ALGO RESPIRA'), findsOneWidget);
     expect(find.textContaining('No nazco de un solo esfuerzo'),
       findsNothing);
+    await tester.ensureVisible(find.text('Descifrar primera pista'));
     await tester.tap(find.text('Descifrar primera pista'));
     await tester.pump();
     expect(find.textContaining('No nazco de un solo esfuerzo'),
