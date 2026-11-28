@@ -70,8 +70,11 @@ class HealthyRetroSoundService {
               app: Firebase.app(), databaseId: 'default');
             final document = await db.collection('users').doc(user.uid).get();
             final settings = document.data()?['settings'];
-            _soundEnabled = settings is! Map ||
-                settings['sonidosApp'] != false;
+            // Un «false» explícito desactiva el sonido. La ausencia
+            // de preferencia conserva el comportamiento predeterminado.
+            final disabled = settings is Map &&
+                settings['sonidosApp'] == false;
+            _soundEnabled = !disabled;
           } else {
             _soundEnabled = true;
           }
