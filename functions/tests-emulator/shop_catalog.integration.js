@@ -83,12 +83,16 @@ test("catálogo completo: compras únicas, montos oficiales y equipamiento", asy
     const reset = await changeShopAppearance({db, uid,
       data: {action: "reset"}});
     assert.ok(Object.keys(reset.equipped)
-      .every((slot) => slot.startsWith("perfil_") || slot === "app_theme"));
+      .every((slot) => slot.startsWith("perfil_") ||
+        slot === "app_theme" || slot === "ufo_skin"));
     const afterReset = (await ref.get()).data();
+    assert.equal(afterReset.shopEquipped.ufo_skin,
+      beforeReset.shopEquipped.ufo_skin);
     assert.equal(afterReset.habitCoins, beforeReset.habitCoins);
     assert.deepEqual(afterReset.shopInventory, beforeReset.shopInventory);
     assert.ok(Object.keys(afterReset.shopEquipped)
-      .every((slot) => slot.startsWith("perfil_") || slot === "app_theme"));
+      .every((slot) => slot.startsWith("perfil_") ||
+        slot === "app_theme" || slot === "ufo_skin"));
     assert.equal((await changeShopAppearance({db, uid,
       data: {action: "reset"}})).unchanged, true);
   } finally {
