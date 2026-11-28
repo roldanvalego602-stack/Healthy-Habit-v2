@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'healthy_clarification_service.dart';
 
 /// Respuestas locales y transparentes: no consulta Internet ni inventa datos.
 class NutriRespuestasService {
@@ -151,6 +152,7 @@ class NutriRespuestasService {
     String input, {
     required String nombre,
     required Map<String, dynamic> perfil,
+    String previousAssistantText = '',
   }) {
     final text = normalizar(input);
     if (ataqueDiscriminatorio(input)) return moderar(input, nombre);
@@ -455,18 +457,10 @@ class NutriRespuestasService {
     if (contiene(text, ['puedes', 'sabes', 'ayuda', 'que haces', 'opciones'])) {
       return 'Puedo ayudarte con tu perfil, XP, Habit Coins y racha; sugerirte hábitos; explicar la Tienda; '
           'conversar sobre bienestar y calcular IMC o GET. También sé la fecha y hora del dispositivo. '
-          'Para clima en vivo o noticias necesitaría una fuente externa. ¿Qué te interesa hoy?';
+          'El clima se consulta con permiso de ubicación y la búsqueda externa disponible es Wikipedia en español. ¿Qué te interesa hoy?';
     }
-    return _elegir([
-      'Buena pregunta$saludo. No tengo una respuesta verificada para ese tema y prefiero no inventarla. '
-          'Si me das un poco de contexto, puedo ayudarte a razonarla o relacionarla con tus objetivos.',
-      'Me dejaste pensando 🤔. Mi conocimiento aquí es limitado: no consulto Internet en tiempo real. '
-          '¿Buscas una explicación, un consejo práctico o un dato específico?',
-      'No tengo datos suficientes para afirmar algo concreto sobre eso. '
-          'Si me cuentas qué quieres descubrir o resolver, puedo intentar '
-          'plantear opciones, hacerte preguntas útiles o explicarte lo que '
-          'sí está disponible en la aplicación.',
-      'Podemos desmenuzarlo juntos. Dime si te interesa el «qué», el «cómo» o el «por qué», y lo abordamos paso a paso.',
-    ], fallback: true);
+    // La aclaración depende del tipo de pregunta, no del azar.
+    return HealthyClarificationService.respond(input,
+      previousAssistantText: previousAssistantText);
   }
 }
