@@ -11,7 +11,8 @@ plugins {
 android {
     namespace = "com.example.healthy_habit"
     compileSdk = 36
-    ndkVersion = "27.0.12077973"
+    // speech_to_text y plugins nativos recientes requieren NDK 28.2.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
