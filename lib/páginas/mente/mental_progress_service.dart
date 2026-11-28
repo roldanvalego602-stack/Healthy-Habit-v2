@@ -22,7 +22,13 @@ class MentalProgressService {
   const MentalProgressService();
 
   String _namespace() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    String? uid;
+    try {
+      uid = FirebaseAuth.instance.currentUser?.uid;
+    } catch (_) {
+      // Los ejercicios también están disponibles sin inicializar Firebase
+      // (modo laboratorio, tests y uso sin sesión).
+    }
     // Los invitados conservan un estado separado. No lo mezclamos con
     // el inventario o el progreso del usuario al iniciar sesión.
     return 'hh_mental_v1_${uid ?? 'invitado'}';
