@@ -14,7 +14,7 @@ class HealthyGuidedDialogue {
     r'embarazo|insulina|cuenta|perfil|saldo|xp|monedas|'
     r'comprar|compra|borrar|borra|eliminar|elimina|'
     r'activar|agregar|registrar|cancela|cancelar|'
-    r'habito|habitos|tienda|contrasena)\b',
+    r'tienda|contrasena)\b',
   );
 
   static const _askCriterion =
