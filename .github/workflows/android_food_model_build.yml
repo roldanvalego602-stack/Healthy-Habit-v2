@@ -5,7 +5,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'android/app/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
       - 'lib/servicios/healthy_food_model_service.dart'
       - 'lib/páginas/habitos/healthy_local_vision_panel.dart'
       - '.github/workflows/android_food_model_build.yml'
