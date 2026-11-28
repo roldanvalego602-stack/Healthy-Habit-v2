@@ -213,7 +213,8 @@ class PendingBetaHabitOperations {
   }
 
   /// Reutiliza los identificadores originales de una solicitud ya guardada.
-  Future<Map<String, dynamic>> recuperar(BetaHabitPendingEntry item) async {
+  Future<Map<String, dynamic>> recuperar(BetaHabitPendingEntry item,
+      {Uint8List? evidenceBytes}) async {
     final uid = _currentUserId();
     final key = keyFor(uid: uid, action: item.action,
         habitId: item.habitId, attemptId: item.attemptId);
@@ -235,7 +236,8 @@ class PendingBetaHabitOperations {
         original.attemptId != item.attemptId ||
         original.maxPenalty != item.maxPenalty ||
         original.note != item.note ||
-        jsonEncode(original.interaction) != jsonEncode(item.interaction)) {
+        jsonEncode(original.interaction) != jsonEncode(item.interaction) ||
+        original.conEvidencia != item.conEvidencia) {
       throw StateError('La solicitud cambió desde que fue consultada.');
     }
     if (_currentUserId() != uid) {
@@ -249,6 +251,7 @@ class PendingBetaHabitOperations {
       note: original.note,
       interaction: original.interaction,
       withEvidence: original.conEvidencia,
+      evidenceBytes: evidenceBytes,
       recoveryOnly: true,
     );
   }
@@ -280,8 +283,7 @@ class PendingBetaHabitOperations {
     }
     if (stage == 'not_reserved') {
       if (imageBytes == null) {
-        throw StateError('Selecciona de nuevo la fotografía original '
-            'para recuperar este registro pendiente.');
+        throw const EvidencePhotoRequired();
       }
       await evidence.reserve(
         habitId: identity.habitId,
@@ -295,8 +297,7 @@ class PendingBetaHabitOperations {
     }
     if (stage != 'uploaded' && stage != 'attached') {
       if (imageBytes == null) {
-        throw StateError('Necesitas la fotografía original para recuperar '
-            'esta subida; no se degradará a registro sin evidencia.');
+        throw const EvidencePhotoRequired();
       }
       await evidence.upload(
         habitId: identity.habitId,
