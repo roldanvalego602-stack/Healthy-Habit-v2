@@ -1,5 +1,6 @@
 import 'healthy_local_image_recognition.dart';
 import 'habit_vision_profile.dart';
+import 'healthy_specific_food_recognition.dart';
 
 /// Comparación orientativa: no equivale a verificar consumo o actividad.
 class HealthyVisualMatch {
@@ -114,6 +115,50 @@ class HealthyVisualMatch {
       matchedLabel: best.name,
       message: 'Coincidencia visual: se identificó '
           '${displayName(best.name)} en la fotografía.',
+    );
+  }
+
+  /// Combina indicios del etiquetador general y de un modelo específico.
+  /// No crea premios, no verifica ingestión ni convierte fotos en
+  /// certificados. Cada motor conserva su origen en el mensaje.
+  static HealthyVisualMatch evaluateCombined({
+    required List<HealthyDetectedLabel> labels,
+    required String? profile,
+    List<HealthyDetectedLabel>? specializedLabels,
+  }) {
+    final generic = evaluate(labels: labels, profile: profile);
+    if (specializedLabels == null || profile == null) return generic;
+
+    final specific = HealthySpecificFoodRecognition
+        .identifyFromSpecializedModel(specializedLabels);
+    if (!specific.isSpecific || specific.sourceLabel == null) {
+      return generic;
+    }
+    final term = specific.sourceLabel!.toLowerCase();
+    const fruitsAndVegetables = <String>{
+      'watermelon', 'apple_fruit', 'banana', 'orange_fruit',
+      'pear', 'grape', 'strawberry', 'pineapple', 'mango',
+      'peach', 'lemon', 'coconut', 'carrot', 'broccoli',
+      'cabbage', 'tomato', 'potato', 'mushroom',
+    };
+    const preparedFoods = <String>{
+      'bread', 'chicken', 'cookie',
+    };
+    final compatible = (profile == 'fruit_vegetable' &&
+            fruitsAndVegetables.contains(term)) ||
+        (profile == 'meal' &&
+            (fruitsAndVegetables.contains(term) ||
+             preparedFoods.contains(term)));
+    if (!compatible || generic.isMatch) return generic;
+
+    return HealthyVisualMatch(
+      profile: profile,
+      isMatch: true,
+      confidence: specific.confidence,
+      matchedLabel: specific.sourceLabel,
+      message: 'El modelo especializado encontró una posible '
+          '${specific.name} relacionada con esta categoría. '
+          'No demuestra consumo ni cumplimiento.',
     );
   }
 
