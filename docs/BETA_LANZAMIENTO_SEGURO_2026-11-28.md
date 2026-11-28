@@ -74,6 +74,22 @@ Se debe rechazar a cualquier cliente:
 
 También deben pasar los recorridos positivos reales: registro, compra, equipamiento, favoritos, perfil, amistades, invitaciones, chat, lectura de reportes y fotos de perfil. El estado de CI debe corresponder al **último commit** y a las reglas exactas de despliegue.
 
+### Auditoría histórica de solo lectura
+
+Se incluye `functions/tools/auditar_legado_beta.js`, que cuenta documentos históricos y detecta anomalías sin imprimir UID, nombre ni correo. Necesita credenciales administrativas **solo para leer**; es recomendable ejecutarla con una identidad IAM autorizada únicamente a consultas, tras conocer la fecha UTC exacta del corte de reglas. No conceder permisos de escritura al operador. Revisar el coste de lectura y usar `--limit` de 1 a 1000 para evitar un escaneo accidental.
+
+```bash
+# Requiere estar autenticado en GCP con acceso de lectura y haber
+# comprobado que las reglas restrictivas están activas en la base default.
+cd functions
+node tools/auditar_legado_beta.js \
+  --project=cloud-firestore-d8c61 --database=default \
+  --cutover-utc=YYYY-MM-DDTHH:MM:SSZ \
+  --limit=300 --read-only-confirm
+```
+
+El valor `YYYY-MM-DDTHH:MM:SSZ` debe sustituirse por la fecha **real y verificada** del despliegue, no una fecha supuesta. Si se llega al límite, el reporte marca `truncated`, por lo que no se debe interpretar como auditoría global. Los perfiles previos y sus recompensas siguen sin certificar aunque no muestren anomalías.
+
 ## 4. Pasos manuales bloqueantes antes de publicar
 
 Estos pasos requieren credenciales del propietario y **no se pueden certificar mediante commits GitHub**:
