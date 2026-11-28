@@ -132,7 +132,7 @@ class HealthyPublicProfileService {
       // Mantener fallback a «title» para cuentas creadas anteriormente.
       'title': stringValue(
         'profileTitle',
-        stringValue('title', 'Cultivador de constancia'),
+        stringValue('title', 'Semilla saludable'),
       ),
       'xp': positiveInt('xp', positiveInt('currentXp', 0)),
       'currentXp': positiveInt('currentXp', positiveInt('xp', 0)),
