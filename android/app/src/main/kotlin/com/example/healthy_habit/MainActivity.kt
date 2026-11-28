@@ -11,6 +11,48 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // Motor de alimentos independiente del audio y de Firebase.
+        // La foto nunca sale del teléfono: solo se descargan pesos del
+        // modelo mediante una acción explícita del usuario.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "healthy_habit/food_model")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "status" -> {
+                        result.success(
+                            HealthyFoodModelEngine.status(applicationContext))
+                    }
+                    "install", "classify" -> {
+                        val jpeg = call.argument<ByteArray>("jpeg")
+                        if (call.method == "classify" &&
+                            (jpeg == null || jpeg.isEmpty())) {
+                            result.error("invalid-argument",
+                                "Fotografía JPEG vacía", null)
+                        } else {
+                            Thread {
+                                try {
+                                    val answer = if (call.method == "install")
+                                        HealthyFoodModelEngine.install(
+                                            applicationContext)
+                                    else HealthyFoodModelEngine.classify(
+                                        applicationContext, jpeg!!)
+                                    runOnUiThread { result.success(answer) }
+                                } catch (error: Exception) {
+                                    Log.w("HealthyHabitFood",
+                                        "Error controlado del clasificador: " +
+                                            error.javaClass.simpleName)
+                                    runOnUiThread {
+                                        result.error("food-model",
+                                            error.message ?: "Modelo no disponible",
+                                            null)
+                                    }
+                                }
+                            }.start()
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
