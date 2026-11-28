@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../servicios/healthy_local_image_recognition.dart';
 import '../../servicios/healthy_visual_match.dart';
 import '../../servicios/healthy_specific_food_recognition.dart';
@@ -99,9 +100,13 @@ class _HealthyLocalVisionPanelState extends State<HealthyLocalVisionPanel> {
       setState(() => _modelInstalled = true);
     } catch (error) {
       if (!mounted) return;
+      final detail = error is PlatformException
+          ? (error.message ?? error.code)
+          : error.runtimeType.toString();
       setState(() => _modelError =
-          'No pudimos instalar el modelo. '
-          'Comprueba tu conexión y vuelve a intentarlo.');
+          'No se pudo instalar el modelo. '
+          'Comprueba la conexión y el espacio disponible. '
+          'Detalle: $detail.');
     } finally {
       if (mounted) setState(() => _installingModel = false);
     }
