@@ -978,7 +978,8 @@ const {requireBetaEvidenceAccess, evidenceBucketName} =
   require("./official_beta_evidence_access");
 const {getEvidenceStatus} = require("./habit_evidence_status");
 
-function betaEvidenceAction(operation, {withStorage = false} = {}) {
+function betaEvidenceAction(operation, {withStorage = false,
+  dailyQuota = null} = {}) {
   return onCall(
     {region: "us-central1", enforceAppCheck: true,
       maxInstances: 2, concurrency: 1, memory: "512MiB",
@@ -986,7 +987,8 @@ function betaEvidenceAction(operation, {withStorage = false} = {}) {
     async (request) => {
       try {
         const uid = requireBetaEvidenceAccess(request);
-        const args = {db, uid, data: request.data};
+        const args = {db, uid, data: request.data,
+          ...(dailyQuota == null ? {} : {dailyQuota})};
         if (withStorage) {
           const {getStorage} = require("firebase-admin/storage");
           args.bucket = getStorage().bucket(
@@ -1007,7 +1009,8 @@ function betaEvidenceAction(operation, {withStorage = false} = {}) {
     }
   );
 }
-exports.reserveHabitEvidenceBeta = betaEvidenceAction(reserveHabitEvidence);
+exports.reserveHabitEvidenceBeta = betaEvidenceAction(reserveHabitEvidence,
+  {dailyQuota: 12});
 exports.uploadReservedEvidenceBeta =
   betaEvidenceAction(uploadReservedEvidence, {withStorage: true});
 exports.attachHabitEvidenceBeta =
