@@ -17,11 +17,6 @@ class HealthyGuidedDialogue {
     r'habito|habitos|tienda|contrasena)\b',
   );
 
-  static const _askOptions =
-      'Para comparar opciones necesito saber cuáles son '
-      'y qué criterio importa más: costo, tiempo, facilidad '
-      'o beneficio. ¿Qué alternativas estás considerando?';
-
   static const _askCriterion =
       '¿Qué criterio quieres priorizar: costo, tiempo, facilidad '
       'o beneficio? No asumiré precios ni resultados.';
@@ -60,7 +55,7 @@ class HealthyGuidedDialogue {
         if (const {'no se', 'no lo se', 'aun no se', 'ninguna'}
             .contains(current)) {
           return 'Podemos comenzar por definir dos alternativas. '
-              'Escríbelas juntas, por ejemplo «opción A y opción B». '
+              'Escríbelas juntas, por ejemplo «caminar y bicicleta». '
               'No elegiré una por ti.';
         }
         return 'Indica dos alternativas concretas separadas por «y». '
