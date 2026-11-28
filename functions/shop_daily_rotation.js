@@ -36,7 +36,7 @@ function seedFor(value) {
   let value32 = 2166136261 >>> 0;
   for (const character of value) {
     value32 = Math.imul(value32 ^ character.charCodeAt(0),
-      16777619) >>> 0;
+      131) >>> 0;
   }
   return value32 || 1;
 }
