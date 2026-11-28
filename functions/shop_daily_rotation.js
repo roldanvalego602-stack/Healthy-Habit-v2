@@ -32,17 +32,30 @@ function shopDayFor(now = new Date()) {
     .toISOString().slice(0, 10);
 }
 
-function hash(value) {
-  let n = 0;
+function seedFor(value) {
+  let value32 = 2166136261 >>> 0;
   for (const character of value) {
-    n = (Math.imul(n, 31) + character.charCodeAt(0)) & 0x7fffffff;
+    value32 = Math.imul(value32 ^ character.charCodeAt(0),
+      16777619) >>> 0;
   }
-  return n;
+  return value32 || 1;
 }
 
-function ordered(ids, day) {
-  return ids.sort((a, b) => hash(day + ":" + a) - hash(day + ":" + b) ||
-    a.localeCompare(b, "en"));
+function nextSeed(value32) {
+  value32 = (value32 ^ (value32 << 13)) >>> 0;
+  value32 = (value32 ^ (value32 >>> 17)) >>> 0;
+  return (value32 ^ (value32 << 5)) >>> 0;
+}
+
+function ordered(ids, day, family) {
+  const sorted = ids.sort();
+  let seed = seedFor(day + ":" + family);
+  for (let i = sorted.length - 1; i > 0; i--) {
+    seed = nextSeed(seed);
+    const j = seed % (i + 1);
+    [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+  }
+  return sorted;
 }
 
 function dailyShop(day) {
@@ -54,8 +67,8 @@ function dailyShop(day) {
   const special = (id) => id.startsWith("ufo_") || SPECIAL.has(id);
   const fixed = FIXED.filter((id) => eligible.includes(id));
   const regular = ordered(eligible.filter((id) =>
-    !special(id) && !FIXED.includes(id)), day).slice(0, 7);
-  const specials = ordered(eligible.filter(special), day).slice(0, 4);
+    !special(id) && !FIXED.includes(id)), day, "rotating").slice(0, 7);
+  const specials = ordered(eligible.filter(special), day, "special").slice(0, 4);
   const itemIds = [...fixed, ...regular, ...specials];
   const offerId = regular[0] || specials[0] || null;
   return Object.freeze({dayKey: day, itemIds: Object.freeze(itemIds), offerId,
