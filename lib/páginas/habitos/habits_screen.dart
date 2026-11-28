@@ -14,6 +14,9 @@ import '../../servicios/healthy_reminders_service.dart';
 import '../../servicios/operaciones_habitos_pendientes.dart';
 import '../../servicios/official_habit_emulator_service.dart';
 import '../../servicios/beta_habit_gateway.dart';
+import '../../servicios/beta_evidence_service.dart';
+import '../../servicios/habit_evidence_image_preparer.dart';
+import 'package:image_picker/image_picker.dart';
 import 'habit_add_sheet.dart';
 import 'habit_popularity_service.dart';
 import 'habit_recommendation_service.dart';
@@ -311,8 +314,46 @@ class _HabitsScreenState extends State<HabitsScreen> {
     if (confirmed != true || !mounted) return;
     setState(() => _recuperando = true);
     try {
-      final response = await const PendingBetaHabitOperations()
-          .recuperar(item);
+      Map<String, dynamic> response;
+      try {
+        response = await const PendingBetaHabitOperations().recuperar(item);
+      } on EvidencePhotoRequired {
+        if (!mounted) return;
+        final source = await showModalBottomSheet<ImageSource>(
+          context: context,
+          builder: (sheetContext) => SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Padding(
+                padding: EdgeInsets.all(15),
+                child: Text('Recuperar fotografía pendiente. '
+                    'Selecciona la misma imagen; no se creará otro registro.'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Elegir fotografía original'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Tomar nueva fotografía'),
+                subtitle: const Text('Solo si no se había subido otra imagen.'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+            ]),
+          ),
+        );
+        if (!mounted || source == null) return;
+        final photo = await ImagePicker().pickImage(
+          source: source, imageQuality: 35,
+          maxWidth: 640, maxHeight: 640,
+        );
+        if (!mounted || photo == null) return;
+        final prepared = const HabitEvidenceImagePreparer()
+            .prepare(await photo.readAsBytes());
+        response = await const PendingBetaHabitOperations().recuperar(
+          item, evidenceBytes: prepared.bytes,
+        );
+      }
       if (!mounted) return;
       _showMessage(response['alreadyProcessed'] == true
           ? 'El servidor ya había confirmado esta operación.'
@@ -346,7 +387,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 title: Text('${item.action}: ${item.habitId}'),
-                subtitle: Text('Intento: ${item.attemptId}'),
+                subtitle: Text(item.conEvidencia
+                    ? 'Foto privada pendiente · intento: ${item.attemptId}'
+                    : 'Intento: ${item.attemptId}'),
                 trailing: TextButton(
                   onPressed: _recuperando || saving
                       ? null : () => _recuperarBetaPendiente(item),
