@@ -13,7 +13,9 @@ function prepareQuery(value) {
       /[\x00-\x1F]/.test(text)) {
     throw new TypeError("Utiliza una consulta de 3 a 120 caracteres.");
   }
-  if (BLOCKED.test(text)) {
+  const normalized = text.normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  if (BLOCKED.test(normalized)) {
     throw new RangeError(
       "Esta consulta requiere orientación especializada; no se enviará a Wikipedia.");
   }
