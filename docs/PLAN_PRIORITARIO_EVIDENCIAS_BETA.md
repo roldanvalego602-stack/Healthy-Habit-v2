@@ -8,7 +8,7 @@
 
 Se completaron en código **E1** (reserva, subida, asociación, estado, reintentos, cuota y limpieza bloqueada) y la primera versión de **E2** (análisis local por ML Kit, análisis remoto optativo de contenido mediante Vision con fuente de imagen exclusivamente servidor, comprobación de contexto y metadatos mínimos). **E3** está conectado al registro oficial y es idempotente: no añade XP por foto. Sin embargo, la validación **fuerte** del cumplimiento sigue pendiente porque ni ML Kit ni Vision pueden demostrar que se haya ingerido comida, bebido agua o cumplido tiempo de actividad.
 
-La beta **no está lista para distribuirse**: el recorrido normal todavía contiene escrituras económicas desde Flutter, las reglas reales no están auditadas y el sistema de evidencias está apagado por defecto. Se añadió un laboratorio integrado `firebase.evidence-demo.emulator.json` con tests de reserva, subida, registro, asociación, análisis simulado y limpieza. **No se ha probado todavía en Android ni ejecutado toda la suite en el equipo del desarrollador**.
+La beta **no está lista para distribuirse**: el recorrido normal todavía contiene escrituras económicas desde Flutter, las reglas reales no están auditadas y el sistema de evidencias está apagado por defecto. Se añadió un laboratorio integrado `firebase.evidence-demo.emulator.json` con tests de reserva, subida, registro, asociación, análisis simulado y limpieza. **Pruebas automáticas aprobadas en GitHub Actions (28/11 UTC): 567 Flutter, 193 Functions, 15 Vision y un flujo completo en emuladores; Android físico y seguridad de reglas reales pendientes.**
 
 La guía de ejecución y los criterios de lanzamiento están en [Implementación de evidencias 27/11](IMPLEMENTACION_EVIDENCIAS_2026-11-27.md).
 
