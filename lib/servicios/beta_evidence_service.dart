@@ -7,6 +7,12 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'beta_habit_gateway.dart';
 
+class EvidencePhotoRequired implements Exception {
+  const EvidencePhotoRequired();
+  @override
+  String toString() => 'Se necesita recuperar la fotografía original.';
+}
+
 /// Fotografías privadas de beta. No concede XP ni determina consumo.
 /// El servidor comprueba Auth, App Check, cuota y propiedad del intento.
 class BetaEvidenceService {
