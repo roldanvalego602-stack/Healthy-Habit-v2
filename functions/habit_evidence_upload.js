@@ -70,7 +70,8 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
     }
     if (!saved.expiresAt?.toMillis ||
         saved.expiresAt.toMillis() <= now.getTime() ||
-        !["pending", "uploading", "uploaded"].includes(saved.status)) {
+        !["pending", "uploading", "recovering", "uploaded"]
+          .includes(saved.status)) {
       throw new RegistrationPolicyError(
         "failed-precondition", "La reserva venció o ya fue cerrada."
       );
@@ -83,16 +84,19 @@ async function uploadReservedEvidence({db, bucket, uid, data, now = new Date()})
         );
       }
     }
-    if (saved.status === "uploading") {
-      const started = saved.uploadStartedAt?.toMillis?.();
+    if (saved.status === "uploading" ||
+        saved.status === "recovering") {
+      const started = saved.status === "recovering"
+        ? saved.recoveryStartedAt?.toMillis?.()
+        : saved.uploadStartedAt?.toMillis?.();
       if (typeof started !== "number" ||
           started > now.getTime() - 300000) {
         throw new RegistrationPolicyError(
-          "aborted", "Otra subida sigue en curso; vuelve a intentarlo."
+          "aborted", "Otra subida o recuperación sigue en curso."
         );
       }
-      // Reclamar exclusivamente la inspección del archivo abandonado.
-      // Nunca volver a escribir a ciegas sobre el mismo objeto.
+      // Una recuperación antigua puede retomarse, pero solo inspeccionando
+      // el archivo existente: nunca se autoriza sobrescribir a ciegas.
       tx.update(reservationRef, {
         status: "recovering", recoveryStartedAt: FieldValue.serverTimestamp(),
       });
