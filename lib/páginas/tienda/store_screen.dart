@@ -16,7 +16,7 @@ import '../../servicios/beta_habit_gateway.dart';
 import 'shop_item_artwork.dart';
 import 'store_featured_carousel.dart';
 import 'wardrobe_screen.dart';
-import 'secret_test_bonus_screen.dart';
+import 'healthy_titan_cave_screen.dart';
 import 'season_pass_preview_screen.dart';
 
 /// Tienda con tarjetas horizontales grandes. Conserva el catálogo y las compras.
@@ -164,11 +164,11 @@ class _StoreScreenState extends State<StoreScreen> {
       _secretTaps = 0;
     }
     _lastSecretTap = now;
-    _secretTaps++;
+    setState(() => _secretTaps++);
     if (_secretTaps >= 7) {
-      _secretTaps = 0;
+      setState(() => _secretTaps = 0);
       Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => const SecretTestBonusScreen(),
+        builder: (_) => const HealthyTitanCaveScreen(),
       ));
     }
   }
@@ -577,6 +577,43 @@ class _StoreScreenState extends State<StoreScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            label: 'Pista del santuario secreto',
+            child: InkWell(
+              key: const Key('tienda-pista-titan'),
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('La inscripción de los siete latidos'),
+                  content: const Text('Se dice que una criatura duerme '
+                    'detrás de un muro de hierro. Su entrada está '
+                    'oculta donde las monedas se cuentan, '
+                    'pero el secreto no se compra. '
+                    'Escucha siete latidos antes de que pasen cinco segundos.'),
+                  actions: [TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Entendido'),
+                  )],
+                ),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.auto_awesome_rounded,
+                  size: 14, color: _muted),
+                const SizedBox(width: 6),
+                Flexible(child: Text(
+                  _secretTaps > 0
+                      ? 'El muro responde: $_secretTaps / 7 latidos'
+                      : '¿Escuchaste la leyenda de los siete latidos?',
+                  style: TextStyle(color: _muted,
+                    fontSize: 11, fontStyle: FontStyle.italic),
+                )),
+                const SizedBox(width: 4),
+                Icon(Icons.help_outline_rounded, size: 14, color: _muted),
+              ]),
+            ),
           ),
           const SizedBox(height: 12),
           Row(
