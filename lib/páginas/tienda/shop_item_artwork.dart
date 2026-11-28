@@ -3,6 +3,7 @@ import '../../tema/healthy_asset_catalog.dart';
 import '../../tema/healthy_cosmetics.dart';
 import '../../tema/healthy_streak_items.dart';
 import 'shop_service.dart';
+import 'healthy_ufo_skin_art.dart';
 import 'healthy_leaf_aura.dart';
 import 'healthy_special_auras.dart';
 import 'healthy_achievement_display.dart';
@@ -18,6 +19,9 @@ class ShopItemArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (HealthyUfoSkinArt.ids.contains(item.id)) {
+      return HealthyUfoSkinArt(id: item.id, size: size);
+    }
     if (item.id == 'skin_titan_secret') {
       return SizedBox.square(dimension: size,
         child: FittedBox(fit: BoxFit.contain,
