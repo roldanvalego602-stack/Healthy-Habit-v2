@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -157,12 +158,6 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
       });
       if (!mounted) return;
       final opened = result['status'] == 'unlocked';
-      if (opened && result['awarded'] == true) {
-        // Recompensa confirmada por Firebase, nunca por lógica local.
-        await HealthyRetroSoundService.play('achievement');
-      } else if (!opened) {
-        await HealthyRetroSoundService.play('error');
-      }
       setState(() {
         _unlocked = opened;
         _opened = opened;
@@ -178,6 +173,12 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
                 : 'Los barrotes permanecen cerrados. '
                   'Escucha las inscripciones e inténtalo de nuevo.';
       });
+      // El audio no retrasa la apertura ni intenta actualizar la vista.
+      if (opened && result['awarded'] == true) {
+        unawaited(HealthyRetroSoundService.play('achievement'));
+      } else if (!opened) {
+        unawaited(HealthyRetroSoundService.play('error'));
+      }
     } on FirebaseFunctionsException catch (error) {
       if (!mounted) return;
       setState(() => _feedback = error.code == 'failed-precondition'
