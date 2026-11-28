@@ -282,7 +282,7 @@ class _HealthyVisionPreviewPanelState extends State<HealthyVisionPreviewPanel> {
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            value: _profile,
+            initialValue: _profile,
             decoration: const InputDecoration(
               labelText: 'Perfil visual (opcional)',
               isDense: true,
