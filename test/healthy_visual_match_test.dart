@@ -46,6 +46,44 @@ void main() {
       labels: labels, profile: 'hydration').isMatch, isFalse);
   });
 
+  test('ONNX puede respaldar visualmente una fruta omitida por ML Kit', () {
+    final result = HealthyVisualMatch.evaluateCombined(
+      labels: const [HealthyDetectedLabel('Toy', .80)],
+      profile: 'fruit_vegetable',
+      specializedLabels: const [
+        HealthyDetectedLabel('watermelon', .79),
+        HealthyDetectedLabel('laptop', .05),
+      ],
+    );
+    expect(result.isMatch, isTrue);
+    expect(result.matchedLabel, 'watermelon');
+    expect(result.message, contains('posible sandía'));
+  });
+
+  test('una sandía no se convierte en agua por cambiar el selector', () {
+    final result = HealthyVisualMatch.evaluateCombined(
+      labels: const [HealthyDetectedLabel('Fruit', .67)],
+      profile: 'hydration',
+      specializedLabels: const [
+        HealthyDetectedLabel('watermelon', .80),
+        HealthyDetectedLabel('bottle', .06),
+      ],
+    );
+    expect(result.isMatch, isFalse);
+  });
+
+  test('una clase incorrecta no genera coincidencia con un hábito', () {
+    final result = HealthyVisualMatch.evaluateCombined(
+      labels: const [HealthyDetectedLabel('Insect', .88)],
+      profile: 'fruit_vegetable',
+      specializedLabels: const [
+        HealthyDetectedLabel('car', .93),
+        HealthyDetectedLabel('watermelon', .03),
+      ],
+    );
+    expect(result.isMatch, isFalse);
+  });
+
   test('una etiqueta genérica Food no basta para verificar fruta', () {
     final result = HealthyVisualMatch.evaluate(
       labels: const [HealthyDetectedLabel('Food', .99)],
