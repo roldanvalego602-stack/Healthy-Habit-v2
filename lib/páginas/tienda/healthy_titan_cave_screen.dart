@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'healthy_titan_skin.dart';
 import '../../servicios/healthy_retro_sound_service.dart';
 import '../../servicios/shop_demo_bootstrap.dart';
+import '../../servicios/beta_habit_gateway.dart';
 import 'shop_purchase_gateway.dart';
 
 /// La cueva es un secreto narrativo, no una recompensa de monedas.
@@ -67,6 +68,9 @@ class _HealthyTitanCaveScreenState extends State<HealthyTitanCaveScreen>
   Future<void> _prepareAppCheck() async {
     // Solo el proyecto Firebase de laboratorio permite emulador sin App Check.
     if (_demoMode) return;
+    // La beta cerrada ya activa App Check en main.dart: no sustituir su
+    // proveedor ni su token de depuración durante la navegación.
+    if (BetaHabitGateway.enabled) return;
     if (_appCheckPrepared) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw StateError('El santuario requiere un dispositivo Android autorizado.');
