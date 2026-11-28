@@ -30,16 +30,22 @@ class HealthySpecificFoodRecognition {
 
   static const foodNames = <String, String>{
     'watermelon': 'sandía',
+    'apple_fruit': 'manzana',
+    'orange_fruit': 'naranja',
+    'grape': 'uva',
+    'lemon': 'limón',
+    'cabbage': 'repollo',
+    'coconut': 'coco',
+    'peach': 'durazno',
+    'mushroom': 'champiñón',
     'apple': 'manzana',
     'banana': 'plátano',
     'orange': 'naranja',
     'pear': 'pera',
-    'grape': 'uva',
     'grapes': 'uvas',
     'strawberry': 'fresa',
     'pineapple': 'piña',
     'mango': 'mango',
-    'peach': 'durazno',
     'cherry': 'cereza',
     'kiwi': 'kiwi',
     'papaya': 'papaya',
@@ -72,6 +78,37 @@ class HealthySpecificFoodRecognition {
     'dish', 'cuisine', 'produce', 'plant', 'salad', 'breakfast',
     'lunch', 'dinner', 'flesh', 'toy', 'cake', 'drinkware', 'glass',
   };
+
+  /// Evaluación sobre la salida de un modelo de 65 categorías, no ML Kit.
+  /// Solo acepta la clase principal cuando es alimento y su ventaja frente
+  /// a la segunda clase es suficiente. Softmax NO es probabilidad calibrada
+  /// de cumplimiento; el resultado es siempre una hipótesis visual.
+  static HealthySpecificFoodResult identifyFromSpecializedModel(
+      List<HealthyDetectedLabel> labels) {
+    if (labels.isEmpty) {
+      return const HealthySpecificFoodResult(
+        name: null, confidence: 0, sourceLabel: null, isSpecific: false,
+      );
+    }
+    final sorted = [...labels]
+      ..sort((a, b) => b.confidence.compareTo(a.confidence));
+    final winner = sorted.first;
+    final runnerUp = sorted.length > 1 ? sorted[1].confidence : 0.0;
+    final name = foodNames[winner.name.trim().toLowerCase()];
+    if (name == null || !winner.confidence.isFinite ||
+        winner.confidence < .40 ||
+        winner.confidence - runnerUp < .12) {
+      return const HealthySpecificFoodResult(
+        name: null, confidence: 0, sourceLabel: null, isSpecific: false,
+      );
+    }
+    return HealthySpecificFoodResult(
+      name: name,
+      confidence: winner.confidence,
+      sourceLabel: winner.name,
+      isSpecific: true,
+    );
+  }
 
   static HealthySpecificFoodResult identify(
       List<HealthyDetectedLabel> labels) {
