@@ -8,6 +8,7 @@ const assert = require("node:assert/strict");
 const {initializeApp, deleteApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const {SHOP_PRICES} = require("../official_shop_catalog");
+const {RETIRED_SHOP_IDS} = require("../shop_daily_rotation");
 const {purchaseDemoShopItem} = require("../shop_purchase_transaction");
 const {SHOP_SLOTS, changeShopAppearance} =
   require("../shop_appearance_transaction");
@@ -32,14 +33,14 @@ test("catálogo completo: compras únicas, montos oficiales y equipamiento", asy
       Math.random().toString(36).slice(2, 11);
     const ref = db.collection("users").doc(uid);
     const items = Object.entries(SHOP_PRICES);
-    assert.equal(items.length, 62);
+    assert.equal(items.length, 73);
     const initialCoins = 50000;
     await ref.set({uid, habitCoins: initialCoins,
       shopInventory: [], shopEquipped: {}});
     let spent = 0;
     let purchased = 0;
     for (const [itemId, price] of items) {
-      if (price === 0) continue;
+      if (price === 0 || RETIRED_SHOP_IDS.has(itemId)) continue;
       const data = {itemId, operationId:
         "buy_operation_" + String(purchased).padStart(16, "0")};
       const first = await purchaseDemoShopItem({db, uid, data});
@@ -68,6 +69,7 @@ test("catálogo completo: compras únicas, montos oficiales y equipamiento", asy
 
     let equipped = 0;
     for (const itemId of Object.keys(SHOP_SLOTS)) {
+      if (RETIRED_SHOP_IDS.has(itemId)) continue;
       const change = await changeShopAppearance({db, uid,
         data: {action: "equip", itemId}});
       assert.equal(change.equipped[SHOP_SLOTS[itemId]], itemId);
@@ -81,12 +83,12 @@ test("catálogo completo: compras únicas, montos oficiales y equipamiento", asy
     const reset = await changeShopAppearance({db, uid,
       data: {action: "reset"}});
     assert.ok(Object.keys(reset.equipped)
-      .every((slot) => slot.startsWith("perfil_")));
+      .every((slot) => slot.startsWith("perfil_") || slot === "app_theme"));
     const afterReset = (await ref.get()).data();
     assert.equal(afterReset.habitCoins, beforeReset.habitCoins);
     assert.deepEqual(afterReset.shopInventory, beforeReset.shopInventory);
     assert.ok(Object.keys(afterReset.shopEquipped)
-      .every((slot) => slot.startsWith("perfil_")));
+      .every((slot) => slot.startsWith("perfil_") || slot === "app_theme"));
     assert.equal((await changeShopAppearance({db, uid,
       data: {action: "reset"}})).unchanged, true);
   } finally {
